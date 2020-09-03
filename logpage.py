@@ -52,4 +52,4 @@ def summary_to_html(readfile,writefile):
     </html>
         '''
         fp.write(template)
-summary_to_html("build__2_2.log","index.html")
+summary_to_html("build__2_2.log","docs/index.html")
