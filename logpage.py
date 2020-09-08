@@ -1,4 +1,8 @@
 import sys
+import os
+for fp in os.listdir("./"):
+    if fp.endswith(".log"):
+        log=os.path.join("./", fp)
 def create_summary(file):
     sum_data={}
     with open(file,"r") as fp:
@@ -52,4 +56,4 @@ def summary_to_html(readfile,writefile):
     </html>
         '''
         fp.write(template)
-summary_to_html("build__2_2.log","index.html")
+summary_to_html(log,"index.html")
