@@ -1,11 +1,8 @@
 import sys
-<<<<<<< HEAD
 import os
 for fp in os.listdir("./"):
     if fp.endswith(".log"):
         log=os.path.join("./", fp)
-=======
->>>>>>> gh-pages
 def create_summary(file):
     sum_data={}
     with open(file,"r") as fp:
@@ -59,8 +56,4 @@ def summary_to_html(readfile,writefile):
     </html>
         '''
         fp.write(template)
-<<<<<<< HEAD
 summary_to_html(log,"docs/index.html")
-=======
-summary_to_html("build__2_2.log","docs/index.html")
->>>>>>> gh-pages
