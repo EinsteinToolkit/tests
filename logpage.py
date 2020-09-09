@@ -56,4 +56,4 @@ def summary_to_html(readfile,writefile):
     </html>
         '''
         fp.write(template)
-summary_to_html(log,"index.html")
+summary_to_html(log,"docs/index.html")
