@@ -72,7 +72,7 @@ def summary_to_html(readfile,writefile):
     elif data["Number failed"]!=0:
         status="Some Tests Failed"
         # Send email if tests failed
-        os.system(f'python3 mail.py')
+        #os.system(f'python3 mail.py')
     with open(writefile,"w") as fp:
         for key in data.keys():
 
@@ -114,7 +114,56 @@ def write_to_csv(readfile):
             contents+=f",{data[key]}"
         contents+="\n"
         csvfile.write(contents)
-    
+
 write_to_csv(log)
+
+def get_tests(readfile):
+    passed=set()
+    failed=set()
+    with open(readfile,"r") as fp:
+        lines=fp.read().splitlines()
+        ind=lines.index("  Tests passed:")+2
+        while lines[ind]!="  Tests failed:" and lines[ind]!="========================================================================":
+            passed.add(" ".join(lines[ind].split()))
+            ind+=1
+        ind+=2
+        while ind<len(lines) and lines[ind]!="========================================================================":
+            failed.add(" ".join(lines[ind].split()))
+            ind+=1
+        if "" in passed:
+            passed.remove("")
+        if "" in failed:
+            failed.remove("")
+    return passed,failed
+
+
+
+def test_comp(readfile_new,readfile_old):
+    passed_n,failed_n=get_tests(readfile_new)
+    passed_o,failed_o=get_tests(readfile_old)
+    newly_p=passed_n-passed_o
+    newly_f=failed_n-failed_o
+    new_tests=(passed_n.union(failed_n))-(passed_o.union(failed_o))
+    missing_tests=(passed_o.union(failed_o))-(passed_n.union(failed_n))
+    types=["Failed Tests","Newly Passing Tests","Newly Failing Tests","Newly Added Tests", "Removed Tests"]
+    tests=[failed_n,newly_p,newly_f,new_tests,missing_tests]
+    test_dict={types[i]:tests[i] for i in range(len(types))}
+    return test_dict
+
+test_res=test_comp(log,"./records/"+last)
+def gen_report(tests):
+    output=""
+    for test in tests.keys():
+        output+=test+"\n\n"
+        for i in tests[test]:
+            output+="   "+i+"\n"
+        output+="\n"
+    return output
+
+
+
+
+
+
 command='''for file in *log;do cp "$file" "./records/${file%.log}_'''+str(num+1)+'''.log";done'''
-os.system(command)
+# os.system(command)
