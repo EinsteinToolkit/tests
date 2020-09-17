@@ -2,9 +2,19 @@ from cactusjenkins.testtable.testtable import read_file
 import sys
 import os,csv,time,requests
 # This part finds the second log file in the folder
+log=""
+logs=[]
 for fp in os.listdir("./"):
     if fp.endswith(".log"):
         log=os.path.join("./", fp)
+        logs.append(log)
+records=os.listdir("./records")
+last=records[len(records)-1]
+ext=last.find(".log")
+num=int(last[ext-1:ext])
+
+
+
 
 
 def create_summary(file):
@@ -106,4 +116,5 @@ def write_to_csv(readfile):
         csvfile.write(contents)
     
 write_to_csv(log)
-commit_list=requests.get("https://api.github.com/repos/mojamil/einsteintoolkit/commits")
+command='''for file in *log;do cp "$file" "./records/${file%.log}_'''+str(num+1)+'''.log";done'''
+os.system(command)
