@@ -1,6 +1,8 @@
 from cactusjenkins.testtable.testtable import read_file
 import sys
 import os,csv,time,requests
+from datetime import datetime
+import matplotlib.pyplot as plt
 # This part finds the second log file in the folder
 log=""
 logs=[]
@@ -56,6 +58,127 @@ def create_summary(file):
     
 
 
+
+def get_tests(readfile):
+    '''
+        This functions reads the names of the tests that failed and passed
+        from the log files and returns the set of them in tuples.
+    '''
+    passed=set()
+    failed=set()
+    with open(readfile,"r") as fp:
+        lines=fp.read().splitlines()
+        ind=lines.index("  Tests passed:")+2
+        while lines[ind]!="  Tests failed:" and lines[ind]!="========================================================================":
+            passed.add(" ".join(lines[ind].split()))
+            ind+=1
+        ind+=2
+        while ind<len(lines) and lines[ind]!="========================================================================":
+            failed.add(" ".join(lines[ind].split()))
+            ind+=1
+        if "" in passed:
+            passed.remove("")
+        if "" in failed:
+            failed.remove("")
+    return passed,failed
+
+
+
+def test_comp(readfile_new,readfile_old):
+    '''
+        This function compares the tests from the previous run 
+        to see which failed, which failed this time but did
+        not in the last, which passed this time but not in the last,
+        and the new and removed tests.
+    '''
+    passed_n,failed_n=get_tests(readfile_new)
+    passed_o,failed_o=get_tests(readfile_old)
+    newly_p=passed_n-passed_o
+    newly_f=failed_n-failed_o
+    new_tests=(passed_n.union(failed_n))-(passed_o.union(failed_o))
+    missing_tests=(passed_o.union(failed_o))-(passed_n.union(failed_n))
+    types=["Failed Tests","Newly Passing Tests","Newly Failing Tests","Newly Added Tests", "Removed Tests"]
+    tests=[failed_n,newly_p,newly_f,new_tests,missing_tests]
+    test_dict={types[i]:tests[i] for i in range(len(types))}
+    return test_dict
+
+def gen_report(readfile):
+    '''
+        This function generates the html table that shows
+        the comparison of test logs from last version generated
+        by test_comp
+    '''
+    test_comparison=test_comp(readfile,"./records/"+last)
+    output='''<table style="border: 1px solid black;margin-left: 400px;margin-top:30px text-align:center;float:left;">\n'''
+    for result in test_comparison.keys():
+        output+="<tr><th>"+result+"</th></tr>\n"
+        if(len(test_comparison[result])==0):
+            output+="<tr><td></td></tr>"
+
+        for test in test_comparison[result]:
+            output+=f"  <tr><td>{test}</td></tr>\n"
+    
+    output+="</table>"
+    return output
+
+def get_times(readfile):
+    '''
+        This function finds the times taken for each test in the log
+        file and then stores that in a dictionary and then sorts
+        those tests in descending order by time
+    '''
+    times={}
+    with open(readfile,"r") as fp:
+        lines=fp.read().splitlines()
+        ind=lines.index("  Details:")+2
+        while lines[ind] !="  Thorns with no valid testsuite parameter files:":
+            try:
+                time_i=lines[ind].index('(')
+                tim=float(lines[ind][time_i+1:].split()[0])
+                test_name=lines[ind][:time_i-1].split()[0]
+                times[test_name]=tim
+            except:
+                pass
+            ind+=1
+
+    return {test:ti for test,ti in sorted(times.items(),key= lambda x : x[1],reverse=True)} # This is a dictionary comprehension that uses sorted to order the items in times.items() into a dictionary
+
+def exceed_thresh(time_dict,thresh):
+    '''
+        This function finds tests that exceed a certain time threshhold
+    '''
+    return {test:ti for test,ti in time_dict.items() if ti>thresh}
+
+
+def longest_tests(time_dict,num_tests):
+    '''
+        This function finds the tests that took the longest time.
+        It returns a dictionary of the num_test number of longest
+        tests.
+    '''
+    longest={}
+    i=0
+    for item in time_dict.items():
+        if i>num_tests-1:
+            break
+        longest[item[0]]=item[1]
+        i+=1
+    return longest
+
+def gen_time(readfile):
+    time_dict=get_times(readfile)
+    output=''' <table style="border: 1px solid black;margin-left: 80px;text-align:center;float:left;">\n'''
+    output+="<tr><th>Longest Tests</th></tr>\n"
+    for times in longest_tests(time_dict,10).keys():
+        output+=f"  <tr><td>{times}</td><td>{time_dict[times]}s</td></tr>\n"
+    output+="</table><br>"
+    output+='''<table style="border: 1px solid black; margin-left: 80px; text-align:center;float:left;">\n'''
+    output+="<tr><th>Tests That Take More Than 20s</th></tr>\n"
+    for times in exceed_thresh(time_dict,20).keys():
+        output+=f"  <tr><td>{times}</td><td>{time_dict[times]}s</td></tr>\n"
+    output+="</table>"
+    return output
+
 def summary_to_html(readfile,writefile):
     '''
         This function reads the log file and outputs and html
@@ -63,6 +186,7 @@ def summary_to_html(readfile,writefile):
     '''
 
     data=create_summary(readfile)
+    
     contents=""
 
     # Check Status Using the data from the summary
@@ -90,24 +214,28 @@ def summary_to_html(readfile,writefile):
             <table style="border: 1px solid black;margin-left: auto;margin-right: auto;">
             {contents}
             </table>
+            <br>
+            {gen_report(readfile)}
+            <br>
+            {gen_time(readfile)}
+            <img src="plot.png" alt="plot" style="display: block;margin-left: auto; margin-right:auto;">
+            
             
         </body>
     </html>
         '''
         fp.write(template)
 
-
-summary_to_html(log,"docs/index.html")
-
 def write_to_csv(readfile):
     '''
         This function is used to store data between builds into a csv
     '''
 
+    total=sum(x[1] for x in get_times(readfile).items())
 
     data=create_summary(readfile)
-    seconds=time.time()
-    local_time = time.ctime(seconds)
+    data["Time Taken"]=total/60
+    local_time = datetime.today().strftime('%Y-%m-%d')
     with open('test_nums.csv','a') as csvfile:
         contents=f"{local_time}"
         for key in data.keys():
@@ -117,53 +245,45 @@ def write_to_csv(readfile):
 
 write_to_csv(log)
 
-def get_tests(readfile):
-    passed=set()
-    failed=set()
-    with open(readfile,"r") as fp:
-        lines=fp.read().splitlines()
-        ind=lines.index("  Tests passed:")+2
-        while lines[ind]!="  Tests failed:" and lines[ind]!="========================================================================":
-            passed.add(" ".join(lines[ind].split()))
-            ind+=1
-        ind+=2
-        while ind<len(lines) and lines[ind]!="========================================================================":
-            failed.add(" ".join(lines[ind].split()))
-            ind+=1
-        if "" in passed:
-            passed.remove("")
-        if "" in failed:
-            failed.remove("")
-    return passed,failed
+def plot_data(name,data,dates):
+    plt.xlabel("Date of Test")
+    plt.ylabel(name)
+    plt.plot(dates,data,'bo-')
+    plt.fill_between(dates,0,data,facecolor='blue',alpha=0.3)
+    plt.savefig("./docs/plot.png")
 
 
+def get_data(name):
+    data={}
+    with open('test_nums.csv','r') as csvfile:
+        fields=csvfile.readline().strip().split(",")
+        name_i=fields.index(name)
+        line=csvfile.readline()
+        while line !="":
+            entry=line.strip().split(",")
+            data[entry[0]]=float(entry[name_i])
+            line=csvfile.readline()
+    return data
 
-def test_comp(readfile_new,readfile_old):
-    passed_n,failed_n=get_tests(readfile_new)
-    passed_o,failed_o=get_tests(readfile_old)
-    newly_p=passed_n-passed_o
-    newly_f=failed_n-failed_o
-    new_tests=(passed_n.union(failed_n))-(passed_o.union(failed_o))
-    missing_tests=(passed_o.union(failed_o))-(passed_n.union(failed_n))
-    types=["Failed Tests","Newly Passing Tests","Newly Failing Tests","Newly Added Tests", "Removed Tests"]
-    tests=[failed_n,newly_p,newly_f,new_tests,missing_tests]
-    test_dict={types[i]:tests[i] for i in range(len(types))}
-    return test_dict
-
-test_res=test_comp(log,"./records/"+last)
-def gen_report(tests):
-    output=""
-    for test in tests.keys():
-        output+=test+"\n\n"
-        for i in tests[test]:
-            output+="   "+i+"\n"
-        output+="\n"
-    return output
+def plot_test_data():
+    dat=list(get_data("Runnable tests").values())
+    times=list(get_data("Number of tests passed").keys())
+    dat1=list(get_data("Number of tests passed").values())
+    plt.xlabel("Date of Test")
+    plt.ylabel("Number of Tests")
+    plt.title("Sample Plot")
+    plt.plot(times,dat,'go-',label="Runnable Tests")
+    plt.fill_between(times,0,dat,facecolor='green',alpha=0.3)
+    plt.plot(times,dat1,'bo-',label="Number of tests passed")
+    plt.fill_between(times,0,dat1,facecolor='blue',alpha=0.3)
+    plt.legend()
+    plt.savefig("./docs/plot.png")
+plot_test_data()
 
 
 
 
-
+summary_to_html(log,"docs/index.html")
 
 command='''for file in *log;do cp "$file" "./records/${file%.log}_'''+str(num+1)+'''.log";done'''
 # os.system(command)
