@@ -286,4 +286,4 @@ plot_test_data()
 summary_to_html(log,"docs/index.html")
 
 command='''for file in *log;do cp "$file" "./records/${file%.log}_'''+str(num+1)+'''.log";done'''
-# os.system(command)
+os.system(command)
