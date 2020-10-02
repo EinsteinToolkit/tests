@@ -3,6 +3,11 @@ import sys
 import os,csv,time,requests
 from datetime import datetime
 import matplotlib.pyplot as plt
+import bokeh.plotting as bplt
+import bokeh.models.tools as btools
+import bokeh.models.callbacks as bcall
+from bokeh.resources import CDN
+from bokeh.embed import components
 # This part finds the second log file in the folder
 log=""
 logs=[]
@@ -102,6 +107,14 @@ def test_comp(readfile_new,readfile_old):
     test_dict={types[i]:tests[i] for i in range(len(types))}
     return test_dict
 
+commit_list=requests.get("https://api.github.com/repos/mojamil/einsteintoolkit/commits")
+response=commit_list.json()
+current=response[0]["sha"]
+previous=response[1]["sha"]
+compare=requests.get(f"https://api.github.com/repos/mojamil/einsteintoolkit/compare/{previous}...{current}")
+diff=compare.json()["diff_url"]
+
+log_link=f"https://github.com/mojamil/einsteintoolkit/blob/master/records/{last[ext-1:]+str(num+1)}"
 def gen_report(readfile):
     '''
         This function generates the html table that shows
@@ -109,9 +122,12 @@ def gen_report(readfile):
         by test_comp
     '''
     test_comparison=test_comp(readfile,"./records/"+last)
-    output='''<table style="border: 1px solid black;margin-left: 400px;margin-top:30px text-align:center;float:left;">\n'''
+    output='''<table style="border: 1px solid black;margin-left: auto;margin-right: auto;">\n'''
     for result in test_comparison.keys():
-        output+="<tr><th>"+result+"</th></tr>\n"
+        if(result!="Failed Tests"):
+            output+=f"<tr><th><a href='{diff}'>"+result+"</a></th></tr>\n"
+        else:
+            output+=f"<tr><th><a href='{log_link}'>"+result+"</a></th></tr>\n"
         if(len(test_comparison[result])==0):
             output+="<tr><td></td></tr>"
 
@@ -167,17 +183,47 @@ def longest_tests(time_dict,num_tests):
 
 def gen_time(readfile):
     time_dict=get_times(readfile)
-    output=''' <table style="border: 1px solid black;margin-left: 80px;text-align:center;float:left;">\n'''
+    output=''' <table style="border: 1px solid black;margin-left: auto;margin-right: auto;">\n'''
     output+="<tr><th>Longest Tests</th></tr>\n"
     for times in longest_tests(time_dict,10).keys():
         output+=f"  <tr><td>{times}</td><td>{time_dict[times]}s</td></tr>\n"
     output+="</table><br>"
-    output+='''<table style="border: 1px solid black; margin-left: 80px; text-align:center;float:left;">\n'''
+    output+='''<table style="border: 1px solid black;margin-left: auto;margin-right: auto;">\n'''
     output+="<tr><th>Tests That Take More Than 20s</th></tr>\n"
     for times in exceed_thresh(time_dict,20).keys():
         output+=f"  <tr><td>{times}</td><td>{time_dict[times]}s</td></tr>\n"
     output+="</table>"
     return output
+
+def plot_test_data():
+    dat=list(get_data("Runnable tests").values())
+    times=list(get_data("Number of tests passed").keys())
+    dat1=list(get_data("Number of tests passed").values())
+    print(dat)
+    src=bplt.ColumnDataSource(data=dict(
+        t=times,
+        rt=dat,
+        tp=dat1,
+        xax=[0]*len(times),
+        url=["./docs/index.html"]*len(times),
+    ))
+    TOOLTIPS = [
+        ("Tests Passed", "$tp"),
+    ]
+    print(src.data["rt"])
+    p=bplt.figure(x_range=times,plot_width=600, plot_height=600,tools="tap",
+           title=None, toolbar_location="below")
+    p.circle(times,dat,size=10,color="green")
+    p.circle('t','tp',size=10,color="blue",source=src)
+    url = "@url"
+    taptool = p.select(type=btools.TapTool)
+    taptool.callback = bcall.OpenURL(url=url)
+    p.varea(y1='rt',y2='xax', x='t', color="green",source=src,alpha=0.5)
+    p.varea(y1='tp',y2='xax', x='t', color="blue",source=src,alpha=0.5)
+    
+    script, div = components(p)
+    
+    return script,div
 
 def summary_to_html(readfile,writefile):
     '''
@@ -188,6 +234,7 @@ def summary_to_html(readfile,writefile):
     data=create_summary(readfile)
     
     contents=""
+    script,div=plot_test_data();
 
     # Check Status Using the data from the summary
     status="All Tests Passed"
@@ -208,6 +255,14 @@ def summary_to_html(readfile,writefile):
     <html lang="en">
         <head>
             <title>Summary of Tests</title>
+            <style>
+            .bk-root .bk {{
+                margin: 0 auto !important;
+            }}
+            </style>
+            <script src="https://cdn.bokeh.org/bokeh/release/bokeh-2.0.1.min.js"
+            crossorigin="anonymous"></script>
+            {script}
         </head>
         <body>
             <h1 style="text-align:center">{status}</h1>
@@ -218,7 +273,10 @@ def summary_to_html(readfile,writefile):
             {gen_report(readfile)}
             <br>
             {gen_time(readfile)}
-            <img src="plot.png" alt="plot" style="display: block;margin-left: auto; margin-right:auto;">
+            <br>
+            <table style="margin: 0 auto;">
+                {div}
+            </table>
             
             
         </body>
@@ -243,7 +301,7 @@ def write_to_csv(readfile):
         contents+="\n"
         csvfile.write(contents)
 
-write_to_csv(log)
+#write_to_csv(log)
 
 def plot_data(name,data,dates):
     plt.xlabel("Date of Test")
@@ -265,20 +323,7 @@ def get_data(name):
             line=csvfile.readline()
     return data
 
-def plot_test_data():
-    dat=list(get_data("Runnable tests").values())
-    times=list(get_data("Number of tests passed").keys())
-    dat1=list(get_data("Number of tests passed").values())
-    plt.xlabel("Date of Test")
-    plt.ylabel("Number of Tests")
-    plt.title("Sample Plot")
-    plt.plot(times,dat,'go-',label="Runnable Tests")
-    plt.fill_between(times,0,dat,facecolor='green',alpha=0.3)
-    plt.plot(times,dat1,'bo-',label="Number of tests passed")
-    plt.fill_between(times,0,dat1,facecolor='blue',alpha=0.3)
-    plt.legend()
-    plt.savefig("./docs/plot.png")
-plot_test_data()
+
 
 
 
@@ -286,4 +331,8 @@ plot_test_data()
 summary_to_html(log,"docs/index.html")
 
 command='''for file in *log;do cp "$file" "./records/${file%.log}_'''+str(num+1)+'''.log";done'''
-os.system(command)
+#os.system(command)
+
+
+
+
