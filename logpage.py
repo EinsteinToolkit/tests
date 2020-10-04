@@ -205,7 +205,7 @@ def plot_test_data():
         rt=dat,
         tp=dat1,
         xax=[0]*len(times),
-        url=["./docs/index.html"]*len(times),
+        url=[""]*len(times),
     ))
     TOOLTIPS = [
         ("Tests Passed", "$tp"),
