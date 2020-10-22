@@ -47,7 +47,7 @@ def gen_report(readfile):
 
     for result in test_comparison.keys():
         if(result!="Failed Tests"):
-            output+=f"<tr><th><a href='{diff}'>"+result+"</a></th></tr>\n"
+            output+=f"<tr><th>"+result+"</th></tr>\n"
         else:
             output+=f"<tr><th>"+result+"</th>"
             output+="<th>logs</th><th>diffs</th>"
@@ -62,14 +62,22 @@ def gen_report(readfile):
                 test_name=test.split()[0]
                 logl=f"https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/sim_{last_ver}/{thorn}/{test_name}.log"
                 diffl=f"https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/sim_{last_ver}/{thorn}/{test_name}.diffs"
-                output+=f"  <tr><td>{test}</td><td><a href='{logl}'>log</a></td><td><a href='{diffl}'>diff</a></td></tr>\n"
+                dreq=requests.get(diffl)
+                if(dreq.status_code == 200):
+                    output+=f"  <tr><td>{test}</td><td><a href='{logl}'>log</a></td><td><a href='{diffl}'>diff</a></td></tr>\n"
+                else:
+                    output+=f"  <tr><td>{test}</td><td><a href='{logl}'>log</a></td><td>Not Available</td></tr>\n"    
             else:
                 thorn=test.split()[-1]
                 thorn=thorn[:len(thorn)-1]
                 test_name=test.split()[0]
                 logl=f"https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/sim_{last_ver-1}/{thorn}/{test_name}.log"
                 diffl=f"https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/sim_{last_ver-1}/{thorn}/{test_name}.diffs"
-                output+=f"  <tr><td>{test}</td><td><a href='{logl}'>log</a></td><td><a href='{diffl}'>diff</a></td></tr>\n"
+                dreq=requests.get(diffl)
+                if(dreq.status_code == 200):
+                    output+=f"  <tr><td>{test}</td><td><a href='{logl}'>log</a></td><td><a href='{diffl}'>diff</a></td></tr>\n"
+                else:
+                    output+=f"  <tr><td>{test}</td><td><a href='{logl}'>log</a></td><td>Not Available</td></tr>\n"  
     
     output+="</table>"
     return output
