@@ -28,7 +28,10 @@ def copy_index(version):
     dst=f"./docs/index_{version}.html"
     index="./docs/index.html"
     shutil.copy(index,dst)
-
+def copy_build_log(version):
+    dst=f"./records/build_{version}.log"
+    build="./records/build.log"
+    shutil.copy(build,dst)
 def get_version():
     builds=glob.glob("./records/*.log")
     current=0
