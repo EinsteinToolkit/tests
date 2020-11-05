@@ -1,5 +1,4 @@
 from requests.api import get
-from cactusjenkins.testtable.testtable import read_file
 import sys
 import os,csv,time,requests
 from datetime import datetime
