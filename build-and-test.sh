@@ -31,11 +31,12 @@ fi
 if [ -r $WORKSPACE/configs/sim ]; then
   ( cd $WORKSPACE; make sim-cleandeps )
 fi
-time $WORKSPACE/cactusjenkins/build-cactus manifest/einsteintoolkit.th > ./records/build.log
+time $WORKSPACE/cactusjenkins/build-cactus manifest/einsteintoolkit.th make 2>&1 | tee make.log
 sed -i '2a export WORKSPACE=$PWD ' cactusjenkins/test-cactus
 sed -i '2a export JOB_NAME="TestJob01" ' cactusjenkins/test-cactus
 time $WORKSPACE/cactusjenkins/test-cactus all
 python3 $WORKSPACE/logpage.py
+python3 $WORKSPACE/store.py
 # it takes ~1hr to build the docs
 #time $WORKSPACE/cactusjenkins/build-cactus-doc
 
