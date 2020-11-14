@@ -31,7 +31,7 @@ fi
 if [ -r $WORKSPACE/configs/sim ]; then
   ( cd $WORKSPACE; make sim-cleandeps )
 fi
-time $WORKSPACE/cactusjenkins/build-cactus manifest/einsteintoolkit.th make 2>&1 | tee make.log
+time $WORKSPACE/cactusjenkins/build-cactus manifest/einsteintoolkit.th
 sed -i '2a export WORKSPACE=$PWD ' cactusjenkins/test-cactus
 sed -i '2a export JOB_NAME="TestJob01" ' cactusjenkins/test-cactus
 time $WORKSPACE/cactusjenkins/test-cactus all
