@@ -40,7 +40,7 @@ def get_version():
     return current+1
 
 if __name__ == "__main__":
-    dir=os.path.expanduser("~/simulations/TestJob01_temp_2/output-0000/TEST/sim")
+    dir=os.path.expanduser("~/simulations/TestJob01_temp_1/output-0000/TEST/sim")
     version=get_version()
     copy_builds(version)
     copy_index(version)
