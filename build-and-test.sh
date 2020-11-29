@@ -39,7 +39,6 @@ sed -i '152a python3 store.py || true' cactusjenkins/test-cactus
 
 time $WORKSPACE/cactusjenkins/test-cactus all
 python3 $WORKSPACE/logpage.py
-python3 $WORKSPACE/store.py
 # it takes ~1hr to build the docs
 #time $WORKSPACE/cactusjenkins/build-cactus-doc
 
