@@ -5,6 +5,7 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 import bokeh.plotting as bplt
 import bokeh.models.tools as btools
+from bokeh.models import Panel, Tabs
 import bokeh.models.callbacks as bcall
 from bokeh.resources import CDN
 from bokeh.embed import components
@@ -32,6 +33,13 @@ current=response[0]["sha"]
 previous=response[1]["sha"]
 compare=requests.get(f"https://api.github.com/repos/mojamil/einsteintoolkit/compare/{previous}...{current}")
 diff=compare.json()["diff_url"]
+commits=compare.json()["commits"]
+past_commits=[]
+for commit in commits:
+    past_commits.append((commit["commit"]["author"]["name"],commit["commit"]["author"]["date"],commit["commit"]["message"]))
+print(past_commits)
+
+
 
 # log_link=f"https://github.com/mojamil/einsteintoolkit/blob/master/records/{last[ext-1:]+str(last_ver+1)}"
 def gen_report(readfile):
@@ -104,7 +112,7 @@ def plot_test_data():
         tp=dat1,
         timet=dat2,
         xax=[0]*len(times),
-        url=[f"./index_{x+1}.html" for x in range(last_ver)]+["index.html"],
+        url=[f"./index_{x+1}.html" for x in range(last_ver)]+["index.html"]*(len(times)-last_ver),
     ))
     TOOLTIPS = [
         ("Tests Passed", "$tp"),
@@ -119,13 +127,15 @@ def plot_test_data():
     taptool.callback = bcall.OpenURL(url=url)
     p.varea(y1='rt',y2='xax', x='t', color="green",source=src,alpha=0.5)
     p.varea(y1='tp',y2='xax', x='t', color="blue",source=src,alpha=0.5)
+    tab1 = Panel(child=p, title="Test Results")
     p1=bplt.figure(x_range=times,plot_width=600, plot_height=600,tools="tap,wheel_zoom,box_zoom,reset",
            title="Time Taken", toolbar_location="below")
     p1.circle('t','timet',size=10,color="blue",source=src)
     taptool = p1.select(type=btools.TapTool)
     taptool.callback = bcall.OpenURL(url=url)
+    tab2 = Panel(child=p1, title="Time Taken")
     
-    script, div = components(row(p,p1))
+    script, div = components(Tabs(tabs=[tab1, tab2]))
     
     return script,div
 
@@ -204,6 +214,23 @@ def summary_to_html(readfile,writefile):
 
             .sidebar a:hover {{
                 color: #f1f1f1;
+            }}
+                        /* On screens that are less than 700px wide, make the sidebar into a topbar */
+            @media screen and (max-width: 700px) {{
+            .sidebar {{
+              width: 100%;
+              height: auto;
+              position: relative;
+            }}
+            .sidebar a {{float: left;}}
+            }}
+
+            /* On screens that are less than 400px, display the bar vertically, instead of horizontally */
+            @media screen and (max-width: 400px) {{
+            .sidebar a {{
+              text-align: center;
+              float: none;
+              }}
             }}
             </style>
             <script src="https://cdn.bokeh.org/bokeh/release/bokeh-2.0.1.min.js"
