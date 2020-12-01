@@ -37,10 +37,10 @@ def get_version():
     current=0
     if(len(builds)!=0):
         current=int(builds[-1].split("_")[-1].split(".")[0])
-    return current+1
+    return current+2
 
 if __name__ == "__main__":
-    dir=os.path.expanduser("~/simulations/TestJob01_temp_2/output-0000/TEST/sim")
+    dir=os.path.expanduser("~/simulations/TestJob01_temp_1/output-0000/TEST/sim")
     version=get_version()
     copy_builds(version)
     copy_index(version)
