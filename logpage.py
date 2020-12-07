@@ -27,19 +27,23 @@ last=f"build__2_1_{last_ver}.log"
 
 
 
-commit_list=requests.get("https://api.github.com/repos/mojamil/einsteintoolkit/commits")
-response=commit_list.json()
-current=response[0]["sha"]
-previous=response[1]["sha"]
-compare=requests.get(f"https://api.github.com/repos/mojamil/einsteintoolkit/compare/{previous}...{current}")
-diff=compare.json()["diff_url"]
-commits=compare.json()["commits"]
-past_commits=[]
-for commit in commits:
-    past_commits.append((commit["commit"]["author"]["name"],commit["commit"]["author"]["date"],commit["commit"]["message"]))
-print(past_commits)
 
-
+def gen_commits():
+    commit_list=requests.get("https://api.github.com/repos/mojamil/einsteintoolkit/commits")
+    response=commit_list.json()
+    current=response[0]["sha"]
+    previous=response[1]["sha"]
+    compare=requests.get(f"https://api.github.com/repos/mojamil/einsteintoolkit/compare/{previous}...{current}")
+    commits=compare.json()["commits"]
+    out="<th>"
+    count=1
+    for commit in commits:
+        out+="Commit "+str(count)+"</th>"
+        out+="<tr> <td> Author: </td> <td>"+commit["commit"]["author"]["name"]+"</td> </tr> \n"
+        out+="<tr> <td> Date: </td> <td>"+commit["commit"]["author"]["date"]+"</td> </tr> \n"
+        out+="<tr> <td> Message: </td> <td>"+commit["commit"]["message"]+"</td> </tr> \n"
+        count+=1
+    return out
 
 # log_link=f"https://github.com/mojamil/einsteintoolkit/blob/master/records/{last[ext-1:]+str(last_ver+1)}"
 def gen_report(readfile):
@@ -203,7 +207,6 @@ def summary_to_html(readfile,writefile):
                 overflow-x: hidden;
                 padding-top: 20px;
             }}
-
             .sidebar a {{
                 padding: 6px 8px 6px 16px;
                 text-decoration: none;
@@ -211,7 +214,6 @@ def summary_to_html(readfile,writefile):
                 color: lightgray;
                 display: block;
                 }}
-
             .sidebar a:hover {{
                 color: #f1f1f1;
             }}
@@ -224,7 +226,6 @@ def summary_to_html(readfile,writefile):
             }}
             .sidebar a {{float: left;}}
             }}
-
             /* On screens that are less than 400px, display the bar vertically, instead of horizontally */
             @media screen and (max-width: 400px) {{
             .sidebar a {{
@@ -249,6 +250,10 @@ def summary_to_html(readfile,writefile):
                 {contents}
                 </table>
                 <br>
+                <table style="border: 1px solid black;margin-left: auto;margin-right: auto;">
+                <caption style="text-align:center;font-weight: bold;caption-side:top">Commits in Last Push</caption>
+                {gen_commits()}
+                </table>
                 {gen_report(readfile)}
                 <br>
                 {gen_time(readfile)}
@@ -282,7 +287,7 @@ def write_to_csv(readfile):
         contents+="\n"
         csvfile.write(contents)
 
-#write_to_csv(log)
+write_to_csv(log)
 
 def gen_sidebar():
     sidebar=""
@@ -294,18 +299,4 @@ def gen_sidebar():
 
 
 
-
-
-
-
-
-
-
-
 summary_to_html(log,"docs/index.html")
-
-#os.system(command)
-
-
-
-

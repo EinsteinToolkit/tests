@@ -30,14 +30,14 @@ def copy_index(version):
     shutil.copy(index,dst)
 def copy_build_log(version):
     dst=f"./records/build_{version}.log"
-    build="./records/build.log"
+    build="./build.log"
     shutil.copy(build,dst)
 def get_version():
     builds=glob.glob("./records/*.log")
     current=0
     if(len(builds)!=0):
         current=int(builds[-1].split("_")[-1].split(".")[0])
-    return current+2
+    return current+1
 
 if __name__ == "__main__":
     dir=os.path.expanduser("~/simulations/TestJob01_temp_1/output-0000/TEST/sim")
