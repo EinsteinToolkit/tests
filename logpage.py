@@ -11,7 +11,9 @@ from bokeh.resources import CDN
 from bokeh.embed import components
 from bokeh.layouts import row
 from store import get_version
-from parser import create_summary,get_tests,test_comp,get_times,exceed_thresh,longest_tests,get_unrunnable,get_data
+from bokeh.palettes import viridis
+from bokeh.transform import factor_cmap
+from parser import create_summary,get_tests, get_warning_thorns, get_warning_type,test_comp,get_times,exceed_thresh,longest_tests,get_unrunnable,get_data,get_compile
 import glob
 # This part finds the second log file in the folder
 log=""
@@ -109,20 +111,35 @@ def plot_test_data():
     times=list(get_data("Number of tests passed").keys())
     dat1=list(get_data("Number of tests passed").values())
     dat2=list(get_data("Time Taken").values())
-    print(dat)
+    cmtw=list((get_data("Compile Time Warnings").values()))
+    warning_types=get_warning_thorns(f"records/build_{last_ver}.log")
+    counts=list(warning_types.values())
+    counts_trunc=sorted(counts,reverse=True)[:7]
+    warning_types_trunc=[]
+    print(counts_trunc)
+    warning_types_list=list(warning_types.keys())
+    for count in counts_trunc:
+        i=counts.index(count)
+        warning_types_trunc.append(warning_types_list[i])
+        warning_types_list.pop(i)
+        counts.pop(i)
+    counts=counts_trunc
+    warning_types_list=warning_types_trunc
     src=bplt.ColumnDataSource(data=dict(
         t=times,
         rt=dat,
         tp=dat1,
         timet=dat2,
+        cmt=cmtw,
         xax=[0]*len(times),
         url=[f"./index_{x+1}.html" for x in range(last_ver)]+["index.html"]*(len(times)-last_ver),
     ))
+
     TOOLTIPS = [
         ("Tests Passed", "$tp"),
     ]
     print(src.data["rt"])
-    p=bplt.figure(x_range=times,plot_width=600, plot_height=600,tools="tap",
+    p=bplt.figure(x_range=times,plot_width=1000, plot_height=600,tools="tap,wheel_zoom,box_zoom,reset",
            title="Passed Tests", toolbar_location="below")
     p.circle(times,dat,size=10,color="green")
     p.circle('t','tp',size=10,color="blue",source=src)
@@ -132,14 +149,32 @@ def plot_test_data():
     p.varea(y1='rt',y2='xax', x='t', color="green",source=src,alpha=0.5)
     p.varea(y1='tp',y2='xax', x='t', color="blue",source=src,alpha=0.5)
     tab1 = Panel(child=p, title="Test Results")
-    p1=bplt.figure(x_range=times,plot_width=600, plot_height=600,tools="tap,wheel_zoom,box_zoom,reset",
+
+    p1=bplt.figure(x_range=times,plot_width=1000, plot_height=600,tools="tap,wheel_zoom,box_zoom,reset",
            title="Time Taken", toolbar_location="below")
     p1.circle('t','timet',size=10,color="blue",source=src)
+    p1.line('t','timet',color="blue",source=src)
     taptool = p1.select(type=btools.TapTool)
     taptool.callback = bcall.OpenURL(url=url)
     tab2 = Panel(child=p1, title="Time Taken")
-    
-    script, div = components(Tabs(tabs=[tab1, tab2]))
+
+    p2=bplt.figure(x_range=times,plot_width=1000, plot_height=600,tools="tap,wheel_zoom,box_zoom,reset",
+           title="Time Taken", toolbar_location="below")
+    p2.circle('t','cmt',size=10,color="blue",source=src)
+    p2.line('t','cmt',color="blue",source=src)
+    taptool = p2.select(type=btools.TapTool)
+    taptool.callback = bcall.OpenURL(url=url)
+    tab3 = Panel(child=p2, title="Compile Time Warnings")
+
+    src1=bplt.ColumnDataSource(data=dict(cts=counts,
+        wts=warning_types_list))
+    p3=bplt.figure(x_range=warning_types_list,plot_width=1200, title="Compilation Warning Thorns",
+           toolbar_location="below", tools="tap,wheel_zoom,box_zoom,reset")
+    p3.vbar(x='wts', top='cts', width=0.9, source=src1,
+       line_color='white', fill_color=factor_cmap('wts', palette=viridis(len(counts)), factors=warning_types_list))
+    tab4=Panel(child=p3, title="Compilation Warning Thorns")
+
+    script, div = components(Tabs(tabs=[tab1, tab2,tab3,tab4]))
     
     return script,div
 
@@ -280,6 +315,7 @@ def write_to_csv(readfile):
     data=create_summary(readfile)
     data["Time Taken"]=total/60
     local_time = datetime.today().strftime('%Y-%m-%d')
+    data["Compile Time Warnings"]=get_compile(f"records/build_{last_ver}.log")
     with open('test_nums.csv','a') as csvfile:
         contents=f"{local_time}"
         for key in data.keys():

@@ -1,3 +1,7 @@
+from logging import warn
+from typing import DefaultDict
+import re
+
 def create_summary(file):
     '''
         This function parses the test results from the build__2_1.log file
@@ -144,3 +148,33 @@ def get_data(name):
             data[entry[0]]=float(entry[name_i])
             line=csvfile.readline()
     return data
+
+def get_compile(name):
+    count=0
+    with open(name) as build:
+        for line in build.readlines():
+            if("warning" in line.lower()):
+                count+=1
+    return count
+
+def get_warning_type(name):
+    warning_types=DefaultDict(int)
+    with open(name) as build:
+        for line in build.readlines():
+            m = re.search(".*/sim/build/([^/]*).* [wW]arning:", line)
+            if(m):
+                warning_types[line[line.find("[-W"):-1]]+=1
+    return warning_types
+
+def get_warning_thorns(name):
+    warning_types=DefaultDict(int)
+    with open(name) as build:
+        for line in build.readlines():
+            m = re.search(".*/sim/build/([^/]*).* [wW]arning:", line)
+            if(m):
+                trunc=line[line.find("build/")+6:-1]
+                trunc=trunc[:trunc.find("/")]
+                warning_types[trunc]+=1
+                if(".f" in line):
+                    print(line)
+    return warning_types
