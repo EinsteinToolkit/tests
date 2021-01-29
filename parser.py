@@ -168,13 +168,31 @@ def get_warning_type(name):
 
 def get_warning_thorns(name):
     warning_types=DefaultDict(int)
+    i=0
+    count=0
     with open(name) as build:
-        for line in build.readlines():
-            m = re.search(".*/sim/build/([^/]*).* [wW]arning:", line)
-            if(m):
+        lines=build.readlines()
+        for line in lines:
+            i+=1
+            inline = re.search(".*/sim/build/([^/]*).* [wW]arning:", line)
+            twoline= re.search("[wW]arning:.*at",line)
+            if(inline):
                 trunc=line[line.find("build/")+6:-1]
                 trunc=trunc[:trunc.find("/")]
                 warning_types[trunc]+=1
-                if(".f" in line):
-                    print(line)
+            if(twoline):
+                count+=1
+                nextl=lines[i+1]
+                nextnextl=lines[i+2]
+                warning=re.search(".*/sim/build/([^/]*).*", nextl)
+                warning2=re.search(".*/sim/build/([^/]*).*", nextnextl)
+                if(warning):
+                    trunc=nextl[nextl.find("build/")+6:-1]
+                    trunc=trunc[:trunc.find("/")]
+                    warning_types[trunc]+=1
+                if(warning2):
+                    trunc=nextnextl[nextnextl.find("build/")+6:-1]
+                    trunc=trunc[:trunc.find("/")]
+                    warning_types[trunc]+=1
     return warning_types
+

@@ -27,7 +27,7 @@ last_ver=get_version()-1
 last=f"build__2_1_{last_ver}.log"
 
 
-
+print(last_ver)
 
 
 def gen_commits():
