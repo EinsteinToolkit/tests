@@ -34,6 +34,7 @@ def copy_build_log(version):
     shutil.copy(build,dst)
 def get_version():
     builds=glob.glob("./records/*.log")
+    builds.sort()
     current=0
     if(len(builds)!=0):
         current=int(builds[-1].split("_")[-1].split(".")[0])
