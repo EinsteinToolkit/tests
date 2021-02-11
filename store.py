@@ -27,17 +27,18 @@ def copy_builds(version):
 def copy_index(version):
     dst=f"./docs/index_{version}.html"
     index="./docs/index.html"
-    shutil.copy(index,dst)
+    if os.path.exists(index):
+        shutil.copy(index,dst)
 def copy_build_log(version):
     dst=f"./records/build_{version}.log"
     build="./build.log"
     shutil.copy(build,dst)
 def get_version():
-    builds=glob.glob("./records/*.log")
-    builds.sort()
     current=0
+    builds=glob.glob("./records/build__*.log")
     if(len(builds)!=0):
-        current=int(builds[-1].split("_")[-1].split(".")[0])
+        builds=[int(x.split("_")[-1].split(".")[0]) for x in builds]
+        current=max(builds)
     return current+1
 
 if __name__ == "__main__":

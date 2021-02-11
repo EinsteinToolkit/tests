@@ -110,12 +110,13 @@ def plot_test_data():
     dat1=list(get_data("Number of tests passed").values())
     dat2=list(get_data("Time Taken").values())
     cmtw=list((get_data("Compile Time Warnings").values()))
+
     warning_types=get_warning_thorns(f"records/build_{last_ver}.log")
     counts=list(warning_types.values())
     counts_trunc=sorted(counts,reverse=True)[:7]
     warning_types_trunc=[]
-    print(counts_trunc)
     warning_types_list=list(warning_types.keys())
+
     for count in counts_trunc:
         i=counts.index(count)
         warning_types_trunc.append(warning_types_list[i])
@@ -123,6 +124,7 @@ def plot_test_data():
         counts.pop(i)
     counts=counts_trunc
     warning_types_list=warning_types_trunc
+    print(warning_types_list)
     src=bplt.ColumnDataSource(data=dict(
         t=times,
         rt=dat,
@@ -325,7 +327,7 @@ write_to_csv(log)
 
 def gen_sidebar():
     sidebar=""
-    for i in range(1,last_ver+1):
+    for i in range(last_ver+1,0,-1):
         sidebar+=f'''   <a href="index_{i}.html">Build #{i}</a>\n'''
     sidebar+=f'''   <a href="index.html">Build #{i+1}</a>\n'''
     return sidebar
