@@ -335,4 +335,4 @@ def gen_sidebar():
 
 
 
-summary_to_html(log,"docs/index.html")
+summary_to_html(last,"docs/index.html")
