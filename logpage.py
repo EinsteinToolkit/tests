@@ -22,9 +22,10 @@ for fp in os.listdir("./"):
     if fp.endswith(".log"):
         log=os.path.join("./", fp)
         logs.append(log)
+
 records=os.listdir("./records")
 last_ver=get_version()-1
-last=f"build__2_1_{last_ver}.log"
+last=f"./records/build__2_1_{last_ver}.log"
 
 
 print(last_ver)
@@ -54,7 +55,7 @@ def gen_report(readfile):
         the comparison of test logs from last version generated
         by test_comp
     '''
-    test_comparison=test_comp(readfile,"./records/"+last)
+    test_comparison=test_comp(readfile,last)
     output='''<table style="border: 1px solid black;margin-left: auto;margin-right: auto;">
     <caption style="text-align:center;font-weight: bold;caption-side:top">Failed Tests and Changes</caption>\n'''
 
@@ -327,9 +328,9 @@ write_to_csv(log)
 
 def gen_sidebar():
     sidebar=""
-    for i in range(last_ver+1,0,-1):
+    for i in range(last_ver,0,-1):
         sidebar+=f'''   <a href="index_{i}.html">Build #{i}</a>\n'''
-    sidebar+=f'''   <a href="index.html">Build #{i+1}</a>\n'''
+    
     return sidebar
         
 
