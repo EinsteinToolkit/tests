@@ -35,8 +35,8 @@ time $WORKSPACE/cactusjenkins/build-cactus manifest/einsteintoolkit.th 2>&1 | te
 sed -i '2a export WORKSPACE=$PWD ' cactusjenkins/test-cactus
 sed -i '2a export JOB_NAME="TestJob01" ' cactusjenkins/test-cactus
 sed -i '2a set -x ' cactusjenkins/test-cactus
-sed -i 'rm -rf \$simdir/\$simname/d' cactusjenkins/test-cactus
-sed -i '43a rm -rf \$simdir/\$simname' cactusjenkins/test-cactus
+sed -i '/rm -rf \$simdir\/\$simname/d' cactusjenkins/test-cactus
+sed -i '43a rm -rf \$simdir\/\$simname' cactusjenkins/test-cactus
 sed -i -e '$a python3 store.py || true' cactusjenkins/test-cactus
 time $WORKSPACE/cactusjenkins/test-cactus all
 python3 $WORKSPACE/logpage.py
