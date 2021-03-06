@@ -203,7 +203,8 @@ def summary_to_html(readfile,writefile):
     data=create_summary(readfile)
     
     contents=""
-    script,div=plot_test_data();
+    script,div=plot_test_data()
+    print(div)
 
     # Check Status Using the data from the summary
     status="All Tests Passed"
