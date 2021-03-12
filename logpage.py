@@ -271,7 +271,7 @@ def summary_to_html(readfile,writefile):
               }}
             }}
             </style>
-            <script src="https://cdn.bokeh.org/bokeh/release/bokeh-2.3.0.min.js"
+            <script src="https://cdn.bokeh.org/bokeh/release/bokeh-2.0.1.min.js"
             crossorigin="anonymous"></script>
             {script}
         </head>
