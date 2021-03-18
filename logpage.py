@@ -41,10 +41,13 @@ def gen_commits():
     out="<th>"
     count=1
     for commit in commits:
+        message=commit["commit"]["message"]
+        message=message.replace("\n\n","\n")
+        message=message.replace('\n','<br>')
         out+="Commit "+str(count)+"</th>"
         out+="<tr> <td> Author: </td> <td>"+commit["commit"]["author"]["name"]+"</td> </tr> \n"
         out+="<tr> <td> Date: </td> <td>"+commit["commit"]["author"]["date"]+"</td> </tr> \n"
-        out+="<tr> <td> Message: </td> <td>"+commit["commit"]["message"]+"</td> </tr> \n"
+        out+="<tr> <td> Message: </td> <td>"+message+"</td> </tr> \n"
         count+=1
     return out
 
