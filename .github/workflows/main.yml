@@ -49,27 +49,7 @@ jobs:
       - name: Test
         run: |
           echo "CHANGES_MADE=False" >> $GITHUB_ENV
-      - name: Check for changes
-        run: |
-          cd ..
-          cd test
-          git fetch origin # fetch changes from origin remote
-          if ! git diff --quiet master..origin/master ; then
-            echo "CHANGES_MADE=True" >> $GITHUB_ENV
-          fi
-      - name: Workflow Dispatch
-        # You may pin to the exact commit or the version.
-        # uses: benc-uk/workflow-dispatch@4c044c1613fabbe5250deadc65452d54c4ad4fc7
-        if: ${{env.CHANGES_MADE == 'True'}}
-        uses: benc-uk/workflow-dispatch@v1
-        with:
-          # Name or ID of workflow to run
-          workflow: 'CI'
-          # GitHub token with repo write access, can NOT use secrets.GITHUB_TOKEN, see readme
-          token: ${{ secrets.PERSONAL_TOKEN }}
-      - name: Test2
-        run: |
-          echo "${{ env.CHANGES_MADE }}" 
+    
       - name: Install pre-requisite libraries
         run:  |
           sudo apt update
@@ -101,6 +81,27 @@ jobs:
           cp -r ./einsteintoolkit/docs ./test
           cp -a mast/. ./test
           cd test
+      - name: Check for changes
+        run: |
+          cd ..
+          cd test
+          git fetch origin # fetch changes from origin remote
+          if ! git diff --quiet master..origin/master ; then
+            echo "CHANGES_MADE=True" >> $GITHUB_ENV
+          fi
+      - name: Workflow Dispatch
+        # You may pin to the exact commit or the version.
+        # uses: benc-uk/workflow-dispatch@4c044c1613fabbe5250deadc65452d54c4ad4fc7
+        if: ${{env.CHANGES_MADE == 'True'}}
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          # Name or ID of workflow to run
+          workflow: 'CI'
+          # GitHub token with repo write access, can NOT use secrets.GITHUB_TOKEN, see readme
+          token: ${{ secrets.PERSONAL_TOKEN }}
+      - name: Test2
+        run: |
+          echo "${{ env.CHANGES_MADE }}" 
       - name: Run build and test script
         run: |
           cd ..
