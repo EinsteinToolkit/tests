@@ -94,7 +94,7 @@ def get_times(readfile):
             if "Details:" in line:
                 break
             ind+=1
-        while lines[ind] !="  Thorns with no valid testsuite parameter files:":
+        while "Thorns with no valid testsuite parameter files:" not in lines[ind]:
             try:
                 time_i=lines[ind].index('(')
                 tim=float(lines[ind][time_i+1:].split()[0])
