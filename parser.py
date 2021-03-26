@@ -89,7 +89,11 @@ def get_times(readfile):
     times={}
     with open(readfile,"r") as fp:
         lines=fp.read().splitlines()
-        ind=lines.index("  Details:")+2
+        ind=0
+        for line in lines:
+            if "Details:" in line:
+                break
+            ind+=1
         while lines[ind] !="  Thorns with no valid testsuite parameter files:":
             try:
                 time_i=lines[ind].index('(')
@@ -159,6 +163,7 @@ def get_compile(name):
 
 def get_warning_type(name):
     warning_types=DefaultDict(int)
+    
     with open(name) as build:
         for line in build.readlines():
             m = re.search(".*/sim/build/([^/]*).* [wW]arning:", line)
@@ -172,6 +177,7 @@ def get_warning_thorns(name):
     count=0
     with open(name) as build:
         lines=build.readlines()
+        warning_set=set()
         for line in lines:
             i+=1
             inline = re.search(".*/sim/build/([^/]*).* [wW]arning:", line)
@@ -180,6 +186,9 @@ def get_warning_thorns(name):
                 trunc=line[line.find("build/")+6:-1]
                 trunc=trunc[:trunc.find("/")]
                 warning_types[trunc]+=1
+                if line in warning_set:
+                    print(line)
+                warning_set.add(line)
             if(twoline):
                 count+=1
                 nextl=lines[i+1]
@@ -194,5 +203,6 @@ def get_warning_thorns(name):
                     trunc=nextnextl[nextnextl.find("build/")+6:-1]
                     trunc=trunc[:trunc.find("/")]
                     warning_types[trunc]+=1
+                warning_set.add(line)
     return warning_types
 
