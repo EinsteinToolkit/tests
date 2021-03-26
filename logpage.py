@@ -276,12 +276,14 @@ def summary_to_html(readfile,writefile):
             </style>
             <script src="https://cdn.bokeh.org/bokeh/release/bokeh-2.0.1.min.js"
             crossorigin="anonymous"></script>
+            
             {script}
         </head>
         <body>
             <div class="sidebar">
-            {sidebar}
             </div>
+            <script src='version.js'>
+            </script>
             <div class="container">
                 <h1 style="text-align:center">{status}</h1>
                 <h3 style="text-align:center">Build #{last_ver+1}</h3>
