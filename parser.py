@@ -11,12 +11,17 @@ def create_summary(file):
     with open(file,"r") as fp:
         lines=fp.read().splitlines()
         # Find the line where the summary starts
-        sum_start=lines.index("  Summary for configuration sim")+6
+        sum_start=0
+        for line  in lines:
+            if "Summary for configuration sim" in line:
+                break
+            sum_start+=1
+        sum_start+=6
         i=sum_start
         # Loop until the end of the summary
-        while lines[i]!="  Tests passed:":
+        while "Tests passed:" not in lines[i]:
             # The spacing of this line is unique and as such requires a special if statement
-            if lines[i]=="    Number passed only to" and lines[i]!="":
+            if "Number passed only to" in lines[i] and lines[i]!="":
                 split_l=lines[i+1].split("->")
                 split_l[0]=lines[i]+" "+split_l[0]
 
@@ -49,7 +54,7 @@ def get_tests(readfile):
     with open(readfile,"r") as fp:
         lines=fp.read().splitlines()
         ind=lines.index("  Tests passed:")+2
-        while lines[ind]!="  Tests failed:" and lines[ind]!="========================================================================":
+        while "Tests failed:" not in lines[ind] and lines[ind]!="========================================================================":
             passed.add(" ".join(lines[ind].split()))
             ind+=1
         ind+=2
