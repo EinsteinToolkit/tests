@@ -11,17 +11,14 @@ def create_summary(file):
     with open(file,"r") as fp:
         lines=fp.read().splitlines()
         # Find the line where the summary starts
-        sum_start=0
-        for line  in lines:
-            if "Summary for configuration sim" in line:
-                break
-            sum_start+=1
-        sum_start+=6
-        i=sum_start
+        i=0
+        while not re.match("^\s*Summary for configuration sim",lines[i]):
+            i+=1
+        i+=6
         # Loop until the end of the summary
-        while "Tests passed:" not in lines[i]:
+        while not re.match("\s*Tests passed:",lines[i]):
             # The spacing of this line is unique and as such requires a special if statement
-            if "Number passed only to" in lines[i] and lines[i]!="":
+            if re.match("\s*Number passed only to\s*",lines[i]) and lines[i]!="":
                 split_l=lines[i+1].split("->")
                 split_l[0]=lines[i]+" "+split_l[0]
 
@@ -53,12 +50,15 @@ def get_tests(readfile):
     failed=set()
     with open(readfile,"r") as fp:
         lines=fp.read().splitlines()
-        ind=lines.index("  Tests passed:")+2
-        while "Tests failed:" not in lines[ind] and lines[ind]!="========================================================================":
+        ind=0
+        while not re.match("\s*Tests passed:",lines[ind]):
+            ind+=1
+        ind+=2
+        while not re.match("\s*Tests failed:",lines[ind]) and not re.match("=====*",lines[ind]):
             passed.add(" ".join(lines[ind].split()))
             ind+=1
         ind+=2
-        while ind<len(lines) and lines[ind]!="========================================================================":
+        while ind<len(lines) and not re.match("=====*",lines[ind]):
             failed.add(" ".join(lines[ind].split()))
             ind+=1
         if "" in passed:
@@ -96,10 +96,10 @@ def get_times(readfile):
         lines=fp.read().splitlines()
         ind=0
         for line in lines:
-            if "Details:" in line:
+            if re.match("\s*Details:",line):
                 break
             ind+=1
-        while ind < len(lines):
+        while ind<len(lines):
             try:
                 time_i=lines[ind].index('(')
                 tim=float(lines[ind][time_i+1:].split()[0])
@@ -136,13 +136,16 @@ def get_unrunnable(readfile):
     miss_proc={}
     with open(readfile,"r") as fp:
         lines=fp.read().splitlines()
-        ind=lines.index("  Tests missed for lack of thorns:")+2
-        while lines[ind] !="  Tests missed for different number of processors required:":
+        ind=0
+        while not re.match("\s*Tests missed for lack of thorns:",lines[ind]):
+            ind+=1
+        ind+=2
+        while not re.match("\s*Tests missed for different number of processors required:",lines[ind]):
             missing=lines[ind+2].split(":")[1].split()
             miss_th[lines[ind].strip()]=missing
             ind+=4
         ind+=2
-        while lines[ind] !="  Tests with different number of test files:":
+        while not re.match("\s*Tests with different number of test files:",lines[ind]):
             miss_proc[lines[ind].strip()]=lines[ind+2].strip()
             ind+=4
     return miss_th,miss_proc
