@@ -8,6 +8,7 @@ def create_summary(file):
         into a dictionary
     '''
     sum_data={}
+    print(file)
     with open(file,"r") as fp:
         lines=fp.read().splitlines()
         # Find the line where the summary starts
@@ -16,6 +17,7 @@ def create_summary(file):
             i+=1
         i+=6
         # Loop until the end of the summary
+        print(lines)
         while not re.match("\s*Tests passed:",lines[i]):
             # The spacing of this line is unique and as such requires a special if statement
             if re.match("\s*Number passed only to\s*",lines[i]) and lines[i]!="":
