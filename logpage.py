@@ -330,7 +330,7 @@ def write_to_csv(readfile):
         contents+="\n"
         csvfile.write(contents)
 
-write_to_csv(log)
+write_to_csv(last)
 
 def gen_sidebar():
     sidebar=""
