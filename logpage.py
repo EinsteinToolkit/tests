@@ -30,7 +30,6 @@ last=f"./records/build__2_1_{last_ver}.log"
 
 print(last_ver)
 
-
 def gen_commits():
     commit_list=requests.get("https://api.github.com/repos/mojamil/einsteintoolkit/commits")
     response=commit_list.json()
@@ -286,6 +285,7 @@ def summary_to_html(readfile,writefile):
             </script>
             <div class="container">
                 <h1 style="text-align:center">{status}</h1>
+                <img src="https://github.com/mojamil/einsteintoolkit/actions/workflows/main.yml/badge.svg" style="display:block;margin-left: auto;margin-right: auto;">
                 <h3 style="text-align:center">Build #{last_ver+1}</h3>
                 <table style="border: 1px solid black;margin-left: auto;margin-right: auto;">
                 <caption style="text-align:center;font-weight: bold;caption-side:top">Summary</caption>
