@@ -3,7 +3,7 @@ membersFile.open("GET", "version.txt", false);
 membersFile.send();
 lines = membersFile.responseText
 
-version=23;
+
 text="";
 
 for(i=version;i>=1;i--){
