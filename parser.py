@@ -162,12 +162,7 @@ def get_data(name):
     return data
 
 def get_compile(name):
-    count=0
-    with open(name) as build:
-        for line in build.readlines():
-            if("warning" in line.lower()):
-                count+=1
-    return count
+    return sum(get_warning_thorns(name).values())
 
 def get_warning_type(name):
     warning_types=DefaultDict(int)
