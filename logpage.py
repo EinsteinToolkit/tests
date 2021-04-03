@@ -10,22 +10,16 @@ import bokeh.models.callbacks as bcall
 from bokeh.resources import CDN
 from bokeh.embed import components
 from bokeh.layouts import row
-from store import get_version
+from store import get_version,copy_index
 from bokeh.palettes import viridis
 from bokeh.transform import factor_cmap
 from parser import create_summary,get_tests, get_warning_thorns, get_warning_type,test_comp,get_times,exceed_thresh,longest_tests,get_unrunnable,get_data,get_compile
 import glob
 # This part finds the second log file in the folder
-log=""
-logs=[]
-for fp in os.listdir("./"):
-    if fp.endswith(".log"):
-        log=os.path.join("./", fp)
-        logs.append(log)
 
 records=os.listdir("./records")
 last_ver=get_version()-1
-last=f"./records/build__2_1_{last_ver}.log"
+last=f"./records/version_{last_ver}/build__2_1_{last_ver}.log"
 
 
 print(last_ver)
@@ -50,7 +44,7 @@ def gen_commits():
         count+=1
     return out
 
-# log_link=f"https://github.com/mojamil/einsteintoolkit/blob/master/records/{last[ext-1:]+str(last_ver+1)}"
+# log_link=f"https://github.com/mojamil/einsteintoolkit/blob/master/records/version_{last_ver}/{last[ext-1:]+str(last_ver+1)}"
 def gen_report(readfile):
     '''
         This function generates the html table that shows
@@ -75,13 +69,13 @@ def gen_report(readfile):
             thorn=thorn[:len(thorn)-1]
             test_name=test.split()[0]
             if("Removed" not in result):
-                logl=f"https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/sim_{last_ver}/{thorn}/{test_name}.log"
-                diffl=f"https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/sim_{last_ver}/{thorn}/{test_name}.diffs"
+                logl=f"https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/version_{last_ver}/sim_{last_ver}/{thorn}/{test_name}.log"
+                diffl=f"https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/version_{last_ver}/sim_{last_ver}/{thorn}/{test_name}.diffs"
                 dreq=requests.get(diffl) 
                 logq=requests.get(logl)   
             else:
-                logl=f"https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/sim_{last_ver-1}/{thorn}/{test_name}.log"
-                diffl=f"https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/sim_{last_ver-1}/{thorn}/{test_name}.diffs"
+                logl=f"https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/version_{last_ver}/sim_{last_ver-1}/{thorn}/{test_name}.log"
+                diffl=f"https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/version_{last_ver}/sim_{last_ver-1}/{thorn}/{test_name}.diffs"
                 dreq=requests.get(diffl)
                 logq=requests.get(logl)
             if(logq.status_code == 200):
@@ -114,7 +108,7 @@ def plot_test_data():
     dat2=list(get_data("Time Taken").values())
     cmtw=list((get_data("Compile Time Warnings").values()))
 
-    warning_types=get_warning_thorns(f"records/build_{last_ver}.log")
+    warning_types=get_warning_thorns(f"records/version_{last_ver}/build_{last_ver}.log")
     counts=list(warning_types.values())
     counts_trunc=sorted(counts,reverse=True)[:7]
     warning_types_trunc=[]
@@ -135,7 +129,7 @@ def plot_test_data():
         timet=dat2,
         cmt=cmtw,
         xax=[0]*len(times),
-        url=[f"./index_{x+1}.html" for x in range(last_ver)]+["index.html"]*(len(times)-last_ver),
+        url=[f"./index_{x+1}.html" for x in range(1,last_ver+1)],
     ))
 
     TOOLTIPS = [
@@ -286,7 +280,7 @@ def summary_to_html(readfile,writefile):
             <div class="container">
                 <h1 style="text-align:center">{status}</h1>
                 <img src="https://github.com/mojamil/einsteintoolkit/actions/workflows/main.yml/badge.svg" style="display:block;margin-left: auto;margin-right: auto;">
-                <h3 style="text-align:center">Build #{last_ver+1}</h3>
+                <h3 style="text-align:center">Build #{last_ver}</h3>
                 <table style="border: 1px solid black;margin-left: auto;margin-right: auto;">
                 <caption style="text-align:center;font-weight: bold;caption-side:top">Summary</caption>
                 {contents}
@@ -322,7 +316,7 @@ def write_to_csv(readfile):
     data=create_summary(readfile)
     data["Time Taken"]=total/60
     local_time = datetime.today().strftime('%Y-%m-%d')
-    data["Compile Time Warnings"]=get_compile(f"records/build_{last_ver}.log")
+    data["Compile Time Warnings"]=get_compile(f"records/version_{last_ver}/build_{last_ver}.log")
     with open('test_nums.csv','a') as csvfile:
         contents=f"{local_time}"
         for key in data.keys():
@@ -343,3 +337,4 @@ def gen_sidebar():
 
 
 summary_to_html(last,"docs/index.html")
+copy_index(get_version()-1)

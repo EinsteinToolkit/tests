@@ -1,7 +1,7 @@
 import shutil,os,glob
 
 def copy_tests(test_dir,version):
-    dst=f"./records/sim_{version}"
+    dst=f"./records/version_{version}/sim_{version}"
     dirlist=os.listdir(test_dir)
     os.mkdir(dst)
     for dir in dirlist:
@@ -18,7 +18,8 @@ def copy_tests(test_dir,version):
 
 
 def copy_builds(version):
-    dst="./records/"
+    
+    dst=f"./records/version_{version}/"
     builds=glob.glob("*.log")
     for build in builds:
         shutil.copy(build,dst+build.split(".")[0]+f"_{version}.log")
@@ -30,20 +31,22 @@ def copy_index(version):
     if os.path.exists(index):
         shutil.copy(index,dst)
 def copy_build_log(version):
-    dst=f"./records/build_{version}.log"
+    dst=f"./records/version_{version}/build_{version}.log"
     build="./build.log"
     shutil.copy(build,dst)
 def get_version():
     current=0
-    builds=glob.glob("./records/build__*.log")
+    builds=glob.glob("./records/version_*")
     if(len(builds)!=0):
         builds=[int(x.split("_")[-1].split(".")[0]) for x in builds]
         current=max(builds)
+    with open("./docs/version.txt",'w') as vers:
+        vers.write(f"{current+1}")
     return current+1
 
 if __name__ == "__main__":
     dir=os.path.expanduser("~/simulations/TestJob01_temp_1/output-0000/TEST/sim")
     version=get_version()
+    os.mkdir(f"./records/version_{version}/")
     copy_builds(version)
-    copy_index(version)
     copy_tests(dir,version)

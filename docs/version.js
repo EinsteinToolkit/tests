@@ -3,7 +3,7 @@ membersFile.open("GET", "version.txt", false);
 membersFile.send();
 lines = membersFile.responseText
 
-var version=parseInt(lines)
+var version=parseInt(lines)-1
 
 text="";
 
