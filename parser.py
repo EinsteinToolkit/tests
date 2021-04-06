@@ -1,5 +1,5 @@
 from logging import warn
-from typing import DefaultDict
+from collections import defaultdict
 import re
 
 def create_summary(file):
@@ -180,17 +180,17 @@ def get_warning_type(name):
     return warning_types
 
 def get_warning_thorns(name):
-    warning_types=DefaultDict(int)
+    warning_types=defaultdict(int)
     i=0
     count=0
     with open(name) as build:
         lines=build.readlines()
-        warning_set=set()
         for line in lines:
             i+=1
             inline = re.search(".*/sim/build/([^/]*).* [wW]arning:", line)
             twoline= re.search("[wW]arning:.*at",line)
             if(inline):
+                print(line)
                 trunc=line[line.find("build/")+6:-1]
                 trunc=trunc[:trunc.find("/")]
                 warning_types[trunc]+=1
