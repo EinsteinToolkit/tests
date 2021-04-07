@@ -129,7 +129,7 @@ def plot_test_data():
         timet=dat2,
         cmt=cmtw,
         xax=[0]*len(times),
-        url=[f"./index_{x+1}.html" for x in range(1,last_ver+1)],
+        url=[f"./index_{x+1}.html" for x in range(0,last_ver)],
     ))
 
     TOOLTIPS = [
@@ -137,7 +137,8 @@ def plot_test_data():
     ]
     print(src.data["rt"])
     p=bplt.figure(x_range=times,plot_width=1000, plot_height=600,tools="tap,wheel_zoom,box_zoom,reset",
-           title="Passed Tests", toolbar_location="below")
+           y_axis_label="Number of Tests", x_axis_label="Date",
+           title="Passed Tests", toolbar_location="below",sizing_mode='scale_width')
     p.circle(times,dat,size=10,color="green")
     p.circle('t','tp',size=10,color="blue",source=src)
     url = "@url"
@@ -148,7 +149,8 @@ def plot_test_data():
     tab1 = Panel(child=p, title="Test Results")
 
     p1=bplt.figure(x_range=times,plot_width=1000, plot_height=600,tools="tap,wheel_zoom,box_zoom,reset",
-           title="Time Taken", toolbar_location="below")
+           y_axis_label="Time(minutes)", x_axis_label="Date",
+           title="Time Taken", toolbar_location="below",sizing_mode='scale_width')
     p1.circle('t','timet',size=10,color="blue",source=src)
     p1.line('t','timet',color="blue",source=src)
     taptool = p1.select(type=btools.TapTool)
@@ -156,7 +158,8 @@ def plot_test_data():
     tab2 = Panel(child=p1, title="Time Taken")
 
     p2=bplt.figure(x_range=times,plot_width=1000, plot_height=600,tools="tap,wheel_zoom,box_zoom,reset",
-           title="Time Taken", toolbar_location="below")
+           title="Compilation Warnings",y_axis_label="Number of Compilation Warnings", x_axis_label="Date",
+           toolbar_location="below",sizing_mode='scale_width')
     p2.circle('t','cmt',size=10,color="blue",source=src)
     p2.line('t','cmt',color="blue",source=src)
     taptool = p2.select(type=btools.TapTool)
@@ -166,10 +169,16 @@ def plot_test_data():
     src1=bplt.ColumnDataSource(data=dict(cts=counts,
         wts=warning_types_list))
     p3=bplt.figure(x_range=warning_types_list,plot_width=1200, title="Compilation Warning Thorns",
-           toolbar_location="below", tools="tap,wheel_zoom,box_zoom,reset")
+           y_axis_label="Number of Warnings", x_axis_label="Name of Thorn",
+           toolbar_location="below", tools="tap,wheel_zoom,box_zoom,reset",sizing_mode='scale_width')
     p3.vbar(x='wts', top='cts', width=0.9, source=src1,
        line_color='white', fill_color=factor_cmap('wts', palette=viridis(len(counts)), factors=warning_types_list))
     tab4=Panel(child=p3, title="Compilation Warning Thorns")
+
+    p.yaxis.major_label_orientation = "horizontal"
+    p1.yaxis.major_label_orientation = "horizontal"
+    p2.yaxis.major_label_orientation = "horizontal"
+    p3.yaxis.major_label_orientation = "horizontal"
 
     script, div = components(Tabs(tabs=[tab1, tab2,tab3,tab4]))
     
@@ -234,11 +243,13 @@ def summary_to_html(readfile,writefile):
                 width: 150px;
                 position: fixed;
                 z-index: 1; 
+                opacity: 80%;
                 top: 0; 
                 left: 0;
                 background-color: #111; 
                 overflow-x: hidden;
                 padding-top: 20px;
+                padding-left: 
             }}
             .sidebar a {{
                 padding: 6px 8px 6px 16px;
@@ -251,20 +262,9 @@ def summary_to_html(readfile,writefile):
                 color: #f1f1f1;
             }}
                         /* On screens that are less than 700px wide, make the sidebar into a topbar */
-            @media screen and (max-width: 700px) {{
+            @media screen and (max-width: 500px) {{
             .sidebar {{
-              width: 100%;
-              height: auto;
-              position: relative;
-            }}
-            .sidebar a {{float: left;}}
-            }}
-            /* On screens that are less than 400px, display the bar vertically, instead of horizontally */
-            @media screen and (max-width: 400px) {{
-            .sidebar a {{
-              text-align: center;
-              float: none;
-              }}
+              display: none;
             }}
             </style>
             <script src="https://cdn.bokeh.org/bokeh/release/bokeh-2.0.1.min.js"

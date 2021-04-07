@@ -165,7 +165,7 @@ def get_compile(name):
     return sum(get_warning_thorns(name).values())
 
 def get_warning_type(name):
-    warning_types=DefaultDict(int)
+    warning_types=defaultdict(int)
     
     with open(name) as build:
         for line in build.readlines():
@@ -185,13 +185,10 @@ def get_warning_thorns(name):
             inline = re.search(".*/sim/build/([^/]*).* [wW]arning:", line)
             twoline= re.search("[wW]arning:.*at",line)
             if(inline):
-                print(line)
+
                 trunc=line[line.find("build/")+6:-1]
                 trunc=trunc[:trunc.find("/")]
                 warning_types[trunc]+=1
-                if line in warning_set:
-                    print(line)
-                warning_set.add(line)
             if(twoline):
                 count+=1
                 nextl=lines[i+1]
@@ -206,6 +203,5 @@ def get_warning_thorns(name):
                     trunc=nextnextl[nextnextl.find("build/")+6:-1]
                     trunc=trunc[:trunc.find("/")]
                     warning_types[trunc]+=1
-                warning_set.add(line)
     return warning_types
 
