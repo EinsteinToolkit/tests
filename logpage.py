@@ -52,15 +52,15 @@ def gen_report(readfile):
         by test_comp
     '''
     test_comparison=test_comp(readfile,last)
-    output='''<table style="border: 1px solid black;margin-left: auto;margin-right: auto;">
-    <caption style="text-align:center;font-weight: bold;caption-side:top">Failed Tests and Changes</caption>\n'''
+    output='''<table class="table table-bordered table-dark" >
+    <caption style="text-align:center;font-weight: bold;caption-side:top">Failed Tests and Changes</caption>
+    <tr><th></th><th>logs</th><th>diffs</th></tr>\n'''
 
     for result in test_comparison.keys():
         if(result!="Failed Tests"):
-            output+=f"<tr><th>"+result+"</th></tr>\n"
+            output+=f'''<tr><th colspan="3">'''+result+"</th></tr>\n"
         else:
-            output+=f"<tr><th>"+result+"</th>"
-            output+="<th>logs</th><th>diffs</th>"
+            output+=f'''<tr><th colspan="3">'''+result+"</th>"
         
         if(len(test_comparison[result])==0):
             output+="<tr><td></td></tr>"
@@ -93,7 +93,7 @@ def gen_report(readfile):
 
 def gen_time(readfile):
     time_dict=get_times(readfile)
-    output='''<table style="border: 1px solid black;margin-left: auto;margin-right: auto;">
+    output='''<table class="table table-bordered table-dark" >
     <caption style="text-align:center;font-weight: bold;caption-side:top">Longest Tests</caption>\n'''
     output+="<tr><th>Test Name</th><th>Running Time</th>"
     for times in longest_tests(time_dict,10).keys():
@@ -187,7 +187,7 @@ def plot_test_data():
 
 def gen_unrunnable(readfile):
     m,n=get_unrunnable(readfile)
-    output=''' <table style="border: 1px solid black;margin-left: auto;margin-right: auto;">
+    output=''' <table class="table table-bordered table-dark" >
     <caption style="text-align:center;font-weight: bold;caption-side:top">Unrunnable Tests</caption>\n'''
     output+="<tr><th>Tests Missed for Lack Of Thorns</th><th>Missing Thorns</th></tr>\n"
     for test in m.keys():
@@ -224,7 +224,7 @@ def summary_to_html(readfile,writefile):
         for key in data.keys():
 
             # Add a table row for each data field
-            contents+=f"        <tr><td>{key}</td><td>{data[key]}</td><tr>\n"
+            contents+=f"        <tr><th>{key}</th><td>{data[key]}</td><tr>\n"
 
         # The formatted string holds the html template and loads in the values for content and status    
         template=f'''<!doctype html>
@@ -243,26 +243,25 @@ def summary_to_html(readfile,writefile):
                 width: 150px;
                 position: fixed;
                 z-index: 1; 
-                opacity: 80%;
                 top: 0; 
                 left: 0;
-                background-color: #111; 
+                background-color: #212529; 
                 overflow-x: hidden;
-                padding-top: 20px;
-                padding-left: 
+                padding-top: 20px; 
             }}
             .sidebar a {{
                 padding: 6px 8px 6px 16px;
                 text-decoration: none;
                 font-size: 18px;
-                color: lightgray;
+                color: #dbdcdd;
                 display: block;
                 }}
             .sidebar a:hover {{
-                color: #f1f1f1;
+                color: white;
             }}
             .container{{
               padding-left: 150px;
+              font-size: 18px;
             }}
                         /* On screens that are less than 700px wide, make the sidebar into a topbar */
             @media screen and (max-width: 500px) {{
@@ -284,12 +283,12 @@ def summary_to_html(readfile,writefile):
                 <h1 style="text-align:center">{status}</h1>
                 <img src="https://github.com/mojamil/einsteintoolkit/actions/workflows/main.yml/badge.svg" style="display:block;margin-left: auto;margin-right: auto;">
                 <h3 style="text-align:center">Build #{last_ver}</h3>
-                <table style="border: 1px solid black;margin-left: auto;margin-right: auto;">
+                <table class="table table-bordered table-dark" >
                 <caption style="text-align:center;font-weight: bold;caption-side:top">Summary</caption>
                 {contents}
                 </table>
                 <br>
-                <table style="border: 1px solid black;margin-left: auto;margin-right: auto;">
+                <table class="table table-bordered table-dark" >
                 <caption style="text-align:center;font-weight: bold;caption-side:top">Commits in Last Push</caption>
                 {gen_commits()}
                 </table>
