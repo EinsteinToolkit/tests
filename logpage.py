@@ -261,6 +261,9 @@ def summary_to_html(readfile,writefile):
             .sidebar a:hover {{
                 color: #f1f1f1;
             }}
+            .container{{
+              padding-left: 150px;
+            }}
                         /* On screens that are less than 700px wide, make the sidebar into a topbar */
             @media screen and (max-width: 500px) {{
             .sidebar {{
