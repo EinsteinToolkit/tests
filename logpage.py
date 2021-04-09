@@ -52,7 +52,7 @@ def gen_report(readfile):
         by test_comp
     '''
     test_comparison=test_comp(readfile,last)
-    output='''<table class="table table-bordered table-dark" >
+    output='''<table class="table table-bordered " >
     <caption style="text-align:center;font-weight: bold;caption-side:top">Failed Tests and Changes</caption>
     <tr><th></th><th>logs</th><th>diffs</th></tr>\n'''
 
@@ -93,7 +93,7 @@ def gen_report(readfile):
 
 def gen_time(readfile):
     time_dict=get_times(readfile)
-    output='''<table class="table table-bordered table-dark" >
+    output='''<table class="table table-bordered " >
     <caption style="text-align:center;font-weight: bold;caption-side:top">Longest Tests</caption>\n'''
     output+="<tr><th>Test Name</th><th>Running Time</th>"
     for times in longest_tests(time_dict,10).keys():
@@ -187,7 +187,7 @@ def plot_test_data():
 
 def gen_unrunnable(readfile):
     m,n=get_unrunnable(readfile)
-    output=''' <table class="table table-bordered table-dark" >
+    output=''' <table class="table table-bordered " >
     <caption style="text-align:center;font-weight: bold;caption-side:top">Unrunnable Tests</caption>\n'''
     output+="<tr><th>Tests Missed for Lack Of Thorns</th><th>Missing Thorns</th></tr>\n"
     for test in m.keys():
@@ -268,6 +268,10 @@ def summary_to_html(readfile,writefile):
             .sidebar {{
               display: none;
             }}
+            .container {{
+              padding-left:0px;
+            }}
+            }}
             </style>
             <script src="https://cdn.bokeh.org/bokeh/release/bokeh-2.0.1.min.js"
             crossorigin="anonymous"></script>
@@ -283,12 +287,12 @@ def summary_to_html(readfile,writefile):
                 <h1 style="text-align:center">{status}</h1>
                 <img src="https://github.com/mojamil/einsteintoolkit/actions/workflows/main.yml/badge.svg" style="display:block;margin-left: auto;margin-right: auto;">
                 <h3 style="text-align:center">Build #{last_ver}</h3>
-                <table class="table table-bordered table-dark" >
+                <table class="table table-bordered " >
                 <caption style="text-align:center;font-weight: bold;caption-side:top">Summary</caption>
                 {contents}
                 </table>
                 <br>
-                <table class="table table-bordered table-dark" >
+                <table class="table table-bordered " >
                 <caption style="text-align:center;font-weight: bold;caption-side:top">Commits in Last Push</caption>
                 {gen_commits()}
                 </table>
