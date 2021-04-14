@@ -285,8 +285,7 @@ def summary_to_html(readfile,writefile):
             </script>
             <div class="container">
                 <h1 style="text-align:center">{status}</h1>
-                <img src="https://github.com/mojamil/einsteintoolkit/actions/workflows/main.yml/badge.svg" style="display:block;margin-left: auto;margin-right: auto;">
-                <h3 style="text-align:center">Build #{last_ver}</h3>
+                <h3 style="text-align:center"><a href="https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/version_{last_ver}">Build #{last_ver}</a></h3>
                 <table class="table table-bordered " >
                 <caption style="text-align:center;font-weight: bold;caption-side:top">Summary</caption>
                 {contents}
@@ -322,6 +321,7 @@ def write_to_csv(readfile):
     data=create_summary(readfile)
     data["Time Taken"]=total/60
     local_time = datetime.today().strftime('%Y-%m-%d')
+    local_time+=f"({last_ver})"
     data["Compile Time Warnings"]=get_compile(f"records/version_{last_ver}/build_{last_ver}.log")
     with open('test_nums.csv','a') as csvfile:
         contents=f"{local_time}"
