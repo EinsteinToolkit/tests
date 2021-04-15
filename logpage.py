@@ -34,15 +34,18 @@ def gen_commits():
     commits=compare.json()["commits"]
     out="<th>"
     count=1
+    if previous==current:
+        message="Manual Run"
+        date=runs_list["workflow_runs"][0]["created_at"]
+        out+="Commit "+str(count)+"</th>"
+        out+="<tr> <td> Date: </td> <td>"+date+"</td> </tr> \n"
+        out+="<tr> <td> Message: </td> <td>"+message+"</td> </tr> \n"
+
     for commit in commits:
-        if previous!=current:
-            message=commit["commit"]["message"]
-            message=message.replace("\n\n","\n")
-            message=message.replace('\n','<br>')
-            date=commit["commit"]["author"]["date"]
-        else:
-            message="Manual Run"
-            date=runs_list["workflow_runs"][0]["created_at"]
+        message=commit["commit"]["message"]
+        message=message.replace("\n\n","\n")
+        message=message.replace('\n','<br>')
+        date=commit["commit"]["author"]["date"]
         out+="Commit "+str(count)+"</th>"
         out+="<tr> <td> Date: </td> <td>"+date+"</td> </tr> \n"
         out+="<tr> <td> Message: </td> <td>"+message+"</td> </tr> \n"
