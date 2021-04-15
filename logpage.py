@@ -25,21 +25,26 @@ last=f"./records/version_{last_ver}/build__2_1_{last_ver}.log"
 print(last_ver)
 
 def gen_commits():
+    runs_list=requests.get("https://api.github.com/repos/mojamil/einsteintoolkit/actions/runs").json()
     commit_list=requests.get("https://api.github.com/repos/mojamil/einsteintoolkit/commits")
     response=commit_list.json()
     current=response[0]["sha"]
-    previous=response[1]["sha"]
+    previous=runs_list["workflow_runs"][1]["head_commit"]['id']
     compare=requests.get(f"https://api.github.com/repos/mojamil/einsteintoolkit/compare/{previous}...{current}")
     commits=compare.json()["commits"]
     out="<th>"
     count=1
     for commit in commits:
-        message=commit["commit"]["message"]
-        message=message.replace("\n\n","\n")
-        message=message.replace('\n','<br>')
+        if previous!=current:
+            message=commit["commit"]["message"]
+            message=message.replace("\n\n","\n")
+            message=message.replace('\n','<br>')
+            date=commit["commit"]["author"]["date"]
+        else:
+            message="Manual Run"
+            date=runs_list["workflow_runs"][0]["created_at"]
         out+="Commit "+str(count)+"</th>"
-        out+="<tr> <td> Author: </td> <td>"+commit["commit"]["author"]["name"]+"</td> </tr> \n"
-        out+="<tr> <td> Date: </td> <td>"+commit["commit"]["author"]["date"]+"</td> </tr> \n"
+        out+="<tr> <td> Date: </td> <td>"+date+"</td> </tr> \n"
         out+="<tr> <td> Message: </td> <td>"+message+"</td> </tr> \n"
         count+=1
     return out
