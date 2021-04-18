@@ -65,32 +65,23 @@ def gen_report(readfile):
     <tr><th></th><th>logs</th><th>diffs</th></tr>\n'''
 
     for result in test_comparison.keys():
-        if(result!="Failed Tests"):
-            output+=f'''<tr><th colspan="3">'''+result+"</th></tr>\n"
-        else:
-            output+=f'''<tr><th colspan="3">'''+result+"</th>"
-        
+        output+=f'''<tr><th colspan="3">'''+result+"</th></tr>\n"
         if(len(test_comparison[result])==0):
             output+="<tr><td></td></tr>"
         for test in test_comparison[result]:
             thorn=test.split()[-1]
             thorn=thorn[:len(thorn)-1]
             test_name=test.split()[0]
-            if("Removed" not in result):
-                logl=f"https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/version_{last_ver}/sim_{last_ver}/{thorn}/{test_name}.log"
-                diffl=f"https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/version_{last_ver}/sim_{last_ver}/{thorn}/{test_name}.diffs"
-                dreq=requests.get(diffl) 
-                logq=requests.get(logl)   
-            else:
-                logl=f"https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/version_{last_ver}/sim_{last_ver-1}/{thorn}/{test_name}.log"
-                diffl=f"https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/version_{last_ver}/sim_{last_ver-1}/{thorn}/{test_name}.diffs"
-                dreq=requests.get(diffl)
-                logq=requests.get(logl)
-            if(logq.status_code == 200):
+            ver=last_ver
+            if("Removed" in result):
+                ver-=1
+            logl=f"https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/version_{ver}/sim_{ver}/{thorn}/{test_name}.log"
+            diffl=f"https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/version_{ver}/sim_{ver}/{thorn}/{test_name}.diffs" 
+            if(os.path.isfile("./"+logl[logl.find("records"):])):
                 output+=f"  <tr><td>{test}</td><td><a href='{logl}'>log</a></td>"
             else:
                 output+=f" <tr><td>{test}</td><td>Not Available</td>"
-            if(dreq.status_code == 200):
+            if(os.path.isfile("./"+diffl[logl.find("records"):])):
                 output+=f"<td><a href='{diffl}'>diff</a></td></tr>\n"
             else:
                 output+=f"<td>Not Available</td></tr>\n"  
