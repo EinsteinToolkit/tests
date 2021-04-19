@@ -1,7 +1,7 @@
 import shutil,os,glob
 
-def copy_tests(test_dir,version):
-    dst=f"./records/version_{version}/sim_{version}"
+def copy_tests(test_dir,version,procs):
+    dst=f"./records/version_{version}/sim_{version}_{procs}"
     dirlist=os.listdir(test_dir)
     if not os.path.isdir(dst):
         os.mkdir(dst)
@@ -51,5 +51,5 @@ if __name__ == "__main__":
     version=get_version()
     os.mkdir(f"./records/version_{version}/")
     copy_builds(version)
-    copy_tests(dir1,version)
-    copy_tests(dir2,version)
+    copy_tests(dir1,version,1)
+    copy_tests(dir2,version,2)

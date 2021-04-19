@@ -62,10 +62,10 @@ def gen_report(readfile):
     test_comparison=test_comp(readfile,last)
     output='''<table class="table table-bordered " >
     <caption style="text-align:center;font-weight: bold;caption-side:top">Failed Tests and Changes</caption>
-    <tr><th></th><th>logs</th><th>diffs</th></tr>\n'''
+    <tr><th></th><th>logs(1_process)</th><th>logs(2_processes)</th><th>diffs(1_process)</th><th>diffs(2_processes)</th></tr>\n'''
 
     for result in test_comparison.keys():
-        output+=f'''<tr><th colspan="3">'''+result+"</th></tr>\n"
+        output+=f'''<tr><th colspan="5">'''+result+"</th></tr>\n"
         if(len(test_comparison[result])==0):
             output+="<tr><td></td></tr>"
         for test in test_comparison[result]:
@@ -75,14 +75,24 @@ def gen_report(readfile):
             ver=last_ver
             if("Removed" in result):
                 ver-=1
-            logl=f"https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/version_{ver}/sim_{ver}/{thorn}/{test_name}.log"
-            diffl=f"https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/version_{ver}/sim_{ver}/{thorn}/{test_name}.diffs" 
-            if(os.path.isfile("./"+logl[logl.find("records"):])):
-                output+=f"  <tr><td>{test}</td><td><a href='{logl}'>log</a></td>"
+            logl1=f"https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/version_{ver}/sim_{ver}_1/{thorn}/{test_name}.log"
+            logl2=f"https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/version_{ver}/sim_{ver}_2/{thorn}/{test_name}.log"
+            diffl1=f"https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/version_{ver}/sim_{ver}_1/{thorn}/{test_name}.diffs"
+            diffl2=f"https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/version_{ver}/sim_{ver}_2/{thorn}/{test_name}.diffs" 
+            if(os.path.isfile("./"+logl1[logl1.find("records"):])):
+                output+=f"  <tr><td>{test}</td><td><a href='{logl1}'>log</a></td>"
             else:
                 output+=f" <tr><td>{test}</td><td>Not Available</td>"
-            if(os.path.isfile("./"+diffl[logl.find("records"):])):
-                output+=f"<td><a href='{diffl}'>diff</a></td></tr>\n"
+            if(os.path.isfile("./"+logl2[logl2.find("records"):])):
+                output+=f"  <td><a href='{logl2}'>log</a></td>"
+            else:
+                output+=f" <td>Not Available</td>"
+            if(os.path.isfile("./"+diffl1[diffl1.find("records"):])):
+                output+=f"<td><a href='{diffl1}'>diff</a></td>"
+            else:
+                output+=f"<td>Not Available</td>"  
+            if(os.path.isfile("./"+diffl2[diffl2.find("records"):])):
+                output+=f"<td><a href='{diffl2}'>diff</a></td></tr>\n"
             else:
                 output+=f"<td>Not Available</td></tr>\n"  
     
