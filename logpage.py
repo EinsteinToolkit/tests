@@ -145,7 +145,7 @@ def plot_test_data():
         ("Tests Passed", "$tp"),
     ]
     print(src.data["rt"])
-    p=bplt.figure(x_range=times,plot_width=1000, plot_height=600,tools="tap,wheel_zoom,box_zoom,reset",
+    p=bplt.figure(x_range=times,y_range=(0,max(dat)+10),plot_width=1000, plot_height=600,tools="tap,wheel_zoom,box_zoom,reset",
            y_axis_label="Number of Tests", x_axis_label="Date",
            title="Passed Tests", toolbar_location="below",sizing_mode='scale_width')
     p.circle(times,dat,size=10,color="green")
@@ -157,7 +157,7 @@ def plot_test_data():
     p.varea(y1='tp',y2='xax', x='t', color="blue",source=src,alpha=0.5)
     tab1 = Panel(child=p, title="Test Results")
 
-    p1=bplt.figure(x_range=times,plot_width=1000, plot_height=600,tools="tap,wheel_zoom,box_zoom,reset",
+    p1=bplt.figure(x_range=times,y_range=(0,max(dat2)+5),plot_width=1000, plot_height=600,tools="tap,wheel_zoom,box_zoom,reset",
            y_axis_label="Time(minutes)", x_axis_label="Date",
            title="Time Taken", toolbar_location="below",sizing_mode='scale_width')
     p1.circle('t','timet',size=10,color="blue",source=src)
@@ -166,7 +166,7 @@ def plot_test_data():
     taptool.callback = bcall.OpenURL(url=url)
     tab2 = Panel(child=p1, title="Time Taken")
 
-    p2=bplt.figure(x_range=times,plot_width=1000, plot_height=600,tools="tap,wheel_zoom,box_zoom,reset",
+    p2=bplt.figure(x_range=times,y_range=(0,max(cmtw)+50),plot_width=1000, plot_height=600,tools="tap,wheel_zoom,box_zoom,reset",
            title="Compilation Warnings",y_axis_label="Number of Compilation Warnings", x_axis_label="Date",
            toolbar_location="below",sizing_mode='scale_width')
     p2.circle('t','cmt',size=10,color="blue",source=src)
