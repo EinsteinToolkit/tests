@@ -1,6 +1,11 @@
 import shutil,os,glob
 
 def copy_tests(test_dir,version,procs):
+    '''
+        This function copies individual test logs and diffs.
+        It takes the directory of the logs, the version number 
+        and then number of proceses.
+    '''
     dst=f"./records/version_{version}/sim_{version}_{procs}"
     dirlist=os.listdir(test_dir)
     if not os.path.isdir(dst):
@@ -19,7 +24,9 @@ def copy_tests(test_dir,version,procs):
 
 
 def copy_builds(version):
-    
+    '''
+        This copies the test logs for future use
+    '''
     dst=f"./records/version_{version}/"
     builds=glob.glob("*.log")
     for build in builds:
@@ -27,15 +34,26 @@ def copy_builds(version):
 
 
 def copy_index(version):
+    '''
+        This copies the old html files showing test
+        results for future use
+    '''
     dst=f"./docs/index_{version}.html"
     index="./docs/index.html"
     if os.path.exists(index):
         shutil.copy(index,dst)
 def copy_build_log(version):
+    '''
+        This copies the compilation logs for future use
+    '''
     dst=f"./records/version_{version}/build_{version}.log"
     build="./build.log"
     shutil.copy(build,dst)
 def get_version():
+    '''
+        This checks the version of the current build
+        by looking at the file names from old builds.
+    '''
     current=0
     builds=glob.glob("./records/version_*")
     if(len(builds)!=0):

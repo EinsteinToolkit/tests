@@ -23,16 +23,28 @@ last_ver=get_version()-1
 last=f"./records/version_{last_ver}/build__2_1_{last_ver}.log"
 
 
-print(last_ver)
 
 def gen_commits():
+    '''
+        This function generates a list of commits that have been made since the last run
+        If the workflow was run manually it will say so.
+    '''
+    # This part of the code gets the list of commits and runs using the github api
     runs_list=requests.get("https://api.github.com/repos/mojamil/einsteintoolkit/actions/runs").json()
     commit_list=requests.get("https://api.github.com/repos/mojamil/einsteintoolkit/commits")
     response=commit_list.json()
+
+    # Get the most recent commit
     current=response[0]["sha"]
+
+    # Get the commit associated with the last run
     previous=runs_list["workflow_runs"][1]["head_commit"]['id']
+
+    # Compare the current commit with the one from the previous runn
     compare=requests.get(f"https://api.github.com/repos/mojamil/einsteintoolkit/compare/{previous}...{current}")
     commits=compare.json()["commits"]
+
+    # Create table listing a manual run or a list of commits
     out="<th>"
     count=1
     if previous==current:
@@ -60,26 +72,41 @@ def gen_report(readfile):
         the comparison of test logs from last version generated
         by test_comp
     '''
+
+    # The test_comp function provides tests that failed, were newly added or newly removed
     test_comparison=test_comp(readfile,last)
+
+    # Setup the header for the table
     output='''<table class="table table-bordered " >
     <caption style="text-align:center;font-weight: bold;caption-side:top">Failed Tests and Changes</caption>
     <tr><th></th><th>logs(1_process)</th><th>logs(2_processes)</th><th>diffs(1_process)</th><th>diffs(2_processes)</th></tr>\n'''
 
     for result in test_comparison.keys():
+        # For each test make a header with the description of why that test is being shown(failed, newly added, newly failing)
         output+=f'''<tr><th colspan="5">'''+result+"</th></tr>\n"
+
+        # If no such test exists add empty row
         if(len(test_comparison[result])==0):
             output+="<tr><td></td></tr>"
+
+        # For each test get the thorn name and the current version
         for test in test_comparison[result]:
             thorn=test.split()[-1]
             thorn=thorn[:len(thorn)-1]
             test_name=test.split()[0]
             ver=last_ver
+
+            # Since the removed test would have been stored in the last version subtract 1 from the version number
             if("Removed" in result):
                 ver-=1
+
+            # Links for logs and diffs of the tests in the test_comparison dictionary based on the number of procs
             logl1=f"https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/version_{ver}/sim_{ver}_1/{thorn}/{test_name}.log"
             logl2=f"https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/version_{ver}/sim_{ver}_2/{thorn}/{test_name}.log"
             diffl1=f"https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/version_{ver}/sim_{ver}_1/{thorn}/{test_name}.diffs"
-            diffl2=f"https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/version_{ver}/sim_{ver}_2/{thorn}/{test_name}.diffs" 
+            diffl2=f"https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/version_{ver}/sim_{ver}_2/{thorn}/{test_name}.diffs"
+
+            # Check if these files are available if not display not avaible on the table 
             if(os.path.isfile("./"+logl1[logl1.find("records"):])):
                 output+=f"  <tr><td>{test}</td><td><a href='{logl1}'>log</a></td>"
             else:
@@ -102,7 +129,13 @@ def gen_report(readfile):
 
 
 def gen_time(readfile):
+    '''
+        This function generates a table with the tests that took the longest time
+    '''
+    # The get_times function parses the data from the log files
     time_dict=get_times(readfile)
+
+    # This part creates html table contianing the top 10 longest tests
     output='''<table class="table table-bordered " >
     <caption style="text-align:center;font-weight: bold;caption-side:top">Longest Tests</caption>\n'''
     output+="<tr><th>Test Name</th><th>Running Time</th>"
@@ -112,17 +145,22 @@ def gen_time(readfile):
     return output
 
 def plot_test_data():
-    dat=list(get_data("Runnable tests").values())
-    times=list(get_data("Number of tests passed").keys())
-    dat1=list(get_data("Number of tests passed").values())
-    dat2=list(get_data("Time Taken").values())
-    cmtw=list((get_data("Compile Time Warnings").values()))
 
-    warning_types=get_warning_thorns(f"records/version_{last_ver}/build_{last_ver}.log")
-    counts=list(warning_types.values())
+    # Get dataa from the csv and create lists for each field
+    runnable=list(get_data("Runnable tests").values())
+    times=list(get_data("Number of tests passed").keys())
+    passed=list(get_data("Number of tests passed").values())
+    time_taken=list(get_data("Time Taken").values())
+    compile_warn=list((get_data("Compile Time Warnings").values()))
+
+    # Get the of dictionary of thorns with their warning counts
+    warning_thorns=get_warning_thorns(f"records/version_{last_ver}/build_{last_ver}.log")
+
+    # Turn that dictionary into lists so you can pick the thorns with most warnings
+    counts=list(warning_thorns.values())
     counts_trunc=sorted(counts,reverse=True)[:7]
     warning_types_trunc=[]
-    warning_types_list=list(warning_types.keys())
+    warning_types_list=list(warning_thorns.keys())
 
     for count in counts_trunc:
         i=counts.index(count)
@@ -131,13 +169,14 @@ def plot_test_data():
         counts.pop(i)
     counts=counts_trunc
     warning_types_list=warning_types_trunc
-    print(warning_types_list)
+
+    # The python library bokeh has a special data structure called a column data source that functions similarly to a dictionary
     src=bplt.ColumnDataSource(data=dict(
         t=times,
-        rt=dat,
-        tp=dat1,
-        timet=dat2,
-        cmt=cmtw,
+        rt=runnable,
+        tp=passed,
+        timet=time_taken,
+        cmt=compile_warn,
         xax=[0]*len(times),
         url=[f"./index_{x+1}.html" for x in range(0,last_ver)],
     ))
@@ -146,29 +185,44 @@ def plot_test_data():
         ("Tests Passed", "$tp"),
     ]
     print(src.data["rt"])
-    p=bplt.figure(x_range=times,y_range=(max(0,min(dat)-30),max(dat)+10),plot_width=1000, plot_height=600,tools="tap,wheel_zoom,box_zoom,reset",
+
+    # p is the first figure an area chart with the number of tests passed out of the ones ran
+    # Tools attribute gives ways to manipulate the plot such as having clickable points, scrool to zoom and pan to zoom.
+    # The rest of the attributes should be self explanatory
+    p=bplt.figure(x_range=times,y_range=(max(0,min(runnable)-30),max(runnable)+10),plot_width=1000, plot_height=600,tools="tap,wheel_zoom,box_zoom,reset",
            y_axis_label="Number of Tests", x_axis_label="Date",
            title="Passed Tests", toolbar_location="below",sizing_mode='scale_width')
-    p.circle(times,dat,size=10,color="green",legend_label="Runnable Tests")
+    
+    # Circles are points on the graph
+    p.circle(times,runnable,size=10,color="green",legend_label="Runnable Tests")
     p.circle('t','tp',size=10,color="blue",source=src,legend_label="Number of Tests Passed")
+
+    # The taptool helps have these points link to the previous builds
     url = "@url"
     taptool = p.select(type=btools.TapTool)
     taptool.callback = bcall.OpenURL(url=url)
+
+    # This part fills in the area below the points
     p.varea(y1='rt',y2='xax', x='t', color="green",source=src,alpha=0.5)
     p.varea(y1='tp',y2='xax', x='t', color="blue",source=src,alpha=0.5)
+
+    # The graphs are displayed in a tabs and this part sets that up
     tab1 = Panel(child=p, title="Test Results")
     p.legend.location = "top_left"
 
-    p1=bplt.figure(x_range=times,y_range=(0,max(dat2)+5),plot_width=1000, plot_height=600,tools="tap,wheel_zoom,box_zoom,reset",
+    # This graph is for how long the testing part takes uses similar code to the first one but instead of area it has lines connecting points
+    p1=bplt.figure(x_range=times,y_range=(0,max(time_taken)+5),plot_width=1000, plot_height=600,tools="tap,wheel_zoom,box_zoom,reset",
            y_axis_label="Time(minutes)", x_axis_label="Date",
-           title="Time Taken", toolbar_location="below",sizing_mode='scale_width')
+           title="Time Taken for Tests", toolbar_location="below",sizing_mode='scale_width')
     p1.circle('t','timet',size=10,color="blue",source=src)
     p1.line('t','timet',color="blue",source=src)
     taptool = p1.select(type=btools.TapTool)
     taptool.callback = bcall.OpenURL(url=url)
     tab2 = Panel(child=p1, title="Time Taken")
 
-    p2=bplt.figure(x_range=times,y_range=(0,max(cmtw)+50),plot_width=1000, plot_height=600,tools="tap,wheel_zoom,box_zoom,reset",
+
+    # This graph is for the total number of compilation warnings and it uses the same code as the above plot but with different data
+    p2=bplt.figure(x_range=times,y_range=(0,max(compile_warn)+50),plot_width=1000, plot_height=600,tools="tap,wheel_zoom,box_zoom,reset",
            title="Compilation Warnings",y_axis_label="Number of Compilation Warnings", x_axis_label="Date",
            toolbar_location="below",sizing_mode='scale_width')
     p2.circle('t','cmt',size=10,color="blue",source=src)
@@ -179,6 +233,8 @@ def plot_test_data():
 
     src1=bplt.ColumnDataSource(data=dict(cts=counts,
         wts=warning_types_list))
+
+    # This plot is a bar graph showing the top 7 thorns with the most warnings
     p3=bplt.figure(x_range=warning_types_list,plot_width=1200, title="Compilation Warning Thorns",
            y_axis_label="Number of Warnings", x_axis_label="Name of Thorn",
            toolbar_location="below", tools="tap,wheel_zoom,box_zoom,reset",sizing_mode='scale_width')
@@ -191,12 +247,16 @@ def plot_test_data():
     p2.yaxis.major_label_orientation = "horizontal"
     p3.yaxis.major_label_orientation = "horizontal"
 
+    # Bokeh createst the html script and javscript for the plots using this code
     script, div = components(Tabs(tabs=[tab1, tab2,tab3,tab4]))
     
     return script,div
 
 
 def gen_unrunnable(readfile):
+    '''
+        This function generates a html showing which tests could not be run and the reason
+    '''
     m,n=get_unrunnable(readfile)
     output=''' <table class="table table-bordered " >
     <caption style="text-align:center;font-weight: bold;caption-side:top">Unrunnable Tests</caption>\n'''
@@ -230,7 +290,6 @@ def summary_to_html(readfile,writefile):
         status="Some Tests Failed"
         # Send email if tests failed
         #os.system(f'python3 mail.py')
-    sidebar=gen_sidebar()
     with open(writefile,"w") as fp:
         for key in data.keys():
 
@@ -341,17 +400,9 @@ def write_to_csv(readfile):
         contents+="\n"
         csvfile.write(contents)
 
-write_to_csv(last)
-
-def gen_sidebar():
-    sidebar=""
-    for i in range(last_ver,0,-1):
-        sidebar+=f'''   <a href="index_{i}.html">Build #{i}</a>\n'''
-    
-    return sidebar
-        
 
 
-
-summary_to_html(last,"docs/index.html")
-copy_index(get_version()-1)
+if __name__ == "__main__":
+    write_to_csv(last)
+    summary_to_html(last,"docs/index.html")
+    copy_index(get_version()-1)

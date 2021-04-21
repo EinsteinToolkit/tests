@@ -132,6 +132,10 @@ def longest_tests(time_dict,num_tests):
     return longest
 
 def get_unrunnable(readfile):
+    '''
+        This test reads the logfile looking for tests that could not be run
+        and the corresponding reason.
+    '''
     miss_th={}
     miss_proc={}
     with open(readfile,"r") as fp:
@@ -150,6 +154,9 @@ def get_unrunnable(readfile):
             ind+=4
     return miss_th,miss_proc
 def get_data(name):
+    '''
+        Retrieves singular field of data from the data csv as a list
+    '''
     data={}
     with open('test_nums.csv','r') as csvfile:
         fields=csvfile.readline().strip().split(",")
@@ -162,9 +169,17 @@ def get_data(name):
     return data
 
 def get_compile(name):
+    '''
+        Gets the total number of compile time warnings by using
+        the get_warning_thorns function
+    '''
     return sum(get_warning_thorns(name).values())
 
 def get_warning_type(name):
+    '''
+        Compiles of counts of what types of warnings are produced the most
+        during compilation
+    '''
     warning_types=defaultdict(int)
     
     with open(name) as build:
@@ -175,6 +190,9 @@ def get_warning_type(name):
     return warning_types
 
 def get_warning_thorns(name):
+    '''
+        This code finds how many compile time warnings are related each thorn
+    '''
     warning_types=defaultdict(int)
     i=0
     count=0
@@ -182,8 +200,12 @@ def get_warning_thorns(name):
         lines=build.readlines()
         for line in lines:
             i+=1
+            # This regex search finds inline warnings based on the pattern given
             inline = re.search(".*/sim/build/([^/]*).* [wW]arning:", line)
+
+            # This regex search finds the pattern shown below as twoline warnings are structure in this way
             twoline= re.search("[wW]arning:.*at",line)
+
             if(inline):
 
                 trunc=line[line.find("build/")+6:-1]
