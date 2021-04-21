@@ -1,3 +1,4 @@
+from bokeh.models.annotations import Legend
 from requests.api import get
 import sys
 import os,csv,time,requests
@@ -145,17 +146,18 @@ def plot_test_data():
         ("Tests Passed", "$tp"),
     ]
     print(src.data["rt"])
-    p=bplt.figure(x_range=times,y_range=(0,max(dat)+10),plot_width=1000, plot_height=600,tools="tap,wheel_zoom,box_zoom,reset",
+    p=bplt.figure(x_range=times,y_range=(max(0,min(dat)-30),max(dat)+10),plot_width=1000, plot_height=600,tools="tap,wheel_zoom,box_zoom,reset",
            y_axis_label="Number of Tests", x_axis_label="Date",
            title="Passed Tests", toolbar_location="below",sizing_mode='scale_width')
-    p.circle(times,dat,size=10,color="green")
-    p.circle('t','tp',size=10,color="blue",source=src)
+    p.circle(times,dat,size=10,color="green",legend_label="Runnable Tests")
+    p.circle('t','tp',size=10,color="blue",source=src,legend_label="Number of Tests Passed")
     url = "@url"
     taptool = p.select(type=btools.TapTool)
     taptool.callback = bcall.OpenURL(url=url)
     p.varea(y1='rt',y2='xax', x='t', color="green",source=src,alpha=0.5)
     p.varea(y1='tp',y2='xax', x='t', color="blue",source=src,alpha=0.5)
     tab1 = Panel(child=p, title="Test Results")
+    p.legend.location = "top_left"
 
     p1=bplt.figure(x_range=times,y_range=(0,max(dat2)+5),plot_width=1000, plot_height=600,tools="tap,wheel_zoom,box_zoom,reset",
            y_axis_label="Time(minutes)", x_axis_label="Date",
