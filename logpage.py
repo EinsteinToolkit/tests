@@ -16,7 +16,6 @@ from bokeh.palettes import viridis
 from bokeh.transform import factor_cmap
 from parser import create_summary,get_tests, get_warning_thorns, get_warning_type,test_comp,get_times,exceed_thresh,longest_tests,get_unrunnable,get_data,get_compile
 import glob
-# This part finds the second log file in the folder
 
 records=os.listdir("./records")
 curr_ver=get_version()-1
