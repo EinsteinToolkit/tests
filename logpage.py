@@ -19,10 +19,10 @@ import glob
 # This part finds the second log file in the folder
 
 records=os.listdir("./records")
-last_ver=get_version()-1
-last=f"./records/version_{last_ver}/build__2_1_{last_ver}.log"
-
-
+curr_ver=get_version()-1
+print(curr_ver)
+curr=f"./records/version_{curr_ver}/build__2_1_{curr_ver}.log"
+last=f"./records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
 
 def gen_commits():
     '''
@@ -75,6 +75,7 @@ def gen_report(readfile):
 
     # The test_comp function provides tests that failed, were newly added or newly removed
     test_comparison=test_comp(readfile,last)
+    print(test_comparison)
 
     # Setup the header for the table
     output='''<table class="table table-bordered " >
@@ -94,9 +95,9 @@ def gen_report(readfile):
             thorn=test.split()[-1]
             thorn=thorn[:len(thorn)-1]
             test_name=test.split()[0]
-            ver=last_ver
+            ver=curr_ver
 
-            # Since the removed test would have been stored in the last version subtract 1 from the version number
+            # Since the removed test would have been stored in the curr version subtract 1 from the version number
             if("Removed" in result):
                 ver-=1
 
@@ -154,7 +155,7 @@ def plot_test_data():
     compile_warn=list((get_data("Compile Time Warnings").values()))
 
     # Get the of dictionary of thorns with their warning counts
-    warning_thorns=get_warning_thorns(f"records/version_{last_ver}/build_{last_ver}.log")
+    warning_thorns=get_warning_thorns(f"records/version_{curr_ver}/build_{curr_ver}.log")
 
     # Turn that dictionary into lists so you can pick the thorns with most warnings
     counts=list(warning_thorns.values())
@@ -178,7 +179,7 @@ def plot_test_data():
         timet=time_taken,
         cmt=compile_warn,
         xax=[0]*len(times),
-        url=[f"./index_{x+1}.html" for x in range(0,last_ver)],
+        url=[f"./index_{x+1}.html" for x in range(0,curr_ver)],
     ))
 
     TOOLTIPS = [
@@ -355,7 +356,7 @@ def summary_to_html(readfile,writefile):
             </script>
             <div class="container">
                 <h1 style="text-align:center">{status}</h1>
-                <h3 style="text-align:center"><a href="https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/version_{last_ver}">Build #{last_ver}</a></h3>
+                <h3 style="text-align:center"><a href="https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/version_{curr_ver}">Build #{curr_ver}</a></h3>
                 <table class="table table-bordered " >
                 <caption style="text-align:center;font-weight: bold;caption-side:top">Summary</caption>
                 {contents}
@@ -391,8 +392,8 @@ def write_to_csv(readfile):
     data=create_summary(readfile)
     data["Time Taken"]=total/60
     local_time = datetime.today().strftime('%Y-%m-%d')
-    local_time+=f"({last_ver})"
-    data["Compile Time Warnings"]=get_compile(f"records/version_{last_ver}/build_{last_ver}.log")
+    local_time+=f"({curr_ver})"
+    data["Compile Time Warnings"]=get_compile(f"records/version_{curr_ver}/build_{curr_ver}.log")
     with open('test_nums.csv','a') as csvfile:
         contents=f"{local_time}"
         for key in data.keys():
@@ -403,6 +404,6 @@ def write_to_csv(readfile):
 
 
 if __name__ == "__main__":
-    write_to_csv(last)
-    summary_to_html(last,"docs/index.html")
+    write_to_csv(curr)
+    summary_to_html(curr,"docs/index.html")
     copy_index(get_version()-1)
