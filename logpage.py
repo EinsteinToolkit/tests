@@ -65,7 +65,7 @@ def gen_commits():
     return out
 
 # log_link=f"https://github.com/mojamil/einsteintoolkit/blob/master/records/version_{last_ver}/{last[ext-1:]+str(last_ver+1)}"
-def gen_report(readfile):
+def gen_diffs(readfile):
     '''
         This function generates the html table that shows
         the comparison of test logs from last version generated
@@ -365,7 +365,7 @@ def summary_to_html(readfile,writefile):
                 <caption style="text-align:center;font-weight: bold;caption-side:top">Commits in Last Push</caption>
                 {gen_commits()}
                 </table>
-                {gen_report(readfile)}
+                {gen_diffs(readfile)}
                 <br>
                 {gen_time(readfile)}
                 <br>
