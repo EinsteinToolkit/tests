@@ -64,10 +64,12 @@ does
 
 `create_summary(file)` This function looks for the summary of the tests stored in log files such
 as build__2_1.log or build__1_2.log:
+
 ![summary](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/images/summary.png)
 
 `get_tests(file)` Gets the name of the test that passed and failed as listed in log files such
 as build__2_1.log or build__1_2.log:
+
 ![pass-fail](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/images/pass-fail.png)
 
 `test_comp(file1,file2)` Compares the passed and failed tests from file1 and file2 and returns
