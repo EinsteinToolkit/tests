@@ -84,7 +84,7 @@ num_tests number of the longest test
 `get_unrunnable(file)` This test reads the log file looking for tests that could not be run
 and the corresponding reason.
 
-![thorns](images/https://github.com/mojamil/einsteintoolkit/blob/gh-pages/thorns.png) ![procs](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/images/processors.png)
+![thorns](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/images/thorns.png) ![procs](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/images/processors.png)
 
 `get_data(file)` Retrieves singular field of data from a csv and returns it as a list
 
