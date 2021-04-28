@@ -28,11 +28,11 @@ The first part of the workflow is checking if there is already a
 workflow run in progress, and if that is true, this new run is not
 performed
 
-![skipping-code](images/skip.png)
+![skipping-code](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/images/skip.png)
 
 The second workflow run in this picture ends in 18s as the
 third one was running at the same time
-![skipping-result](images/skip2.png)
+![skipping-result](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/images/skip2.png)
 
 I checkout the gh-pages branch as that is where the scripts
 are to parse and output the data.
@@ -41,7 +41,7 @@ Then all the required libraries are installed and then a clone
 of the master branch is created and the files from the gh-pages
 branch are copied over and run:
 
-![copy](images/copy.png)
+![copy](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/images/copy.png)
 
 Then I copied back the files with the data that needs to be stored
 and push it to the github pages branch.
@@ -50,7 +50,7 @@ In order check if there was a workflow run that was cancelled the workflow
 checks if there were in any changes made to the repository and if so it runs
 the workflow again.
 
-![check](images/check.png)
+![check](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/images/check.png)
 
 ### ![build-and-test.sh](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/build-and-test.sh)
 
@@ -64,11 +64,11 @@ does
 
 `create_summary(file)` This function looks for the summary of the tests stored in log files such
 as build__2_1.log or build__1_2.log:
-![summary](images/summary.png)
+![summary](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/images/summary.png)
 
 `get_tests(file)` Gets the name of the test that passed and failed as listed in log files such
 as build__2_1.log or build__1_2.log:
-![pass-fail](images/pass-fail.png)
+![pass-fail](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/images/pass-fail.png)
 
 `test_comp(file1,file2)` Compares the passed and failed tests from file1 and file2 and returns
 which files are newly passing,newly failing, newly added and removed.
@@ -82,14 +82,14 @@ num_tests number of the longest test
 `get_unrunnable(file)` This test reads the log file looking for tests that could not be run
 and the corresponding reason.
 
-![thorns](images/thorns.png) ![procs](images/processors.png)
+![thorns](images/https://github.com/mojamil/einsteintoolkit/blob/gh-pages/thorns.png) ![procs](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/images/processors.png)
 
 `get_data(file)` Retrieves singular field of data from a csv and returns it as a list
 
 `get_warning_thorns(file)` Looks at the compile log and searches for compilation warnings
 and outputs the number of warnings per thorn:
 
-![comperr](images/comperr.png)
+![comperr](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/images/comperr.png)
 
 `get_compile(file)` Gets the total number of compilation warnings
 
@@ -98,7 +98,7 @@ and outputs the number of warnings per thorn:
 `copy_tests(test_dir,version,procs)`  copies logs and diffs for each test. test_dir is where the test logs 
 and diffs are.The version number and number of procs is used to store the files as shown below:
 
-![vers_proc](images/vers_proc.png)
+![vers_proc](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/images/vers_proc.png)
 
 `copy_logs(version)` This copies the test logs for future use
 
