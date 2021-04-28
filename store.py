@@ -23,7 +23,7 @@ def copy_tests(test_dir,version,procs):
     #shutil.copytree(test_dir,dst,)
 
 
-def copy_builds(version):
+def copy_logs(version):
     '''
         This copies the test logs for future use
     '''
@@ -42,7 +42,7 @@ def copy_index(version):
     index="./docs/index.html"
     if os.path.exists(index):
         shutil.copy(index,dst)
-def copy_build_log(version):
+def copy_compile_log(version):
     '''
         This copies the compilation logs for future use
     '''
@@ -68,6 +68,6 @@ if __name__ == "__main__":
     dir2=os.path.expanduser("~/simulations/TestJob01_temp_2/output-0000/TEST/sim")
     version=get_version()
     os.mkdir(f"./records/version_{version}/")
-    copy_builds(version)
+    copy_logs(version)
     copy_tests(dir1,version,1)
     copy_tests(dir2,version,2)
