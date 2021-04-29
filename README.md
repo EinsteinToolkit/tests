@@ -7,10 +7,9 @@
     - [File Overview](#file-overview)
   - [Explanation of Files](#explanation-of-files)
     - [main.yml](#mainyml)
-    - [!parser.py](#)
-    - [store.py](#storepy)
-    - [logpage.py](#logpagepy)
-  - [Future Improvements](#future-improvements)
+    - [parser](#parser)
+    - [store](#store)
+    - [logpage](#logpage)
   
 ## Introduction
 
@@ -79,7 +78,7 @@ the workflow again.
 
 ![check](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/images/check.png)
 
-### ![parser.py](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/parser.py)
+### parser
 
 This python script is used to parse the log files for required data.
 The parsing is done by using regex expression matching to find the
@@ -119,7 +118,7 @@ and outputs the number of warnings per thorn:
 
 `get_compile(file)` Gets the total number of compilation warnings
 
-### store.py
+### store
 
 `copy_tests(test_dir,version,procs)`  copies logs and diffs for each test. test_dir is where the test logs 
 and diffs are.The version number and number of procs is used to store the files as shown below:
@@ -135,11 +134,23 @@ and diffs are.The version number and number of procs is used to store the files 
 `get_version()` Gets the version based on the stored files if there are no stored files
 returns 1
 
-### logpage.py 
+### logpage
 
 Logpage.py generates tables for the html report page and outputs as an html page as
 shown here:
 
 ![mojamil.github.io/einsteintoolkit/](mojamil.github.io/einsteintoolkit/)
 
-## Future Improvements
+This file uses bokeh, a python library, to generate plots. The plots are created using python code and bokeh
+then converts to javascript and html.
+
+![bokeh](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/images/bokeh.png)
+
+Bokeh's plotting works similar to other plotting libraries. First a figure is generated and attributes can
+be added such as tools to zoom, labels, axis ranges, etc. Bokeh plots using glyphs i.e. given data it will
+plot it in the format specified for example p.line shown above generates a line graph and p.circle can be
+used for scatter plots. Bokeh can show its plot locally and save it as a file or generate html and javascript
+for the plot as shown below:
+
+![bokeh2](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/images/bokeh2.png)
+
