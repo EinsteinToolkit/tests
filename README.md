@@ -141,10 +141,12 @@ shown here:
 
 ![mojamil.github.io/einsteintoolkit/](mojamil.github.io/einsteintoolkit/)
 
+
 This file uses bokeh, a python library, to generate plots. The plots are created using python code and bokeh
 then converts to javascript and html.
 
 ![bokeh](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/images/bokeh.png)
+![plot](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/images/plot.png)
 
 Bokeh's plotting works similar to other plotting libraries. First a figure is generated and attributes can
 be added such as tools to zoom, labels, axis ranges, etc. Bokeh plots using glyphs i.e. given data it will
