@@ -2,17 +2,44 @@
 
 - [Einstein Toolkit Automated Testing Using Github Actions](#einstein-toolkit-automated-testing-using-github-actions)
   - [Introduction](#introduction)
+    - [What is Github Actions](#what-is-github-actions)
+    - [Why Github Actions](#why-github-actions)
+    - [File Overview](#file-overview)
   - [Explanation of Files](#explanation-of-files)
     - [main.yml](#mainyml)
-    - [!build-and-test.sh](#)
-    - [!parser.py](#-1)
+    - [!parser.py](#)
     - [store.py](#storepy)
+    - [logpage.py](#logpagepy)
   - [Future Improvements](#future-improvements)
   
 ## Introduction
 
+### What is Github Actions
 
-Test
+Github Actions is continuous integration/ continous development platform that runs
+a set of commands on a repository. Github Actions allows the creation of user 
+created modules that automates certain commonly used workflows. On each push, the 
+workflow is run in a docker container (running ubuntu).
+
+### Why Github Actions
+
+- Github Actions allows tests to be run on their servers as such there is no server maintenance required
+- There is less security risks because its hosted on the cloud rather than an active server
+- Easier local testing allowing for new features to be tested easier
+- Flexibility to to tailor the reports to the Einstein Toolkit since we can design our own parsers and tools.
+- Larger community giving more opportunity for more plugins than Jenkins.
+
+### File Overview
+
+- `main.yml` - Executes the workflow
+- `build-and-test.sh` - Compiles and runs the tests
+- `parser.py` - Parses the log files
+- `logpage.py` - Generates the HTML pages
+- `store.py` - Stores logs for future use
+- `mail.py` - Send email each time tests are run
+- `test_nums.csv` - Stores summary stats from logs
+- `records/` - Folder contains compilation logs, logs with summary of tests, and individual test logs and diffs. 
+- `docs/index.html` - HTML page that is displayed on mojamil.github.io/einsteintoolkit/
 
 ## Explanation of Files
 
@@ -51,9 +78,6 @@ checks if there were in any changes made to the repository and if so it runs
 the workflow again.
 
 ![check](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/images/check.png)
-
-### ![build-and-test.sh](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/build-and-test.sh)
-
 
 ### ![parser.py](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/parser.py)
 
@@ -111,5 +135,11 @@ and diffs are.The version number and number of procs is used to store the files 
 `get_version()` Gets the version based on the stored files if there are no stored files
 returns 1
 
+### logpage.py 
+
+Logpage.py generates tables for the html report page and outputs as an html page as
+shown here:
+
+![mojamil.github.io/einsteintoolkit/](mojamil.github.io/einsteintoolkit/)
 
 ## Future Improvements
