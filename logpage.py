@@ -146,7 +146,7 @@ def gen_time(readfile):
     output+="</table><br>"
     return output
 
-def plot_test_data():
+def plot_test_data(readfile):
 
     # Get dataa from the csv and create lists for each field
     runnable=list(get_data("Runnable tests").values())
@@ -156,7 +156,7 @@ def plot_test_data():
     compile_warn=list((get_data("Compile Time Warnings").values()))
 
     # Get the of dictionary of thorns with their warning counts
-    warning_thorns=get_warning_thorns(f"records/version_{curr_ver}/build_{curr_ver}.log")
+    warning_thorns=get_warning_thorns(readfile)
 
     # Turn that dictionary into lists so you can pick the thorns with most warnings
     counts=list(warning_thorns.values())
@@ -284,7 +284,7 @@ def summary_to_html(readfile,writefile):
     data=create_summary(readfile)
     
     contents=""
-    script,div=plot_test_data()
+    script,div=plot_test_data(readfile)
 
 
     # Check Status Using the data from the summary
@@ -412,7 +412,7 @@ def write_to_csv(readfile):
 
 if __name__ == "__main__":
     write_to_csv(curr)
-    summary_to_html(curr,"docs/index.html")
+    summary_to_html("./records/version_9/build__2_1_9.log","docs/index_9.html")
     copy_index(get_version()-1)
 
 
