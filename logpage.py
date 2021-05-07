@@ -14,6 +14,8 @@ from bokeh.layouts import row
 from store import get_version,copy_index
 from bokeh.palettes import viridis
 from bokeh.transform import factor_cmap
+from bokeh.resources import CDN
+from bokeh.embed import file_html
 from parser import create_summary,get_tests, get_warning_thorns, get_warning_type,test_comp,get_times,exceed_thresh,longest_tests,get_unrunnable,get_data,get_compile
 import glob
 
@@ -248,8 +250,11 @@ def plot_test_data():
     p3.yaxis.major_label_orientation = "horizontal"
 
     # Bokeh createst the html script and javscript for the plots using this code
-    script, div = components(Tabs(tabs=[tab1, tab2,tab3,tab4]))
-    
+    html = file_html(Tabs(tabs=[tab1, tab2,tab3]), CDN, "Plots")
+    with open("./docs/plot.html","w") as fp:
+        fp.write(html)
+    #script, div = components(Tabs(tabs=[tab1, tab2,tab3]))
+    script, div=components(p3)
     return script,div
 
 
@@ -280,7 +285,7 @@ def summary_to_html(readfile,writefile):
     
     contents=""
     script,div=plot_test_data()
-    print(div)
+
 
     # Check Status Using the data from the summary
     status="All Tests Passed"
@@ -345,8 +350,8 @@ def summary_to_html(readfile,writefile):
             </style>
             <script src="https://cdn.bokeh.org/bokeh/release/bokeh-2.0.1.min.js"
             crossorigin="anonymous"></script>
-            
             {script}
+
         </head>
         <body>
             <div class="sidebar">
@@ -371,6 +376,9 @@ def summary_to_html(readfile,writefile):
                 <br>
                 {gen_unrunnable(readfile)}
                 <br>
+                <table style="margin: 0 auto;">
+                    <iframe src="plot.html" height="700" width="1100"></iframe>
+                </table>
                 <table style="margin: 0 auto;">
                     {div}
                 </table>
@@ -406,3 +414,5 @@ if __name__ == "__main__":
     write_to_csv(curr)
     summary_to_html(curr,"docs/index.html")
     copy_index(get_version()-1)
+
+
