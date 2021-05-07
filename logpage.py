@@ -1,7 +1,7 @@
 from bokeh.models.annotations import Legend
 from requests.api import get
 import sys
-import os,csv,time,requests
+import os,csv,time,requests,math
 from datetime import datetime
 import matplotlib.pyplot as plt
 import bokeh.plotting as bplt
@@ -34,9 +34,20 @@ def gen_commits():
     runs_list=requests.get("https://api.github.com/repos/mojamil/einsteintoolkit/actions/runs").json()
     commit_list=requests.get("https://api.github.com/repos/mojamil/einsteintoolkit/commits")
     response=commit_list.json()
-
     # Get the most recent commit
-    current=response[0]["sha"]
+    try:
+        current=response[0]["sha"]
+    except:
+        out="<th>"
+        message="Manual Run"
+        try:
+            date=runs_list["workflow_runs"][0]["created_at"]
+        except:
+            date="Unavailable"
+        out+="Commit 1 </th>"
+        out+="<tr> <td> Date: </td> <td>"+date+"</td> </tr> \n"
+        out+="<tr> <td> Message: </td> <td> Could not receive commit message due to rate limits</td> </tr> \n"
+        return out
 
     # Get the commit associated with the last run
     previous=runs_list["workflow_runs"][1]["head_commit"]['id']
@@ -208,6 +219,8 @@ def plot_test_data(readfile):
     p.varea(y1='rt',y2='xax', x='t', color="green",source=src,alpha=0.5)
     p.varea(y1='tp',y2='xax', x='t', color="blue",source=src,alpha=0.5)
 
+    
+
     # The graphs are displayed in a tabs and this part sets that up
     tab1 = Panel(child=p, title="Test Results")
     p.legend.location = "top_left"
@@ -244,10 +257,10 @@ def plot_test_data(readfile):
        line_color='white', fill_color=factor_cmap('wts', palette=viridis(len(counts)), factors=warning_types_list))
     tab4=Panel(child=p3, title="Compilation Warning Thorns")
 
-    p.yaxis.major_label_orientation = "horizontal"
-    p1.yaxis.major_label_orientation = "horizontal"
-    p2.yaxis.major_label_orientation = "horizontal"
-    p3.yaxis.major_label_orientation = "horizontal"
+    p.xaxis.major_label_orientation = math.pi/6
+    p1.xaxis.major_label_orientation = math.pi/6
+    p2.xaxis.major_label_orientation = math.pi/6
+
 
     # Bokeh createst the html script and javscript for the plots using this code
     html = file_html(Tabs(tabs=[tab1, tab2,tab3]), CDN, "Plots")
