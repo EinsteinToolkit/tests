@@ -60,7 +60,11 @@ def get_version():
         builds=[int(x.split("_")[-1].split(".")[0]) for x in builds]
         current=max(builds)
     with open("./docs/version.txt",'w') as vers:
-        vers.write(f"{current+1}")
+        for build_no in range(current+1,min(builds)-1,-1):
+            if build_no==min(builds):
+                vers.write(f"{build_no}")
+            else:
+                vers.write(f"{build_no}\n")
     return current+1
 
 if __name__ == "__main__":
