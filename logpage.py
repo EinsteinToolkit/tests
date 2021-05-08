@@ -424,7 +424,7 @@ def write_to_csv(readfile):
 
 if __name__ == "__main__":
     write_to_csv(curr)
-    summary_to_html("./records/version_9/build__2_1_9.log","docs/index_9.html")
+    summary_to_html(curr,"docs/index.html")
     copy_index(get_version()-1)
 
 
