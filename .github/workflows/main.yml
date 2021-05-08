@@ -40,6 +40,7 @@ jobs:
       - name: Test
         run: |
           echo "CHANGES_MADE=False" >> $GITHUB_ENV
+          echo "TESTS_FAILED=False" >> $GITHUB_ENV
     
       - name: Install pre-requisite libraries
         run:  |
@@ -78,6 +79,7 @@ jobs:
           cd test
           chmod +x build-and-test.sh
           ./build-and-test.sh || true
+          python3 logpage.py >> $GITHUB_ENV
           cd ..
           cd einsteintoolkit
       - name: Store files
@@ -121,3 +123,11 @@ jobs:
           workflow: 'CI'
           # GitHub token with repo write access, can NOT use secrets.GITHUB_TOKEN, see readme
           token: ${{ secrets.PERSONAL_TOKEN }}
+  clean_up:
+    needs: build
+    runs-on: ubuntu-latest
+    if: ${{env.TESTS_FAILED == 'True'}}
+    steps:
+      - name: Fail Test
+        run: exit 1
+    
