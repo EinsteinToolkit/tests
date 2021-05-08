@@ -21,7 +21,6 @@ import glob
 
 records=os.listdir("./records")
 curr_ver=get_version()-1
-print(curr_ver)
 curr=f"./records/version_{curr_ver}/build__2_1_{curr_ver}.log"
 last=f"./records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
 
@@ -87,7 +86,8 @@ def gen_diffs(readfile):
 
     # The test_comp function provides tests that failed, were newly added or newly removed
     test_comparison=test_comp(readfile,last)
-    print(test_comparison)
+    if len(test_comparison["Failed Tests"])!=0:
+        print("TESTS_FAILED=True")
 
     # Setup the header for the table
     output='''<table class="table table-bordered " >
@@ -197,7 +197,6 @@ def plot_test_data(readfile):
     TOOLTIPS = [
         ("Tests Passed", "$tp"),
     ]
-    print(src.data["rt"])
 
     # p is the first figure an area chart with the number of tests passed out of the ones ran
     # Tools attribute gives ways to manipulate the plot such as having clickable points, scrool to zoom and pan to zoom.
