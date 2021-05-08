@@ -167,7 +167,7 @@ def plot_test_data(readfile):
     compile_warn=list((get_data("Compile Time Warnings").values()))
 
     # Get the of dictionary of thorns with their warning counts
-    warning_thorns=get_warning_thorns(readfile)
+    warning_thorns=get_warning_thorns(f"records/version_{curr_ver}/build_{curr_ver}.log")
 
     # Turn that dictionary into lists so you can pick the thorns with most warnings
     counts=list(warning_thorns.values())
