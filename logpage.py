@@ -69,7 +69,7 @@ def gen_commits():
         message=commit["commit"]["message"]
         message=message.replace("\n\n","\n")
         message=message.replace('\n','<br>')
-        date=commit["commit"]["author"]["date"]
+        date=commit["commit"]["committer"]["date"]
         out+="Commit "+str(count)+"</th>"
         out+="<tr> <td> Date: </td> <td>"+date+"</td> </tr> \n"
         out+="<tr> <td> Message: </td> <td>"+message+"</td> </tr> \n"
@@ -426,5 +426,8 @@ if __name__ == "__main__":
     write_to_csv(curr)
     summary_to_html(curr,"docs/index.html")
     copy_index(get_version()-1)
+    with open("mail.py") as fp:
+        read_file=fp.read()
+        exec(read_file)
 
 
