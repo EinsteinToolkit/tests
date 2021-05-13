@@ -52,7 +52,7 @@ The workflow is run on each push and can also be run manually
 
 The first part of the workflow is checking if there is already a
 workflow run in progress, and if that is true, this new run is not
-performed
+performed. This uses this plugin: https://github.com/fkirc/skip-duplicate-actions
 
 ![skipping-code](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/images/skip.png)
 
@@ -141,6 +141,8 @@ shown here:
 
 ![mojamil.github.io/einsteintoolkit/](mojamil.github.io/einsteintoolkit/)
 
+This file gets the last few commits using githubs REST API for commits and workflow runs as 
+shown in these documentation links: https://docs.github.com/en/rest/reference/repos#commits and https://docs.github.com/en/rest/reference/actions
 
 This file uses bokeh, a python library, to generate plots. The plots are created using python code and bokeh
 then converts to javascript and html.
