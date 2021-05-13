@@ -74,7 +74,7 @@ and push it to the github pages branch.
 
 In order check if there was a workflow run that was cancelled the workflow
 checks if there were in any changes made to the repository and if so it runs
-the workflow again.
+the workflow again. This workflow would be run again using this plugin: https://github.com/benc-uk/workflow-dispatch
 
 ![check](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/images/check.png)
 
