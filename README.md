@@ -4,6 +4,7 @@
   - [Introduction](#introduction)
     - [What is Github Actions](#what-is-github-actions)
     - [Why Github Actions](#why-github-actions)
+    - [Important Setup](#setup)
     - [File Overview](#file-overview)
   - [Explanation of Files](#explanation-of-files)
     - [main.yml](#mainyml)
@@ -27,6 +28,12 @@ workflow is run in a docker container (running ubuntu).
 - Easier local testing allowing for new features to be tested easier
 - Flexibility to to tailor the reports to the Einstein Toolkit since we can design our own parsers and tools.
 - Larger community giving more opportunity for more plugins than Jenkins.
+
+### Setup
+In orer to make workflow function correctly, a secret needs to be stored on this repo with
+the name PERSONAL_TOKEN. In order to create the token follow this guide: https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token.
+After creating the token it can be stored as shown here https://docs.github.com/en/actions/reference/encrypted-secrets.
+
 
 ### File Overview
 
