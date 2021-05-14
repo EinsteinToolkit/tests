@@ -1,9 +1,14 @@
-from bokeh.models.annotations import Legend
+'''
+Generates the HTML pages displaying various tables based on the logs.
+'''
 from requests.api import get
 import sys
 import os,csv,time,requests,math
 from datetime import datetime
 import matplotlib.pyplot as plt
+
+# Different Bokeh modules
+from bokeh.models.annotations import Legend
 import bokeh.plotting as bplt
 import bokeh.models.tools as btools
 from bokeh.models import Panel, Tabs
@@ -16,6 +21,8 @@ from bokeh.palettes import viridis
 from bokeh.transform import factor_cmap
 from bokeh.resources import CDN
 from bokeh.embed import file_html
+
+# Functions from parser.py
 from parser import create_summary,get_tests, get_warning_thorns, get_warning_type,test_comp,get_times,exceed_thresh,longest_tests,get_unrunnable,get_data,get_compile
 import glob
 
