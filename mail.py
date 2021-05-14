@@ -34,9 +34,9 @@ for commit in commits:
 
 content=f'''Test
 Build URL: https://mojamil.github.io/einsteintoolkit/index_{build_no}
-Project:EinsteinToolkit
-Date of build:{commits[0]["commit"]["committer"]["date"]}
-Changes
+Project: EinsteinToolkit
+Date of build: {commits[0]["commit"]["committer"]["date"]}
+Changes:
 
 {messages}
 '''
