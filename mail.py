@@ -1,7 +1,7 @@
 import requests
 import os
 from store import get_version
-
+from parser import test_comp
 runs_list=requests.get("https://api.github.com/repos/mojamil/einsteintoolkit/actions/runs").json()
 commit_list=requests.get("https://api.github.com/repos/mojamil/einsteintoolkit/commits")
 response=commit_list.json()
@@ -20,6 +20,14 @@ run_id=workflows.json()['workflow_runs'][0]["id"]
 # jobs=jobs_list.json()["jobs"]
 # build_job=jobs[0]["steps"][3]
 build_no=get_version()-1
+curr=f"./records/version_{build_no}/build__2_1_{build_no}.log"
+test_comparison=test_comp(curr,last)
+subject=""
+if len(test_comparison["Failed Tests"])!=0:
+    subject="Some Tests Failed"
+elif len(test_comparison["Newly Passing Tests"])!=0:
+    subject="Some Previously Failing Tests Are Now Passing"
+    
 messages=""
 for commit in commits:
     messages+=commit["commit"]["message"]+"\n"
@@ -31,8 +39,8 @@ Date of build:{commits[0]["commit"]["committer"]["date"]}
 Changes
 
 {messages}
-
 '''
+
 # Import smtplib for the actual sending function
 import smtplib
  
@@ -43,7 +51,7 @@ from email.message import EmailMessage
 msg = EmailMessage()
 msg.set_content(content)
  
-msg['Subject'] = 'A demo email'
+msg['Subject'] = subject
 msg['From'] = "jenkins@build-test.barrywardell.net"
 msg['To'] = "test@einsteintoolkit.org"
  
