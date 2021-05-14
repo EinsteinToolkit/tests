@@ -428,7 +428,7 @@ if __name__ == "__main__":
     copy_index(get_version()-1)
     with open("mail.py") as fp:
         read_file=fp.read()
-        test_comparison=test_comp(readfile,last)
+        test_comparison=test_comp(curr,last)
         if len(test_comparison["Failed Tests"])!=0 or len(test_comparison["Newly Passing Tests"])!=0 :
             exec(read_file)
 
