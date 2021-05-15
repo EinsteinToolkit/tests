@@ -1,3 +1,6 @@
+'''
+This file stores logs for future use in the records folder
+'''
 import shutil,os,glob
 
 def copy_tests(test_dir,version,procs):
