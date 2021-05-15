@@ -1,4 +1,7 @@
-from logging import warn
+'''
+This file parses the log files such as build__2_1.log
+'''
+
 from collections import defaultdict
 import re
 
