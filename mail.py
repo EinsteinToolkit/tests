@@ -1,3 +1,6 @@
+'''
+This file sends emails if there are failing tests or if a previously failing test passes now.
+'''
 import requests
 import os
 from store import get_version
