@@ -52,6 +52,16 @@ def copy_compile_log(version):
     dst=f"./records/version_{version}/build_{version}.log"
     build="./build.log"
     shutil.copy(build,dst)
+
+def store_commit_id(version):
+    '''
+        This stores the current git HEAD hash for future use
+    '''
+    dst=f"./records/version_{version}/id,txt"
+    # TODO: use pygit2 for this
+    id=".git/refs/heads/master"
+    shutil.copy(id,dst)
+
 def get_version():
     '''
         This checks the version of the current build
@@ -84,3 +94,4 @@ if __name__ == "__main__":
     copy_logs(version)
     copy_tests(dir1,version,1)
     copy_tests(dir2,version,2)
+    store_commit_id(version)
