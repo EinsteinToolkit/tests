@@ -22,6 +22,11 @@ from bokeh.transform import factor_cmap
 from bokeh.resources import CDN
 from bokeh.embed import file_html
 
+# to generate a commit log
+from pygit2 import Repository, Oid
+from pygit2 import GIT_SORT_TOPOLOGICAL, GIT_SORT_REVERSE
+from datetime import datetime, timezone, timedelta
+
 # Functions from parser.py
 from parser import create_summary,get_tests, get_warning_thorns, get_warning_type,test_comp,get_times,exceed_thresh,longest_tests,get_unrunnable,get_data,get_compile
 import glob
