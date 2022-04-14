@@ -57,7 +57,7 @@ def store_commit_id(version):
     '''
         This stores the current git HEAD hash for future use
     '''
-    dst=f"./records/version_{version}/id,txt"
+    dst=f"./records/version_{version}/id.txt"
     # TODO: use pygit2 for this
     id=".git/refs/heads/master"
     shutil.copy(id,dst)
