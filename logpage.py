@@ -37,6 +37,7 @@ curr=f"./records/version_{curr_ver}/build__2_1_{curr_ver}.log"
 last=f"./records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
 
 repo = Repository('.git')
+baseurl = repo.remotes["origin"].url.replace(":","/").replace("git@", "https://").replace(".git","")
 
 def gen_commits():
     '''
@@ -66,7 +67,7 @@ def gen_commits():
         lines.append("<tr> <td> Message: </td> <td>"+message+"</td> </tr> \n")
     return "\n".join(lines)
 
-# log_link=f"https://github.com/mojamil/einsteintoolkit/blob/master/records/version_{last_ver}/{last[ext-1:]+str(last_ver+1)}"
+# log_link=f"{baseurl}/blob/master/records/version_{last_ver}/{last[ext-1:]+str(last_ver+1)}"
 def gen_diffs(readfile):
     '''
         This function generates the html table that shows
@@ -104,10 +105,10 @@ def gen_diffs(readfile):
                 ver-=1
 
             # Links for logs and diffs of the tests in the test_comparison dictionary based on the number of procs
-            logl1=f"https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/version_{ver}/sim_{ver}_1/{thorn}/{test_name}.log"
-            logl2=f"https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/version_{ver}/sim_{ver}_2/{thorn}/{test_name}.log"
-            diffl1=f"https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/version_{ver}/sim_{ver}_1/{thorn}/{test_name}.diffs"
-            diffl2=f"https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/version_{ver}/sim_{ver}_2/{thorn}/{test_name}.diffs"
+            logl1=f"{baseurl}/tree/gh-pages/records/version_{ver}/sim_{ver}_1/{thorn}/{test_name}.log"
+            logl2=f"{baseurl}/tree/gh-pages/records/version_{ver}/sim_{ver}_2/{thorn}/{test_name}.log"
+            diffl1=f"{baseurl}/tree/gh-pages/records/version_{ver}/sim_{ver}_1/{thorn}/{test_name}.diffs"
+            diffl2=f"{baseurl}/tree/gh-pages/records/version_{ver}/sim_{ver}_2/{thorn}/{test_name}.diffs"
 
             # Check if these files are available if not display not avaible on the table 
             if(os.path.isfile("./"+logl1[logl1.find("records"):])):
@@ -362,7 +363,7 @@ def summary_to_html(readfile,writefile):
             </script>
             <div class="container">
                 <h1 style="text-align:center">{status}</h1>
-                <h3 style="text-align:center"><a href="https://github.com/mojamil/einsteintoolkit/tree/gh-pages/records/version_{curr_ver}">Build #{curr_ver}</a></h3>
+                <h3 style="text-align:center"><a href="{baseurl}/tree/gh-pages/records/version_{curr_ver}">Build #{curr_ver}</a></h3>
                 <table class="table table-bordered " >
                 <caption style="text-align:center;font-weight: bold;caption-side:top">Summary</caption>
                 {contents}
