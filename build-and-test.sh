@@ -2,7 +2,6 @@
 export SYNC_SUBMODULES=true
 export CLEAN_CACTUS_JENKINS=true
 export BUILD_TYPE=Incremental
-cd einsteintoolkit
 export WORKSPACE=$PWD
 set -e -x
 
