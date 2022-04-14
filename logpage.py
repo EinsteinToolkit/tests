@@ -16,7 +16,7 @@ import bokeh.models.callbacks as bcall
 from bokeh.resources import CDN
 from bokeh.embed import components
 from bokeh.layouts import row
-from store import get_version,copy_index
+from store import get_version,copy_index,get_commit_id
 from bokeh.palettes import viridis
 from bokeh.transform import factor_cmap
 from bokeh.resources import CDN
@@ -36,57 +36,35 @@ curr_ver=get_version()-1
 curr=f"./records/version_{curr_ver}/build__2_1_{curr_ver}.log"
 last=f"./records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
 
+repo = Repository('.git')
+
 def gen_commits():
     '''
         This function generates a list of commits that have been made since the last run
         If the workflow was run manually it will say so.
     '''
-    # This part of the code gets the list of commits and runs using the github api
-    runs_list=requests.get("https://api.github.com/repos/mojamil/einsteintoolkit/actions/runs").json()
-    commit_list=requests.get("https://api.github.com/repos/mojamil/einsteintoolkit/commits")
-    response=commit_list.json()
-    # Get the most recent commit
-    try:
-        current=response[0]["sha"]
-    except:
-        out="<th>"
-        message="Manual Run"
-        try:
-            date=runs_list["workflow_runs"][0]["created_at"]
-        except:
-            date="Unavailable"
-        out+="Commit 1 </th>"
-        out+="<tr> <td> Date: </td> <td>"+date+"</td> </tr> \n"
-        out+="<tr> <td> Message: </td> <td> Could not receive commit message due to rate limits</td> </tr> \n"
-        return out
 
-    # Get the commit associated with the last run
-    previous=runs_list["workflow_runs"][1]["head_commit"]['id']
+    # TODO: turn into convenience function
+    curr_commit_id = Oid(hex=get_commit_id(curr_ver))
+    last_commit_id = Oid(hex=get_commit_id(curr_ver-1))
+    commits = []
+    for commit in repo.walk(curr_commit_id, GIT_SORT_TOPOLOGICAL):
+        if(commit.id == last_commit_id):
+            break
+        commits.append(commit)
 
-    # Compare the current commit with the one from the previous runn
-    compare=requests.get(f"https://api.github.com/repos/mojamil/einsteintoolkit/compare/{previous}...{current}")
-    commits=compare.json()["commits"]
-
-    # Create table listing a manual run or a list of commits
-    out="<th>"
-    count=1
-    if previous==current:
-        message="Manual Run"
-        date=runs_list["workflow_runs"][0]["created_at"]
-        out+="Commit "+str(count)+"</th>"
-        out+="<tr> <td> Date: </td> <td>"+date+"</td> </tr> \n"
-        out+="<tr> <td> Message: </td> <td>"+message+"</td> </tr> \n"
-
-    for commit in commits:
-        message=commit["commit"]["message"]
+    lines = []
+    for count,commit in enumerate(commits):
+        message=commit.message
         message=message.replace("\n\n","\n")
         message=message.replace('\n','<br>')
-        date=commit["commit"]["committer"]["date"]
-        out+="Commit "+str(count)+"</th>"
-        out+="<tr> <td> Date: </td> <td>"+date+"</td> </tr> \n"
-        out+="<tr> <td> Message: </td> <td>"+message+"</td> </tr> \n"
-        count+=1
-    return out
+        tzinfo = timezone(timedelta(minutes=commit.author.offset))
+        dt = datetime.fromtimestamp(commit.author.time, tzinfo)
+        date = str(dt)
+        lines.append("Commit "+str(count+1)+"</th>")
+        lines.append("<tr> <td> Date: </td> <td>"+date+"</td> </tr> \n")
+        lines.append("<tr> <td> Message: </td> <td>"+message+"</td> </tr> \n")
+    return "\n".join(lines)
 
 # log_link=f"https://github.com/mojamil/einsteintoolkit/blob/master/records/version_{last_ver}/{last[ext-1:]+str(last_ver+1)}"
 def gen_diffs(readfile):
