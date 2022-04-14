@@ -70,6 +70,12 @@ def get_version():
                 vers.write(f"{build_no}\n")
     return current+1
 
+def get_commit_id(version):
+    '''
+        Returns the code commit id that this version corresponds to.
+    '''
+    return open(f"./records/version_{version}/id.txt", "r").readline().strip()
+
 if __name__ == "__main__":
     dir1=os.path.expanduser("~/simulations/TestJob01_temp_1/output-0000/TEST/sim")
     dir2=os.path.expanduser("~/simulations/TestJob01_temp_2/output-0000/TEST/sim")
