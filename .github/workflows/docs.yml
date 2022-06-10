@@ -24,29 +24,36 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 1
           submodules: recursive
 
       # Runs a single command using the runners shell
       - name: build documentation
         run: |
           set -e -x
+
           sudo apt-get update
-          for p in make ghostscript texlive-plain-generic texlive-latex-recommended texlive-latex-extra curl ; do
-            sudo apt-get install $p
-          done
-          apt-get clean
-          cd $GITHUB_WORKSPACE/einsteintoolkit
+          sudo apt-get install make ghostscript texlive-plain-generic texlive-latex-recommended texlive-latex-extra curl
+          sudo apt-get clean
+
           make AllDocHTML
           make AllDocHTML # twice to get all references in LaTeX
-          tar -czf doc/HTML.tar.gz doc/HTML
-          
-      - name: Archive HTML docs
-        uses: actions/upload-artifact@v3
-        with:
-          name: HTML.tar.gz
-          path: docs/HTML.tar.gz
-          retention-days: 1
-        
+
+          # DEBUG code
+          # sudo apt-get install curl
+          # git submodule update --init flesh
+          # mkdir -p doc/HTML
+          # echo "Dummy" >doc/HTML/dummy.txt
+
+          # abuse a git tag to push out the HTML repo
+          cd doc/HTML
+          git init
+          git config user.email 'maintainers@einsteintoolkit.rg'
+          git config user.name 'GitHub runner'
+          git add --all
+          git commit -m 'nightly HTML docs'
+          git tag HTML
+          git remote add github https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
+          git push -f github HTML
       - name: Trigger update of HTML docs
-        run: curl -kL https://www.einsteintoolkit.org/update.php/?update
+        run: curl -skL https://www.einsteintoolkit.org/update.php/?update
