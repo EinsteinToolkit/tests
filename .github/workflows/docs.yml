@@ -11,10 +11,26 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+  # run once a day
+  schedule:
+    - cron: '51 20 * * * *'
+
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
+  check-if-there-are-commits:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: nrwl/last-successful-commit-action@aa010c6c9f400e5eebd4c192b2f40a7f9fc5cb97
+        id: last-successful-commit
+        with:
+          branch: 'master'
+          workflow_id: 'docs.yml'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
   build:
+    # don't run if nothing changed
+    if: ${{ needs.check-if-there-are-commits.steps.last-successful-commit.outputs.commit_hash !=  github.sha }}
+
     # The type of runner that the job will run on
     # TODO: create custom docker image for this
     runs-on: ubuntu-latest
