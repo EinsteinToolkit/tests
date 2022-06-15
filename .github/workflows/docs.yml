@@ -23,8 +23,10 @@ concurrency:
 jobs:
   check-if-there-are-commits:
     runs-on: ubuntu-latest
+    outputs:
+      commit_hash: ${{ steps.last-successful-commit.outputs.commit_hash }}
     steps:
-      - uses: nrwl/last-successful-commit-action@aa010c6c9f400e5eebd4c192b2f40a7f9fc5cb97
+      - uses: rhaas80/last-successful-commit-action@f23bb68905cacbe73dd5c91ee6c63dbb2a9bc265
         id: last-successful-commit
         with:
           branch: 'master'
@@ -33,6 +35,7 @@ jobs:
 
   build:
     # don't run if nothing changed
+    needs: check-if-there-are-commits
     if: ${{ github.event_name == 'workflow_dispatch' || needs.check-if-there-are-commits.steps.last-successful-commit.outputs.commit_hash !=  github.sha }}
 
     # The type of runner that the job will run on
