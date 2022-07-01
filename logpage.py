@@ -305,15 +305,15 @@ def gen_commits():
         message=commit.message
         message=message.replace("\n\n","\n")
         message=message.replace('\n','<br>')
-        tzinfo = timezone(timedelta(minutes=commit.author.offset))
-        print(tzinfo)
+        #tzinfo = timezone(timedelta(minutes=commit.author.offset))
+        #print(tzinfo)
         dt = datetime.fromtimestamp(commit.author.time, tz=timezone.utc)
-        print(dt)
+        #print(dt)
         date = str(dt)
         lines.append("<tr> <td> <b> Commit: </b> </td> <td> <b> "+str(count+1)+" </b> </td> </tr> \n")
         lines.append("<tr> <td> Date: (In UTC)  </td> <td> "+date+"  </td> </tr> \n")
         lines.append("<tr> <td> Message: </td> <td>"+message+"</td> </tr> \n")
-        print(lines)
+        #print(lines)
     return "\n".join(lines)
 
 # log_link=f"{baseurl}/blob/master/records/version_{last_ver}/{last[ext-1:]+str(last_ver+1)}"
@@ -430,7 +430,7 @@ def plot_test_data(readfile):
     for i in range(len(times)):
         date = datetime.fromtimestamp(float(float(times[i])), tz=None) # changing to UNIX timestamp from float
         axis.append(date)
-        Date.append(date.strftime("%Y/%m/%d"))
+        Date.append(date.strftime("%Y-%m-%d"))
         #print(axis)
 
     # The python library bokeh has a special data structure called a column data source that functions similarly
