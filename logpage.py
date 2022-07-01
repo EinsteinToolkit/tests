@@ -305,7 +305,7 @@ def gen_commits():
         message=commit.message
         message=message.replace("\n\n","\n")
         message=message.replace('\n','<br>')
-        #tzinfo = timezone(timedelta(minutes=commit.author.offset))
+        tzinfo = timezone(timedelta(minutes=commit.author.offset))
         #print(tzinfo)
         dt = datetime.fromtimestamp(commit.author.time, tz=timezone.utc)
         #print(dt)
