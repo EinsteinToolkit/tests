@@ -398,7 +398,8 @@ def summary_to_html(readfile,writefile):
                 {gen_unrunnable(readfile)}
                 <br>
                 <table style="margin: 0 auto;">
-                    <iframe src="plot.html" height="700" width="1100"></iframe>
+                    <!-- height determined by height of plots inside (600ox) -->
+                    <iframe src="plot.html" style="height: 700px; width: 100%"></iframe>
                 </table>
                 <table style="margin: 0 auto;">
                     {div}
