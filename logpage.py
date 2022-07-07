@@ -288,7 +288,7 @@ def gen_unrunnable(readfile):
     <caption style="text-align:center;font-weight: bold;caption-side:top">Unrunnable Tests</caption>\n'''
     output+="<tr><th>Tests Missed for Lack Of Thorns</th><th>Missing Thorns</th></tr>\n"
     for test in m.keys():
-        thorns=','.join(m[test])
+        thorns=', '.join(m[test])
         output+=f"  <tr><td>{test}</td><td>{thorns}</td></tr>\n"
     output+="<tr><th>Tests missed for different number of processors required:</th><th>Processors Required</th></tr>\n"
     for test in n.keys():
