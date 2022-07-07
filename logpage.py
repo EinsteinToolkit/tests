@@ -36,7 +36,7 @@ curr=f"./records/version_{curr_ver}/build__2_1_{curr_ver}.log"
 last=f"./records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
 
 repo = Repository('.git')
-baseurl = repo.remotes["origin"].url.replace(":","/").replace("git@", "https://").replace(".git","")
+baseurl = repo.remotes["origin"].url.replace("git@", "https://").replace(".git","")
 
 def gen_commits():
     '''
