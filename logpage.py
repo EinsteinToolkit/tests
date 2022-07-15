@@ -208,7 +208,7 @@ def plot_test_data(readfile):
     # end = times[len(axis) - 1]
     # print(start, end)
     p=bplt.figure(x_range = (axis[len(axis) - 20], axis[len(axis) - 1]), y_range=(max(0, min(runnable)-30), max(runnable)+10), plot_width=1000, plot_height=600
-                  ,tools="hover,tap,xwheel_zoom,box_zoom,reset",
+                  ,tools="hover,tap,pan,xwheel_zoom,box_zoom,reset",
            y_axis_label="Number of Tests", x_axis_label="Date", x_axis_type="datetime",
            title="Passed Tests", toolbar_location="below",sizing_mode='scale_width', tooltips=[("Date", "@d"),
             ("Runnable Tests", "@rt"), ("Passing Tests", "@tp"), ("Build", "@b")])
@@ -234,7 +234,7 @@ def plot_test_data(readfile):
     p.legend.location = "top_left"
 
     # This graph is for how long the testing part takes uses similar code to the first one but instead of area it has lines connecting points
-    p1=bplt.figure(y_range=(0,max(time_taken)+5),plot_width=1000, plot_height=600,tools="tap,wheel_zoom,box_zoom,reset",
+    p1=bplt.figure(y_range=(0,max(time_taken)+5),plot_width=1000, plot_height=600,tools="tap,pan,wheel_zoom,box_zoom,reset",
            y_axis_label="Time(minutes)", x_axis_label="Date", x_axis_type="datetime",
            title="Time Taken for Tests", toolbar_location="below",sizing_mode='scale_width')
     p1.circle('nt','timet',size=10,color="blue",source=src)
@@ -245,7 +245,7 @@ def plot_test_data(readfile):
 
 
     # This graph is for the total number of compilation warnings and it uses the same code as the above plot but with different data
-    p2=bplt.figure(y_range=(0,max(compile_warn)+50),plot_width=1000, plot_height=600,tools="tap,wheel_zoom,box_zoom,reset",
+    p2=bplt.figure(y_range=(0,max(compile_warn)+50),plot_width=1000, plot_height=600,tools="tap,pan,wheel_zoom,box_zoom,reset",
            title="Compilation Warnings",y_axis_label="Number of Compilation Warnings", x_axis_label="Date", x_axis_type="datetime",
            toolbar_location="below",sizing_mode='scale_width')
     p2.circle('nt','cmt',size=10,color="blue",source=src)
@@ -260,7 +260,7 @@ def plot_test_data(readfile):
     # This plot is a bar graph showing the top 7 thorns with the most warnings
     p3=bplt.figure(x_range=warning_types_list,plot_width=1200, title="Compilation Warning Thorns",
            y_axis_label="Number of Warnings", x_axis_label="Name of Thorn",
-           toolbar_location="below", tools="tap,wheel_zoom,box_zoom,reset",sizing_mode='scale_width')
+           toolbar_location="below", tools="tap,pan,wheel_zoom,box_zoom,reset",sizing_mode='scale_width')
     p3.vbar(x='wts', top='cts', width=0.9, source=src1,
        line_color='white', fill_color=factor_cmap('wts', palette=viridis(len(counts)), factors=warning_types_list))
     tab4=Panel(child=p3, title="Compilation Warning Thorns")
