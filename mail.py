@@ -35,8 +35,9 @@ messages=""
 for commit in commits:
     messages+=commit["commit"]["message"]+"\n"
 
+repo_name = os.environ['GITHUB_REPOSITORY'].split('/')[-1]
 content=f'''Test
-Build URL: https://{os.environ['GITHUB_REPOSITORY_OWNER']}.github.io/einsteintoolkit/index_{build_no}
+Build URL: https://{os.environ['GITHUB_REPOSITORY_OWNER']}.github.io/{repo_name}/index_{build_no}
 Project: EinsteinToolkit
 Date of build: {commits[0]["commit"]["committer"]["date"]}
 Changes:
