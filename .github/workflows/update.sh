@@ -18,12 +18,13 @@ for m in $(git diff --cached --name-only) ; do  (
 ) done
 
 if ! git diff --cached --exit-code --quiet ; then
+  git config --global user.email "maintainters@einsteintoolkit.org"
+  git config --global user.name "GitHub updater"
   git commit -q -F - <<EOF
 updated submodules
 
 $(git diff --cached --submodule=log)
 EOF
-  git config --global user.email "maintainters@einsteintoolkit.org"
-  git config --global user.name "GitHub updater"
+
   git push
 fi
