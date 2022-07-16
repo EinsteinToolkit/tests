@@ -25,6 +25,8 @@ updated submodules
 
 $(git diff --cached --submodule=log)
 EOF
-
+  # could use GITHUB_SERVER_URL but it requires inserting
+  # text after the https:// in it which is annoying
+  git remote set-url --push origin "https://x-access-token:${PERSONAL_TOKEN}@github.com/${GITHUB_REPOSITORY}"
   git push
 fi
