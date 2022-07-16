@@ -21,5 +21,7 @@ updated submodules
 
 $(git diff --cached --submodule=log)
 EOF
+  git config --global user.email "maintainters@einsteintoolkit.org"
+  git config --global user.name "GitHub updater"
   git push
 fi
