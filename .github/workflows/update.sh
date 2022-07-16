@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e -x
+
 git submodule init
 awk '/^[[]submodule "/{print "update = !git reset --quiet --mixed"} {print}' .git/config >.git/config.tmp
 mv .git/config.tmp .git/config
