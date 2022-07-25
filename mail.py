@@ -26,9 +26,7 @@ baseurl = repo.remotes["origin"].url.replace("git@", "https://").replace(".git",
 
 data = logpage.create_summary(summary)
 status = "All Tests Passed"
-if data["Number of tests passed"]==0:
-    status="All Tests Passed"
-elif data["Number failed"]!=0:
+if data["Number failed"]!=0:
     status="Some Tests Failed"
 # Add a table row for each data field
 contents = "\n".join([f"<tr><th>{key}</th><td>{data[key]}</td><tr>" for key in data.keys()])
