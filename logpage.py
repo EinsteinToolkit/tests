@@ -320,6 +320,10 @@ def summary_to_html(readfile,writefile):
         status="Some Tests Failed"
         # Send email if tests failed
         #os.system(f'python3 mail.py')
+    dateFormatter = "%a %b %d %H:%M:%S %Z %Y"
+    build_dt = datetime.strptime(data["Time"], dateFormatter)
+    build_dt_utc = build_dt.replace(tzinfo=timezone.utc)  # changing to UTC
+    build_date = build_dt_utc.strftime(dateFormatter)
     with open(writefile,"w") as fp:
         for key in data.keys():
 
@@ -386,6 +390,7 @@ def summary_to_html(readfile,writefile):
             <div class="container">
                 <h1 style="text-align:center">{status}</h1>
                 <h3 style="text-align:center"><a href="{baseurl}/tree/gh-pages/records/version_{curr_ver}">Build #{curr_ver}</a></h3>
+                <h2 style="text-align:center">{build_date}</h2>
                 <table class="table table-bordered " >
                 <caption style="text-align:center;font-weight: bold;caption-side:top">Summary</caption>
                 {contents}
