@@ -17,7 +17,7 @@ def create_summary(file):
         i=0
         while not re.match("^\s*Summary for configuration sim",lines[i]):
             i+=1
-        i+=6
+        i+=1
         # Loop until the end of the summary
         while not re.match("\s*Tests passed:",lines[i]):
             # The spacing of this line is unique and as such requires a special if statement
