@@ -29,7 +29,7 @@ def create_summary(file):
                 try:
                     sum_data[" ".join(split_l[0].split())]=int(split_l[1].strip())
                 except:
-                    sum_data[" ".join(split_l[0].split())]=split_l[1]
+                    sum_data[" ".join(split_l[0].split())]=split_l[1].strip()
                 # This data field has to lines and as such increment the line counter twice
                 i+=1
 
@@ -39,7 +39,7 @@ def create_summary(file):
                 try:
                     sum_data[" ".join(split_l[0].split())]=int(split_l[1].strip())
                 except:
-                    sum_data[" ".join(split_l[0].split())]=split_l[1]
+                    sum_data[" ".join(split_l[0].split())]=split_l[1].strip()
             i+=1
             
     return sum_data
