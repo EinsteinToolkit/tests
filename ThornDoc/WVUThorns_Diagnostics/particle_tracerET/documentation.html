@@ -1,0 +1,1238 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>particle_tracerET</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (http://www.tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (http://www.tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+ <script type="text/x-mathjax-config"> MathJax.Hub.Config({ 'fast-preview': {disabled: true}, TeX: { extensions: ["color.js","AMSmath.js"], equationNumbers: { autoNumber: "AMS" } }, extensions: ["tex2jax.js"], tex2jax: {  inlineMath: [ ["\\\(","\\\)"] ], displayMath: [ ['$$','$$'], ["\\[","\\]"] ], processEscapes: true, processEnvironments: true } }); </script> 
+ <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">particle_tracerET </h2>
+          <div class="author" ><span 
+class="cmr-12">Zachariah B.</span><span 
+class="cmr-12"> Etienne </span><span 
+class="cmmi-12">&#x003C;</span><span 
+class="cmr-12">zachetie *at* gmail *dot* com </span><span 
+class="cmmi-12">&#x003E;</span>
+<br /><span 
+class="cmr-12">Documentation by Leonardo R.</span><span 
+class="cmr-12"> Werneck </span><span 
+class="cmmi-12">&#x003C;</span><span 
+class="cmr-12">wernecklr *at* gmail *dot* com </span><span 
+class="cmmi-12">&#x003E;</span></div>
+<br />
+<div class="date" ><span 
+class="cmr-12">Feb 2, 2022</span></div>
+</div>
+<div 
+class="abstract" 
+>
+<div class="center" 
+>
+<!--l. 144--><p class="noindent" >
+</p><!--l. 144--><p class="noindent" ><span 
+class="cmbx-9">Abstract</span></p></div>
+     <!--l. 145--><p class="indent" >    <span 
+class="cmtt-9">particle</span><span 
+class="cmtt-9">_tracerET </span><span 
+class="cmr-9">is used to track the motion of test particles that comove with fluid flows.</span>
+     <span 
+class="cmr-9">With this data once can generate accurate, self-consistent visualizations of magnetic field lines over</span>
+     <span 
+class="cmr-9">the course of e.g., a binary neutron star simulation.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Overview</h3>
+<!--l. 154--><p class="noindent" ><span 
+class="cmtt-10">particle</span><span 
+class="cmtt-10">_tracerET </span>tracks the motion of test particles that comove with fluid flows. As magnetic field lines
+remain attached to the fluid elements they thread in the MHD approximation, this thorn provides essential
+functionality for self-consistent visualizations of the dynamics of magnetic field lines (i.e., magnetic field vector
+streamlines) over time in a GRMHD simulation.
+</p><!--l. 161--><p class="noindent" >Magnetic field lines can be visualized by first picking a fluid element (i.e., a point in space at which the fluid
+density and magnetic fields are nonzero), and then generating the vector field streamline according to the
+magnetic field vector.
+                                                                                       
+                                                                                       
+</p><!--l. 166--><p class="noindent" >The instantaneous velocity of these test particles is given by the velocity in the induction equation \(v^{i} = u^{i}/u^{0}\) at the
+location of each test particle, so this thorn tracks particle dynamics by solving the ordinary differential equations
+(ODEs): \begin{equation} \frac{dx}{dt} = v^{x}\;,\quad \frac{dy}{dt} = v^{y}\;,\quad \frac{dz}{dt} = v^{z}\;, \end{equation}
+subject to the initial conditions \begin{equation} x(0) = x_{0}\;,\quad y(0) = y_{0}\;,\quad z(0) = z_{0}\;. \end{equation}
+The above initial value problem is solved for each particle using an RK4 ODE integration, interpolating the
+velocity vector at each particle position, at each RK4 substep. The frequency of RK4 substeps generally can be
+far lower than that of the global simulation RK substepping, and is set to be every “<span class="obeylines-h"><span class="verb"><span 
+class="cmtt-10">update_RK4_freq</span></span></span>”
+<span class="obeylines-h"><span class="verb"><span 
+class="cmtt-10">cctk_iteration</span></span></span>’s.
+</p><!--l. 187--><p class="noindent" >The velocities \(v^{i} = u^{i}/u^{0}\) are computed using as inputs the <span 
+class="cmtt-10">HydroBase </span>velocity and <span 
+class="cmtt-10">ADMBase </span>spacetime metric variables.
+<span 
+class="cmtt-10">particle</span><span 
+class="cmtt-10">_tracerET </span>stores \(v^{i}\) to <span 
+class="cmtt-10">MHDvx</span>, <span 
+class="cmtt-10">MHDvy</span>, and <span 
+class="cmtt-10">MHDvz</span>.
+</p><!--l. 192--><p class="noindent" >Note that the velocities above differ from the <span 
+class="cmtt-10">HydroBase </span>velocities, the so-called Valencia three-velocity, \(v^{i}_{(n)}\). The
+relationship between \(v^{i}\) and \(v^{i}_{(n)}\) is given by (see e.g., <span class="cite">[<a 
+href="#Xetienne2015illinoisgrmhd">1</a>]</span>) \begin{equation} v^{i} = \alpha v^{i}_{(n)} - \beta ^{i}\;. \end{equation}
+</p><!--l. 202--><p class="noindent" >Initially, particles are seeded inside a sphere of radius \(R\) located at position \((X,Y,Z)\). The parameters that correspond to \(R\),
+\(X\), \(Y\), and \(Z\) are given in Table 1.
+</p>
+<div class="table">
+                                                                                       
+                                                                                       
+<!--l. 207--><p class="noindent" ></p><hr class="float" /><div class="float" 
+>
+                                                                                       
+                                                                                       
+<div class="tabular"> <table id="TBL-2" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /><col 
+id="TBL-2-2" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-1-1"  
+class="td11">Variable</td><td  style="white-space:nowrap; text-align:center;" id="TBL-2-1-2"  
+class="td11">           Thorn parameter                  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-2-1"  
+class="td11">    \(R\)    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-2-2-2"  
+class="td11"> <span class="obeylines-h"><span class="verb"><span 
+class="cmtt-10">seed_particles_inside_sphere__radius</span></span></span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-1"  
+class="td11">    \(X\)    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-2"  
+class="td11"><span class="obeylines-h"><span class="verb"><span 
+class="cmtt-10">seed_particles_inside_sphere__x_coord</span></span></span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-4-1"  
+class="td11">    \(Y\)    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-2-4-2"  
+class="td11"><span class="obeylines-h"><span class="verb"><span 
+class="cmtt-10">seed_particles_inside_sphere__y_coord</span></span></span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-5-1"  
+class="td11">    \(Z\)    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-2-5-2"  
+class="td11"><span class="obeylines-h"><span class="verb"><span 
+class="cmtt-10">seed_particles_inside_sphere__z_coord</span></span></span></td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-6-1"  
+class="td11">        </td></tr></table></div>
+                                                                                       
+                                                                                       
+</div><hr class="endfloat" />
+</div>
+<!--l. 222--><p class="noindent" >Once the position of the particle is known, it is accepted by the algorithm with probability \begin{equation} P = \left [\frac{\rho (\vec{x}_{\rm p})}{\rho _{\rm max}}\right ]^{C}\;, \end{equation}
+where \(\rho (\vec{x}_{\rm p})\) is the density interpolated at the particle position \(\vec{x}_{\rm p}\), \(\rho _{\rm max}\) is the maximum density on the computational
+domain, and \(C\) is the central condensation parameter.
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a>Basic usage</h3>
+<!--l. 240--><p class="noindent" >The following snippet shows what to add to your parfile in order to setup the thorn to seed 5000 particles inside
+a sphere of radius \(R=50\) centered at \((X,Y,Z)=(0,0,0)\) (default). The maximum density is specified as well, which will affect the
+probability \(P\) with which the particles are accepted by the algorithm. The particle positions are then updated once
+every 16 time steps by solving the ODEs above.
+                                                                                       
+                                                                                       
+</p>
+<div class="verbatim" id="verbatim-1">
+ActiveThorns = &#x0022;particle_tracerET&#x0022;
+ <br />particle_tracerET::num_particles                        = 5000
+ <br />particle_tracerET::density_max                          = 0.000959482674936154
+ <br />particle_tracerET::seed_particles_inside_sphere__radius = 50
+ <br />particle_tracerET::update_RK4_freq                      = 16
+</div>
+<!--l. 253--><p class="nopar" >
+</p><!--l. 259--><p class="noindent" >
+</p>
+<h3 class="likesectionHead"><a 
+ id="x1-30002"></a>References</h3>
+<!--l. 259--><p class="noindent" >
+   </p><div class="thebibliography">
+   <p class="bibitem" ><span class="biblabel">
+ [1]<span class="bibsp">   </span></span><a 
+ id="Xetienne2015illinoisgrmhd"></a>
+   </p><p class="bibitem-p" >Z. B. Etienne,  V. Paschalidis,  R. Haas,  P. Mösta,  &#x0026;  S. L. Shapiro,      <span 
+class="cmti-10">IllinoisGRMHD:  an</span>
+   <span 
+class="cmti-10">open-source, user-friendly GRMHD code for dynamical spacetimes</span>, Classical and Quantum Gravity,
+   32(17), 175009 (2015).
+</p>
+   </div>
+<!--l. 274--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-40003"></a>Parameters</h3>
+<!--l. 293--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-3" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-3-1g"><col 
+id="TBL-3-1" /></colgroup><colgroup id="TBL-3-2g"><col 
+id="TBL-3-2" /><col 
+id="TBL-3-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-1-"><td  style="white-space:normal; text-align:left;" id="TBL-3-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">central_condensation_parameter</div>     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>private </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-1-3"  
+class="td01">                            REAL</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-3-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description:       </span><span 
+class="cmti-10">Probability       of       accepting       random       point       x,y,z       =</span>
+<span 
+class="cmti-10">(density(x,y,z)/density</span><span 
+class="cmti-10">_max)</span><span 
+class="cmti-10">ĉentral</span><span 
+class="cmti-10">_condensation</span><span 
+class="cmti-10">_paramter</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-3-3"  
+class="td01">                      <span 
+class="cmbx-10">Default: </span>1.0</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-4-"><td  style="white-space:normal; text-align:left;" id="TBL-3-4-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                              </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-3-4-2"  
+class="td10"><div class="multicolumn"  style="white-space:normal; text-align:left;">Any number</div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-5-1"  
+class="td11">                                 </td></tr></table></div>
+                                                                                       
+                                                                                       
+<!--l. 300--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-4" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-4-1g"><col 
+id="TBL-4-1" /></colgroup><colgroup id="TBL-4-2g"><col 
+id="TBL-4-2" /><col 
+id="TBL-4-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-1-"><td  style="white-space:normal; text-align:left;" id="TBL-4-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">debug</div>                           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>private </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-1-3"  
+class="td01">                              INT</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-4-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Evolve analytic velocity data and verify that the RK4 solution is consistent to 4th</span>
+<span 
+class="cmti-10">order.</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-3-3"  
+class="td01">                   <span 
+class="cmbx-10">Default: </span>(none)</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-4-"><td  style="white-space:normal; text-align:left;" id="TBL-4-4-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">0:1</div>                              </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-4-2"  
+class="td10"><div class="multicolumn"  style="white-space:normal; text-align:left;">0 = disable; 1=enable debug</div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-5-1"  
+class="td11">                                 </td></tr></table></div>
+<!--l. 307--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-5" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-5-1g"><col 
+id="TBL-5-1" /></colgroup><colgroup id="TBL-5-2g"><col 
+id="TBL-5-2" /><col 
+id="TBL-5-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-1-"><td  style="white-space:normal; text-align:left;" id="TBL-5-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">density_max</div>                      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>private </td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-1-3"  
+class="td01">                            REAL</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-5-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Maximum density within sphere.</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-3-3"  
+class="td01">                   <span 
+class="cmbx-10">Default: </span>(none)</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-4-"><td  style="white-space:normal; text-align:left;" id="TBL-5-4-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                              </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-5-4-2"  
+class="td10"><div class="multicolumn"  style="white-space:normal; text-align:left;">Any number</div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-5-1"  
+class="td11">                                 </td></tr></table></div>
+<!--l. 314--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-6" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-6-1g"><col 
+id="TBL-6-1" /></colgroup><colgroup id="TBL-6-2g"><col 
+id="TBL-6-2" /><col 
+id="TBL-6-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-1-"><td  style="white-space:normal; text-align:left;" id="TBL-6-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">interpolator_name</div>                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>private </td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-1-3"  
+class="td01">                              STRING</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-6-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Which interpolator should I use</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-3-3"  
+class="td01"><span 
+class="cmbx-10">Default: </span>Lagrange polynomial interpolation</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-4-"><td  style="white-space:normal; text-align:left;" id="TBL-6-4-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">.+</div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-6-4-2"  
+class="td10"><div class="multicolumn"  style="white-space:normal; text-align:left;">Any nonempty string</div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-5-1"  
+class="td11">                                 </td></tr></table></div>
+<!--l. 321--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-7" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-7-1g"><col 
+id="TBL-7-1" /></colgroup><colgroup id="TBL-7-2g"><col 
+id="TBL-7-2" /><col 
+id="TBL-7-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-1-"><td  style="white-space:normal; text-align:left;" id="TBL-7-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">interpolator_pars</div>                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>private </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-1-3"  
+class="td01">                          STRING</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-7-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Parameters for the interpolator</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-3-3"  
+class="td01">                  <span 
+class="cmbx-10">Default: </span>order=4</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-4-"><td  style="white-space:normal; text-align:left;" id="TBL-7-4-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">.*</div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-7-4-2"  
+class="td10"><div class="multicolumn"  style="white-space:normal; text-align:left;">”Any string that Util_TableSetFromStr ing() will take”</div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-5-1"  
+class="td11">                                 </td></tr></table></div>
+<!--l. 329--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-8" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-8-1g"><col 
+id="TBL-8-1" /></colgroup><colgroup id="TBL-8-2g"><col 
+id="TBL-8-2" /><col 
+id="TBL-8-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-1-"><td  style="white-space:normal; text-align:left;" id="TBL-8-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">num_particles</div>                     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>private </td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-1-3"  
+class="td01">                              INT</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-8-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Number of particles</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-3-3"  
+class="td01">                   <span 
+class="cmbx-10">Default: </span>(none)</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-4-"><td  style="white-space:normal; text-align:left;" id="TBL-8-4-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">0:10000</div>                           </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-8-4-2"  
+class="td10"><div class="multicolumn"  style="white-space:normal; text-align:left;">zero (disable particle generation), or some other number</div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-5-1"  
+class="td11">                                 </td></tr></table></div>
+<!--l. 336--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-9" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-9-1g"><col 
+id="TBL-9-1" /></colgroup><colgroup id="TBL-9-2g"><col 
+id="TBL-9-2" /><col 
+id="TBL-9-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-1-"><td  style="white-space:normal; text-align:left;" id="TBL-9-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">out_of_bounds_xyz</div>                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>private </td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-1-3"  
+class="td01">                            REAL</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-9-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">fabs(x) </span><span 
+class="cmmi-10">&#x003E; </span><span 
+class="cmti-10">out</span><span 
+class="cmti-10">_of</span><span 
+class="cmti-10">_bounds</span><span 
+class="cmti-10">_xyz —— fabs(y) </span><span 
+class="cmmi-10">&#x003E; </span><span 
+class="cmti-10">out</span><span 
+class="cmti-10">_of</span><span 
+class="cmti-10">_bounds</span><span 
+class="cmti-10">_xyz —— fabs(z) </span><span 
+class="cmmi-10">&#x003E;</span>
+<span 
+class="cmti-10">out</span><span 
+class="cmti-10">_of</span><span 
+class="cmti-10">_bounds</span><span 
+class="cmti-10">_xyz -</span><span 
+class="cmmi-10">&#x003E; </span><span 
+class="cmti-10">OUT OF BOUNDS.</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-3-3"  
+class="td01">                     <span 
+class="cmbx-10">Default: </span>800.0</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-4-"><td  style="white-space:normal; text-align:left;" id="TBL-9-4-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                              </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-9-4-2"  
+class="td10"><div class="multicolumn"  style="white-space:normal; text-align:left;">Any number</div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-5-1"  
+class="td11">                                 </td></tr></table></div>
+<!--l. 343--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-10" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-10-1g"><col 
+id="TBL-10-1" /></colgroup><colgroup id="TBL-10-2g"><col 
+id="TBL-10-2" /><col 
+id="TBL-10-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-1-"><td  style="white-space:normal; text-align:left;" id="TBL-10-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">outdir</div>                           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>private </td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-1-3"  
+class="td01">                          STRING</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-10-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Directory for particle tracerET output files, overrides IO::out</span><span 
+class="cmti-10">_dir</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-3-3"  
+class="td01">                   <span 
+class="cmbx-10">Default: </span>(none)</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-4-"><td  style="white-space:normal; text-align:left;" id="TBL-10-4-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">.+</div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-10-4-2"  
+class="td10"><div class="multicolumn"  style="white-space:normal; text-align:left;">A valid directory name</div>
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-5-"><td  style="white-space:normal; text-align:left;" id="TBL-10-5-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><img 
+src="documentation0x.png" alt="ˆ$  "  class="circ"  /></div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-10-5-2"  
+class="td10"><div class="multicolumn"  style="white-space:normal; text-align:left;">An empty string to choose the default from IO::out_dir</div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-6-1"  
+class="td11">                                 </td></tr></table></div>
+<!--l. 350--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-11" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-11-1g"><col 
+id="TBL-11-1" /></colgroup><colgroup id="TBL-11-2g"><col 
+id="TBL-11-2" /><col 
+id="TBL-11-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-1-"><td  style="white-space:normal; text-align:left;" id="TBL-11-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">seed_particles_inside_sphere__radius</div>  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>private </td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-1-3"  
+class="td01">                            REAL</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-11-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">radius of sphere within which to seed particles</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-3-3"  
+class="td01">                   <span 
+class="cmbx-10">Default: </span>(none)</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-4-"><td  style="white-space:normal; text-align:left;" id="TBL-11-4-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                              </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-11-4-2"  
+class="td10"><div class="multicolumn"  style="white-space:normal; text-align:left;">Any number</div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-5-1"  
+class="td11">                                 </td></tr></table></div>
+<!--l. 357--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-12" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-12-1g"><col 
+id="TBL-12-1" /></colgroup><colgroup id="TBL-12-2g"><col 
+id="TBL-12-2" /><col 
+id="TBL-12-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-1-"><td  style="white-space:normal; text-align:left;" id="TBL-12-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">seed_particles_inside_sphere__x_coord</div></td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>private </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-1-3"  
+class="td01">                            REAL</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-12-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">x-coord of sphere center, within which to seed particles</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-3-3"  
+class="td01">                   <span 
+class="cmbx-10">Default: </span>(none)</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-4-"><td  style="white-space:normal; text-align:left;" id="TBL-12-4-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                              </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-12-4-2"  
+class="td10"><div class="multicolumn"  style="white-space:normal; text-align:left;">Any number</div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-5-1"  
+class="td11">                                 </td></tr></table></div>
+<!--l. 364--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-13" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-13-1g"><col 
+id="TBL-13-1" /></colgroup><colgroup id="TBL-13-2g"><col 
+id="TBL-13-2" /><col 
+id="TBL-13-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-1-"><td  style="white-space:normal; text-align:left;" id="TBL-13-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">seed_particles_inside_sphere__y_coord</div></td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>private </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-1-3"  
+class="td01">                            REAL</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-13-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">y-coord of sphere center, within which to seed particles</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-3-3"  
+class="td01">                   <span 
+class="cmbx-10">Default: </span>(none)</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-4-"><td  style="white-space:normal; text-align:left;" id="TBL-13-4-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                              </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-13-4-2"  
+class="td10"><div class="multicolumn"  style="white-space:normal; text-align:left;">Any number</div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-5-1"  
+class="td11">                                 </td></tr></table></div>
+                                                                                       
+                                                                                       
+<!--l. 371--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-14" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-14-1g"><col 
+id="TBL-14-1" /></colgroup><colgroup id="TBL-14-2g"><col 
+id="TBL-14-2" /><col 
+id="TBL-14-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-1-"><td  style="white-space:normal; text-align:left;" id="TBL-14-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">seed_particles_inside_sphere__z_coord</div></td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>private </td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-1-3"  
+class="td01">                            REAL</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-14-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">z-coord of sphere center, within which to seed particles</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-3-3"  
+class="td01">                   <span 
+class="cmbx-10">Default: </span>(none)</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-4-"><td  style="white-space:normal; text-align:left;" id="TBL-14-4-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                              </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-14-4-2"  
+class="td10"><div class="multicolumn"  style="white-space:normal; text-align:left;">Any number</div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-5-1"  
+class="td11">                                 </td></tr></table></div>
+<!--l. 378--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-15" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-15-1g"><col 
+id="TBL-15-1" /></colgroup><colgroup id="TBL-15-2g"><col 
+id="TBL-15-2" /><col 
+id="TBL-15-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-1-"><td  style="white-space:normal; text-align:left;" id="TBL-15-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">start_tracing_particles_iteration</div>     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>private </td><td  style="white-space:nowrap; text-align:right;" id="TBL-15-1-3"  
+class="td01">                              INT</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-15-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Iteration at which to start tracing particles</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-15-3-3"  
+class="td01">                   <span 
+class="cmbx-10">Default: </span>(none)</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-4-"><td  style="white-space:normal; text-align:left;" id="TBL-15-4-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                              </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-15-4-2"  
+class="td10"><div class="multicolumn"  style="white-space:normal; text-align:left;">zero or some positive number.</div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-5-1"  
+class="td11">                                 </td></tr></table></div>
+<!--l. 385--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-16" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-16-1g"><col 
+id="TBL-16-1" /></colgroup><colgroup id="TBL-16-2g"><col 
+id="TBL-16-2" /><col 
+id="TBL-16-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-1-"><td  style="white-space:normal; text-align:left;" id="TBL-16-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">update_rk4_freq</div>                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>private </td><td  style="white-space:nowrap; text-align:right;" id="TBL-16-1-3"  
+class="td01">                              INT</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-16-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">How often (in units of cctk</span><span 
+class="cmti-10">_iteration) to perform an RK4 substep? Usually 4–8</span>
+<span 
+class="cmti-10">works best. Definitely choose a power of 2.</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-16-3-3"  
+class="td01">                   <span 
+class="cmbx-10">Default: </span>(none)</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-4-"><td  style="white-space:normal; text-align:left;" id="TBL-16-4-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">0:4096</div>                            </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-16-4-2"  
+class="td10"><div class="multicolumn"  style="white-space:normal; text-align:left;">zero (disable integration) or some other number</div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-5-1"  
+class="td11">                                 </td></tr></table></div>
+<!--l. 392--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-17" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-17-1g"><col 
+id="TBL-17-1" /></colgroup><colgroup id="TBL-17-2g"><col 
+id="TBL-17-2" /><col 
+id="TBL-17-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-1-"><td  style="white-space:normal; text-align:left;" id="TBL-17-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">verbose</div>                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>private </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-1-3"  
+class="td01">                              INT</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-17-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description:  </span><span 
+class="cmti-10">Set  verbosity  level:  1=useful  info;  2=moderately  annoying  (though  useful  for</span>
+<span 
+class="cmti-10">debugging)</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-3-3"  
+class="td01">                        <span 
+class="cmbx-10">Default: </span>1</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-4-"><td  style="white-space:normal; text-align:left;" id="TBL-17-4-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">0:2</div>                              </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-17-4-2"  
+class="td10"><div class="multicolumn"  style="white-space:normal; text-align:left;">0  =  no  output;  1=useful  info;  2=moderately  annoying
+(though useful for debugging)</div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-5-1"  
+class="td11">                                 </td></tr></table></div>
+<!--l. 399--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-18" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-18-1g"><col 
+id="TBL-18-1" /></colgroup><colgroup id="TBL-18-2g"><col 
+id="TBL-18-2" /><col 
+id="TBL-18-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-1-"><td  style="white-space:normal; text-align:left;" id="TBL-18-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">out_dir</div>                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>shared from IO </td><td  style="white-space:nowrap; text-align:right;" id="TBL-18-1-3"  
+class="td01">STRING</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-2-1"  
+class="td11">                                 </td></tr></table>
+</div>
+<!--l. 406--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-50004"></a>Interfaces</h3>
+<!--l. 411--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-60004"></a>General</h4>
+<!--l. 413--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 415--><p class="noindent" >particle_traceret
+</p><!--l. 418--><p class="noindent" ><span 
+class="cmbx-10">Inherits</span>:
+</p><!--l. 420--><p class="noindent" >grid
+</p><!--l. 422--><p class="noindent" >hydrobase
+</p><!--l. 424--><p class="noindent" >admbase
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-70004"></a>Grid Variables</h4>
+                                                                                       
+                                                                                       
+<!--l. 427--><p class="noindent" >
+</p>
+<h5 class="subsubsectionHead"><span class="titlemark">4.0.1   </span> <a 
+ id="x1-80004.0.1"></a>PRIVATE GROUPS</h5>
+<div class="tabular"> <table id="TBL-19" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-19-1g"><col 
+id="TBL-19-1" /></colgroup><colgroup id="TBL-19-2g"><col 
+id="TBL-19-2" /></colgroup><colgroup id="TBL-19-3g"><col 
+id="TBL-19-3" /><col 
+id="TBL-19-4" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-1-1"  
+class="td11">               <span 
+class="cmbx-10">Group Names </span>                     </td><td  style="white-space:nowrap; text-align:center;" id="TBL-19-1-2"  
+class="td10">  <span 
+class="cmbx-10">Variable Names </span>  </td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-1-3"  
+class="td01">  <span 
+class="cmbx-10">Details </span> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-1-4"  
+class="td11">                                                                                     </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-2-1"  
+class="td11">            rk4iterationcountervar                   </td><td  style="white-space:nowrap; text-align:center;" id="TBL-19-2-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-2-3"  
+class="td01">    compact</td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-2-4"  
+class="td11">0                                                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-3-1"  
+class="td11">                                           </td><td  style="white-space:nowrap; text-align:center;" id="TBL-19-3-2"  
+class="td10"> RK4IterationCounter  </td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-3-3"  
+class="td01">  description</td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-3-4"  
+class="td11">Counter that keeps track of which RK4 iteration we are on.       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-4-1"  
+class="td11">                                           </td><td  style="white-space:nowrap; text-align:center;" id="TBL-19-4-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-4-3"  
+class="td01">  dimensions</td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-4-4"  
+class="td11">0                                                                                    </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-5-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:center;" id="TBL-19-5-2"  
+class="td10">  </td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-5-3"  
+class="td01"> distribution</td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-5-4"  
+class="td11">CONSTANT</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-6-1"  
+class="td11">                                           </td><td  style="white-space:nowrap; text-align:center;" id="TBL-19-6-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-6-3"  
+class="td01">  group type</td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-6-4"  
+class="td11">SCALAR                                                                         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-7-1"  
+class="td11">                                           </td><td  style="white-space:nowrap; text-align:center;" id="TBL-19-7-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-7-3"  
+class="td01">   timelevels</td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-7-4"  
+class="td11">1                                                                                    </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-8-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:center;" id="TBL-19-8-2"  
+class="td10">  </td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-8-3"  
+class="td01">variable type</td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-8-4"  
+class="td11">INT</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-9-1"  
+class="td11">           particle_position_arrays                  </td><td  style="white-space:nowrap; text-align:center;" id="TBL-19-9-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-9-3"  
+class="td01">    compact</td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-9-4"  
+class="td11">0                                                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-10-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-10-1"  
+class="td11">                                           </td><td  style="white-space:nowrap; text-align:center;" id="TBL-19-10-2"  
+class="td10"> particle_position_x   </td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-10-3"  
+class="td01">  description</td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-10-4"  
+class="td11">Particle positions and RK4 coefficients k1                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-11-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-11-1"  
+class="td11">                                           </td><td  style="white-space:nowrap; text-align:center;" id="TBL-19-11-2"  
+class="td10">                         </td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-11-3"  
+class="td01">  description</td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-11-4"  
+class="td11">k2                                                                                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-12-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-12-1"  
+class="td11">                                           </td><td  style="white-space:nowrap; text-align:center;" id="TBL-19-12-2"  
+class="td10"> particle_position_x   </td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-12-3"  
+class="td01">  description</td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-12-4"  
+class="td11">k3                                                                                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-13-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-13-1"  
+class="td11">                                           </td><td  style="white-space:nowrap; text-align:center;" id="TBL-19-13-2"  
+class="td10"> particle_position_x   </td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-13-3"  
+class="td01">  description</td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-13-4"  
+class="td11">k4 for each particle                                                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-14-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-14-1"  
+class="td11">                                           </td><td  style="white-space:nowrap; text-align:center;" id="TBL-19-14-2"  
+class="td10"> particle_position_y   </td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-14-3"  
+class="td01">  dimensions</td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-14-4"  
+class="td11">1                                                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-15-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-15-1"  
+class="td11">                                           </td><td  style="white-space:nowrap; text-align:center;" id="TBL-19-15-2"  
+class="td10">  particle_position_z   </td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-15-3"  
+class="td01"> distribution</td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-15-4"  
+class="td11">CONSTANT                                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-16-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-16-1"  
+class="td11">                                           </td><td  style="white-space:nowrap; text-align:center;" id="TBL-19-16-2"  
+class="td10">particle_position_x_k1 </td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-16-3"  
+class="td01">  group type</td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-16-4"  
+class="td11">ARRAY                                                                           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-17-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-17-1"  
+class="td11">                                           </td><td  style="white-space:nowrap; text-align:center;" id="TBL-19-17-2"  
+class="td10">particle_position_y_k1 </td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-17-3"  
+class="td01">        size</td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-17-4"  
+class="td11">10001                                                                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-18-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-18-1"  
+class="td11">                                           </td><td  style="white-space:nowrap; text-align:center;" id="TBL-19-18-2"  
+class="td10">particle_position_z_k1 </td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-18-3"  
+class="td01">   timelevels</td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-18-4"  
+class="td11">1                                                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-19-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-19-1"  
+class="td11">                                           </td><td  style="white-space:nowrap; text-align:center;" id="TBL-19-19-2"  
+class="td10">particle_position_x_k2 </td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-19-3"  
+class="td01">variable type</td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-19-4"  
+class="td11">REAL                                                                             </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-20-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-20-1"  
+class="td11">velocity_consistent_with_mhd_induction_equations</td><td  style="white-space:nowrap; text-align:center;" id="TBL-19-20-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-20-3"  
+class="td01">    compact</td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-20-4"  
+class="td11">0                                                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-21-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-21-1"  
+class="td11">                                           </td><td  style="white-space:nowrap; text-align:center;" id="TBL-19-21-2"  
+class="td10">      MHDvx           </td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-21-3"  
+class="td01">  dimensions</td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-21-4"  
+class="td11">3                                                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-22-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-22-1"  
+class="td11">                                           </td><td  style="white-space:nowrap; text-align:center;" id="TBL-19-22-2"  
+class="td10">      MHDvy           </td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-22-3"  
+class="td01"> distribution</td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-22-4"  
+class="td11">DEFAULT                                                                       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-23-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-23-1"  
+class="td11">                                           </td><td  style="white-space:nowrap; text-align:center;" id="TBL-19-23-2"  
+class="td10">      MHDvz           </td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-23-3"  
+class="td01">  group type</td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-23-4"  
+class="td11">GF                                                                                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-24-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-24-1"  
+class="td11">                                           </td><td  style="white-space:nowrap; text-align:center;" id="TBL-19-24-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-24-3"  
+class="td01">       tags</td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-24-4"  
+class="td11">InterpNumTimelevels=1 prolongation=”none” Checkpoint=”no”</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-25-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-25-1"  
+class="td11">                                           </td><td  style="white-space:nowrap; text-align:center;" id="TBL-19-25-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-25-3"  
+class="td01">   timelevels</td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-25-4"  
+class="td11">1                                                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-26-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-26-1"  
+class="td11">                                           </td><td  style="white-space:nowrap; text-align:center;" id="TBL-19-26-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-26-3"  
+class="td01">variable type</td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-26-4"  
+class="td11">REAL                                                                             </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-27-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-27-1"  
+class="td11">                                           </td></tr></table>
+</div>
+<!--l. 468--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-90005"></a>Schedule</h3>
+<!--l. 474--><p class="noindent" >This section lists all the variables which are assigned storage by thorn WVUThorns_Diagnostics/particle_tracerET.
+Storage can either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 477--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-100005"></a>Storage</h4>
+<!--l. 479--><p class="noindent" > 
+</p>
+<div class="tabular"> <table id="TBL-20" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-20-1g"><col 
+id="TBL-20-1" /><col 
+id="TBL-20-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-20-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-20-1-1"  
+class="td11"><span 
+class="cmbx-10">Always:                                                                                                                                                    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-1-2"  
+class="td11"> </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-20-2-1"  
+class="td11">RK4IterationCounterVar particle_position_arrays velocity_consistent_with_MHD_induction_equations                                                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-2-2"  
+class="td11"> </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-20-3-1"  
+class="td11">ADMBase::metric[metric_timelevels] ADMBase::curv[metric_timelevels] ADMBase::lapse[lapse_timelevels] ADMBase::shift[shift_timelevels]</td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-3-2"  
+class="td11"> </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-20-4-1"  
+class="td11">HydroBase::rho[timelevels] HydroBase::press[timelevels] HydroBase::eps[timelevels] HydroBase::vel[timelevels] HydroBase::Bvec[timelevels]  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-4-2"  
+class="td11"> </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-5-"><td  style="white-space:nowrap; text-align:left;" id="TBL-20-5-1"  
+class="td11">                                                                                                                                                                                       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-5-2"  
+class="td11"> </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-6-"><td  style="white-space:nowrap; text-align:left;" id="TBL-20-6-1"  
+class="td11">                                                                                                                    </td></tr></table>
+                                                                                       
+                                                                                       
+</div>
+<!--l. 491--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-110005"></a>Scheduled Functions</h4>
+<!--l. 494--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_INITIAL</span>
+</p><!--l. 496--><p class="noindent" >      particle_traceret_file_output_routine_startup
+</p><!--l. 498--><p class="noindent" >     <span 
+class="cmti-10">create directory for file output.</span>
+</p><!--l. 501--><p class="noindent" > 
+</p>
+<div class="tabular"> <table id="TBL-21" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-21-1g"><col 
+id="TBL-21-1" /><col 
+id="TBL-21-2" /><col 
+id="TBL-21-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-21-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-1-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-1-2"  
+class="td11">Language:</td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-1-3"  
+class="td11">c         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-2-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-2-2"  
+class="td11">Type:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-2-3"  
+class="td11">function</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-3-1"  
+class="td11">  </td></tr></table></div>
+<!--l. 511--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_ANALYSIS</span>
+</p><!--l. 513--><p class="noindent" >      convert_to_mhd_3velocity
+</p><!--l. 515--><p class="noindent" >     <span 
+class="cmti-10">convert to mhd 3 velocity</span>
+</p><!--l. 518--><p class="noindent" > 
+</p>
+<div class="tabular"> <table id="TBL-22" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-22-1g"><col 
+id="TBL-22-1" /><col 
+id="TBL-22-2" /><col 
+id="TBL-22-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-22-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-1-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-1-2"  
+class="td11">Before:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-1-3"  
+class="td11">particle_traceret</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-2-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-2-2"  
+class="td11">Language:</td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-2-3"  
+class="td11">c                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-3-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-3-2"  
+class="td11">Options:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-3-3"  
+class="td11">global-early      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-4-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-4-2"  
+class="td11">             </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-4-3"  
+class="td11">loop-local         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-5-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-5-2"  
+class="td11">Type:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-5-3"  
+class="td11">function           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-6-1"  
+class="td11">  </td></tr></table></div>
+<!--l. 531--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_ANALYSIS</span>
+</p><!--l. 533--><p class="noindent" >      particle_traceret
+</p><!--l. 535--><p class="noindent" >     <span 
+class="cmti-10">particle traceret subroutines</span>
+</p><!--l. 538--><p class="noindent" > 
+</p>
+<div class="tabular"> <table id="TBL-23" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-23-1g"><col 
+id="TBL-23-1" /><col 
+id="TBL-23-2" /><col 
+id="TBL-23-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-23-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-1-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-1-2"  
+class="td11">Type:</td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-1-3"  
+class="td11">group</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-2-1"  
+class="td11">  </td></tr></table>
+</div>
+<!--l. 547--><p class="noindent" ><span 
+class="cmbx-10">particle</span><span 
+class="cmbx-10">_tracerET</span>
+</p><!--l. 549--><p class="noindent" >      initializerk4iterationcountertoone
+</p><!--l. 551--><p class="noindent" >     <span 
+class="cmti-10">initialize rk4iterationcounter variable to one</span>
+</p><!--l. 554--><p class="noindent" > 
+</p>
+<div class="tabular"> <table id="TBL-24" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-24-1g"><col 
+id="TBL-24-1" /><col 
+id="TBL-24-2" /><col 
+id="TBL-24-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-24-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-1-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-1-2"  
+class="td11">Language:</td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-1-3"  
+class="td11">c              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-2-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-2-2"  
+class="td11">Options:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-2-3"  
+class="td11">global-early</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-3-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-3-2"  
+class="td11">Type:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-3-3"  
+class="td11">function     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-4-1"  
+class="td11">  </td></tr></table></div>
+<!--l. 565--><p class="noindent" ><span 
+class="cmbx-10">particle</span><span 
+class="cmbx-10">_tracerET</span>
+</p><!--l. 567--><p class="noindent" >      initializeparticlepositions
+</p><!--l. 569--><p class="noindent" >     <span 
+class="cmti-10">initialize particle positions</span>
+</p><!--l. 572--><p class="noindent" > 
+</p>
+<div class="tabular"> <table id="TBL-25" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-25-1g"><col 
+id="TBL-25-1" /><col 
+id="TBL-25-2" /><col 
+id="TBL-25-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-25-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-1-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-1-2"  
+class="td11">After:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-1-3"  
+class="td11">initializerk4iterationcountertoone</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-2-1"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-2-2"  
+class="td11">Language:</td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-2-3"  
+class="td11">c</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-3-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-3-2"  
+class="td11">Options:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-3-3"  
+class="td11">global-early                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-4-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-4-2"  
+class="td11">Type:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-4-3"  
+class="td11">function                                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-5-1"  
+class="td11">  </td></tr></table></div>
+                                                                                       
+                                                                                       
+<!--l. 584--><p class="noindent" ><span 
+class="cmbx-10">particle</span><span 
+class="cmbx-10">_tracerET</span>
+</p><!--l. 586--><p class="noindent" >      doonerk4stepforparticletraceret
+</p><!--l. 588--><p class="noindent" >     <span 
+class="cmti-10">do one rk4 step for particle traceret</span>
+</p><!--l. 591--><p class="noindent" > 
+</p>
+<div class="tabular"> <table id="TBL-26" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-26-1g"><col 
+id="TBL-26-1" /><col 
+id="TBL-26-2" /><col 
+id="TBL-26-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-26-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-1-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-1-2"  
+class="td11">After:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-1-3"  
+class="td11">initializeparticlepositions</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-2-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-2-2"  
+class="td11">Language:</td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-2-3"  
+class="td11">c                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-3-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-3-2"  
+class="td11">Options:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-3-3"  
+class="td11">global-early                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-4-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-4-2"  
+class="td11">Type:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-4-3"  
+class="td11">function                      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-5-1"  
+class="td11">  </td></tr></table></div>
+<!--l. 603--><p class="noindent" ><span 
+class="cmbx-10">particle</span><span 
+class="cmbx-10">_tracerET</span>
+</p><!--l. 605--><p class="noindent" >      particle_traceret_file_output
+</p><!--l. 607--><p class="noindent" >     <span 
+class="cmti-10">output particle traceret data to disk</span>
+</p><!--l. 610--><p class="noindent" > 
+</p>
+<div class="tabular"> <table id="TBL-27" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-27-1g"><col 
+id="TBL-27-1" /><col 
+id="TBL-27-2" /><col 
+id="TBL-27-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-27-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-1-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-1-2"  
+class="td11">After:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-1-3"  
+class="td11">doonerk4stepforparticletraceret</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-2-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-2-2"  
+class="td11">Language:</td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-2-3"  
+class="td11">c                                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-3-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-3-2"  
+class="td11">Options:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-3-3"  
+class="td11">global-early                          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-4-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-4-2"  
+class="td11">Type:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-4-3"  
+class="td11">function                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-5-1"  
+class="td11">  </td></tr></table></div>
+ 
+</body></html> 
+
+                                                                                       
+
+

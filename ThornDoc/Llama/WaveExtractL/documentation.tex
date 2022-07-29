@@ -1,0 +1,1971 @@
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a 
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+\author{Gabrielle Allen} 
+\title{Extracting Gravitational Waves and Other Quantities from Numerical Spacetimes}
+
+\date{\today}
+
+\maketitle
+
+% START CACTUS THORNGUIDE
+
+% Add all definitions used in this documentation here 
+\def\a   {\alpha}
+\def\b   {\beta}
+\def\p   {\phi}
+\def\t   {\theta}
+\def\Y   {Y_{lm}}
+\def\Ys  {Y^*_{lm}}
+\def\Yt  {Y_{lm,\theta}}
+\def\Ytt {Y_{lm,\theta\theta}}
+\def\Ytp {Y_{lm,\theta\phi}}
+\def\Yp  {Y_{lm,\phi}}
+\def\Ypp {Y_{lm,\phi\phi}}
+\def\Yz  {Y_{l0}}
+\def\Yzt {Y_{l0,\theta}}
+\def\Yztt{Y_{l0,\theta\theta}}
+\def\c   {\cos\theta}
+\def\s   {\sin\theta}
+
+\begin{abstract}
+
+\end{abstract}
+
+\textbf{NB: This documentation is taken from the Extract thorn on which WaveExtractL is based. There may be some differences between WaveExtractL and Extract, which are not documented here.}
+
+\section{Introduction}
+
+Thorn Extract calculates first order gauge invariant waveforms from a
+numerical spacetime, under the basic assumption that, at the spheres
+of extract the spacetime is approximately Schwarzschild. In addition,
+other quantities such as mass, angular momentum and spin can be
+determined.
+
+This thorn should not be used blindly, it will always return some
+waveform, however it is up to the user to determine whether this is
+the appropriate expected first order gauge invariant waveform.
+
+\section{Physical System}
+
+\subsection{Wave Forms}
+
+Assume a spacetime $g_{\alpha\beta}$ which can be written as a Schwarzschild 
+background $g_{\alpha\beta}^{Schwarz}$ with perturbations $h_{\alpha\beta}$:
+%
+\begin{equation}
+g_{\alpha\beta} = g^{Schwarz}_{\alpha\beta} + h_{\alpha\beta}
+\end{equation}
+with
+%
+\begin{equation}
+\{g^{Schwarz}_{\alpha\beta}\}(t,r,\theta,\phi) = 
+\left( \begin{array}{cccc}
+ -S & 0      & 0   & 0                \\
+ 0  & S^{-1} & 0   & 0                \\
+ 0  & 0      & r^2 & 0                \\
+ 0  & 0      & 0   & r^2 \sin^2\theta
+\end{array}\right)
+\qquad
+S(r)=1-\frac{2M}{r}
+\end{equation}
+%
+The 3-metric perturbations $\gamma_{ij}$ can be decomposed using tensor
+harmonics into  $\gamma_{ij}^{lm}(t,r)$ where
+$$
+  \gamma_{ij}(t,r,\theta,\phi)=\sum_{l=0}^\infty \sum_{m=-l}^l
+                       \gamma_{ij}^{lm}(t,r)
+$$
+%
+and
+%
+$$
+  \gamma_{ij}(t,r,\t,\p) = \sum_{k=0}^6 p_k(t,r) {\bf V}_k(\t,\p)
+$$
+where $\{{\bf V}_k\}$ is some basis for tensors on a 2-sphere
+in 3-D Euclidean space.
+%
+%
+%
+Working with the Regge-Wheeler basis (see Section~\ref{reggewheeler})
+the 3-metric is then expanded in terms of the (six) standard
+Regge-Wheeler functions $\{c_1^{\times lm}, c_2^{\times lm},
+h_1^{+lm}, H_2^{+lm}, K^{+lm},
+G^{+lm}\}$~\cite{regge},~\cite{moncrief74}. Where each of the
+functions is either {\it odd} ($\times$) or {\it even} ($+$)
+parity. The decomposition is then written
+%
+\begin{eqnarray}
+\gamma_{ij}^{lm} & = & c_1^{\times lm}(\hat{e}_1)_{ij}^{lm}
+                   +   c_2^{\times lm}(\hat{e}_2)_{ij}^{lm} 
+\nonumber\\
+                 & + & h_1^{+lm}(\hat{f}_1)_{ij}^{lm} 
+                   +   A^2 H_2^{+lm}(\hat{f}_2)_{ij}^{lm}
+                   +   R^2 K^{+lm}(\hat{f}_3)_{ij}^{lm}
+                   +   R^2 G^{+lm}(\hat{f}_4)_{ij}^{lm}
+\end{eqnarray}
+%
+which we can write in an expanded form as 
+%
+\begin{eqnarray}
+\gamma_{rr}^{lm} 
+  & = & A^2 H_2^{+lm} \Y 
+\\
+\gamma_{r\t}^{lm} 
+  & = & - c_1^{\times lm} \frac{1}{\s} \Yp+h_1^{+lm}\Yt 
+\\
+\gamma_{r\p}^{lm} 
+  & = & c_1^{\times lm} \s \Yt+ h_1^{+lm}\Yp 
+\\
+\gamma_{\t\t}^{lm} 
+  & = & c_2^{\times lm}\frac{1}{\s}(\Ytp-\cot\t \Yp) 
+      + R^2 K^{+lm}\Y + R^2 G^{+lm}    \Ytt 
+\\
+\gamma_{\t\p}^{lm} 
+  & = & -c_2^{\times lm}\s \frac{1}{2} 
+  \left(
+  \Ytt-\cot\t \Yt-\frac{1}{\sin^2\theta}\Y \right)
+  + R^2 G^{+lm}(\Ytp-\cot\t \Yp)
+\\
+\gamma_{\p\p}^{lm}
+  & = &  -\s c_2^{\times lm} (\Ytp - \cot\t \Yp)
+        +R^2 K^{+lm}\sin^2\t \Y
+        +R^2 G^{+lm} (\Ypp+\s\c \Yt)
+\end{eqnarray}
+%
+A similar decomposition allows the four gauge components of the
+4-metric to be written in terms of {\it three} even-parity variables
+$\{H_0,H_1,h_0\}$ and the {\it one} odd-parity variable $\{c_0\}$
+%
+\begin{eqnarray}
+  g_{tt}^{lm} & = & N^2 H_0^{+lm} \Y 
+\\
+  g_{tr}^{lm} & = & H_1^{+lm} \Y
+\\
+  g_{t\t}^{lm} & = & h_0^{+lm} \Yt - c_0^{\times lm}\frac{1}{\s}\Yp
+\\
+  g_{t\p}^{lm} & = & h_0^{+lm} \Yp + c_0^{\times lm} \s \Yt
+\end{eqnarray} 
+%        
+Also from $g_{tt}=-\alpha^2+\beta_i\beta^i$ we have
+%
+\begin{equation}
+  \alpha^{lm} = -\frac{1}{2}NH_0^{+lm}Y_{lm}
+\end{equation}
+%
+It is useful to also write this with the perturbation split into even and
+odd parity parts:
+$$
+g_{\alpha\beta} = {g}^{background}_{\alpha\beta} +
+   \sum_{l,m} g^{lm,odd}_{\alpha\beta}
++\sum_{l,m} g^{lm,even}_{\alpha\beta}
+$$
+where (dropping some superscripts)
+\begin{eqnarray*}
+\{g_{\alpha\beta}^{odd}\}
+&=&
+\left( 
+\begin{array}{cccc}
+0 & 0 &  - c_0\frac{1}{\s}\Yp
+    & c_0 \s \Yt
+\\
+. & 0 & - c_1\frac{1}{\s} \Yp
+  & c_1 \s \Yt
+\\
+. & . & c_2\frac{1}{\s}(\Ytp-\cot\t \Yp)  
+  & c_2\frac{1}{2} \left(\frac{1}{\s}
+          \Ypp+\c\Yt-\s\Ytt\right)
+\\
+.&.&.&c_2 (-\s \Ytp+\c \Yp)
+\end{array}
+\right)
+\\
+\{g_{\alpha\beta}^{even}\}
+&=&
+\left( 
+\begin{array}{cccc}
+N^2 H_0\Y & H_1\Y       & h_0\Yt          & h_0 \Yp             \\ 
+.       & A^2H_2\Y & h_1\Yt          & h_1 \Yp             \\
+.       & .           & R^2K\Y+r^2G\Ytt & R^2(\Ytp-\cot\t\Yp) \\
+.       & .           & .                & R^2 K\sin^2\t\Y+R^2G(\Ypp+\s\c\Yt)
+\end{array}
+\right)
+\end{eqnarray*}
+
+Now, for such a Schwarzschild background we can define two (and only two)
+unconstrained gauge invariant quantities 
+  $Q^{\times}_{lm}=Q^{\times}_{lm}(c_1^{\times lm},c_2^{\times lm})$ 
+and
+  $Q^{+}_{lm}=Q^{+}_{lm}(K^{+ lm},G^{+ lm},H_2^{+lm},h_1^{+lm})$, 
+which from
+\cite{abrahams96a} are
+\begin{eqnarray}
+Q^{\times}_{lm} 
+  & = & \sqrt{\frac{2(l+2)!}{(l-2)!}}\left[c_1^{\times lm}
+        + \frac{1}{2}\left(\partial_r c_2^{\times lm} - \frac{2}{r}
+        c_2^{\times lm}\right)\right] \frac{S}{r}
+\\
+Q^{+}_{lm}
+  & = & \frac{1}{\Lambda}\sqrt{\frac{2(l-1)(l+2)}{l(l+1)}}
+        (4rS^2 k_2+l(l+1)r k_1) 
+\\
+  & \equiv &
+        \frac{1}{\Lambda}\sqrt{\frac{2(l-1)(l+2)}{l(l+1)}}
+        \left(l(l+1)S(r^2\partial_r G^{+lm}-2h_1^{+lm})+
+        2rS(H_2^{+lm}-r\partial_r K^{+lm})+\Lambda r K^{+lm}\right)
+\end{eqnarray}
+where
+\begin{eqnarray}
+k_1 & = & K^{+lm} + \frac{S}{r}(r^2\partial_r G^{+lm} - 2h^{+lm}_1) \\
+k_2 & = & \frac{1}{2S}
+          \left[H^{+lm}_2-r\partial_r k_1-\left(1-\frac{M}{rS}\right) 
+            k_1 + S^{1/2}\partial_r
+          (r^2 S^{1/2} \partial_r G^{+lm}-2S^{1/2}h_1^{+lm})\right]
+\\
+&\equiv& \frac{1}{2S}\left[H_2-rK_{,r}-\frac{r-3M}{r-2M}K\right]
+\end{eqnarray}
+
+\noindent
+NOTE: These quantities compare with those in Moncrief \cite{moncrief74} by
+\begin{eqnarray*}
+\mbox{Moncriefs odd parity Q: }\qquad Q^\times_{lm} &=&
+ \sqrt{\frac{2(l+2)!}{(l-2)!}}Q
+ \\
+\mbox{Moncriefs even parity Q: } \qquad Q^+_{lm} &=&
+ \sqrt{\frac{2(l-1)(l+2)}{l(l+1)}}Q
+\end{eqnarray*}
+
+Note that these quantities only depend on the purely spatial 
+Regge-Wheeler functions, and not the gauge parts. (In the Regge-Wheeler 
+and Zerilli gauges, these are just respectively (up to a rescaling)
+ the Regge-Wheeler 
+and Zerilli functions).
+These quantities satisfy the wave equations
+\begin{eqnarray*}
+  &&(\partial^2_t-\partial^2_{r^*})Q^\times_{lm}+S\left[\frac{l(l+1)}{r^2}-\frac{6M}{r^3}
+  \right]Q^{\times}_{lm}  =  0 
+  \\
+  &&(\partial^2_t-\partial^2_{r^*})Q^+_{lm}+S\left[
+    \frac{1}{\Lambda^2}\left(\frac{72M^3}{r^5}-\frac{12M}{r^3}(l-1)(l+2)\left(1-\frac{3M}{r}\right)
+    \right)+\frac{l(l-1)(l+1)(l+2)}{r^2\Lambda}\right]Q^+_{lm}=0
+\end{eqnarray*}
+where
+\begin{eqnarray*}
+  \Lambda &=& (l-1)(l+2)+6M/r \\
+  r^*     &=& r+2M\ln(r/2M-1)
+\end{eqnarray*}
+ 
+
+
+
+\section{Numerical Implementation}
+
+The implementation assumes that the numerical solution, on a Cartesian
+grid, is approximately Schwarzshild on the spheres of constant
+$r=\sqrt(x^2+y^2+z^2)$ where the waveforms are extracted. The general
+procedure is then:
+
+\begin{itemize}
+
+  \item Project the required metric components, and radial derivatives
+  of metric components, onto spheres of constant coordinate radius
+  (these spheres are chosen via parameters).
+
+  \item Transform the metric components and there derivatives on the
+  2-spheres from Cartesian coordinates into a spherical coordinate
+  system.
+
+  \item Calculate the physical metric on these spheres if a conformal
+  factor is being used.
+
+  \item Calculate the transformation from the coordinate radius to an
+  areal radius for each sphere.
+
+  \item Calculate the $S$ factor on each sphere. Combined with the
+  areal radius This also produces an estimate of the mass.
+
+  \item Calculate the six Regge-Wheeler variables, and required radial
+  derivatives, on these spheres by integration of combinations of the
+  metric components over each sphere.
+
+  \item Contruct the gauge invariant quantities from these
+  Regge-Wheeler variables.
+
+\end{itemize}
+
+\subsection{Project onto Spheres of Constant Radius}
+
+This is performed by interpolating the metric components, and if
+needed the conformal factor, onto the spheres. Although 2-spheres are
+hardcoded, the source code could easily be changed here to project
+onto e.g. 2-ellipsoids.
+
+\subsection{Calculate Radial Transformation}
+
+The areal coordinate $\hat{r}$ of each sphere is calculated by
+%
+\begin{equation}
+  \hat{r}    =  \hat{r}(r) = \left[
+            \frac{1}{4\pi}
+            \int\sqrt{\gamma_{\t\t}
+            \gamma_{\p\p}}d\t d\p \right]^{1/2}
+\end{equation}
+%
+from which
+%
+\begin{equation}
+\frac{d\hat{r}}{d\eta} = \frac{1}{16\pi \hat{r}}
+  \int\frac{\gamma_{\t\t,\eta}\gamma_{\p\p}+\gamma_{\t\t}\gamma_{\p\p,\eta}}
+  {\sqrt{\gamma_{\t\t}\gamma_{\p\p}}} \ d\t d\p
+\end{equation}
+%
+Note that this is not the only way to combine metric components to get
+the areal radius, but this one was used because it gave better values
+for extracting close to the event horizon for perturbations of black
+holes.
+
+\subsection{Calculate $S$ factor and Mass Estimate}
+
+\begin{equation}
+S(\hat{r}) = \left(\frac{\partial\hat{r}}{\partial r}\right)^2 \int \gamma_{rr} \ d\t d\p
+\end{equation}
+
+\begin{equation}
+M(\hat{r}) = \hat{r}\frac{1-S}{2}
+\end{equation}
+
+\subsection{Calculate Regge-Wheeler Variables}
+
+\begin{eqnarray*}
+c_1^{\times lm}  &=&  \frac{1}{l(l+1)}
+                      \int \frac{\gamma_{\hat{r}\p}Y^*_{lm,\t}
+                                -\gamma_{\hat{r}\t} Y^*_{lm,\p} }
+                     {\s}d\Omega
+\\
+c_2^{\times lm} & = & -\frac{2}{l(l+1)(l-1)(l+2)}
+                      \int\left\{
+           \left(-\frac{1}{\sin^2\t}\gamma_{\t\t}+\frac{1}
+           {\sin^4\t}\gamma_{\p\p}\right)
+           (\s Y^*_{lm,\t\p}-\c Y^*_{lm,\p})
+\right.
+\\
+&&\left.
+           + \frac{1}{\s} \gamma_{\t\p}
+           (Y^*_{lm,\t\t}-\cot\t Y^*_{lm,\t}
+           -\frac{1}{\sin^2\t}Y^*_{lm,\p\p}) \right\}d\Omega
+\\
+h_1^{+lm} &=& \frac{1}{l(l+1)}
+            \int \left\{
+                \gamma_{\hat{r}\t} Y^*_{lm,\t} + \frac{1}{\sin^2\t}
+                \gamma_{\hat{r}\p}Y^*_{lm,\p}\right\} d\Omega
+\\
+H_2^{+lm} &=& S  \int \gamma_{\hat{r}\hat{r}} \Ys d\Omega
+\\
+K^{+lm}   &=& \frac{1}{2\hat{r}^2} \int \left(\gamma_{\t\t}+
+           \frac{1}{\sin^2\t}\gamma_{\p\p}\right)\Ys
+           d\Omega
+\\
+          &&+\frac{1}{2\hat{r}^2(l-1)(l+2)}
+\int \left\{
+  \left(\gamma_{\t\t}-\frac{\gamma_{\p\p}}{\sin^2\t}\right)
+    \left(Y^*_{lm,\t\t}-\cot\t Y^*_{lm,\t}-\frac{1}{\sin^2\t}
+    Y^*_{lm,\p\p}\right) 
+\right.
+\\
+&&\left.
+   + \frac{4}{\sin^2\t}\gamma_{\t\p}(Y^*_{lm,\t\p}-\cot\t
+     Y^*_{lm,\p})
+     \right \} d\Omega
+\\
+G^{+lm}  &=& \frac{1}{\hat{r}^2 l(l+1)(l-1)(l+2)}
+  \int \left\{
+  \left(\gamma_{\t\t}-\frac{\gamma_{\p\p}}{\sin^2\t}\right)
+    \left(Y^*_{lm,\t\t}-\cot\t Y^*_{lm,\t}-\frac{1}{\sin^2\t}
+    Y^*_{lm,\p\p}\right) 
+\right.
+\\
+&&\left.
+   +\frac{4}{\sin^2\t}\gamma_{\t\p}(Y^*_{lm,\t\p}-\cot\t
+   Y^*_{lm,\p})
+   \right\}d\Omega
+\end{eqnarray*}
+where
+\begin{eqnarray}
+\gamma_{\hat{r}\hat{r}}      & = & \frac{\partial r}{\partial \hat{r}}
+                       \frac{\partial r}{\partial \hat{r}}
+                       \gamma_{rr} 
+\\
+\gamma_{\hat{r}\t} & = & \frac{\partial r}{\partial \hat{r}}
+                       \gamma_{r\t} 
+\\
+\gamma_{\hat{r}\p}   & = & \frac{\partial r}{\partial \hat{r}}
+                       \gamma_{r\p}
+\end{eqnarray}
+
+\subsection{Calculate Gauge Invariant Quantities}
+
+\begin{eqnarray}
+Q^{\times}_{lm} 
+  & = & \sqrt{\frac{2(l+2)!}{(l-2)!}}\left[c_1^{\times lm}
+        + \frac{1}{2}\left(\partial_{\hat{r}} c_2^{\times lm} - \frac{2}{\hat{r}}
+        c_2^{\times lm}\right)\right] \frac{S}{\hat{r}}
+\\
+Q^{+}_{lm}
+  & = & \frac{1}{(l-1)(l+2)+6M/\hat{r}}\sqrt{\frac{2(l-1)(l+2)}{l(l+1)}}
+        (4\hat{r}S^2 k_2+l(l+1)\hat{r} k_1) 
+\end{eqnarray}
+where
+\begin{eqnarray}
+k_1 & = & K^{+lm} + \frac{S}{\hat{r}}(\hat{r}^2\partial_{\hat{r}} G^{+lm} - 2h^{+lm}_1) \\
+k_2 & = & \frac{1}{2S}
+          [H^{+lm}_2-\hat{r}\partial_{\hat{r}} k_1-(1-\frac{M}{\hat{r}S}) k_1 + S^{1/2}\partial_{\hat{r}}
+          (\hat{r}^2 S^{1/2} \partial_{\hat{r}} G^{+lm}-2S^{1/2}h_1^{+lm}
+\end{eqnarray}
+
+\section{Using This Thorn}
+
+Use this thorn very carefully. Check the validity of the waveforms by running
+tests with different resolutions, different outer boundary conditions, etc
+to check that the waveforms are consistent.
+
+\subsection{Basic Usage}
+
+\subsection{Output Files}
+
+Although Extract is really an {\tt ANALYSIS} thorn, at the moment it
+is scheduled at {\tt POSTSTEP}, with the iterations at which output is
+performed determined by the parameter {\it itout}. Output files from
+{\tt Extract} are always placed in the main output directory defined
+by {\tt CactusBase/IOUtil}.
+
+Output files are generated for each detector (2-sphere) used, and
+these detectors are identified in the name of each output file by {\tt
+R1}, {\tt R2}, \ldots.
+
+The extension denotes whether coordinate time ({\.tl}) or proper time
+({\.ul}) is used for the first column.
+
+\begin{itemize}
+
+  \item {\tt rsch\_R?.[tu]l} 
+
+	The extracted areal radius on each 2-sphere.
+
+  \item {\tt mass\_R?.[tu]l}
+
+	Mass estimate calculated from $g_{rr}$ on each 2-sphere.
+
+  \item {\tt Qeven\_R?\_??.[tu]l}
+
+	The even parity gauge invariate variable ({\it waveform}) on 
+	each 2-sphere. This is a complex quantity, the 2nd column is 
+	the real part, and the third column the imaginary part.
+
+  \item {\tt Qodd\_R?\_??.[tu]l}
+
+	The odd parity gauge invariate variable ({\it waveform}) on 
+	each 2-sphere. This is a complex quantity, the 2nd column is 
+	the real part, and the third column the imaginary part.
+
+  \item {\tt ADMmass\_R?.[tu]l}
+
+	Estimate of ADM mass enclosed within each 2-sphere.
+	(To produce this set {\tt doADMmass = ``yes''}).
+
+  \item {\tt momentum\_[xyz]\_R?.[tu]l}
+
+	Estimate of momentum at each 2-sphere.
+	(To produce this set {\tt do\_momentum = ``yes''}).
+
+  \item {\tt spin\_[xyz]\_R?.[tu]l}
+
+	Estimate of momentum at each 2-sphere.
+	(To produce this set {\tt do\_spin = ``yes''}).
+
+
+\end{itemize}
+
+\section{History}
+
+Much of the source code
+ for Extract comes from a code written outside
+of Cactus for extracting waveforms from data generated by the NCSA
+G-Code for compare with linear evolutions of waveforms extracted from
+the Cauchy initial data.  This work was carried out in collaboration
+with Karen Camarda and Ed Seidel.
+
+
+\section{Appendix: Regge-Wheeler Harmonics}
+
+\label{reggewheeler}
+
+\begin{eqnarray*}
+(\hat{e}_1)^{lm} &=& 
+\left( \begin{array}{ccc}
+0  & -\frac{1}{\s}\Yp & \s \Yt \\
+.  & 0                                & 0                        \\
+.  & 0                                & 0 
+\end{array}\right)
+\\
+(\hat{e}_2)^{lm} &=& 
+\left( \begin{array}{ccc} 
+0 & 0 & 0 \\
+0 & \frac{1}{\s}(\Ytp-\cot\t \Yp) & . \\
+0 & -\frac{\s}{2}[\Ytt-\cot\t 
+    \Yt-\frac{1}{\sin^2\t}\Ypp]           & 
+            -\s [\Ytp-\cot\t \Yp]
+\end{array}\right)
+\\
+(\hat{f}_1)^{lm} &=& 
+\left( \begin{array}{ccc}
+  0 & \Yt & \Yp \\
+  . & 0   & 0           \\
+  . & 0   & 0 
+\end{array}\right)
+\\
+(\hat{f}_2)^{lm} &=& 
+\left( \begin{array}{ccc}
+\Y & 0 & 0 \\
+0      & 0 & 0 \\
+0      & 0 & 0 
+\end{array}\right)
+\\
+(\hat{f}_3)^{lm} &=& 
+\left( \begin{array}{ccc}
+0 & 0  & 0                  \\
+0 & \Y & 0                  \\
+0 & 0  & \sin^2\t \Y 
+\end{array}\right)
+\\
+(\hat{f}_4)^{lm} &=& 
+\left( \begin{array}{ccc}
+0 & 0                   & 0 \\
+0 & \Ytt & . \\
+0 & \Ytp-\cot \t \Yp & \Ypp+ \s \c \Yt
+\end{array}\right)
+\end{eqnarray*}
+
+\section{Appendix: Transformation Between Cartesian and Spherical Coordinates}
+
+First, the transformations between metric components in $(x,y,z)$ and $(r,\t,\p)$ coordinates. Here, $\rho=\sqrt{x^2+y^2}=r\s$,
+\begin{eqnarray*}
+  \frac{\partial x}{\partial r}
+  &=&
+  \sin\t\cos\p 
+  =
+  \frac{x}{r}
+\\
+  \frac{\partial y}{\partial r}
+  &=&
+  \sin\t\sin\p 
+  =
+  \frac{y}{r}
+\\
+  \frac{\partial z}{\partial r}
+  &=&
+  \cos\t 
+  =
+  \frac{z}{r}
+\\
+  \frac{\partial x}{\partial \t}
+  &=&
+  r\cos\t\cos\p 
+  =
+  \frac{xz}{\rho}
+\\
+  \frac{\partial y}{\partial \t}
+  &=&
+  r\cos\t\sin\p 
+  =
+  \frac{yz}{\rho}
+\\
+  \frac{\partial z}{\partial \t}
+  &=&
+  -r\sin\t 
+  =
+  -\rho
+\\
+  \frac{\partial x}{\partial \p}
+  &=&
+  -r\sin\t\sin\p
+  =
+  -y
+\\
+  \frac{\partial y}{\partial \p}
+  &=&
+  r\sin\t\cos\p 
+  =
+  x
+\\
+  \frac{\partial z}{\partial \p}
+  &=&
+  0
+\end{eqnarray*}
+
+
+\begin{eqnarray*}
+  \gamma_{rr} &=&
+  \frac{1}{r^2}
+     (x^2\gamma_{xx}+
+      y^2\gamma_{yy}+
+      z^2\gamma_{zz}+
+      2xy\gamma_{xy}+
+      2xz\gamma_{xz}+
+      2yz\gamma_{yz})
+\\
+  \gamma_{r\t} &=&
+  \frac{1}{r\rho}
+     (x^2 z \gamma_{xx}
+     +y^2 z \gamma_{yy}
+     -z \rho^2 \gamma_{zz}
+     +2xyz \gamma_{xy}
+     +x(z^2-\rho^2)\gamma_{xz}
+     +y(z^2-\rho^2)\gamma_{yz})
+\\
+  \gamma_{r\p} &=&
+  \frac{1}{r}
+     (-xy\gamma_{xx}
+      +xy\gamma_{yy}
+      +(x^2-y^2)\gamma_{xy}
+      -yz \gamma_{xz}
+      +xz\gamma_{yz})
+\\
+  \gamma_{\t\t} &=&
+  \frac{1}{\rho^2}
+  (x^2z^2\gamma_{xx}
+  +2xyz^2\gamma_{xy}
+  -2xz\rho^2\gamma_{xz}
+  +y^2z^2\gamma_{yy}
+  -2yz\rho^2\gamma_{yz}
+  +\rho^4\gamma_{zz})
+\\
+  \gamma_{\t\p} &=&
+  \frac{1}{\rho}
+  (-xyz\gamma_{xx}
+   +(x^2-y^2)z\gamma_{xy}
+   +\rho^2 y \gamma_{xz}
+   +xyz\gamma_{yy}
+   -\rho^2 x \gamma_{yz})
+\\
+  \gamma_{\p\p} &=&
+   y^2\gamma_{xx}
+   -2xy\gamma_{xy}
+   +x^2\gamma_{yy}
+\end{eqnarray*}   
+or,
+\begin{eqnarray*}
+\gamma_{rr}&=&
+\sin^2\t\cos^2\p\gamma_{xx}
++\sin^2\t\sin^2\p\gamma_{yy}
++\cos^2\t\gamma_{zz}
++2\sin^2\theta\cos\p\sin\p\gamma_{xy}
++2\sin\t\cos\t\cos\p\gamma_{xz}
+\\
+&&
++2\s\c\sin\p\gamma_{yz}
+\\
+\gamma_{r\t}&=&
+r(\s\c\cos^2\phi\gamma_{xx}
++2*\s\c\sin\p\cos\p\gamma_{xy}
++(\cos^2\t-\sin^2\t)\cos\p\gamma_{xz}
++\s\c\sin^2\p\gamma_{yy}
+\\
+&&
++(\cos^2\t-\sin^2\t)\sin\p\gamma_{yz}
+-\s\c\gamma_{zz})
+\\
+\gamma_{r\p}&=&
+r\s(-\s\sin\p\cos\p\gamma_{xx}
+-\s(\sin^2\p-\cos^2\p)\gamma_{xy}
+-\c\sin\p\gamma_{xz}
++\s\sin\p\cos\p\gamma_{yy}
+\\
+&&
++\c\cos\p\gamma_{yz})
+\\
+\gamma_{\t\t}&=&
+r^2(\cos^2\t\cos^2\p\gamma_{xx}
++2\cos^2\t\sin\p\cos\p\gamma_{xy}
+-2\s\c\cos\p\gamma_{xz}
++\cos^2\t\sin^2\p\gamma_{yy}
+\\
+&&
+-2\s\c\sin\p\gamma_{yz}
++\sin^2\t\gamma_{zz})
+\\
+\gamma_{\t\p}&=&
+r^2\s(-\c\sin\p\cos\p\gamma_{xx}
+-\c(\sin^2\p-\cos^2\p)\gamma_{xy}
++\s\sin\p\gamma_{xz}
++\c\sin\p\cos\p\gamma_{yy}
+\\
+&&
+-\s\cos\p\gamma_{yz})
+\\
+\gamma_{\p\p}&=&
+r^2\sin^2\t(\sin^2\p\gamma_{xx}
+-2\sin\p\cos\p\gamma_{xy}
++\cos^2\phi\gamma_{yy})
+\end{eqnarray*}
+
+
+We also need 
+the transformation for the radial derivative of the metric components:
+\begin{eqnarray*}
+\gamma_{rr,\eta}&=&
+\sin^2\t\cos^2\p\gamma_{xx,\eta}
++\sin^2\t\sin^2\p\gamma_{yy,\eta}
++\cos^2\t\gamma_{zz,\eta}
++2\sin^2\theta\cos\p\sin\p\gamma_{xy,\eta}
+\\
+&&
++2\sin\t\cos\t\cos\p\gamma_{xz,\eta}
++2\s\c\sin\p\gamma_{yz,\eta}
+\\
+\gamma_{r\t,\eta}&=& 
+\frac{1}{r}\gamma_{r\t}+
+r(\s\c\cos^2\phi\gamma_{xx,\eta}
++\s\c\sin\p\cos\p\gamma_{xy,\eta}
++(\cos^2\t-\sin^2\t)\cos\p\gamma_{xz,\eta}
+\\
+&&
++\s\c\sin^2\p\gamma_{yy,\eta}
++(\cos^2\t-\sin^2\t)\sin\p\gamma_{yz,\eta}
+-\s\c\gamma_{zz,\eta})
+\\
+\gamma_{r\p,\eta}&=&
+\frac{1}{r}\gamma_{r\p}+
+r\s(-\s\sin\p\cos\p\gamma_{xx,\eta}
+-\s(\sin^2\p-\cos^2\p)\gamma_{xy,\eta}
+-\c\sin\p\gamma_{xz,\eta}
+\\
+&&
++\s\sin\p\cos\p\gamma_{yy,\eta}
++\c\cos\p\gamma_{yz,\eta})
+\\
+\gamma_{\t\t,\eta}&=&
+\frac{2}{r}\gamma_{\t\t}+
+r^2(\cos^2\t\cos^2\p\gamma_{xx,\eta}
++2\cos^2\t\sin\p\cos\p\gamma_{xy,\eta}
+-2\s\c\cos\p\gamma_{xz,\eta}
+\\
+&&
++\cos^2\t\sin^2\p\gamma_{yy,\eta}
+-2\s\c\sin\p\gamma_{yz,\eta}
++\sin^2\t\gamma_{zz,\eta})
+\\
+\gamma_{\t\p,\eta}&=&
+\frac{2}{r}\gamma_{\t\p}+
+r^2\s(-\c\sin\p\cos\p\gamma_{xx,\eta}
+-\c(\sin^2\p-\cos^2\p)\gamma_{xy,\eta}
++\s\sin\p\gamma_{xz,\eta}
+\\
+&&
++\c\sin\p\cos\p\gamma_{yy,\eta}
+-\s\cos\p\gamma_{yz,\eta})
+\\
+\gamma_{\p\p,\eta}&=&
+\frac{2}{r}\gamma_{\p\p}+
+r^2\sin^2\t(\sin^2\p\gamma_{xx,\eta}
+-2\sin\p\cos\p\gamma_{xy,\eta}
++\cos^2\phi\gamma_{yy,\eta})
+\end{eqnarray*}
+
+\section{Appendix: Integrations Over the 2-Spheres}
+
+
+This is done by using Simpson's rule twice. Once in each coordinate 
+direction. Simpson's rule is
+\begin{equation}
+\int^{x_2}_{x_1} f(x) dx = 
+  \frac{h}{3} [f_1+4f_2+2f_3+4f_4+\ldots+2f_{N-2}+4 f_{N-1}+f_N]
+  +O(1/N^4)
+\end{equation}
+$N$ must be an odd number.
+
+
+\begin{thebibliography}{9}
+\bibitem{abrahams94}    Abrahams A.M. \& Cook G.B. 
+                        ``Collisions of boosted black holes: 
+                          Perturbation theory predictions of 
+                          gravitational radiation'' 
+                        {\em Phys. Rev. D} 
+                        {\bf 50} 
+                        R2364-R2367 
+                        (1994).
+\bibitem{abrahams95}    Abrahams A.M., Shapiro S.L. \& Teukolsky S.A.  
+                        ``Calculation of gravitational wave forms from 
+                          black hole collisions and disk collapse: Applying
+                          perturbation theory to numerical spacetimes''
+                        {\em Phys. Rev. D.} 
+                        {\bf 51}
+                        4295
+                        (1995).
+\bibitem{abrahams96a}   Abrahams A.M. \& Price R.H. 
+                        ``Applying black hole perturbation
+                          theory to numerically generated spacetimes'' 
+                        {\em Phys. Rev. D.} 
+                        {\bf 53} 
+                        1963 
+                        (1996).
+\bibitem{abrahams96b}   Abrahams A.M. \& Price R.H. 
+                        ``Black-hole collisions from Brill-Lindquist 
+                          initial data: Predictions of perturbation theory'' 
+                        {\em Phys. Rev. D.} 
+                        {\bf 53} 
+                        1972 
+                        (1996).
+\bibitem{abram}         Abramowitz, M. \& Stegun A. 
+                        ``Pocket Book of Mathematical Functions 
+                          (Abridged Handbook of Mathematical Functions'', 
+                        Verlag Harri Deutsch 
+                        (1984).
+\bibitem{andrade96}     Andrade Z., \& Price R.H. 
+                        ``Head-on collisions of unequal mass black holes:
+                          Close-limit predictions'', 
+                        preprint 
+                        (1996).
+\bibitem{anninos95}     Anninos P., Price R.H., Pullin J., Seidel E., 
+                          and Suen W-M. 
+                        ``Head-on collision of two black holes: 
+                          Comparison of different approaches''
+                        {\em Phys. Rev. D.} 
+                        {\bf 52} 
+                        4462 
+                        (1995).
+\bibitem{arfken}        Arfken, G. 
+                        ``Mathematical Methods for Physicists'', 
+                        Academic Press 
+                        (1985).
+\bibitem{baker96}       Baker J., Abrahams A., Anninos P., Brant S., 
+                          Price R., Pullin J. \& Seidel E. 
+                        ``The collision of boosted black holes'' 
+                        (preprint) 
+                        (1996).
+\bibitem{baker97}       Baker J. \& Li C.B.
+                        ``The two-phase approximation for black hole 
+                          collisions: Is it robust''
+                        preprint (gr-qc/9701035),
+                        (1997).
+\bibitem{brandt96}      Brandt S.R. \& Seidel E. 
+                        ``The evolution of distorted rotating black holes III:
+                          Initial data'' 
+                        (preprint) 
+                        (1996).
+\bibitem{cunningham78}  Cunningham C.T., Price R.H., Moncrief V.,
+                        ``Radiation from collapsing 
+                          relativistic stars. 
+                          I. Linearized Odd-Parity Radiation''
+                        {\em Ap. J.}
+                        {\bf 224}
+                        543-667
+                        (1978).
+\bibitem{cunningham79}  Cunningham C.T., Price R.H., Moncrief V.,
+                        ``Radiation from collapsing 
+                          relativistic stars. 
+                          I. Linearized Even-Parity Radiation''
+                        {\em Ap. J.}
+                        {\bf 230}
+                        870-892
+                        (1979).
+\bibitem{landau80}      Landau L.D. \& Lifschitz E.M.,
+                        ``The Classical Theory of Fields''
+                        (4th Edition),
+                        Pergamon Press
+                        (1980).
+\bibitem{mathews}       Mathews J. ``'', 
+                        {\em J. Soc. Ind. Appl. Math.} 
+                        {\bf 10}
+                        768 
+                        (1962).
+\bibitem{moncrief74}    Moncrief V. ``Gravitational perturbations of spherically
+                        symmetric systems. I. The exterior problem''
+                        {\em Annals of Physics} 
+                        {\bf 88}
+                        323-342 
+                        (1974).
+\bibitem{numrec}        Press W.H., Flannery B.P., Teukolsky S.A., \& Vetterling W.T.,
+                        ``Numerical Recipes, The Art of Scientific Computing''
+                        {\em Cambridge University Press} 
+                        (1989).
+\bibitem{price94}       Price R.H. \& Pullin J. 
+                        ``Colliding black holes: The close limit'',
+                        {\em Phys. Rev. Lett.} 
+                        {\bf 72} 
+                        3297-3300 
+                        (1994).
+\bibitem{regge}         Regge T., \& Wheeler J.A. 
+                        ``Stability of a Schwarzschild Singularity'', 
+                        {\em Phys. Rev. D} 
+                        {\bf 108} 
+                        1063 
+                        (1957).
+\bibitem{seidel90}      Seidel E. 
+                        {\em Phys Rev D.} 
+                        {\bf 42} 
+                        1884 
+                        (1990).
+\bibitem{thorne80}      Thorne K.S., 
+                        ``Multipole expansions of gravitational radiation'', 
+                        {\em Rev. Mod. Phys.} 
+                        {\bf 52} 
+                        299 
+                        (1980).
+\bibitem{vish}          Vishveshwara C.V., 
+                        ``Stability of the Schwarzschild metric'',
+                        {\em Phys. Rev. D.} 
+                        {\bf 1} 
+                        2870, 
+                        (1970).
+\bibitem{zerilli70a}    Zerilli F.J., 
+                        ``Tensor harmonics in canonical form for gravitational 
+                          radiation and other applications'', 
+                        {\em J. Math. Phys.} 
+                        {\bf 11} 
+                        2203, 
+                        (1970).
+\bibitem{zerilli70}     Zerilli F.J., 
+                        ``Gravitational field of a particle falling 
+                          in a Schwarzschild geometry analysed in 
+                          tensor harmonics'',
+                        {\em Phys. Rev. D.} 
+                        {\bf 2} 
+                        2141, 
+                        (1970).
+\end{thebibliography}
+
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{make\_interpolator\_warnings\_fatal}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{active} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Should we run at all?}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{calc\_when\_necessary} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Start calculation at T = R\_detector - 50 and stop after T\_merger+Ringdown\_margin+R\_detector}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{cartoon} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em use cartoon}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{cartoon\_grid\_acc} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em accuracy to use for dx=dy=dz check}} \\
+\hline{\bf Range} & &  {\bf Default:} 1e-2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{any non-negative value} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{cauchy\_radius\_dr} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em seperation of 2 detectors for the extraction}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1:*} & \multicolumn{2}{p{\paraWidth}|}{-1 means: let the code figure it out} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{cauchy\_radius\_end\_coord} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em where to end Cauchy line in coordinates}} \\
+\hline{\bf Range} & &  {\bf Default:} -2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -2:*} & \multicolumn{2}{p{\paraWidth}|}{-2 means deactive (ie use percentage), -1 means go up to maximum} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{cauchy\_radius\_end\_factor} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em where to end Cauchy line as factor of grid size}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1:1} & \multicolumn{2}{p{\paraWidth}|}{-1 means deactive (ie use coordinate), 1 means go up to maximum} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{cauchy\_radius\_extreme} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em use min. radius along axis, dr=dx}} \\
+\hline & & {\bf Default:} (none) \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{cauchy\_radius\_start\_coord} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em where to start Cauchy line in coordinates}} \\
+\hline{\bf Range} & &  {\bf Default:} -2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -2:*} & \multicolumn{2}{p{\paraWidth}|}{-2 means deactive (ie use percentage), -1 means start from first grid point} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{cauchy\_radius\_start\_factor} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em where to start Cauchy line as factor of grid size}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1:1} & \multicolumn{2}{p{\paraWidth}|}{-1 means deactive (ie use coordinate), 0 means first grid point} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{cauchy\_time\_id} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em compute initial data (ID) for dt\_Zerilli?}} \\
+\hline & & {\bf Default:} (none) \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{check\_rmax} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Whether to check for rmax or not (must be set to no for Llama}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{corotate} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em do we corotate? give omega if so}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{corotate3d} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em do we corotate in 3D (easy slow way)? give omega if so}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{detection\_mode} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Give Specific locations or let the code place the detectors}} \\
+\hline{\bf Range} & &  {\bf Default:} specific detectors \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Cauchy extraction} & \multicolumn{2}{p{\paraWidth}|}{a lot of detectors in some specified range} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering specific detectors} & \multicolumn{2}{p{\paraWidth}|}{give some values} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{detector\_metric} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Metric w.r.t which we extract}} \\
+\hline{\bf Range} & &  {\bf Default:} admbase::metric \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{Any group with storage on. Must be in order xx,xy,xz,yy,yz,zz} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{detector\_radius} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Coordinate radius of detectors}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{maximum radius is checked at runtime, detector should be in the grid} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{drsch\_dri\_computation} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How to calculate dr\_Schwarzschild/dr\_isotropic}} \\
+\hline{\bf Range} & &  {\bf Default:} average dr\_gtt dr\_gpp \\\multicolumn{1}{|p{\maxVarWidth}|}{see [1] below} & \multicolumn{2}{p{\paraWidth}|}{"average using drsch\_dri=int(1/2(dr 
+\_gtt+dr\_gpp/sin\^2(th 
+eta)))"} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering dr\_gtt} & \multicolumn{2}{p{\paraWidth}|}{"drsch\_dri=int(dr\_gt 
+t)"} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering dr\_gpp} & \multicolumn{2}{p{\paraWidth}|}{"drsch\_dri=int(dr\_gp 
+p/sin\^2(theta))"} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent {\bf [1]} \noindent \begin{verbatim}average dr\_gtt dr\_gpp\end{verbatim}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{integration\_method} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em which method to use for the integration}} \\
+\hline{\bf Range} & &  {\bf Default:} Gauss \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Gauss} & \multicolumn{2}{p{\paraWidth}|}{error is O(1/e\^N)} \\\multicolumn{1}{|p{\maxVarWidth}|}{see [1] below} & \multicolumn{2}{p{\paraWidth}|}{weight is one for all points, error is O(1/N\^2)} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering open extended} & \multicolumn{2}{p{\paraWidth}|}{"weight is 23/12,13/12,4/3,2/4, 
+...0,27/12, error O(1/N\^4)"} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent {\bf [1]} \noindent \begin{verbatim}extended midpoint rule\end{verbatim}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{interpolation\_operator} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em What interpolator should be used to interpolate onto the surface}} \\
+\hline{\bf Range} & &  {\bf Default:} Hermite polynomial interpolation \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .+} & \multicolumn{2}{p{\paraWidth}|}{A valid interpolator name, see Thorn AEILocalInterp} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{interpolation\_order} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em interpolation order for projection onto the sphere}} \\
+\hline{\bf Range} & &  {\bf Default:} 2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{Positive Please} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{interpolation\_stencil} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em interpolation stencil, this is needed to work out how far out you can place the detectors. It depends on the interpolator and the interpolation order used.}} \\
+\hline{\bf Range} & &  {\bf Default:} 4 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{Positive Please} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{l\_mode} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em all modes: Up to which l mode to calculate/ spefic mode: which l mode to extract}} \\
+\hline{\bf Range} & &  {\bf Default:} 2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 2:*} & \multicolumn{2}{p{\paraWidth}|}{Positive Please, note that l=0,1 are gauge dependent and not implemented} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{m\_mode} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em all modes: Up to which m mode to calculate/ specific mode: which m mode to extract }} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Positive Please} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{make\_interpolator\_warnings\_fatal} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Report interpolator warnings as level-0 error messages (and abort the run) ?}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{maximum\_detector\_number} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How many detectors do you want. NOTE: This also fixes the number of detectors in Cauchy mode!}} \\
+\hline{\bf Range} & &  {\bf Default:} 9 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:100} & \multicolumn{2}{p{\paraWidth}|}{Positive Please, less than hard limit FIXME} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{maxnphi} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em how many points in phi direction at most}} \\
+\hline{\bf Range} & &  {\bf Default:} 100 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Positive Please - even or odd depends on integration scheme used} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{maxntheta} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em how many points in theta direction at most}} \\
+\hline{\bf Range} & &  {\bf Default:} 100 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Positive Please - even or odd depends on integration scheme used} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{mode\_type} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Which type of mode extraction do we have}} \\
+\hline{\bf Range} & &  {\bf Default:} all modes \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering all modes} & \multicolumn{2}{p{\paraWidth}|}{Extract all modes up to (l\_mode, m\_mode).} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering specific mode} & \multicolumn{2}{p{\paraWidth}|}{Select one specific (l\_mode, m\_mode) mode} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{nphi} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em how many points in phi direction}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Positive Please - even or odd depends on integration scheme used} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{ntheta} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em how many points in theta direction}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Positive Please - even or odd depends on integration scheme used} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{observers} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em do we use the observer thorn}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{origin\_x} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em origin in x direction}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{origin\_y} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em origin in y direction}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{origin\_z} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em origin in z direction}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_dir} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Output directory for Extract's files, overrides IO::out\_dir}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .+} & \multicolumn{2}{p{\paraWidth}|}{A valid directory name} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering \^\$} & \multicolumn{2}{p{\paraWidth}|}{An empty string to choose the default from IO::out\_dir} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_every} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em At which iterations should we be called}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{negative means set via out\_every\_det} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_every\_det} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em At which iterations should this detector be evaluated}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_format} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Which format for Scalar floating-point number output}} \\
+\hline{\bf Range} & &  {\bf Default:} .13f \\\multicolumn{1}{|p{\maxVarWidth}|}{see [1] below} & \multicolumn{2}{p{\paraWidth}|}{output with given precision in exponential / floating point notation} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent {\bf [1]} \noindent \begin{verbatim}\^({\textbackslash}.[1]?[0-9])?[EGefg]\$\end{verbatim}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_style} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Which style for Scalar output}} \\
+\hline{\bf Range} & &  {\bf Default:} gnuplot \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering gnuplot} & \multicolumn{2}{p{\paraWidth}|}{1D output readable by gnuplot} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering xgraph} & \multicolumn{2}{p{\paraWidth}|}{1D output readable by xgraph} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{phicorotate} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em undo corotation on phi itself}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{ringdown\_margin} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em The expected length of ringdown. If calc\_when\_necessary=yes, then T\_merger+ringdown\_margin+R\_detector is the time when calculations are switched off}} \\
+\hline{\bf Range} & &  {\bf Default:} 150.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Any positive number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rotation\_omega} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em omega from driftcorrect}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rsch2\_computation} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How to calculate (Schwarzschild\_Radius)\^2}} \\
+\hline{\bf Range} & &  {\bf Default:} aerial radius \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering aerial radius} & \multicolumn{2}{p{\paraWidth}|}{"calculate invariant aerial radius: r\^2=int(sqrt(gtt*gpp 
+-gtp\^2))"} \\\multicolumn{1}{|p{\maxVarWidth}|}{see [1] below} & \multicolumn{2}{p{\paraWidth}|}{"assume Schwarzschild coordinates: r\^2=int(1/2 (gtt+gpp/sin\^2(theta 
+))"} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Schwarzschild gtt} & \multicolumn{2}{p{\paraWidth}|}{assume Schwarzschild coordinates: r\^2=int(gtt)} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Schwarzschild gpp} & \multicolumn{2}{p{\paraWidth}|}{"assume Schwarzschild coordinates: r\^2=int(gpp/sin\^2(th 
+eta))"} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent {\bf [1]} \noindent \begin{verbatim}average Schwarzschild metric\end{verbatim}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{start\_iteration} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em First iteration when we should be called}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{start\_time} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em First time when we should be called}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{subtract\_spherical\_background} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Subtract spherical background before calculation of Extraction quantities}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{surface\_index} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em surface that contains extraction sphere}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1:} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{switch\_output\_format} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How many output files do you suffer in your directory, when you have more detectors than this number, the file format is switched}} \\
+\hline{\bf Range} & &  {\bf Default:} 10 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{positive} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{use\_conformal\_factor} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Do we use the conformal factor (if possible) with this metric?}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{use\_spherical\_surface} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em use spherical surface thorn provided spheres}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{verbose} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em how verbose should the output be?}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:10} & \multicolumn{2}{p{\paraWidth}|}{higher number means more output} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{write\_timer\_info} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em write timing information to stdout}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{nghostsphi} & {\bf Scope:} shared from SPHERICALSURFACE & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{nghoststheta} & {\bf Scope:} shared from SPHERICALSURFACE & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{nsurfaces} & {\bf Scope:} shared from SPHERICALSURFACE & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{sfpar\_maxnphi} & {\bf Scope:} shared from SPHERICALSURFACE & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{sfpar\_maxntheta} & {\bf Scope:} shared from SPHERICALSURFACE & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{symmetric\_x} & {\bf Scope:} shared from SPHERICALSURFACE & BOOLEAN \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{symmetric\_y} & {\bf Scope:} shared from SPHERICALSURFACE & BOOLEAN \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{symmetric\_z} & {\bf Scope:} shared from SPHERICALSURFACE & BOOLEAN \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+waveextractl
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+grid
+
+admbase
+
+staticconformal
+
+io
+
+sphericalsurface
+\vspace{2mm}
+\subsection*{Grid Variables}
+\vspace{5mm}\subsubsection{PRIVATE GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+gridsizes\_group &  & compact & 0 \\ 
+ & int\_nphi & description & gridsizes stored as variables \\ 
+ & int\_ntheta & dimensions & 1 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & 100 \\ 
+ &  & tags & checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & INT \\ 
+\hline 
+handles\_group &  & compact & 0 \\ 
+ & sum\_handle & description & handles for reduction operators \\ 
+ &  & dimensions & 0 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & tags & checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & INT \\ 
+\hline 
+do\_nothing\_group &  & compact & 0 \\ 
+ & do\_nothing & description & if equal to 1 \\ 
+& ~ & description &  then WaveExtract won't do anything (example: all detectors are out of range) \\ 
+ &  & dimensions & 0 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & tags & checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & INT \\ 
+\hline 
+sym\_factor\_group &  & compact & 0 \\ 
+ & sym\_factor & description & symmmetry factor for integrals (depends on domain \\ 
+& ~ & description &  sym\_factor=2 for bitant for example) \\ 
+ &  & dimensions & 0 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & tags & checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+interp\_metric\_arrays &  & compact & 0 \\ 
+ & gxxi & description & 2D (theta \\ 
+& ~ & description & phi) Arrays for holding the metric and conformal factor and their first derivatives interpolated onto the extraction coordinate sphere \\ 
+ & gxyi & dimensions & 2 \\ 
+ & gxzi & distribution & DEFAULT \\ 
+ & gyyi & group type & ARRAY \\ 
+ & gyzi & size & MAXNTHETA \\ 
+& ~ & size & MAXNPHI \\ 
+ & gzzi & tags & checkpoint="no" \\ 
+ & psii & timelevels & 1 \\ 
+ & dx\_gxxi & variable type & REAL \\ 
+\hline 
+surface\_arrays &  & compact & 0 \\ 
+ & interp\_x & description & 2D (theta \\ 
+& ~ & description & phi) grid arrays for points on the sphere \\ 
+ & interp\_y & dimensions & 2 \\ 
+ & interp\_z & distribution & DEFAULT \\ 
+ & psi\_ext\_deriv & group type & ARRAY \\ 
+ & ctheta & size & MAXNTHETA \\ 
+& ~ & size & MAXNPHI \\ 
+ & cphi & tags & checkpoint="no" \\ 
+ & sintheta & timelevels & 1 \\ 
+ & costheta & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~ \\ 
+\hline 
+surface\_integrands &  & compact & 0 \\ 
+ & weights & description & weights and temporary integrands \\ 
+ & thetaweights & dimensions & 2 \\ 
+ & phiweights & distribution & DEFAULT \\ 
+ & int\_tmp1 & group type & ARRAY \\ 
+ & int\_tmp2 & size & MAXNTHETA \\ 
+& ~ & size & MAXNPHI \\ 
+ & int\_tmp3 & tags & checkpoint="no" \\ 
+ & int\_tmp4 & timelevels & 1 \\ 
+ & int\_tmp5 & variable type & REAL \\ 
+\hline 
+schwarzschild\_mass\_radius\_group &  & compact & 0 \\ 
+ & dtau\_dt & description & Schwarzschild radius \\ 
+& ~ & description &  mass and assorted spherical background pieces \\ 
+ & sph\_grr & dimensions & 0 \\ 
+ & sph\_gtt & distribution & CONSTANT \\ 
+ & sph\_dr\_gtt & group type & SCALAR \\ 
+ & sph\_gpp & tags & checkpoint="no" \\ 
+ & rsch2 & timelevels & 1 \\ 
+ & rsch & variable type & REAL \\ 
+\hline 
+schwarzschild\_mass\_radius\_results\_group &  & compact & 0 \\ 
+ & Schw\_Masses & description & contains Schwarzschild mass/radius from all detectors \\ 
+ & Schw\_Radii & dimensions & 1 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & MAXIMUM\_DETECTOR\_NUMBER \\ 
+ &  & tags & checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+moncriefq\_results\_group &  & compact & 0 \\ 
+ & Qodd\_Re\_Array & description & contains Moncrief Qeven \\ 
+& ~ & description &  Qodd wave indicators from all detectors \\ 
+ & Qeven\_Re\_Array & dimensions & 3 \\ 
+ & Qodd\_Im\_Array & distribution & CONSTANT \\ 
+ & Qeven\_Im\_Array & group type & ARRAY \\ 
+ &  & size & MAXIMUM\_DETECTOR\_NUMBER \\ 
+& ~ & size & L\_MODE \\ 
+ &  & size & 2*M\_MODE+1 \\ 
+ &  & tags & checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+l\_m\_modes\_info\_group &  & compact & 0 \\ 
+ & l\_min & description & Information about the modes used for extraction \\ 
+ & l\_max & dimensions & 0 \\ 
+ & l\_step & distribution & CONSTANT \\ 
+ & m\_min & group type & SCALAR \\ 
+ & m\_max & tags & checkpoint="no" \\ 
+ & m\_step & timelevels & 1 \\ 
+ & max\_det\_no\_param & variable type & INT \\ 
+\hline 
+moncriefq &  & compact & 0 \\ 
+ & Qodd\_Re & description & Moncrief Qeven \\ 
+& ~ & description &  Qodd wave indicators \\ 
+ & Qodd\_Re & description &  real \& imaginary part \\ 
+ & Qodd\_Im & dimensions & 2 \\ 
+ & Qeven\_Re & distribution & CONSTANT \\ 
+ & Qeven\_Im & group type & ARRAY \\ 
+ &  & size & L\_MODE \\ 
+& ~ & size & M\_MODE+1 \\ 
+ &  & tags & checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~ \\ 
+\hline 
+metric\_tmp &  & compact & 0 \\ 
+ & gxx\_tmp & description & temp metric for 3d rotation \\ 
+ & gxy\_tmp & dimensions & 3 \\ 
+ & gxz\_tmp & distribution & DEFAULT \\ 
+ & gyy\_tmp & group type & GF \\ 
+ & gyz\_tmp & tags & tensortypealias="DD\_sym" checkpoint="no" prolongation="none" \\ 
+ & gzz\_tmp & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+current\_detector\_group &  & compact & 0 \\ 
+ & current\_detector & description & the index number of the current detector \\ 
+ &  & dimensions & 0 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & tags & checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & INT \\ 
+\hline 
+current\_detector\_radius\_group &  & compact & 0 \\ 
+ & current\_detector\_radius & description & coordinate radius of the current detector \\ 
+ &  & dimensions & 0 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & tags & checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+my\_out\_every\_det & my\_out\_every\_det & compact & 0 \\ 
+ &  & description & output frequency \\ 
+ &  & dimensions & 0 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & tags & checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & 100 \\ 
+ &  & variable type & INT \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+
+\noindent {\bf Uses header}: 
+
+carpetinterp2.hh
+\vspace{2mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn Llama/WaveExtractL.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Always:}& {\bf Conditional:} \\ 
+ MoncriefQ &  metric\_tmp\\ 
+~ &  my\_out\_every\_det\\ 
+~ &  l\_m\_modes\_info\_group\\ 
+~ &  current\_detector\_group\\ 
+~ &  current\_detector\_radius\_group\\ 
+~ &  sym\_factor\_group handles\_group do\_nothing\_group\\ 
+~ &  gridsizes\_group\\ 
+~ &  surface\_arrays\\ 
+~ &  surface\_integrands\\ 
+~ &  interp\_metric\_arrays\\ 
+~ &  Schwarzschild\_Mass\_Radius\_group\\ 
+~ &  MoncriefQ\_Results\_group Schwarzschild\_Mass\_Radius\_Results\_group\\ 
+~ &  current\_detector\_group current\_detector\_radius\_group\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PARAMCHECK}   (conditional) 
+
+\hspace{5mm} wavextrl\_paramcheck 
+
+\hspace{5mm}{\it check parameters for waveextract } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_STARTUP}   (conditional) 
+
+\hspace{5mm} wavextrl\_startup 
+
+\hspace{5mm}{\it register waveextract as an io method } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ioutil\_startup \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf WavExtrL\_CalcsAtDetector}   (conditional) 
+
+\hspace{5mm} wavextrl\_subtrsphermetric 
+
+\hspace{5mm}{\it substract spherical background part of metric from metric } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & wavextrl\_schwarzmassrad \\ 
+~ & Language:  & fortran \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf WavExtrL\_CalcsAtDetector}   (conditional) 
+
+\hspace{5mm} wavextrl\_moncriefq 
+
+\hspace{5mm}{\it compute moncrief qeven, qodd from regge wheeler quantities } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & wavextrl\_subtrsphermetric \\ 
+~ & Language:  & fortran \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf WavExtrL\_CalcsAtDetector}   (conditional) 
+
+\hspace{5mm} wavextrl\_writedata 
+
+\hspace{5mm}{\it write out results to disk and stdout - one file for each detector and (l,m) mode } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & wavextrl\_moncriefq \\ 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf WavExtrL\_CalcsAtDetector}   (conditional) 
+
+\hspace{5mm} wavextrl\_adjustdetector 
+
+\hspace{5mm}{\it decrease current\_detector, go the the next detector } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & wavextrl\_writedata \\ 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf WavExtrL\_CalcsAtDetector}   (conditional) 
+
+\hspace{5mm} wavextrl\_adjustdetector 
+
+\hspace{5mm}{\it decrease current\_detector, go the the next detector } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & wavextrl\_moncriefq \\ 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf WavExtrL\_CalcsAtDetector}   (conditional) 
+
+\hspace{5mm} wavextrl\_timerinfo 
+
+\hspace{5mm}{\it output timer info if requested } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & wavextrl\_adjustdetector \\ 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_ANALYSIS}   (conditional) 
+
+\hspace{5mm} wavextrl\_writelotsofdata 
+
+\hspace{5mm}{\it output one file per (l,m) mode, all detectors in one file } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & wavextrl\_calcsatdetector \\ 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_BASEGRID}   (conditional) 
+
+\hspace{5mm} wavextrl\_init 
+
+\hspace{5mm}{\it setup weights for integration } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & spatialcoordinates \\ 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_BASEGRID}   (conditional) 
+
+\hspace{5mm} wavextrl\_setup\_detectors 
+
+\hspace{5mm}{\it initial setup of all detectors } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & spatialcoordinates \\ 
+~ & Language:  & fortran \\ 
+~ & Options:  & level \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_BASEGRID}   (conditional) 
+
+\hspace{5mm} wavextrl\_setup\_sphericalsurface 
+
+\hspace{5mm}{\it setup detectors from spherical surface } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & sphericalsurface\_setup \\ 
+~& ~ &wavextrl\_resetcurrdet\\ 
+~ & Language:  & fortran \\ 
+~ & Options:  & local \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_ANALYSIS}   (conditional) 
+
+\hspace{5mm} wavextrl\_resetcurrdet 
+
+\hspace{5mm}{\it reset the value of the current\_detector, needed for the while loop next } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & wavextrl\_calcsatdetector \\ 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_ANALYSIS}   (conditional) 
+
+\hspace{5mm} wavextrl\_calcsatdetector 
+
+\hspace{5mm}{\it calculations done for each detector, we loop over the detectors } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & wavextrl\_resetcurrdet \\ 
+~ & Type:  & group \\ 
+~ & While:  & waveextractl::current\_detector \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf WavExtrL\_CalcsAtDetector}   (conditional) 
+
+\hspace{5mm} wavextrl\_setupsphere 
+
+\hspace{5mm}{\it setup sintheta, sinphi arrays } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf WavExtrL\_CalcsAtDetector}   (conditional) 
+
+\hspace{5mm} wavextrl\_projectsphere 
+
+\hspace{5mm}{\it interpolate 3d quantities into 2d grid arrays (on the sphere), project onto sphere } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & wavextrl\_setupsphere \\ 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf WavExtrL\_CalcsAtDetector}   (conditional) 
+
+\hspace{5mm} wavextrl\_schwarzmassrad 
+
+\hspace{5mm}{\it calculate schwarzschild radius and mass and spherical background } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & wavextrl\_projectsphere \\ 
+~ & Language:  & fortran \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

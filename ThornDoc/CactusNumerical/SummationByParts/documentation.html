@@ -1,0 +1,1352 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>Summation By Parts</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (http://www.tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (http://www.tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+ <script type="text/x-mathjax-config"> MathJax.Hub.Config({ 'fast-preview': {disabled: true}, TeX: { extensions: ["color.js","AMSmath.js"], equationNumbers: { autoNumber: "AMS" } }, extensions: ["tex2jax.js"], tex2jax: {  inlineMath: [ ["\\\(","\\\)"] ], displayMath: [ ['$$','$$'], ["\\[","\\]"] ], processEscapes: true, processEnvironments: true } }); </script> 
+ <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">Summation By Parts</h2>
+<div class="author" ><span 
+class="cmr-12">Peter Diener </span><span 
+class="cmmi-12">&#x003C;</span><span 
+class="cmr-12">diener@cct.lsu.edu</span><span 
+class="cmmi-12">&#x003E;</span></div>
+<br />
+<div class="date" >\( \)<span 
+class="cmr-12">Date</span>\( \)</div>
+</div>
+<div 
+class="abstract" 
+>
+<div class="center" 
+>
+<!--l. 100--><p class="noindent" >
+</p><!--l. 100--><p class="noindent" ><span 
+class="cmbx-9">Abstract</span></p></div>
+     <!--l. 101--><p class="indent" >    <span 
+class="cmr-9">Calculate first derivates of grid functions using finite difference stencils that satisfy summation</span>
+     <span 
+class="cmr-9">by parts.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Introduction</h3>
+<!--l. 109--><p class="noindent" >Given a discretization \(x_0\ldots x_N\) of a computational domain \(x\in [a,b]\) with gridspacing \(h\) a one dimensional finite difference operator
+approximation to a first derivative, \(D\), is said to satisfy summation by parts (SBP) with respect to a scalar
+product (defined by its coefficients \(\sigma _{ij}\)) \begin{equation} \langle u, v\rangle _h = h \sum _{i=0}^{N} u_i v_j \sigma _{ij} \end{equation}
+if the property \begin{equation} \langle u, Dv\rangle _h +\langle Du, v\rangle _h = \left . (uv)\right |^b_a \end{equation}
+is satisfied for all possible gridfunctions \(u\) and \(v\).
+</p><!--l. 123--><p class="noindent" >At a given finite difference order, there are several different ways of doing this depending on the structure of the
+scalar product. The three commonly considered cases are the diagonal norm, the restricted full norm and the full
+norm (see figure <a 
+href="#x1-10011">1<!--tex4ht:ref: fig:norm --></a> for the structure). </p><hr class="figure" /><div class="figure" 
+>
+                                                                                       
+                                                                                       
+<a 
+ id="x1-10011"></a>
+                                                                                       
+                                                                                       
+<!--l. 154--><p class="noindent" >\[ \sigma = \left ( \begin{array}{cccccc} x &amp; &amp; &amp; &amp; &amp; \\ &amp; x &amp; &amp; &amp; &amp; \\ &amp; &amp; x &amp; &amp; &amp; \\ &amp; &amp; &amp; x &amp; &amp; \\ &amp; &amp; &amp; &amp; 1 &amp; \\ &amp; &amp; &amp; &amp; &amp; \ddots \end{array} \right ),\mbox{\hspace{0.2em}} \sigma = \left ( \begin{array}{ccccccc} x &amp; &amp; &amp; &amp; &amp; &amp; \\ &amp; x &amp; x &amp; x &amp; x &amp; &amp; \\ &amp; x &amp; x &amp; x &amp; x &amp; &amp; \\ &amp; x &amp; x &amp; x &amp; x &amp; &amp; \\ &amp; x &amp; x &amp; x &amp; x &amp; &amp; \\ &amp; &amp; &amp; &amp; &amp; 1 &amp; \\ &amp; &amp; &amp; &amp; &amp; &amp; \ddots \end{array} \right ),\mbox{\hspace{0.2em}} \sigma = \left ( \begin{array}{cccccc} x &amp; x &amp; x &amp; x &amp; &amp; \\ x &amp; x &amp; x &amp; x &amp; &amp; \\ x &amp; x &amp; x &amp; x &amp; &amp; \\ x &amp; x &amp; x &amp; x &amp; &amp; \\ &amp; &amp; &amp; &amp; 1 &amp; \\ &amp; &amp; &amp; &amp; &amp; \ddots \end{array} \right ) \]
+<br /> </p><div class="caption" 
+><span class="id">Figure 1: </span><span  
+class="content">The structure of the scalar product matrix in the diagonal case (left), the restricted full case
+(middle) and the full case (right) for the 4th order interior operators. Only non-zero elements are shown.</span></div><!--tex4ht:label?: x1-10011 -->
+                                                                                       
+                                                                                       
+</div><hr class="endfigure" />
+<!--l. 161--><p class="noindent" >In the following we denote the order of accuracy at the boundary by \(\tau \), the order in the interior by \(s\) and the width of the
+boundary region<span class="footnote-mark"><a 
+href="documentation2.html#fn1x0"><sup class="textsuperscript">1</sup></a></span><a 
+ id="x1-1002f1"></a> 
+by \(r\).
+</p><!--l. 166--><p class="noindent" >For the diagonal norm case it turns out that with \(r=2\tau \) it is possible to find SBP operators with \(s=2\tau \) (at least when \(\tau \le 4\)),
+i.e. the order of accuracy at the boundary is half the order in the interior. For the restricted full norm case \(\tau = s-1\)
+when \(r=\tau +2\) and for the full norm case \(\tau = s-1\) when \(r=\tau + 1\).
+</p><!--l. 172--><p class="noindent" >The operators are named after their norm and their interior and boundary orders. Thus, for example, we talk
+about diagonal norm 6-3 operators and restricted full norm 4-3 operators.
+</p><!--l. 176--><p class="noindent" >In the diagonal case the 2-1 and 4-3 operators are unique whereas the 6-3 and 8-4 operators have 1 and 3 free
+parameters, respectively. In the restricted full norm case the 4-3 operators have 3 free parameters and the 6-5
+operators have 4, while in the full norm case the number of free parameters is 1 less than the restricted full
+case.
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a>Numerical Implementation</h3>
+<!--l. 182--><p class="noindent" >Currently this thorn implements only diagonal and restricted full norm SBP operators. The
+diagonal norm 2-1, 4-2 and 6-3 and the restricted full norm 4-3 are the ones listed in <span class="cite">[<a 
+href="#Xstrand93">1</a>]</span> where
+in the presence of free parameters the set of parameters giving a minimal bandwidth have been
+chosen. For the diagonal norm 8-4 case the minimal bandwidth choice are to restrictive with respect
+to the Courant factor and in this case parameters are chosen so as to maximize the Courant
+factor<span class="footnote-mark"><a 
+href="documentation3.html#fn2x0"><sup class="textsuperscript">2</sup></a></span><a 
+ id="x1-2001f2"></a> .
+In addition the restricted full norm 6-5 operator has been implemented. This was calculated using a
+Mathematica script kindly provided by José M. Martín-García.
+</p><!--l. 196--><p class="noindent" >For the restricted full norm 6-5 SBP operators a compatible dissipation operator has been implemented as well
+based on <span class="cite">[<a 
+href="#Xmsn04">3</a>]</span>.
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-30003"></a>Using This Thorn</h3>
+                                                                                       
+                                                                                       
+<!--l. 199--><p class="noindent" >The basic functionality of calculating finite difference approximations are performed by a set of aliased functions.
+In this way things are kept flexible in the sense that different thorns each can provide their own way of
+calculating derivatives but if they use the same calling interface the user can switch between different derivative
+schemes by simply activating the appropriate finite differencing thorn. Also the same derivative routines can be
+called from both C and Fortran.
+</p><!--l. 207--><p class="noindent" >There are currently two different calling interfaces corresponding to different levels of flexibility. In the first case
+the fact that derivatives are approximated by finite differencing is completely hidden for the user. Using this
+interface the same physics thorn could in principle be used with a finite difference driver, a finite elements driver
+or a spectral driver. There is however a price to pay for this flexibility due to the fact that the operations are
+performed on whole grid functions at a time so that storage for the derivatives has to be provided.
+This can significantly increase the amount of memery required for the evolution. The alternative
+interface returns instead the finite difference coefficients and allows the user to calculate derivatives on
+a pointwise basis. This can significantly save memory but limits the physics thorn to use finite
+differences.
+</p>
+<h4 class="subsectionHead"><span class="titlemark">3.1   </span> <a 
+ id="x1-40003.1"></a>Obtaining This Thorn</h4>
+<!--l. 220--><p class="noindent" >The thorn is currently still in development and so is not generally available. Access can be requested by
+contacting the thorn maintainer.
+</p>
+<h4 class="subsectionHead"><span class="titlemark">3.2   </span> <a 
+ id="x1-50003.2"></a>Basic Usage</h4>
+<!--l. 223--><p class="noindent" >In order to use the derivative routines the appropriate declarations have to be added to your thorns interface.ccl
+file. To use the interface that works on whole grid functions you have to add:
+                                                                                       
+                                                                                       
+</p>
+<div class="verbatim" id="verbatim-1">
+SUBROUTINE Diff_gv ( CCTK_POINTER_TO_CONST IN cctkGH, \
+ <br />                     CCTK_INT IN dir, \
+ <br />                     CCTK_REAL IN ARRAY var, \
+ <br />                     CCTK_REAL OUT ARRAY dvar, \
+ <br />                     CCTK_INT IN table_handle )
+ <br />USES FUNCTION Diff_gv
+</div>
+<!--l. 233--><p class="nopar" > Here <span 
+class="cmtt-10">cctkGH </span>is the pointer to the cactus GH, <span 
+class="cmtt-10">dir </span>is the direction of the derivative (0 for \(x\), 1 for \(y\) and 2 for \(z\)), <span 
+class="cmtt-10">var</span>
+is the grid function to calculate derivatives of and <span 
+class="cmtt-10">dvar </span>is the grid function where the derivative is to be stored
+and <span 
+class="cmtt-10">table</span><span 
+class="cmtt-10">_handle </span>is an integer that contains a handle for a keyword table with optional parameters. If there are
+no optional paramters just pass in a negative value.
+</p><!--l. 241--><p class="noindent" >To use the interface that returns the finite difference coefficients you have to add:
+                                                                                       
+                                                                                       
+</p>
+<div class="verbatim" id="verbatim-2">
+SUBROUTINE Diff_coeff ( CCTK_POINTER_TO_CONST IN cctkGH, \
+ <br />                        CCTK_INT IN dir, \
+ <br />                        CCTK_INT IN nsize, \
+ <br />                        CCTK_INT OUT ARRAY imin, \
+ <br />                        CCTK_INT OUT ARRAY imax, \
+ <br />                        CCTK_REAL OUT ARRAY q, \
+ <br />                        CCTK_INT IN table_handle )
+</div>
+<!--l. 251--><p class="nopar" > Here, again, <span 
+class="cmtt-10">cctkGH </span>is the pointer to the cactus GH, <span 
+class="cmtt-10">dir </span>is the direction of the derivative, <span 
+class="cmtt-10">nsize </span>is the grid size
+in the direction you are interested in, <span 
+class="cmtt-10">imin </span>and <span 
+class="cmtt-10">imax </span>are 1D integer arrays of size <span 
+class="cmtt-10">nsize </span>that on return will
+contain the minimum and maximum index of the stencil in direction <span 
+class="cmtt-10">dir</span>, <span 
+class="cmtt-10">q </span>is a 2D real array of size <span 
+class="cmtt-10">nsize</span>\(\times \)<span 
+class="cmtt-10">nsize</span>
+that on return will contain the coefficients for the derivatives. The <span 
+class="cmtt-10">table</span><span 
+class="cmtt-10">_handle </span>serves the same purpose as in
+the previous case.
+</p><!--l. 265--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">3.3   </span> <a 
+ id="x1-60003.3"></a>Examples</h4>
+<!--l. 266--><p class="noindent" >The following piece of Fortran code, shows how to calculate derivatives of a grid function, f, and store the
+derivatives in the x-, y- and z-directions in the grid functions dxf, dyf and dzf:
+                                                                                       
+                                                                                       
+</p>
+<div class="verbatim" id="verbatim-3">
+  call Diff_gv (cctkGH, 0, f, dxf, -1)
+ <br />  call Diff_gv (cctkGH, 1, f, dyf, -1)
+ <br />  call Diff_gv (cctkGH, 2, f, dzf, -1)
+</div>
+<!--l. 273--><p class="nopar" > In order to use the interface for doing the pointwise derivatives, the following Fortran90 example shows the
+necessary declarations and an example of how to calculate the derivatives:
+                                                                                       
+                                                                                       
+</p>
+<div class="verbatim" id="verbatim-4">
+  CCTK_REAL, dimension(:,:), allocatable :: qx, qy, qz
+ <br />  CCTK_INT, dimension(:), allocatable :: iminx, imaxx, iminy, &#x0026;
+ <br />                                         imaxy, iminz, imaxz
+ <br />  CCTK_REAL :: idelx, idely, idelz
+ <br />  CCTK_INT :: i, j, k
+ <br />
+ <br />  allocate ( qx(cctk_lsh(1),cctk_lsh(1)), &#x0026;
+ <br />             qy(cctk_lsh(2),cctk_lsh(2)), &#x0026;
+ <br />             qz(cctk_lsh(3),cctk_lsh(3)), &#x0026;
+ <br />             iminx(cctk_lsh(1)), imaxx(cctk_lsh(1)), &#x0026;
+ <br />             iminy(cctk_lsh(2)), imaxy(cctk_lsh(2)), &#x0026;
+ <br />             iminz(cctk_lsh(3)), imaxz(cctk_lsh(3)) )
+ <br />
+ <br />  call Diff_Coeff ( cctkGH, 0, cctk_lsh(1), iminx, imaxx, qx, -1 )
+ <br />  call Diff_Coeff ( cctkGH, 1, cctk_lsh(2), iminy, imaxy, qy, -1 )
+ <br />  call Diff_Coeff ( cctkGH, 2, cctk_lsh(3), iminz, imaxz, qz, -1 )
+ <br />
+ <br />  idelx = 1.0d0 / CCTK_DELTA_SPACE(1)
+ <br />  idely = 1.0d0 / CCTK_DELTA_SPACE(2)
+ <br />  idelz = 1.0d0 / CCTK_DELTA_SPACE(3)
+ <br />
+ <br />  do k = 1, cctk_lsh(3)
+ <br />    do j = 1, cctk_lsh(2)
+ <br />      do i = 1, cctk_lsh(1)
+ <br />        dxf(i,j,k) = idelx * sum ( qx(iminx(i):imaxx(i),i) * &#x0026;
+ <br />                                     f(iminx(i):imaxx(i),j,k) )
+ <br />        dyf(i,j,k) = idely * sum ( qy(iminy(j):imaxy(j),j) * &#x0026;
+ <br />                                     f(i,iminy(j):imaxy(j),k) )
+ <br />        dzf(i,j,k) = idelz * sum ( qz(iminz(k):imaxz(k),k) * &#x0026;
+ <br />                                     f(i,j,iminz(k):imaxz(k)) )
+ <br />
+ <br />      end do
+ <br />    end do
+ <br />  end do
+ <br />
+ <br />  deallocate ( qx, qy, qz, iminx, imaxx, iminy, imaxy, iminz, imaxz )
+</div>
+<!--l. 314--><p class="nopar" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">3.4   </span> <a 
+ id="x1-70003.4"></a>Support and Feedback</h4>
+                                                                                       
+                                                                                       
+<!--l. 316--><p class="noindent" >This thorn is maintained by Peter Diener. Any questions and comments should be directed by e-mail to
+diener@cct.lsu.edu.
+</p><!--l. 319--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-80004"></a>History</h3>
+<!--l. 320--><p class="noindent" >This thorn grew out of the needs of a multipatch relativity code and as such was initially designed to those
+needs. The addition of the possibility of passing in a handle for a keyword table was done at the request of
+Jonathan Thornburg and should make it easy to extend the thorn with additional features. The addition of the
+coefficient interface was done at the request of Bela Szilagyi who felt that the storage overhead was
+to large for his code. In the near future the thorn will be extended with second derivatives SBP
+operators.
+</p><!--l. 333--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-90005"></a>Acknowledgements</h3>
+<!--l. 334--><p class="noindent" >We thank José M. Martín-García for very kindly providing us with a very well designed mathematica script to
+calculate the finite difference and scalar product coefficients.
+</p><!--l. 338--><p class="noindent" >
+</p>
+<h3 class="likesectionHead"><a 
+ id="x1-100005"></a>References</h3>
+<!--l. 338--><p class="noindent" >
+   </p><div class="thebibliography">
+   <p class="bibitem" ><span class="biblabel">
+ [1]<span class="bibsp">   </span></span><a 
+ id="Xstrand93"></a>Bo Strand, 1994, Journal of Computational Physics, 110, 47–67.
+   </p>
+   <p class="bibitem" ><span class="biblabel">
+ [2]<span class="bibsp">   </span></span><a 
+ id="Xlrt05"></a>Luis Lehner, Oscar Reula and Manuel Tiglio, in preparation.
+   </p>
+   <p class="bibitem" ><span class="biblabel">
+ [3]<span class="bibsp">   </span></span><a 
+ id="Xmsn04"></a>Ken Mattsson, Magnus Svärd and Jan Nordström, 2004, Journal of Scientific Computing, 21,
+   57–79.
+                                                                                       
+                                                                                       
+</p>
+   </div>
+<!--l. 352--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">6   </span> <a 
+ id="x1-110006"></a>Parameters</h3>
+<!--l. 371--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-2" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /></colgroup><colgroup id="TBL-2-2g"><col 
+id="TBL-2-2" /><col 
+id="TBL-2-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:normal; text-align:left;" id="TBL-2-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">check_grid_sizes</div>             </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>restricted </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-1-3"  
+class="td01">                        BOOLEAN</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-2-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Should we check grid sizes and ghost zones</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-1"  
+class="td11">                           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-3-3"  
+class="td01">                       <span 
+class="cmbx-10">Default: </span>yes</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-4-1"  
+class="td11">                           </td></tr></table></div>
+<!--l. 378--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-3" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-3-1g"><col 
+id="TBL-3-1" /></colgroup><colgroup id="TBL-3-2g"><col 
+id="TBL-3-2" /><col 
+id="TBL-3-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-1-"><td  style="white-space:normal; text-align:left;" id="TBL-3-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">diss_fraction</div>                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>restricted </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-1-3"  
+class="td01">                               REAL</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-3-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Fractional size of the transition region for the full restricted dissipation operator</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range               </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-3-3"  
+class="td01">                          <span 
+class="cmbx-10">Default: </span>0.2</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-4-"><td  style="white-space:normal; text-align:left;" id="TBL-3-4-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">0:0.5</div>                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-3-4-2"  
+class="td10"><div class="multicolumn"  style="white-space:normal; text-align:left;"></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-5-1"  
+class="td11">                           </td></tr></table></div>
+<!--l. 385--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-4" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-4-1g"><col 
+id="TBL-4-1" /></colgroup><colgroup id="TBL-4-2g"><col 
+id="TBL-4-2" /><col 
+id="TBL-4-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-1-"><td  style="white-space:normal; text-align:left;" id="TBL-4-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">dissipation_type</div>             </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>restricted </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-1-3"  
+class="td01">                          KEYWORD</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-4-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Type of dissipation operator</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range               </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-3-3"  
+class="td01">      <span 
+class="cmbx-10">Default: </span>Mattson-Svard-Nordstrom</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-4-"><td  style="white-space:normal; text-align:left;" id="TBL-4-4-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">see [1] below</div>                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-4-2"  
+class="td10"><div class="multicolumn"  style="white-space:normal; text-align:left;">Mattson, Svaerd and Nordstroem type</div>
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-5-"><td  style="white-space:normal; text-align:left;" id="TBL-4-5-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">Kreiss-Oliger</div>                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-5-2"  
+class="td10"><div class="multicolumn"  style="white-space:normal; text-align:left;">Kreiss-Oliger modified near the boundaries</div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-6-1"  
+class="td11">                           </td></tr></table></div>
+<!--l. 392--><p class="noindent" ><span 
+class="cmbx-10">[1]</span>
+                                                                                       
+                                                                                       
+</p>
+<div class="verbatim" id="verbatim-5">
+Mattson-Svard-Nordstrom
+</div>
+<!--l. 392--><p class="nopar" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-5" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-5-1g"><col 
+id="TBL-5-1" /></colgroup><colgroup id="TBL-5-2g"><col 
+id="TBL-5-2" /><col 
+id="TBL-5-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-1-"><td  style="white-space:normal; text-align:left;" id="TBL-5-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">epsdis</div>                      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>restricted </td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-1-3"  
+class="td01">                               REAL</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-5-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Dissipation strength</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range               </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-3-3"  
+class="td01">                          <span 
+class="cmbx-10">Default: </span>0.2</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-4-"><td  style="white-space:normal; text-align:left;" id="TBL-5-4-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                         </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-5-4-2"  
+class="td10"><div class="multicolumn"  style="white-space:normal; text-align:left;">Values typical between 0 and 1</div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-5-1"  
+class="td11">                           </td></tr></table></div>
+<!--l. 399--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-6" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-6-1g"><col 
+id="TBL-6-1" /></colgroup><colgroup id="TBL-6-2g"><col 
+id="TBL-6-2" /><col 
+id="TBL-6-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-1-"><td  style="white-space:normal; text-align:left;" id="TBL-6-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">h_scaling</div>                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>restricted </td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-1-3"  
+class="td01">                               REAL</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-6-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Scaling factor for the local grid spacing in the dissipation operators</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range               </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-3-3"  
+class="td01">                          <span 
+class="cmbx-10">Default: </span>1.0</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-4-"><td  style="white-space:normal; text-align:left;" id="TBL-6-4-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                         </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-6-4-2"  
+class="td10"><div class="multicolumn"  style="white-space:normal; text-align:left;">Positive please</div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-5-1"  
+class="td11">                           </td></tr></table></div>
+<!--l. 406--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-7" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-7-1g"><col 
+id="TBL-7-1" /></colgroup><colgroup id="TBL-7-2g"><col 
+id="TBL-7-2" /><col 
+id="TBL-7-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-1-"><td  style="white-space:normal; text-align:left;" id="TBL-7-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">norm_type</div>                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>restricted </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-1-3"  
+class="td01">                          KEYWORD</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-7-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Type of norm</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range               </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-3-3"  
+class="td01">                     <span 
+class="cmbx-10">Default: </span>Diagonal</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-4-"><td  style="white-space:normal; text-align:left;" id="TBL-7-4-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">Diagonal</div>                    </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-7-4-2"  
+class="td10"><div class="multicolumn"  style="white-space:normal; text-align:left;">Diagonal norm</div>
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-5-"><td  style="white-space:normal; text-align:left;" id="TBL-7-5-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">Full restricted</div>                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-7-5-2"  
+class="td10"><div class="multicolumn"  style="white-space:normal; text-align:left;">Full restricted norm</div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-6-1"  
+class="td11">                           </td></tr></table></div>
+<!--l. 413--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-8" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-8-1g"><col 
+id="TBL-8-1" /></colgroup><colgroup id="TBL-8-2g"><col 
+id="TBL-8-2" /><col 
+id="TBL-8-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-1-"><td  style="white-space:normal; text-align:left;" id="TBL-8-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">onesided_interpatch_boundaries</div></td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>restricted </td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-1-3"  
+class="td01">                        BOOLEAN</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-8-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Evaluate derivatives near the local grid boundary if it is an inter-patch boundary</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-3-1"  
+class="td11">                           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-3-3"  
+class="td01">                       <span 
+class="cmbx-10">Default: </span>yes</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-4-1"  
+class="td11">                           </td></tr></table></div>
+<!--l. 420--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-9" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-9-1g"><col 
+id="TBL-9-1" /></colgroup><colgroup id="TBL-9-2g"><col 
+id="TBL-9-2" /><col 
+id="TBL-9-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-1-"><td  style="white-space:normal; text-align:left;" id="TBL-9-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">onesided_outer_boundaries</div>    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>restricted </td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-1-3"  
+class="td01">                        BOOLEAN</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-9-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Evaluate derivatives within ghost zones of the outer boundary</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-3-1"  
+class="td11">                           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-3-3"  
+class="td01">                       <span 
+class="cmbx-10">Default: </span>yes</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-4-1"  
+class="td11">                           </td></tr></table></div>
+<!--l. 427--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-10" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-10-1g"><col 
+id="TBL-10-1" /></colgroup><colgroup id="TBL-10-2g"><col 
+id="TBL-10-2" /><col 
+id="TBL-10-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-1-"><td  style="white-space:normal; text-align:left;" id="TBL-10-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">operator_type</div>               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>restricted </td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-1-3"  
+class="td01">                          KEYWORD</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-10-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Type of operator</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range               </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-3-3"  
+class="td01">                    <span 
+class="cmbx-10">Default: </span>Optimized</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-4-"><td  style="white-space:normal; text-align:left;" id="TBL-10-4-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">Minimal Bandwidth</div>           </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-10-4-2"  
+class="td10"><div class="multicolumn"  style="white-space:normal; text-align:left;">Minimal  bandwidth  (except  for  8-4  which  is  minimal  spectral
+radius)</div>
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-5-"><td  style="white-space:normal; text-align:left;" id="TBL-10-5-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">Optimized</div>                   </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-10-5-2"  
+class="td10"><div class="multicolumn"  style="white-space:normal; text-align:left;">Optimized for performance</div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-6-1"  
+class="td11">                           </td></tr></table></div>
+<!--l. 434--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-11" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-11-1g"><col 
+id="TBL-11-1" /></colgroup><colgroup id="TBL-11-2g"><col 
+id="TBL-11-2" /><col 
+id="TBL-11-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-1-"><td  style="white-space:normal; text-align:left;" id="TBL-11-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">order</div>                      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>restricted </td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-1-3"  
+class="td01">                                 INT</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-11-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Order of accuracy</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range               </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-3-3"  
+class="td01">                           <span 
+class="cmbx-10">Default: </span>2</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-4-"><td  style="white-space:normal; text-align:left;" id="TBL-11-4-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">2:8:2</div>                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-11-4-2"  
+class="td10"><div class="multicolumn"  style="white-space:normal; text-align:left;"></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-5-1"  
+class="td11">                           </td></tr></table></div>
+<!--l. 441--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-12" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-12-1g"><col 
+id="TBL-12-1" /></colgroup><colgroup id="TBL-12-2g"><col 
+id="TBL-12-2" /><col 
+id="TBL-12-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-1-"><td  style="white-space:normal; text-align:left;" id="TBL-12-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">poison_derivatives</div>           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>restricted </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-1-3"  
+class="td01">                        BOOLEAN</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-12-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Should we poison Dvar at boundary</span><span 
+class="cmti-10">_shiftout perimeter when taking derivatives</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-3-1"  
+class="td11">                           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-3-3"  
+class="td01">                        <span 
+class="cmbx-10">Default: </span>no</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-4-1"  
+class="td11">                           </td></tr></table></div>
+<!--l. 448--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-13" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-13-1g"><col 
+id="TBL-13-1" /></colgroup><colgroup id="TBL-13-2g"><col 
+id="TBL-13-2" /><col 
+id="TBL-13-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-1-"><td  style="white-space:normal; text-align:left;" id="TBL-13-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">poison_dissipation</div>           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>restricted </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-1-3"  
+class="td01">                        BOOLEAN</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-13-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Should we poison rhs at boundary</span><span 
+class="cmti-10">_shiftout perimeter when applying dissipation</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-3-1"  
+class="td11">                           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-3-3"  
+class="td01">                        <span 
+class="cmbx-10">Default: </span>no</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-4-1"  
+class="td11">                           </td></tr></table></div>
+<!--l. 455--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-14" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-14-1g"><col 
+id="TBL-14-1" /></colgroup><colgroup id="TBL-14-2g"><col 
+id="TBL-14-2" /><col 
+id="TBL-14-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-1-"><td  style="white-space:normal; text-align:left;" id="TBL-14-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">poison_value</div>                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>restricted </td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-1-3"  
+class="td01">                               REAL</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-14-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Degree of intoxication</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range               </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-3-3"  
+class="td01">                        <span 
+class="cmbx-10">Default: </span>666.0</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-4-"><td  style="white-space:normal; text-align:left;" id="TBL-14-4-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                         </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-14-4-2"  
+class="td10"><div class="multicolumn"  style="white-space:normal; text-align:left;">Anything you want</div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-5-1"  
+class="td11">                           </td></tr></table></div>
+                                                                                       
+                                                                                       
+<!--l. 462--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-15" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-15-1g"><col 
+id="TBL-15-1" /></colgroup><colgroup id="TBL-15-2g"><col 
+id="TBL-15-2" /><col 
+id="TBL-15-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-1-"><td  style="white-space:normal; text-align:left;" id="TBL-15-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">sbp_1st_deriv</div>               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>restricted </td><td  style="white-space:nowrap; text-align:right;" id="TBL-15-1-3"  
+class="td01">                        BOOLEAN</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-15-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Should the 1st derivative operator be SBP</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-3-1"  
+class="td11">                           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-15-3-3"  
+class="td01">                       <span 
+class="cmbx-10">Default: </span>yes</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-4-1"  
+class="td11">                           </td></tr></table></div>
+<!--l. 469--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-16" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-16-1g"><col 
+id="TBL-16-1" /></colgroup><colgroup id="TBL-16-2g"><col 
+id="TBL-16-2" /><col 
+id="TBL-16-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-1-"><td  style="white-space:normal; text-align:left;" id="TBL-16-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">sbp_2nd_deriv</div>               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>restricted </td><td  style="white-space:nowrap; text-align:right;" id="TBL-16-1-3"  
+class="td01">                        BOOLEAN</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-16-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Should the 2nd derivative operator be SBP</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-3-1"  
+class="td11">                           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-16-3-3"  
+class="td01">                       <span 
+class="cmbx-10">Default: </span>yes</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-4-1"  
+class="td11">                           </td></tr></table></div>
+<!--l. 476--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-17" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-17-1g"><col 
+id="TBL-17-1" /></colgroup><colgroup id="TBL-17-2g"><col 
+id="TBL-17-2" /><col 
+id="TBL-17-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-1-"><td  style="white-space:normal; text-align:left;" id="TBL-17-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">sbp_upwind_deriv</div>           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>restricted </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-1-3"  
+class="td01">                        BOOLEAN</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-17-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Should the upwind derivative operator be SBP</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-3-1"  
+class="td11">                           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-3-3"  
+class="td01">                       <span 
+class="cmbx-10">Default: </span>yes</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-4-1"  
+class="td11">                           </td></tr></table></div>
+<!--l. 483--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-18" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-18-1g"><col 
+id="TBL-18-1" /></colgroup><colgroup id="TBL-18-2g"><col 
+id="TBL-18-2" /><col 
+id="TBL-18-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-1-"><td  style="white-space:normal; text-align:left;" id="TBL-18-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">scale_with_h</div>                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>restricted </td><td  style="white-space:nowrap; text-align:right;" id="TBL-18-1-3"  
+class="td01">                        BOOLEAN</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-18-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Should we scale the dissipation with the grid spacing h</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-3-1"  
+class="td11">                           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-18-3-3"  
+class="td01">                        <span 
+class="cmbx-10">Default: </span>no</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-4-1"  
+class="td11">                           </td></tr></table></div>
+<!--l. 490--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-19" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-19-1g"><col 
+id="TBL-19-1" /></colgroup><colgroup id="TBL-19-2g"><col 
+id="TBL-19-2" /><col 
+id="TBL-19-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-1-"><td  style="white-space:normal; text-align:left;" id="TBL-19-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">use_dissipation</div>              </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>restricted </td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-1-3"  
+class="td01">                        BOOLEAN</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-19-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Should we add dissipation</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-3-1"  
+class="td11">                           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-3-3"  
+class="td01">                        <span 
+class="cmbx-10">Default: </span>no</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-4-1"  
+class="td11">                           </td></tr></table></div>
+<!--l. 497--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-20" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-20-1g"><col 
+id="TBL-20-1" /></colgroup><colgroup id="TBL-20-2g"><col 
+id="TBL-20-2" /><col 
+id="TBL-20-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-1-"><td  style="white-space:normal; text-align:left;" id="TBL-20-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">use_shiftout</div>                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>restricted </td><td  style="white-space:nowrap; text-align:right;" id="TBL-20-1-3"  
+class="td01">                        BOOLEAN</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-20-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Should  we  use  the  boundary</span><span 
+class="cmti-10">_shift</span><span 
+class="cmti-10">_out  parameters  from  CoordBase  to  shift  the</span>
+<span 
+class="cmti-10">stencils of derivatives and dissipation</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-3-1"  
+class="td11">                           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-20-3-3"  
+class="td01">                        <span 
+class="cmbx-10">Default: </span>no</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-4-1"  
+class="td11">                           </td></tr></table></div>
+<!--l. 504--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-21" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-21-1g"><col 
+id="TBL-21-1" /></colgroup><colgroup id="TBL-21-2g"><col 
+id="TBL-21-2" /><col 
+id="TBL-21-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-1-"><td  style="white-space:normal; text-align:left;" id="TBL-21-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">use_variable_deltas</div>           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>restricted </td><td  style="white-space:nowrap; text-align:right;" id="TBL-21-1-3"  
+class="td01">                        BOOLEAN</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-21-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Use extra grid functions to allow for variable delta’s in the dissipation operators</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-3-1"  
+class="td11">                           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-21-3-3"  
+class="td01">                        <span 
+class="cmbx-10">Default: </span>no</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-4-1"  
+class="td11">                           </td></tr></table></div>
+<!--l. 511--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-22" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-22-1g"><col 
+id="TBL-22-1" /></colgroup><colgroup id="TBL-22-2g"><col 
+id="TBL-22-2" /><col 
+id="TBL-22-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-1-"><td  style="white-space:normal; text-align:left;" id="TBL-22-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">vars</div>                       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>restricted </td><td  style="white-space:nowrap; text-align:right;" id="TBL-22-1-3"  
+class="td01">                             STRING</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-22-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">List of evolved grid functions that should have dissipation added</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range               </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-22-3-3"  
+class="td01">                       <span 
+class="cmbx-10">Default: </span>(none)</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-4-"><td  style="white-space:normal; text-align:left;" id="TBL-22-4-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">.*</div>                          </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-22-4-2"  
+class="td10"><div class="multicolumn"  style="white-space:normal; text-align:left;">Must be a valid list of grid functions</div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-5-1"  
+class="td11">                           </td></tr></table></div>
+<!--l. 518--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-23" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-23-1g"><col 
+id="TBL-23-1" /></colgroup><colgroup id="TBL-23-2g"><col 
+id="TBL-23-2" /><col 
+id="TBL-23-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-1-"><td  style="white-space:normal; text-align:left;" id="TBL-23-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">zero_derivs_y</div>               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>restricted </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-1-3"  
+class="td01">                        BOOLEAN</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-23-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">set all derivatives to 0 in the y-direction</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-3-1"  
+class="td11">                           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-3-3"  
+class="td01">                        <span 
+class="cmbx-10">Default: </span>no</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-4-1"  
+class="td11">                           </td></tr></table></div>
+<!--l. 525--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-24" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-24-1g"><col 
+id="TBL-24-1" /></colgroup><colgroup id="TBL-24-2g"><col 
+id="TBL-24-2" /><col 
+id="TBL-24-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-1-"><td  style="white-space:normal; text-align:left;" id="TBL-24-1-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;">zero_derivs_z</div>               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>restricted </td><td  style="white-space:nowrap; text-align:right;" id="TBL-24-1-3"  
+class="td01">                        BOOLEAN</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-24-2-1"  
+class="td11"><div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">set all derivatives to 0 in the z-direction</span></div>
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-3-1"  
+class="td11">                           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-24-3-3"  
+class="td01">                        <span 
+class="cmbx-10">Default: </span>no</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-4-1"  
+class="td11">                           </td></tr></table></div>
+<!--l. 534--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">7   </span> <a 
+ id="x1-120007"></a>Interfaces</h3>
+                                                                                       
+                                                                                       
+<!--l. 539--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-130007"></a>General</h4>
+<!--l. 541--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 543--><p class="noindent" >summationbyparts
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-140007"></a>Grid Variables</h4>
+<!--l. 546--><p class="noindent" >
+</p>
+<h5 class="subsubsectionHead"><span class="titlemark">7.0.1   </span> <a 
+ id="x1-150007.0.1"></a>PUBLIC GROUPS</h5>
+<div class="tabular"> <table id="TBL-25" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-25-1g"><col 
+id="TBL-25-1" /></colgroup><colgroup id="TBL-25-2g"><col 
+id="TBL-25-2" /></colgroup><colgroup id="TBL-25-3g"><col 
+id="TBL-25-3" /><col 
+id="TBL-25-4" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-1-1"  
+class="td11">  <span 
+class="cmbx-10">Group Names </span> </td><td  style="white-space:nowrap; text-align:center;" id="TBL-25-1-2"  
+class="td10">  <span 
+class="cmbx-10">Variable Names </span>  </td><td  style="white-space:nowrap; text-align:right;" id="TBL-25-1-3"  
+class="td01">  <span 
+class="cmbx-10">Details </span> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-1-4"  
+class="td11">                                                                                     </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-2-1"  
+class="td11">    normmask       </td><td  style="white-space:nowrap; text-align:center;" id="TBL-25-2-2"  
+class="td10">                   </td><td  style="white-space:nowrap; text-align:right;" id="TBL-25-2-3"  
+class="td01">    compact</td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-2-4"  
+class="td11">0                                                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-3-1"  
+class="td11">                 </td><td  style="white-space:nowrap; text-align:center;" id="TBL-25-3-2"  
+class="td10">       nmask           </td><td  style="white-space:nowrap; text-align:right;" id="TBL-25-3-3"  
+class="td01">  description</td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-3-4"  
+class="td11">Mask for the norm calculation                                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-4-1"  
+class="td11">                 </td><td  style="white-space:nowrap; text-align:center;" id="TBL-25-4-2"  
+class="td10">                   </td><td  style="white-space:nowrap; text-align:right;" id="TBL-25-4-3"  
+class="td01">  dimensions</td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-4-4"  
+class="td11">3                                                                                    </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-5-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:center;" id="TBL-25-5-2"  
+class="td10">  </td><td  style="white-space:nowrap; text-align:right;" id="TBL-25-5-3"  
+class="td01"> distribution</td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-5-4"  
+class="td11">DEFAULT</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-6-1"  
+class="td11">                 </td><td  style="white-space:nowrap; text-align:center;" id="TBL-25-6-2"  
+class="td10">                   </td><td  style="white-space:nowrap; text-align:right;" id="TBL-25-6-3"  
+class="td01">  group type</td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-6-4"  
+class="td11">GF                                                                                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-7-1"  
+class="td11">                 </td><td  style="white-space:nowrap; text-align:center;" id="TBL-25-7-2"  
+class="td10">                   </td><td  style="white-space:nowrap; text-align:right;" id="TBL-25-7-3"  
+class="td01">       tags</td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-7-4"  
+class="td11">tensortypealias=”scalar” Prolongation=”None” checkpoint=”no”</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-8-1"  
+class="td11">                 </td><td  style="white-space:nowrap; text-align:center;" id="TBL-25-8-2"  
+class="td10">                   </td><td  style="white-space:nowrap; text-align:right;" id="TBL-25-8-3"  
+class="td01">   timelevels</td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-8-4"  
+class="td11">1                                                                                    </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-9-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:center;" id="TBL-25-9-2"  
+class="td10">  </td><td  style="white-space:nowrap; text-align:right;" id="TBL-25-9-3"  
+class="td01">variable type</td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-9-4"  
+class="td11">REAL</td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-10-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-10-1"  
+class="td11">      deltas          </td><td  style="white-space:nowrap; text-align:center;" id="TBL-25-10-2"  
+class="td10">                   </td><td  style="white-space:nowrap; text-align:right;" id="TBL-25-10-3"  
+class="td01">    compact</td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-10-4"  
+class="td11">0                                                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-11-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-11-1"  
+class="td11">                 </td><td  style="white-space:nowrap; text-align:center;" id="TBL-25-11-2"  
+class="td10">      sbp_dx           </td><td  style="white-space:nowrap; text-align:right;" id="TBL-25-11-3"  
+class="td01">  description</td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-11-4"  
+class="td11">Dissipation deltas                                                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-12-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-12-1"  
+class="td11">                 </td><td  style="white-space:nowrap; text-align:center;" id="TBL-25-12-2"  
+class="td10">      sbp_dy           </td><td  style="white-space:nowrap; text-align:right;" id="TBL-25-12-3"  
+class="td01">  dimensions</td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-12-4"  
+class="td11">3                                                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-13-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-13-1"  
+class="td11">                 </td><td  style="white-space:nowrap; text-align:center;" id="TBL-25-13-2"  
+class="td10">      sbp_dz           </td><td  style="white-space:nowrap; text-align:right;" id="TBL-25-13-3"  
+class="td01"> distribution</td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-13-4"  
+class="td11">DEFAULT                                                                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-14-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-14-1"  
+class="td11">                 </td><td  style="white-space:nowrap; text-align:center;" id="TBL-25-14-2"  
+class="td10">                   </td><td  style="white-space:nowrap; text-align:right;" id="TBL-25-14-3"  
+class="td01">  group type</td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-14-4"  
+class="td11">GF                                                                                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-15-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-15-1"  
+class="td11">                 </td><td  style="white-space:nowrap; text-align:center;" id="TBL-25-15-2"  
+class="td10">                   </td><td  style="white-space:nowrap; text-align:right;" id="TBL-25-15-3"  
+class="td01">       tags</td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-15-4"  
+class="td11">tensortypealias=”U” Prolongation=”None”                             </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-16-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-16-1"  
+class="td11">                 </td><td  style="white-space:nowrap; text-align:center;" id="TBL-25-16-2"  
+class="td10">                   </td><td  style="white-space:nowrap; text-align:right;" id="TBL-25-16-3"  
+class="td01">   timelevels</td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-16-4"  
+class="td11">1                                                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-17-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-17-1"  
+class="td11">                 </td><td  style="white-space:nowrap; text-align:center;" id="TBL-25-17-2"  
+class="td10">                   </td><td  style="white-space:nowrap; text-align:right;" id="TBL-25-17-3"  
+class="td01">variable type</td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-17-4"  
+class="td11">REAL                                                                             </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-18-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-18-1"  
+class="td11">                 </td></tr></table></div>
+<!--l. 577--><p class="noindent" ><span 
+class="cmbx-10">Provides</span>:
+</p><!--l. 581--><p class="noindent" >Diff_gf to
+</p><!--l. 583--><p class="noindent" >Diff_gv to
+</p><!--l. 585--><p class="noindent" >Diff_up_gv to
+</p><!--l. 587--><p class="noindent" >Diff2_gv to
+</p><!--l. 589--><p class="noindent" >Diff_coeff to
+</p><!--l. 591--><p class="noindent" >Diff_up_coeff to
+</p><!--l. 593--><p class="noindent" >Diff2_coeff to
+</p><!--l. 595--><p class="noindent" >GetScalProdDiag to
+</p><!--l. 597--><p class="noindent" >GetScalProdCoeff to
+</p><!--l. 599--><p class="noindent" >GetLshIndexRanges to
+</p><!--l. 601--><p class="noindent" >GetBoundWidth to
+</p><!--l. 604--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">8   </span> <a 
+ id="x1-160008"></a>Schedule</h3>
+                                                                                       
+                                                                                       
+<!--l. 610--><p class="noindent" >This section lists all the variables which are assigned storage by thorn CactusNumerical/SummationByParts.
+Storage can either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 613--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-170008"></a>Storage</h4>
+<!--l. 615--><p class="noindent" > 
+</p>
+<div class="tabular"> <table id="TBL-26" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-26-1g"><col 
+id="TBL-26-1" /><col 
+id="TBL-26-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-26-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-26-1-1"  
+class="td11"><span 
+class="cmbx-10">Always: </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-1-2"  
+class="td11"><span 
+class="cmbx-10">Conditional:</span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-26-2-1"  
+class="td11">normmask</td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-2-2"  
+class="td11">deltas           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-26-3-1"  
+class="td11">             </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-3-2"  
+class="td11">                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-26-4-1"  
+class="td11">         </td></tr></table></div>
+<!--l. 625--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-180008"></a>Scheduled Functions</h4>
+<!--l. 628--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_BASEGRID </span>(conditional)
+</p><!--l. 630--><p class="noindent" >      sbp_setnormmask
+</p><!--l. 632--><p class="noindent" >     <span 
+class="cmti-10">setup the mask for the calculation of the norm</span>
+</p><!--l. 635--><p class="noindent" > 
+</p>
+<div class="tabular"> <table id="TBL-27" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-27-1g"><col 
+id="TBL-27-1" /><col 
+id="TBL-27-2" /><col 
+id="TBL-27-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-27-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-1-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-1-2"  
+class="td11">Language:</td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-1-3"  
+class="td11">fortran                                          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-2-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-2-2"  
+class="td11">Type:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-2-3"  
+class="td11">function                                         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-3-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-3-2"  
+class="td11">Writes:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-3-3"  
+class="td11">summationbyparts::nmask(everywhere)</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-4-1"  
+class="td11">  </td></tr></table></div>
+<!--l. 646--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_BASEGRID </span>(conditional)
+</p><!--l. 648--><p class="noindent" >      sbp_deltainitial
+</p><!--l. 650--><p class="noindent" >     <span 
+class="cmti-10">initialize dissipation deltas</span>
+</p><!--l. 653--><p class="noindent" > 
+</p>
+<div class="tabular"> <table id="TBL-28" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-28-1g"><col 
+id="TBL-28-1" /><col 
+id="TBL-28-2" /><col 
+id="TBL-28-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-28-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-1-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-1-2"  
+class="td11">Language:</td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-1-3"  
+class="td11">fortran                                         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-2-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-2-2"  
+class="td11">Type:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-2-3"  
+class="td11">function                                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-3-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-3-2"  
+class="td11">Writes:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-3-3"  
+class="td11">summationbyparts::deltas(everywhere)</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-4-1"  
+class="td11">  </td></tr></table></div>
+<!--l. 664--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_POSTINITIAL </span>(conditional)
+</p><!--l. 666--><p class="noindent" >      sbp_checkgridsizes
+</p><!--l. 668--><p class="noindent" >     <span 
+class="cmti-10">check grid sizes and ghost zones</span>
+</p><!--l. 671--><p class="noindent" > 
+</p>
+<div class="tabular"> <table id="TBL-29" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-29-1g"><col 
+id="TBL-29-1" /><col 
+id="TBL-29-2" /><col 
+id="TBL-29-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-29-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-29-1-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-1-2"  
+class="td11">Language:</td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-1-3"  
+class="td11">fortran  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-29-2-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-2-2"  
+class="td11">Type:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-2-3"  
+class="td11">function</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-29-3-1"  
+class="td11">  </td></tr></table></div>
+<!--l. 681--><p class="noindent" ><span 
+class="cmbx-10">MoL</span><span 
+class="cmbx-10">_PostRHS </span>(conditional)
+</p><!--l. 683--><p class="noindent" >      sbp_dissipationadd
+</p><!--l. 685--><p class="noindent" >     <span 
+class="cmti-10">add sbp compatible dissipation to the right hand sides</span>
+</p><!--l. 688--><p class="noindent" > 
+                                                                                       
+                                                                                       
+</p>
+<div class="tabular"> <table id="TBL-30" class="tabular" 
+cellspacing="0" cellpadding="0"  
+><colgroup id="TBL-30-1g"><col 
+id="TBL-30-1" /><col 
+id="TBL-30-2" /><col 
+id="TBL-30-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-30-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-30-1-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-30-1-2"  
+class="td11">Language:</td><td  style="white-space:nowrap; text-align:left;" id="TBL-30-1-3"  
+class="td11">c                                                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-30-2-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-30-2-2"  
+class="td11">Reads:     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-30-2-3"  
+class="td11">summationbyparts::deltas(everywhere)</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-30-3-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-30-3-2"  
+class="td11">Type:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-30-3-3"  
+class="td11">function                                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-30-4-1"  
+class="td11">  </td></tr></table></div>
+ 
+</body></html> 
+
+                                                                                       
+
+

@@ -1,0 +1,952 @@
+\documentclass{article}
+%\usepackage{../../../../doc/ThornGuide/cactus}
+\usepackage{../../../../../doc/latex/cactus}
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+% The title of the document (not necessarily the name of the Thorn)
+\title{{\tt IllinoisGRMHD}: A Compact, Dynamic-Spacetime General Relativistic Magnetohydrodynamics Code for Easy User Adoption}
+
+% The author of the documentation - on one line, otherwise it does not work
+\author{Original author: Zachariah B. Etienne. }
+
+% the date your document was last changed, if your document is in CVS, 
+% please use:
+\date{$ $Date: 2015-10-12 12:00:00 -0600 (Mon, 12 Oct 2015) $ $}
+\maketitle
+
+% *======================================================================*
+%  Cactus Thorn template for ThornGuide documentation
+%  Author: Ian Kelley
+%  Date: Sun Jun 02, 2002
+%  $Header$                                                             
+%
+%  Thorn documentation in the latex file doc/documentation.tex 
+%  will be included in ThornGuides built with the Cactus make system.
+%  The scripts employed by the make system automatically include 
+%  pages about variables, parameters and scheduling parsed from the 
+%  relevent thorn CCL files.
+%  
+%  This template contains guidelines which help to assure that your     
+%  documentation will be correctly added to ThornGuides. More 
+%  information is available in the Cactus UsersGuide.
+%                                                    
+%  Guidelines:
+%   - Do not change anything before the line
+%       % START CACTUS THORNGUIDE",
+%     except for filling in the title, author, date etc. fields.
+%        - Each of these fields should only be on ONE line.
+%        - Author names should be sparated with a \\ or a comma
+%   - You can define your own macros are OK, but they must appear after
+%     the START CACTUS THORNGUIDE line, and do not redefine standard 
+%     latex commands.
+%   - To avoid name clashes with other thorns, 'labels', 'citations', 
+%     'references', and 'image' names should conform to the following 
+%     convention:          
+%       ARRANGEMENT_THORN_LABEL
+%     For example, an image wave.eps in the arrangement CactusWave and 
+%     thorn WaveToyC should be renamed to CactusWave_WaveToyC_wave.eps
+%   - Graphics should only be included using the graphix package. 
+%     More specifically, with the "includegraphics" command. Do
+%     not specify any graphic file extensions in your .tex file. This 
+%     will allow us (later) to create a PDF version of the ThornGuide
+%     via pdflatex. |
+%   - References should be included with the latex "bibitem" command. 
+%   - use \begin{abstract}...\end{abstract} instead of \abstract{...}
+%   - For the benefit of our Perl scripts, and for future extensions, 
+%     please use simple latex.     
+%
+% *======================================================================* 
+% 
+% Example of including a graphic image:
+%    \begin{figure}[ht]
+%       \begin{center}
+%          \includegraphics[width=6cm]{/home/runner/work/tests/tests/arrangements/WVUThorns/IllinoisGRMHD/doc/MyArrangement_MyThorn_MyFigure}
+%       \end{center}
+%       \caption{Illustration of this and that}
+%       \label{MyArrangement_MyThorn_MyLabel}
+%    \end{figure}
+%
+% Example of using a label:
+%   \label{MyArrangement_MyThorn_MyLabel}
+%
+% Example of a citation:
+%    \cite{MyArrangement_MyThorn_Author99}
+%
+% Example of including a reference
+%   \bibitem{MyArrangement_MyThorn_Author99}
+%   {J. Author, {\em The Title of the Book, Journal, or periodical}, 1 (1999), 
+%   1--16. {\tt http://www.nowhere.com/}}
+%
+% *======================================================================* 
+
+% If you are using CVS use this line to give version information
+% $Header$
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a 
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+% Add all definitions used in this documentation here 
+%   \def\mydef etc
+
+%\newcommand{\eqref}[1]{(\ref{#1})}
+
+% Add an abstract for this thorn's documentation
+\begin{abstract}
+{\tt IllinoisGRMHD} solves the equations of General Relativistic 
+MagnetoHydroDynamics (GRMHD) using a high-resolution shock capturing scheme.
+It is a rewrite of the Illinois Numerical Relativity (ILNR) group's GRMHD 
+code, and generates results that agree to roundoff error with that original
+code. Its feature set coincides with the features of the ILNR group's 
+recent code (ca. 2009--2014), which was used in their modeling of the
+following systems:
+\begin{enumerate}
+\item Magnetized circumbinary disk accretion onto binary black holes
+\item Magnetized black hole--neutron star mergers
+\item Magnetized Bondi flow, Bondi-Hoyle-Littleton accretion
+\item White dwarf--neutron star mergers
+\end{enumerate}
+
+{\tt IllinoisGRMHD} is particularly good at modeling GRMHD flows into black holes
+without the need for excision. Its HARM-based conservative-to-primitive solver 
+has also been modified to check the physicality of conservative variables 
+prior to primitive inversion, and move them into the physical range if they 
+become unphysical.
+
+\end{abstract}
+
+% The following sections are suggestive only.
+% Remove them or add your own.
+
+\section{Introduction}
+\label{sec:intro}
+
+Currently {\tt IllinoisGRMHD} consists of
+\begin{enumerate}
+\item the Piecewise Parabolic Method (PPM) for reconstruction, 
+\item the Harten, Lax, van Leer (HLL/HLLE) approximate Riemann solver, and
+\item a modified HARM Conservative-to-Primitive solver (see REQUIRED
+  CITATION \#2 below).
+\end{enumerate}
+
+{\tt IllinoisGRMHD} evolves the vector potential $A_{\mu}$ (on staggered grids) 
+instead of the magnetic fields ($B^i$) directly, to guarantee that the 
+magnetic fields will remain divergenceless even at AMR boundaries. On 
+uniform resolution grids, this vector potential formulation produces 
+results equivalent to those generated using the standard, staggered 
+flux-CT scheme. This scheme is based on that of Del Zanna (2003, see
+below OPTIONAL CITATION \#1).
+
+For further information about motivations, basic equations, how {\tt
+  IllinoisGRMHD} works, as well as basic code test results, please see
+the {\tt IllinoisGRMHD} code announcement
+paper~\cite{WVUThorns_IllinoisGRMHD_Etienne:2015cea}. If you use {\tt
+  IllinoisGRMHD} for your research, you are asked to include the
+REQUIRED CITATIONS listed below in your citations.
+
+For a quick ``Guide to Getting Started'', please visit the {\tt
+  IllinoisGRMHD} web page:\\ \url{http://math.wvu.edu/~zetienne/ILGRMHD/}
+
+\section{Citations}
+\subsection{Required citations}
+\begin{enumerate}
+\item IllinoisGRMHD code announcement paper~\cite{WVUThorns_IllinoisGRMHD_Etienne:2015cea}
+\item Harm con2prim paper~\cite{WVUThorns_IllinoisGRMHD_Noble:2005gf}
+\end{enumerate}
+
+\subsection{Optional citations}
+\begin{enumerate}
+\item MHD paper~\cite{WVUThorns_IllinoisGRMHD_DelZanna:2002rv}
+\end{enumerate}
+
+\section{Acknowledgements}
+
+Note that IllinoisGRMHD
+is based on the GRMHD code of the Illinois Numerical Relativity
+group (ca. 2014), written by Matt Duez, Yuk Tung Liu, and Branson
+Stephens (original version), and then developed primarily by
+Zachariah Etienne, Yuk Tung Liu, and Vasileios Paschalidis.
+
+\begin{thebibliography}{9}
+
+\bibitem{WVUThorns_IllinoisGRMHD_Etienne:2015cea}
+Z.~B.~Etienne, V.~Paschalidis, R.~Haas, P.~M\"osta and S.~L.~Shapiro,
+``IllinoisGRMHD: An Open-Source, User-Friendly GRMHD Code for Dynamical
+Spacetimes,''
+Class. Quant. Grav. \textbf{32}, 175009 (2015)
+doi:10.1088/0264-9381/32/17/175009
+[\href{https://arxiv.org/abs/1501.07276}{arXiv:1501.07276} [astro-ph.HE]].
+
+\bibitem{WVUThorns_IllinoisGRMHD_Noble:2005gf}
+S.~C.~Noble, C.~F.~Gammie, J.~C.~McKinney and L.~Del Zanna,
+``Primitive variable solvers for conservative general relativistic
+magnetohydrodynamics,''
+Astrophys. J. \textbf{641}, 626-637 (2006)
+doi:10.1086/500349
+[\href{https://arxiv.org/abs/astro-ph/0512420}{arXiv:astro-ph/0512420} [astro-ph]].
+
+\bibitem{WVUThorns_IllinoisGRMHD_DelZanna:2002rv}
+L.~Del Zanna, N.~Bucciantini and P.~Londrillo,
+``An efficient shock-capturing central-type scheme for multidimensional
+relativistic flows. 2. Magnetohydrodynamics,''
+Astron. Astrophys. \textbf{400}, 397-414 (2003)
+doi:10.1051/0004-6361:20021641
+[\href{https://arxiv.org/abs/astro-ph/0210618}{arXiv:astro-ph/0210618} [astro-ph]].
+
+\end{thebibliography}
+
+
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{conserv\_to\_prims\_debug}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{damp\_lorenz} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Damping factor for the generalized Lorenz gauge. Has units of 1/length = 1/M. Typically set this parameter to 1.5/(maximum Delta t on AMR grids).}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{conserv\_to\_prims\_debug} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em 0: no, 1: yes}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:1} & \multicolumn{2}{p{\paraWidth}|}{zero (no) or one (yes)} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{em\_bc} & {\bf Scope:} restricted & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em EM field boundary condition}} \\
+\hline{\bf Range} & &  {\bf Default:} copy \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering copy} & \multicolumn{2}{p{\paraWidth}|}{Copy data from nearest boundary point} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering frozen} & \multicolumn{2}{p{\paraWidth}|}{Frozen boundaries} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{gamma\_speed\_limit} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Maximum relativistic gamma factor.}} \\
+\hline{\bf Range} & &  {\bf Default:} 10.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{Positive {\textgreater} 1, though you'll likely have troubles far above 10.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{gamma\_th} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em thermal gamma parameter}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Physical values} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1} & \multicolumn{2}{p{\paraWidth}|}{forbidden value to make sure it is explicitly set in the parfile} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{k\_poly} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em initial polytropic constant}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Positive} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{matter\_bc} & {\bf Scope:} restricted & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Chosen Matter boundary condition}} \\
+\hline{\bf Range} & &  {\bf Default:} outflow \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering outflow} & \multicolumn{2}{p{\paraWidth}|}{Outflow boundary conditions} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering frozen} & \multicolumn{2}{p{\paraWidth}|}{Frozen boundaries} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{neos} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em number of parameters in EOS table. If you want to increase from the default max value, you MUST also set eos\_params\_arrays1 and eos\_params\_arrays2 in interface.ccl to be consistent!}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:10} & \multicolumn{2}{p{\paraWidth}|}{Any integer between 1 and 10} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{psi6threshold} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Where Psi\^6 {\textgreater} Psi6threshold, we assume we're inside the horizon in the primitives solver, and certain limits are relaxed or imposed}} \\
+\hline{\bf Range} & &  {\bf Default:} 1e100 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Can set to anything} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rho\_b\_atm} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Floor value on the baryonic rest mass density rho\_b (atmosphere). Given the variety of systems this code may encounter, there *is no reasonable default*. Your run will die unless you override this default value in your initial data thorn.}} \\
+\hline{\bf Range} & &  {\bf Default:} 1e200 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Allow for negative values.  This enables us to debug the code and verify if rho\_b\_atm is properly set.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rho\_b\_max} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Ceiling value on the baryonic rest mass density rho\_b. The enormous value effectively disables this ceiling by default. It can be quite useful after a black hole has accreted a lot of mass, leading to enormous densities inside the BH. To enable this trick, set rho\_b\_max in your initial data thorn! You are welcome to change this parameter mid-run (after restarting from a checkpoint).}} \\
+\hline{\bf Range} & &  {\bf Default:} 1e300 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Note that you will have problems unless rho\_b\_atm{\textless}rho\_b\_max} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{sym\_bz} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em In-progress equatorial symmetry support: Symmetry parameter across z axis for magnetic fields = +/- 1}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1.0:1.0} & \multicolumn{2}{p{\paraWidth}|}{Set to +1 or -1.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{symmetry} & {\bf Scope:} restricted & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Currently only no symmetry supported, though work has begun in adding equatorial-symmetry support. FIXME: Extend ET symmetry interface to support symmetries on staggered gridfunctions}} \\
+\hline{\bf Range} & &  {\bf Default:} none \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering none} & \multicolumn{2}{p{\paraWidth}|}{no symmetry, full 3d domain} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{tau\_atm} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Floor value on the energy variable tau (cf. tau\_stildefix\_enable). Given the variety of systems this code may encounter, there *is no reasonable default*. Effectively the current (enormous) value should disable the tau\_atm floor. Please set this in your initial data thorn, and reset at will during evolutions.}} \\
+\hline{\bf Range} & &  {\bf Default:} 1e100 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Positive} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{update\_tmunu} & {\bf Scope:} restricted & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Update Tmunu, for RHS of Einstein's equations?}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{verbose} & {\bf Scope:} restricted & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Determines how much evolution information is output}} \\
+\hline{\bf Range} & &  {\bf Default:} essential+iteration output \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering no} & \multicolumn{2}{p{\paraWidth}|}{Complete silence} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering essential} & \multicolumn{2}{p{\paraWidth}|}{"Essential health monitoring of the GRMHD evolution: Information about conservative-to-prim 
+itive fixes, etc."} \\\multicolumn{1}{|p{\maxVarWidth}|}{see [1] below} & \multicolumn{2}{p{\paraWidth}|}{Outputs health monitoring information, plus a record of which RK iteration. Very useful for backtracing a crash.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent {\bf [1]} \noindent \begin{verbatim}essential+iteration output\end{verbatim}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{lapse\_timelevels} & {\bf Scope:} shared from ADMBASE & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{metric\_timelevels} & {\bf Scope:} shared from ADMBASE & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{shift\_timelevels} & {\bf Scope:} shared from ADMBASE & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+illinoisgrmhd
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+admbase
+
+boundary
+
+spacemask
+
+tmunubase
+
+hydrobase
+
+grid
+\vspace{2mm}
+\subsection*{Grid Variables}
+\vspace{5mm}\subsubsection{PRIVATE GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+diagnostic\_gfs &  & compact & 0 \\ 
+ & failure\_checker & description & Gridfunction to track conservative-to-primitives solver fixes. Beware that this gridfunction is overwritten at each RK substep. \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+grmhd\_primitives\_reconstructed\_temps &  & compact & 0 \\ 
+ & ftilde\_gf & description & Temporary variables used for primitives reconstruction \\ 
+ & temporary & dimensions & 3 \\ 
+ & rho\_br & distribution & DEFAULT \\ 
+ & Pr & group type & GF \\ 
+ & vxr & tags & prolongation="none" Checkpoint="no" \\ 
+ & vyr & timelevels & 1 \\ 
+ & vzr & variable type & REAL \\ 
+\hline 
+grmhd\_conservatives\_rhs &  & compact & 0 \\ 
+ & rho\_star\_rhs & description & Storage for the right-hand side of the partial\_t rho\_star \\ 
+& ~ & description &  partial\_t tau \\ 
+ & rho\_star\_rhs & description &  and partial\_t tilde\{S\}\_i equations. Needed for MoL timestepping. \\ 
+ & tau\_rhs & dimensions & 3 \\ 
+ & st\_x\_rhs & distribution & DEFAULT \\ 
+ & st\_y\_rhs & group type & GF \\ 
+ & st\_z\_rhs & tags & prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+em\_ax\_rhs &  & compact & 0 \\ 
+ & Ax\_rhs & description & Storage for the right-hand side of the partial\_t A\_x equation. Needed for MoL timestepping. \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+em\_ay\_rhs &  & compact & 0 \\ 
+ & Ay\_rhs & description & Storage for the right-hand side of the partial\_t A\_y equation. Needed for MoL timestepping. \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+em\_az\_rhs &  & compact & 0 \\ 
+ & Az\_rhs & description & Storage for the right-hand side of the partial\_t A\_z equation. Needed for MoL timestepping. \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~ \\ 
+\hline 
+em\_psi6phi\_rhs &  & compact & 0 \\ 
+ & psi6phi\_rhs & description & Storage for the right-hand side of the partial\_t (psi\^6 Phi) equation. Needed for MoL timestepping. \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+grmhd\_cmin\_cmax\_temps &  & compact & 0 \\ 
+ & cmin\_x & description & Store min and max characteristic speeds in all three directions. \\ 
+ & cmax\_x & dimensions & 3 \\ 
+ & cmin\_y & distribution & DEFAULT \\ 
+ & cmax\_y & group type & GF \\ 
+ & cmin\_z & tags & prolongation="none" Checkpoint="no" \\ 
+ & cmax\_z & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+grmhd\_flux\_temps &  & compact & 0 \\ 
+ & rho\_star\_flux & description & Temporary variables for storing the flux terms of tilde\{S\}\_i. \\ 
+ & tau\_flux & dimensions & 3 \\ 
+ & st\_x\_flux & distribution & DEFAULT \\ 
+ & st\_y\_flux & group type & GF \\ 
+ & st\_z\_flux & tags & prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+tupmunu &  & compact & 0 \\ 
+ & TUPtt & description & T\^\{mu nu\} \\ 
+& ~ & description &  stored to avoid expensive recomputation \\ 
+ & TUPtx & dimensions & 3 \\ 
+ & TUPty & distribution & DEFAULT \\ 
+ & TUPtz & group type & GF \\ 
+ & TUPxx & tags & prolongation="none" Checkpoint="no" \\ 
+ & TUPxy & timelevels & 1 \\ 
+ & TUPxz & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+\vspace{5mm}\subsubsection{PUBLIC GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+grmhd\_conservatives &  & compact & 0 \\ 
+ & rho\_star & description & Evolved mhd variables \\ 
+ & tau & dimensions & 3 \\ 
+ & mhd\_st\_x & distribution & DEFAULT \\ 
+ & mhd\_st\_y & group type & GF \\ 
+ & mhd\_st\_z & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+em\_ax &  & compact & 0 \\ 
+ & Ax & description & x-component of the vector potential \\ 
+& ~ & description &  evolved when constrained\_transport\_scheme==3 \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & Prolongation="STAGGER011" \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+em\_ay &  & compact & 0 \\ 
+ & Ay & description & y-component of the vector potential \\ 
+& ~ & description &  evolved when constrained\_transport\_scheme==3 \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & Prolongation="STAGGER101" \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+em\_az &  & compact & 0 \\ 
+ & Az & description & z-component of the vector potential \\ 
+& ~ & description &  evolved when constrained\_transport\_scheme==3 \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & Prolongation="STAGGER110" \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+em\_psi6phi &  & compact & 0 \\ 
+ & psi6phi & description & sqrt\{gamma\} Phi \\ 
+& ~ & description &  where Phi is the em scalar potential \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & Prolongation="STAGGER111" \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+grmhd\_primitives\_allbutbi &  & compact & 0 \\ 
+ & rho\_b & description & Primitive variables density \\ 
+& ~ & description &  pressure \\ 
+ & rho\_b & description &  and components of three velocity v\^i. Note that v\^i is defined in terms of 4-velocity as: v\^i = u\^i/u\^0. Note that this definition differs from the Valencia formalism. \\ 
+ & P & dimensions & 3 \\ 
+ & vx & distribution & DEFAULT \\ 
+ & vy & group type & GF \\ 
+ & vz & tags & InterpNumTimelevels=1 prolongation="none" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~ \\ 
+\hline 
+grmhd\_primitives\_bi &  & compact & 0 \\ 
+ & Bx & description & B-field components defined at vertices. \\ 
+ & By & dimensions & 3 \\ 
+ & Bz & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & InterpNumTimelevels=1 prolongation="none" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+grmhd\_primitives\_bi\_stagger &  & compact & 0 \\ 
+ & Bx\_stagger & description & B-field components defined at staggered points [Bx\_stagger at (i+1/2 \\ 
+& ~ & description & j \\ 
+ & Bx\_stagger & description & k) \\ 
+ & Bx\_stagger & description & By\_stagger at (i \\ 
+ & Bx\_stagger & description & j+1/2 \\ 
+ & Bx\_stagger & description & k) \\ 
+ & Bx\_stagger & description & Bz\_stagger at (i \\ 
+ & Bx\_stagger & description & j \\ 
+ & Bx\_stagger & description & k+1/2)]. \\ 
+ & By\_stagger & dimensions & 3 \\ 
+ & Bz\_stagger & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & InterpNumTimelevels=1 prolongation="none" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+eos\_params\_arrays1 &  & compact & 0 \\ 
+ & rho\_tab & description & Equation of state (EOS) parameters \\ 
+ & P\_tab & dimensions & 1 \\ 
+ & eps\_tab & distribution & CONSTANT \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & 10 \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+eos\_params\_arrays2 &  & compact & 0 \\ 
+ & k\_tab & description & Equation of state (EOS) parameters \\ 
+ & gamma\_tab & dimensions & 1 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & 11 \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+eos\_params\_scalar &  & compact & 0 \\ 
+ & n\_poly & description & polytropic index \\ 
+ &  & dimensions & 0 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+bssn\_quantities &  & compact & 0 \\ 
+ & gtxx & description & BSSN quantities \\ 
+& ~ & description &  computed from ADM quantities \\ 
+ & gtxy & dimensions & 3 \\ 
+ & gtxz & distribution & DEFAULT \\ 
+ & gtyy & group type & GF \\ 
+ & gtyz & tags & prolongation="none" Checkpoint="no" \\ 
+ & gtzz & timelevels & 1 \\ 
+ & gtupxx & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+
+\noindent {\bf Adds header}: 
+
+
+
+IllinoisGRMHD\_headers.h
+\vspace{2mm}
+
+\noindent {\bf Uses header}: 
+
+Symmetry.h
+\vspace{2mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn WVUThorns/IllinoisGRMHD.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Always:}&  ~ \\ 
+ ADMBase::metric[metric\_timelevels] ADMBase::curv[metric\_timelevels] ADMBase::lapse[lapse\_timelevels] ADMBase::shift[shift\_timelevels] & ~\\ 
+ IllinoisGRMHD::BSSN\_quantities & ~\\ 
+ grmhd\_conservatives[3] em\_Ax[3] em\_Ay[3] em\_Az[3] em\_psi6phi[3] & ~\\ 
+ grmhd\_primitives\_allbutBi grmhd\_primitives\_Bi grmhd\_primitives\_Bi\_stagger grmhd\_primitives\_reconstructed\_temps grmhd\_conservatives\_rhs em\_Ax\_rhs em\_Ay\_rhs em\_Az\_rhs em\_psi6phi\_rhs grmhd\_cmin\_cmax\_temps grmhd\_flux\_temps TUPmunu diagnostic\_gfs & ~\\ 
+ eos\_params\_arrays1 eos\_params\_arrays2 eos\_params\_scalar & ~\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf MoL\_Register} 
+
+\hspace{5mm} illinoisgrmhd\_registervars 
+
+\hspace{5mm}{\it register evolved, rhs variables in illinoisgrmhd for mol } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & bssn\_registervars \\ 
+~& ~ &lapse\_registervars\\ 
+~ & Language:  & c \\ 
+~ & Options:  & meta \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_BASEGRID} 
+
+\hspace{5mm} illinoisgrmhd\_initsymbound 
+
+\hspace{5mm}{\it schedule symmetries } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & lapse\_initsymbound \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Boundaries} 
+
+\hspace{5mm} illinoisgrmhd\_compute\_b\_and\_bstagger\_from\_a 
+
+\hspace{5mm}{\it compute b and b\_stagger from a,  sync: grmhd\_primitives\_bi,grmhd\_primitives\_bi\_stagger } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & outer\_boundaries\_on\_a\_mu \\ 
+~ & Language:  & c \\ 
+~ & Sync:  & grmhd\_primitives\_bi \\ 
+~& ~ &grmhd\_primitives\_bi\_stagger\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf AddToTmunu} 
+
+\hspace{5mm} illinoisgrmhd\_conserv\_to\_prims 
+
+\hspace{5mm}{\it compute primitive variables from conservatives. this is non-trivial, requiring a newton-raphson root-finder. } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & compute\_b\_and\_bstagger\_from\_a \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf AddToTmunu} 
+
+\hspace{5mm} illinoisgrmhd\_outer\_boundaries\_on\_p\_rho\_b\_vx\_vy\_vz 
+
+\hspace{5mm}{\it apply outflow-only, flat bcs on \{p,rho\_b,vx,vy,vz\}. outflow only == velocities pointed inward from outer boundary are set to zero. } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & illinoisgrmhd\_conserv\_to\_prims \\ 
+~ & Language:  & c \\ 
+~ & Sync:  & grmhd\_primitives\_allbutbi \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTPOSTINITIAL} 
+
+\hspace{5mm} illinoisgrmhd\_postpostinitial 
+
+\hspace{5mm}{\it hydrobase\_con2prim in cctk\_postpostinitial sets conserv to prim then outer boundaries (obs, which are technically disabled). the post ob syncs actually reprolongate the conservative variables, making cons and prims inconsistent. so here we redo the con2prim, avoiding the sync afterward, then copy the result to other timelevels } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & hydrobase\_con2prim \\ 
+~ & Before:  & mol\_poststep \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_PostPostInitial} 
+
+\hspace{5mm} illinoisgrmhd\_initsymbound 
+
+\hspace{5mm}{\it schedule symmetries -- actually just a placeholder function to ensure prolongations / processor syncs are done before outer boundaries are updated. } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & compute\_b \\ 
+~ & Language:  & c \\ 
+~ & Sync:  & grmhd\_conservatives \\ 
+~& ~ &em\_ax\\ 
+~& ~ &em\_ay\\ 
+~& ~ &em\_az\\ 
+~& ~ &em\_psi6phi\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_PostPostInitial} 
+
+\hspace{5mm} illinoisgrmhd\_compute\_b\_and\_bstagger\_from\_a 
+
+\hspace{5mm}{\it compute b and b\_stagger from a sync: grmhd\_primitives\_bi,grmhd\_primitives\_bi\_stagger } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & postid \\ 
+~& ~ &empostid\\ 
+~& ~ &lapsepostid\\ 
+~ & Language:  & c \\ 
+~ & Sync:  & grmhd\_primitives\_bi \\ 
+~& ~ &grmhd\_primitives\_bi\_stagger\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_PostPostInitial} 
+
+\hspace{5mm} illinoisgrmhd\_conserv\_to\_prims 
+
+\hspace{5mm}{\it compute primitive variables from conservatives. this is non-trivial, requiring a newton-raphson root-finder. } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & compute\_b \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_PostPostInitial} 
+
+\hspace{5mm} illinoisgrmhd\_postpostinitial\_set\_symmetries\_\_copy\_timelevels 
+
+\hspace{5mm}{\it compute post-initialdata quantities } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & compute\_b \\ 
+~& ~ &p2c\\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_CalcRHS} 
+
+\hspace{5mm} illinoisgrmhd\_driver\_evaluate\_mhd\_rhs 
+
+\hspace{5mm}{\it evaluate rhss of gr hydro \& grmhd equations } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & bssn\_rhs \\ 
+~& ~ &shift\_rhs\\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Boundaries} 
+
+\hspace{5mm} illinoisgrmhd\_initsymbound 
+
+\hspace{5mm}{\it schedule symmetries -- actually just a placeholder function to ensure prolongations / processor syncs are done before outer boundaries are updated. } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & compute\_b\_postrestrict \\ 
+~ & Language:  & c \\ 
+~ & Sync:  & grmhd\_conservatives \\ 
+~& ~ &em\_ax\\ 
+~& ~ &em\_ay\\ 
+~& ~ &em\_az\\ 
+~& ~ &em\_psi6phi\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Boundaries} 
+
+\hspace{5mm} illinoisgrmhd\_outer\_boundaries\_on\_a\_mu 
+
+\hspace{5mm}{\it apply linear extrapolation bcs on a\_\{mu\}, so that bcs are flat on b\^i. } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & boundary\_syncs \\ 
+~ & Before:  & mhd\_conserv2prims\_postrestrict \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\subsection*{Aliased Functions}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Alias Name:} ~~~~~~~ & {\bf Function Name:} \\ 
+IllinoisGRMHD\_InitSymBound & Boundary\_SYNCs \\ 
+IllinoisGRMHD\_PostPostInitial\_Set\_Symmetries\_\_Copy\_Timelevels & mhdpostid \\ 
+IllinoisGRMHD\_compute\_B\_and\_Bstagger\_from\_A & compute\_b \\ 
+IllinoisGRMHD\_driver\_evaluate\_MHD\_rhs & IllinoisGRMHD\_RHS\_eval \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}
