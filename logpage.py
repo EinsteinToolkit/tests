@@ -325,7 +325,7 @@ def summary_to_html(readfile,writefile):
     build_dt_utc = build_dt.replace(tzinfo=timezone.utc)  # changing to UTC
     build_date = build_dt_utc.strftime(dateFormatter)
     with open(writefile,"w") as fp:
-        for key in data.keys():
+        for key in ["Total available tests", "Unrunnable tests", "Runnable tests", "Total number of thorns", "Number of tested thorns", "Number of tests passed", "Number passed only to set tolerance", "Number failed"]:
 
             # Add a table row for each data field
             contents+=f"        <tr><th>{key}</th><td>{data[key]}</td><tr>\n"
