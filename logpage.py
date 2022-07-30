@@ -390,7 +390,7 @@ def summary_to_html(readfile,writefile):
             <div class="container">
                 <h1 style="text-align:center">{status}</h1>
                 <h3 style="text-align:center"><a href="{baseurl}/tree/gh-pages/records/version_{curr_ver}">Build #{curr_ver}</a></h3>
-                <h2 style="text-align:center">{build_date}</h2>
+                <h3 style="text-align:center">{build_date}</h3>
                 <table class="table table-bordered " >
                 <caption style="text-align:center;font-weight: bold;caption-side:top">Summary</caption>
                 {contents}
