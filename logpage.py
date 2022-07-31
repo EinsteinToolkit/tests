@@ -430,16 +430,18 @@ def write_to_csv(readfile):
     data=create_summary(readfile)
     data["Time Taken"]=total/60
     local_time = str(int(time.time()))  #datetime.today().strftime('%s') to convert to unix timestamp instead of a
+    date["Date"] = local_time
+    date["Build Number"] = curr_ver
     # normal date format. This helps in plotting as all x axis elements are now unique
     #local_time+=f"({curr_ver})"
     data["Compile Time Warnings"]=get_compile(f"records/version_{curr_ver}/build_{curr_ver}.log")
+    fields = ["Date", "Total available tests", "Unrunnable tests",
+              "Runnable tests", "Total number of thorns",
+              "Number of tested thorns", "Number of tests passed",
+              "Number passed only to set tolerance", "Number failed",
+              "Time Taken", "Compile Time Warnings", "Build Number"]
     with open('test_nums.csv','a') as csvfile:
-        contents=f"{local_time}"
-        for key in ["Total available tests", "Unrunnable tests", "Runnable tests", "Total number of thorns", "Number of tested thorns", "Number of tests passed", "Number passed only to set tolerance", "Number failed"]:
-            contents+=f",{data[key]}"
-        contents += f",{curr_ver}"
-        contents+="\n"
-        csvfile.write(contents)
+        csvfile.write(",".join(fields) + "\n")
 #import glob, glob.glob("records/*/"build_1_2_*")
 
 
