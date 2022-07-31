@@ -2,29 +2,6 @@ from collections import defaultdict
 import re
 import glob
 from datetime import datetime, timezone
-list_of_builds = []
-curr_ver = 0
-for i in range(1, 254):
-    curr_ver = i
-    curr = f"./records/version_{curr_ver}/build__2_1_{curr_ver}.log"
-    list_of_builds.append(glob.glob(curr))
-
-no_of_builds = []
-for i in range(1, 254):
-    no_of_builds.append(i)
-b = [] # new list that is in ascending order of builds
-for k in no_of_builds:
-    for i in range(len(list_of_builds)): # double loop to iterate through the entire list of
-        split = list_of_builds[i][0].split("/")
-        build_no = int(split[2][8::]) # we get the build number from the string this way
-        if k == build_no:
-            b.append(list_of_builds[i])
-            break
-no_of_builds.clear()
-for i in range(len(b)): # changing the list from lis[list] to list[string]
-    no_of_builds.append(b[i][0])
-list_of_builds = no_of_builds
-#print(list_of_builds)
 
 def stuff_to_write(file):
     with open(file, "r") as fp:
@@ -125,52 +102,41 @@ def get_warning_thorns(name):
     return sum(warning_types.values())
 
 
+list_of_builds = []
+for verlog in glob.glob("./records/version_*/build__2_1_*.log"):
+    m = re.search("/version_([0-9]*)/", verlog)
+    list_of_builds.append(int(m.group(1))-1) # "version" is one less than number in file
+list_of_builds.sort()
+
 with open('test_nums.csv','w+') as csvfile:  # Writing the headings for the csv file.
-    a = f"Date"
-    a += f",Total available tests"
-    a += f",Unrunnable tests"
-    a += f",Runnable tests"
-    a += f",Total number of thorns"
-    a += f",Number of tested thorns"
-    a += f",Number of tests passed"
-    a += f",Number passed only to set tolerance"
-    a += f",Number failed"
-    a += f",Time Taken"
-    a += f",Compile Time Warnings"
-    a += f",Build Number"
-    a += "\n"
-    csvfile.write(a)
+    # header
+    fields = ["Date", "Total available tests", "Unrunnable tests",
+              "Runnable tests", "Total number of thorns",
+              "Number of tested thorns", "Number of tests passed",
+              "Number passed only to set tolerance", "Number failed",
+              "Time Taken", "Compile Time Warnings", "Build Number"]
+    csvfile.write(",".join(fields) + "\n")
 
-for i in range(len(list_of_builds)):  # Writing the data in the new csv file.
-    file = list_of_builds[i]
-    total = sum(x[1] for x in get_times(file).items()) # total time taken for all the tests
-    data = stuff_to_write(file) # has all the information in dictionary format until (including) Number of tests passed
-    # Except the time of each test.
-    data["Time Taken"] = total / 60
-    data["Compile Time Warnings"] = get_warning_thorns(f"records/version_{i + 1}/build_{i + 1}.log")
-    with open(file, "r") as fp:
-        lines = fp.read().splitlines()
-        j = 0
-        bool = True
-        while not re.match("^\s*Summary for configuration sim", lines[j]):  # specified according to formatting of
-            # test file
-            j += 1
-        j += 2
-        split = lines[j].split("->")  # easiest to get required value by splitting via ->
-        dateString = split[1].strip() # removing spaces and end and splitting
-        dateFormatter = "%a %b %d %H:%M:%S %Z %Y"
-        dt = datetime.strptime(dateString, dateFormatter)  # changing format from string to datetime object
-        timestamp = dt.replace(tzinfo=timezone.utc).timestamp()  # changing to UNIX seconds.
-        # print(timestamp)
-    with open('test_nums.csv','a') as csvfile:
-        contents = f"{timestamp}"
-        for key in ["Total available tests", "Unrunnable tests", "Runnable tests", "Total number of thorns", "Number of tested thorns", "Number of tests passed", "Number passed only to set tolerance", "Number failed"]:
-            contents += f",{data[key]}"
-        contents += f",{i + 1}"
-        contents += "\n"
-        csvfile.write(contents)
-
-
-
-
-
+    for buildnum in list_of_builds:  # Writing the data in the new csv file.
+        print("generating data for build ",buildnum," out of ",len(list_of_builds))
+        file = f"records/version_{buildnum + 1}/build__2_1_{buildnum + 1}.log"
+        total = sum(x[1] for x in get_times(file).items()) # total time taken for all the tests
+        data = stuff_to_write(file) # has all the information in dictionary format until (including) Number of tests passed
+        # Except the time of each test.
+        data["Time Taken"] = total / 60
+        data["Compile Time Warnings"] = get_warning_thorns(f"records/version_{buildnum + 1}/build_{buildnum + 1}.log")
+        with open(file, "r") as fp:
+            lines = fp.read().splitlines()
+            j = 0
+            while not re.match("^\s*Summary for configuration sim", lines[j]):  # specified according to formatting of
+                j += 1
+            j += 2
+            split = lines[j].split("->")  # easiest to get required value by splitting via ->
+            dateString = split[1].strip() # removing spaces and end and splitting
+            dateFormatter = "%a %b %d %H:%M:%S %Z %Y"
+            dt = datetime.strptime(dateString, dateFormatter)  # changing format from string to datetime object
+            timestamp = dt.replace(tzinfo=timezone.utc).timestamp()  # changing to UNIX seconds.
+            data["Date"] = f"{timestamp}"
+        data["Build Number"] = f"{buildnum + 1}"
+        # write new data to file
+        csvfile.write(",".join([str(data[key]) for key in fields]) + "\n")
