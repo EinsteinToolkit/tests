@@ -164,7 +164,7 @@ for i in range(len(list_of_builds)):  # Writing the data in the new csv file.
         # print(timestamp)
     with open('test_nums.csv','a') as csvfile:
         contents = f"{timestamp}"
-        for key in data.keys():
+        for key in ["Total available tests", "Unrunnable tests", "Runnable tests", "Total number of thorns", "Number of tested thorns", "Number of tests passed", "Number passed only to set tolerance", "Number failed"]:
             contents += f",{data[key]}"
         contents += f",{i + 1}"
         contents += "\n"
