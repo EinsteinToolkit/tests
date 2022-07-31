@@ -435,7 +435,7 @@ def write_to_csv(readfile):
     data["Compile Time Warnings"]=get_compile(f"records/version_{curr_ver}/build_{curr_ver}.log")
     with open('test_nums.csv','a') as csvfile:
         contents=f"{local_time}"
-        for key in data.keys():
+        for key in ["Total available tests", "Unrunnable tests", "Runnable tests", "Total number of thorns", "Number of tested thorns", "Number of tests passed", "Number passed only to set tolerance", "Number failed"]:
             contents+=f",{data[key]}"
         contents += f",{curr_ver}"
         contents+="\n"
