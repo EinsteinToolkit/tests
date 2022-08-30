@@ -430,8 +430,8 @@ def write_to_csv(readfile):
     data=create_summary(readfile)
     data["Time Taken"]=total/60
     local_time = str(int(time.time()))  #datetime.today().strftime('%s') to convert to unix timestamp instead of a
-    date["Date"] = local_time
-    date["Build Number"] = curr_ver
+    data["Date"] = local_time
+    data["Build Number"] = curr_ver
     # normal date format. This helps in plotting as all x axis elements are now unique
     #local_time+=f"({curr_ver})"
     data["Compile Time Warnings"]=get_compile(f"records/version_{curr_ver}/build_{curr_ver}.log")
