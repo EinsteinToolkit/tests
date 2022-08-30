@@ -314,9 +314,7 @@ def summary_to_html(readfile,writefile):
 
     # Check Status Using the data from the summary
     status="All Tests Passed"
-    if data["Number of tests passed"]==0:
-        status="All Tests Passed"
-    elif data["Number failed"]!=0:
+    if data["Number failed"]!=0:
         status="Some Tests Failed"
         # Send email if tests failed
         #os.system(f'python3 mail.py')
