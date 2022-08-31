@@ -108,6 +108,9 @@ for verlog in glob.glob("./records/version_*/build__2_1_*.log"):
     list_of_builds.append(int(m.group(1))-1) # "version" is one less than number in file
 list_of_builds.sort()
 
+with open('docs/version.txt', 'w' as verfile:
+    print("\n".join(list_of_builds), file=verfile)
+
 with open('test_nums.csv','w+') as csvfile:  # Writing the headings for the csv file.
     # header
     fields = ["Date", "Total available tests", "Unrunnable tests",
