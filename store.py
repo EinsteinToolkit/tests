@@ -59,7 +59,7 @@ def copy_compile_log(version):
     global REPO
     dst=f"./records/version_{version}/build_{version}.log"
     # TODO: fix this to not be relative to repo anymore
-    build=f"{REPO}/../../build.log"
+    build=f"{REPO}/build.log"
     shutil.copy(build,dst)
 
 def store_commit_id(version):
