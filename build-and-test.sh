@@ -38,9 +38,3 @@ sed -i '/rm -rf \$simdir\/\$simname/d' cactusjenkins/test-cactus
 sed -i '43a rm -rf \$simdir\/\$simname' cactusjenkins/test-cactus
 sed -i -e '$a python3 store.py || true' cactusjenkins/test-cactus
 time $WORKSPACE/cactusjenkins/test-cactus all
-python3 $WORKSPACE/logpage.py
-# it takes ~1hr to build the docs
-#time $WORKSPACE/cactusjenkins/build-cactus-doc
-
-#cd $WORKSPACE/repos/carpet
-#doxygen
