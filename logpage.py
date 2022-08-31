@@ -30,13 +30,17 @@ from parser import create_summary, get_tests, get_warning_thorns, get_warning_ty
     longest_tests,get_unrunnable,get_data,get_compile
 import glob
 
+REPO = sys.argv[1]
+repo = Repository(f"{REPO}/.git")
+
 records=os.listdir("./records")
-curr_ver=get_version()-1
+curr_ver=get_version()
 curr=f"./records/version_{curr_ver}/build__2_1_{curr_ver}.log"
 last=f"./records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
 
-repo = Repository('.git')
-baseurl = repo.remotes["origin"].url.replace("git@", "https://").replace(".git","")
+# repo wit gh-pages data
+gh_repo = Repository(f'.git')
+baseurl = gh_repo.remotes["origin"].url.replace("git@", "https://").replace(".git","")
 
 def gen_commits():
     '''
@@ -80,7 +84,7 @@ def gen_diffs(readfile):
     # The test_comp function provides tests that failed, were newly added or newly removed
     test_comparison=test_comp(readfile,last)
     if len(test_comparison["Failed Tests"])!=0:
-        print("TESTS_FAILED=True")
+        print("TESTS_FAILED=True", file=open(os.environ["GITHUB_ENV"], "a"))
 
     # Setup the header for the table
     output='''<table class="table table-bordered " >
@@ -447,9 +451,10 @@ def write_to_csv(readfile):
 if __name__ == "__main__":
     write_to_csv(curr)
     summary_to_html(curr,"docs/index.html")
-    copy_index(get_version()-1)
+    copy_index(get_version())
     test_comparison=test_comp(curr,last)
     if len(test_comparison["Failed Tests"])!=0 or len(test_comparison["Newly Passing Tests"])!=0 :
-        os.system("python3 mail.py")
+        dir = os.path.split(__file__)[0]
+        os.system(f"python3 {dir}/mail.py {REPO}")
 
 
