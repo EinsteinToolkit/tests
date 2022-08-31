@@ -181,7 +181,9 @@ def get_unrunnable(readfile):
                     thorn = line.split()[0]
                     fp.readline()
                     line = fp.readline()
-                    miss_proc[thorn] = line.strip()
+                    m = re.match(r"Requires (\d*) processors", line.strip())
+                    procs = m.group(1)
+                    miss_proc[thorn] = procs
                     line = fp.readline()
                 continue # re-parse line
             line = fp.readline()
