@@ -2,6 +2,8 @@
 This file stores logs for future use in the records folder
 '''
 import shutil,os,glob
+import sys
+import configparser
 
 def copy_tests(test_dir,version,procs):
     '''
@@ -26,14 +28,19 @@ def copy_tests(test_dir,version,procs):
     #shutil.copytree(test_dir,dst,)
 
 
-def copy_logs(version):
+def copy_logs(test_dir,version):
     '''
         This copies the test logs for future use
     '''
     dst=f"./records/version_{version}/"
-    builds=glob.glob("*.log")
-    for build in builds:
-        shutil.copy(build,dst+build.split(".")[0]+f"_{version}.log")
+    log=f"{test_dir}/summary.log"
+    # TODO: move into separate function and return Python object
+    config=configparser.ConfigParser()
+    config.read(f"{test_dir}/../../SIMFACTORY/properties.ini")
+    procs=config['properties']['procs']
+    numthreads=config['properties']['numthreads']
+    build=f"build__{procs}_{numthreads}_{version}.log"
+    shutil.copy(log,dst+build)
 
 
 def copy_index(version):
@@ -49,17 +56,20 @@ def copy_compile_log(version):
     '''
         This copies the compilation logs for future use
     '''
+    global REPO
     dst=f"./records/version_{version}/build_{version}.log"
-    build="./build.log"
+    # TODO: fix this to not be relative to repo anymore
+    build=f"{REPO}/../../build.log"
     shutil.copy(build,dst)
 
 def store_commit_id(version):
     '''
         This stores the current git HEAD hash for future use
     '''
+    global REPO
     dst=f"./records/version_{version}/id.txt"
     # TODO: use pygit2 for this
-    id=".git/refs/heads/master"
+    id=f"{REPO}/.git/refs/heads/master"
     shutil.copy(id,dst)
 
 def get_version():
@@ -68,30 +78,44 @@ def get_version():
         by looking at the file names from old builds.
     '''
     current=0
-    builds=glob.glob("./records/version_*")
-    if(len(builds)!=0):
-        builds=[int(x.split("_")[-1].split(".")[0]) for x in builds]
-        current=max(builds)
-    with open("./docs/version.txt",'w') as vers:
-        for build_no in range(current,min(builds)-1,-1):
-            if build_no==min(builds):
-                vers.write(f"{build_no}")
-            else:
-                vers.write(f"{build_no}\n")
-    return current+1
+    build_records=glob.glob("./records/version_*")
+    builds=[int(x.split("_")[-1].split(".")[0]) for x in build_records]
+    try:
+        current_build=max(builds)
+    except ValueError:
+        current_build = 0
+    return current_build
+
+def store_version(next_build):
+    '''
+        This stores the version of the current build
+        in the list of build numbers file.
+    '''
+    with open("./docs/version.txt",'a') as vers:
+        vers.write(f"{next_build}\n")
 
 def get_commit_id(version):
     '''
         Returns the code commit id that this version corresponds to.
     '''
-    return open(f"./records/version_{version}/id.txt", "r").readline().strip()
+    try:
+        with open(f"./records/version_{version}/id.txt", "r") as fh:
+            id = fh.readline().strip()
+    except FileNotFoundError:
+        id = "0"
+    return id
 
 if __name__ == "__main__":
-    dir1=os.path.expanduser("~/simulations/TestJob01_temp_1/output-0000/TEST/sim")
-    dir2=os.path.expanduser("~/simulations/TestJob01_temp_2/output-0000/TEST/sim")
-    version=get_version()
+    # FIXME: this is quite bad, use some better argparse
+    REPO = sys.argv[1]
+    dir1 = sys.argv[2]
+    dir2 = sys.argv[3]
+    version=get_version()+1
+    store_version(version)
     os.mkdir(f"./records/version_{version}/")
-    copy_logs(version)
+    copy_compile_log(version)
+    copy_logs(dir1,version)
+    copy_logs(dir2,version)
     copy_tests(dir1,version,1)
     copy_tests(dir2,version,2)
     store_commit_id(version)
