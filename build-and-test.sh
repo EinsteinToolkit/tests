@@ -30,6 +30,10 @@ fi
 if [ -r $WORKSPACE/configs/sim ]; then
   ( cd $WORKSPACE; make sim-cleandeps )
 fi
+
+# need to force formattting of time so that we can parse it later
+export LC_TIME=C
+
 time $WORKSPACE/cactusjenkins/build-cactus manifest/einsteintoolkit.th 2>&1 | tee ./build.log
 sed -i '2a export WORKSPACE=$PWD ' cactusjenkins/test-cactus
 sed -i '2a export JOB_NAME="TestJob01" ' cactusjenkins/test-cactus
