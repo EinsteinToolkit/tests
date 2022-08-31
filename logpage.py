@@ -443,7 +443,9 @@ def write_to_csv(readfile):
               "Number passed only to set tolerance", "Number failed",
               "Time Taken", "Compile Time Warnings", "Build Number"]
     with open('test_nums.csv','a') as csvfile:
-        csvfile.write(",".join(fields) + "\n")
+        if csvfile.tell() == 0:
+            csvfile.write(",".join(fields) + "\n")
+        csvfile.write(",".join([str(data[key]) for key in fields]) + "\n")
 #import glob, glob.glob("records/*/"build_1_2_*")
 
 
