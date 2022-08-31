@@ -181,8 +181,7 @@ def get_unrunnable(readfile):
                     thorn = line.split()[0]
                     fp.readline()
                     line = fp.readline()
-                    missing = line.split(":")[1].split()
-                    miss_proc[thorn] = missing
+                    miss_proc[thorn] = line.strip()
                     line = fp.readline()
                 continue # re-parse line
             line = fp.readline()
