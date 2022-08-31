@@ -19,7 +19,7 @@ def create_summary(file):
             i+=1
         i+=1
         # Loop until the end of the summary
-        while not re.match("\s*Tests passed:",lines[i]):
+        while not re.match("\s*Tests passed:",lines[i]) and not re.match("\s*Tests failed:",lines[i]):
             # The spacing of this line is unique and as such requires a special if statement
             if re.match("\s*Number passed only to\s*",lines[i]) and lines[i]!="":
                 split_l=lines[i+1].split("->")
@@ -37,9 +37,10 @@ def create_summary(file):
             elif lines[i]!="":
                 split_l=lines[i].split("->")
                 try:
-                    sum_data[" ".join(split_l[0].split())]=int(split_l[1].strip())
-                except:
-                    sum_data[" ".join(split_l[0].split())]=split_l[1].strip()
+                    val = int(split_l[1])
+                except ValueError:
+                    val = split_l[1].strip()
+                sum_data[" ".join(split_l[0].split())]=val
             i+=1
             
     return sum_data
@@ -52,22 +53,23 @@ def get_tests(readfile):
     passed=set()
     failed=set()
     with open(readfile,"r") as fp:
-        lines=fp.read().splitlines()
-        ind=0
-        while not re.match("\s*Tests passed:",lines[ind]):
-            ind+=1
-        ind+=2
-        while not re.match("\s*Tests failed:",lines[ind]) and not re.match("=====*",lines[ind]):
-            passed.add(" ".join(lines[ind].split()))
-            ind+=1
-        ind+=2
-        while ind<len(lines) and not re.match("=====*",lines[ind]):
-            failed.add(" ".join(lines[ind].split()))
-            ind+=1
-        if "" in passed:
-            passed.remove("")
-        if "" in failed:
-            failed.remove("")
+        line = fp.readline()
+        while line:
+            if re.match("\s*Tests passed:",line):
+                line = fp.readline()
+                while line:
+                    line = fp.readline()
+                    if line.strip() == "":
+                        break
+                    passed.add(" ".join(line.split()))
+            elif re.match("\s*Tests failed:",line):
+                line = fp.readline()
+                while line:
+                    line = fp.readline()
+                    if line.strip() == "":
+                        break
+                    failed.add(" ".join(line.split()))
+            line = fp.readline()
     return passed,failed
 
 def test_comp(readfile_new,readfile_old):
@@ -78,14 +80,27 @@ def test_comp(readfile_new,readfile_old):
         and the new and removed tests.
     '''
     passed_n,failed_n=get_tests(readfile_new)
-    passed_o,failed_o=get_tests(readfile_old)
+    try:
+        passed_o,failed_o=get_tests(readfile_old)
+    except FileNotFoundError:
+        passed_o,failed_o=(set(), set())
     newly_p=passed_n-passed_o
     newly_f=failed_n-failed_o
     new_tests=(passed_n.union(failed_n))-(passed_o.union(failed_o))
     missing_tests=(passed_o.union(failed_o))-(passed_n.union(failed_n))
+    def test_key(label):
+        # Cactus test names allow all characters acceptable in file names,
+        # though ones with spaces would be rare
+        # Cactus thorn names must be C identifiers
+        m = re.match("([^ ]*) [(]from (\w*)[)]", label)
+        if m:
+            return (m.group(2), m.group(1))
+        else:
+            return ('', label)
     types=["Failed Tests","Newly Passing Tests","Newly Failing Tests","Newly Added Tests", "Removed Tests"]
     tests=[failed_n,newly_p,newly_f,new_tests,missing_tests]
-    test_dict={types[i]:tests[i] for i in range(len(types))}
+    sorted_tests=[sorted(test, key=test_key) for test in tests]
+    test_dict={types[i]:sorted_tests[i] for i in range(len(types))}
     return test_dict
 
 def get_times(readfile):
@@ -142,20 +157,37 @@ def get_unrunnable(readfile):
     miss_th={}
     miss_proc={}
     with open(readfile,"r") as fp:
-        lines=fp.read().splitlines()
-        ind=0
-        while not re.match("\s*Tests missed for lack of thorns:",lines[ind]):
-            ind+=1
-        ind+=2
-        while not re.match("\s*Tests missed for different number of processors required:",lines[ind]):
-            missing=lines[ind+2].split(":")[1].split()
-            miss_th[lines[ind].strip()]=missing
-            ind+=4
-        ind+=2
-        while not re.match("\s*Tests with different number of test files:",lines[ind]):
-            miss_proc[lines[ind].strip()]=lines[ind+2].strip()
-            ind+=4
+        line = fp.readline()
+        while line:
+            if re.match("\s*Tests missed for lack of thorns:",line):
+                line = fp.readline() # read empty line
+                while line:
+                    line = fp.readline()
+                    if not re.match("\s*\w+ in \w+", line):
+                        break
+                    thorn = line.split()[0]
+                    fp.readline()
+                    line = fp.readline()
+                    missing = line.split(":")[1].split()
+                    miss_th[thorn] = missing
+                line = fp.readline()
+                continue # re-parse line
+            elif re.match("\s*Tests missed for different number of processors required:",line):
+                line = fp.readline() # read empty line
+                while line:
+                    line = fp.readline()
+                    if not re.match("\s*\w+ in \w+", line):
+                        break
+                    thorn = line.split()[0]
+                    fp.readline()
+                    line = fp.readline()
+                    missing = line.split(":")[1].split()
+                    miss_proc[thorn] = missing
+                    line = fp.readline()
+                continue # re-parse line
+            line = fp.readline()
     return miss_th,miss_proc
+
 def get_data(name):
     '''
         Retrieves singular field of data from the data csv as a list
