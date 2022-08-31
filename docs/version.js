@@ -9,8 +9,10 @@ user = window.location.host.split('.')[0]
 repo_name = window.location.pathname.split('/')[1]
 text='<img src="https://github.com/'+user+'/'+repo_name+'/actions/workflows/main.yml/badge.svg" style="display:block;margin-left: auto;margin-right: auto;">';
 
-lines.forEach(element => {
-    text+='<a href="index_'+element+'.html">Build #'+element+'</a>'
+lines.slice().reverse().forEach(element => {
+    if (element != '') { // skips empty element at end of file
+        text+='<a href="index_'+element+'.html">Build #'+element+'</a>'
+    }
 });
     
     
