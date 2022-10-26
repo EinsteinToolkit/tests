@@ -34,23 +34,24 @@ import glob
 REPO = sys.argv[1]
 repo = Repository(f"{REPO}/.git") 
 
-#TODO: checkout origin/gh-pages for logging output
-output_branch = repo.branches.remote['origin/gh-pages']
+# Assuming you are now on the scripts branch, as that is where logpage.py is
+#TODO: checkout origin/gh-pages for logging output --> move to other function or file
+output_branch = repo.branches.local['gh-pages']
 # for switching back to scripts branch
 scripts_branch = repo.branches.local['scripts']
-ref = repo.lookup_reference(output_branch.name)
+ref = repo.lookup_reference(scripts_branch.name)
 repo.checkout(ref)
-print(output_branch.is_checked_out())
+print('\n\ngh-pages branch checked out? ', output_branch.is_checked_out(), '\n\n')
 
-records=os.listdir("./records")
-curr_ver=get_version()
-curr=f"./records/version_{curr_ver}/build__2_1_{curr_ver}.log"
-last=f"./records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
+# records=os.listdir("./records")
+# curr_ver=get_version()
+# curr=f"./records/version_{curr_ver}/build__2_1_{curr_ver}. log"
+# last=f"./records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
 
-# TODO: check if it can access the scripts branch?
-# repo with gh-pages data
-gh_repo = Repository(f'.git')
-baseurl = gh_repo.remotes["origin"].url.replace("git@", "https://").replace(".git","")
+# # TODO: check if it can access the scripts branch?
+# # repo with gh-pages data
+# gh_repo = Repository(f'.git')
+# baseurl = gh_repo.remotes["origin"].url.replace("git@", "https://").replace(".git","")
 
 # def gen_commits():
 #     '''
@@ -127,7 +128,6 @@ baseurl = gh_repo.remotes["origin"].url.replace("git@", "https://").replace(".gi
 #             diffl2=f"{baseurl}/tree/gh-pages/records/version_{ver}/sim_{ver}_2/{thorn}/{test_name}.diffs"
 
 #             # Check if these files are available if not display not avaible on the table 
-#             # TODO: access via scripts branch, not OS
 #             if(os.path.isfile("./"+logl1[logl1.find("records"):])):
 #                 output+=f"  <tr><td>{test}</td><td><a href='{logl1}'>log</a></td>"
 #             else:
@@ -466,10 +466,16 @@ baseurl = gh_repo.remotes["origin"].url.replace("git@", "https://").replace(".gi
 # if __name__ == "__main__":
 #     # Store data of latest build in CSV file
 #     write_to_csv(curr)
-#     # TODO: retrieve index.html from gh-pages
 #     summary_to_html(curr,"docs/index.html")
 #     copy_index(get_version())
 #     test_comparison=test_comp(curr,last)
+
+#     # TODO: switch to scripts branch again?
+#     scripts_branch = repo.branches.local['scripts']
+#     ref = repo.lookup_reference(scripts_branch.name)
+#     repo.checkout(ref)
+#     print('\n\nScripts branch checked out? ', scripts_branch.is_checked_out(), '\n\n')
+
 #     if len(test_comparison["Failed Tests"])!=0 or len(test_comparison["Newly Passing Tests"])!=0 :
 #         dir = os.path.split(__file__)[0]
 #         os.system(f"python3 {dir}/mail.py {REPO}")
