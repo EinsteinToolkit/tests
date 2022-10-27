@@ -35,17 +35,17 @@ REPO = sys.argv[1]
 repo = Repository(f"{REPO}/.git") 
 
 # Assuming you are now on the scripts branch, as that is where logpage.py is
-#TODO: checkout origin/gh-pages for logging output --> move to other function or file
-output_branch = repo.branches.local['gh-pages']
-# for switching back to scripts branch
-scripts_branch = repo.branches.local['scripts']
-ref = repo.lookup_reference(output_branch.name)
-repo.checkout(ref)
+# Checkout origin/gh-pages for logging output \
+output_branch = repo.branches.remote['origin/gh-pages']
+# # for switching back to scripts branch
+# scripts_branch = repo.branches.local['scripts']
+output_ref = repo.lookup_reference(output_branch.name)
+repo.checkout(output_ref)
 print('\n\ngh-pages branch checked out? ', output_branch.is_checked_out(), '\n\n')
 
 records=os.listdir("./records")
 curr_ver=get_version()
-curr=f"./records/version_{curr_ver}/build__2_1_{curr_ver}. log"
+curr=f"./records/version_{curr_ver}/build__2_1_{curr_ver}.log"
 last=f"./records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
 
 # TODO: check if it can access the scripts branch?
@@ -470,10 +470,10 @@ if __name__ == "__main__":
     copy_index(get_version())
     test_comparison=test_comp(curr,last)
 
-    # TODO: switch to scripts branch again?
+    # TODO: switch back to local scripts branch again, after all test report data is logged
     scripts_branch = repo.branches.local['scripts']
-    ref = repo.lookup_reference(scripts_branch.name)
-    repo.checkout(ref)
+    scripts_ref = repo.lookup_reference(scripts_branch.name)
+    repo.checkout(scripts_ref)
     print('\n\nScripts branch checked out? ', scripts_branch.is_checked_out(), '\n\n')
 
     if len(test_comparison["Failed Tests"])!=0 or len(test_comparison["Newly Passing Tests"])!=0 :
