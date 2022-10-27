@@ -480,14 +480,15 @@ if __name__ == "__main__":
     committer = Signature('github runner', 'maintainers@einsteintoolkit.org')
     message = "Updated test report HTML files from logpage.py"
     tree = index.write_tree()
-    parents = []
+    parents = repo.head.target
     repo.create_commit(ref, author, committer, message, tree, parents)
 
-    # TODO: switch back to local scripts branch again, after all test report data is logged
+    # Switch back to local scripts branch again, after all test report data is logged
+    # TODO: check if this works in GitHub's CI pipeline too
     scripts_branch = repo.branches.local['scripts']
     scripts_ref = repo.lookup_reference(scripts_branch.name)
     repo.checkout(scripts_ref)
-    print('\n\nScripts branch checked out? ', scripts_branch.is_checked_out(), '\n\n')
+    print('\n\nScripts branch checked out again? ', scripts_branch.is_checked_out(), '\n\n')
 
     if len(test_comparison["Failed Tests"])!=0 or len(test_comparison["Newly Passing Tests"])!=0 :
         dir = os.path.split(__file__)[0]
