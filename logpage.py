@@ -492,7 +492,7 @@ if __name__ == "__main__":
     committer = Signature('github runner', 'maintainers@einsteintoolkit.org')
     message = "Updated test report HTML files from logpage.py"
     tree = index.write_tree()
-    parents = repo.head.target
+    parents = [repo.head.targe]
     repo.create_commit(ref, author, committer, message, tree, parents)
 
     # Switch back to local scripts branch again, after all test report data is logged
