@@ -20,7 +20,7 @@ from bokeh.resources import CDN
 from bokeh.embed import file_html
 
 # to generate a commit log
-from pygit2 import Repository, Oid, Signature
+from pygit2 import Repository, Oid
 from pygit2 import GIT_SORT_TOPOLOGICAL, GIT_SORT_REVERSE
 from datetime import datetime, timezone, timedelta
 import time
@@ -30,38 +30,15 @@ from parser import create_summary, get_tests, get_warning_thorns, get_warning_ty
     longest_tests,get_unrunnable,get_data,get_compile
 import glob
 
-# the path of the repository to open, done to prevent hardcoding of repo link
 REPO = sys.argv[1]
-repo = Repository(f"{REPO}/.git") 
-
-# index = repo.index
-# index.add_all()
-# index.write()
-# ref = "HEAD"
-# author = Signature('github runner', 'maintainers@einsteintoolkit.org')
-# committer = Signature('github runner', 'maintainers@einsteintoolkit.org')
-# message = "Testing pygit2 in logpage.py"
-# # Update HEAD reference
-# tree = index.write_tree()
-# parents = [repo.head.target]
-# repo.create_commit(ref, author, committer, message, tree, parents)
-
-# Assuming you are now on the scripts branch, as that is where logpage.py is
-# Checkout origin/gh-pages for logging output \
-output_branch = repo.branches.remote['origin/gh-pages']
-# # for switching back to scripts branch
-# scripts_branch = repo.branches.local['scripts']
-output_ref = repo.lookup_reference(output_branch.name)
-repo.checkout(output_ref)
-print('\n\ngh-pages branch checked out? ', output_branch.is_checked_out(), '\n\n')
+repo = Repository(f"{REPO}/.git") # Done to prevent hardcoding of repo link 
 
 records=os.listdir("./records")
 curr_ver=get_version()
 curr=f"./records/version_{curr_ver}/build__2_1_{curr_ver}.log"
 last=f"./records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
 
-# TODO: check if it can access the scripts branch?
-# repo with gh-pages data
+# repo wit gh-pages data
 gh_repo = Repository(f'.git')
 baseurl = gh_repo.remotes["origin"].url.replace("git@", "https://").replace(".git","")
 
@@ -327,7 +304,6 @@ def gen_unrunnable(readfile):
     output+="</table>"
     return output
 
-# TODO: writefile is now in other branch (index.html)
 def summary_to_html(readfile,writefile):
     '''
         This function reads the log file and outputs and html
@@ -466,7 +442,6 @@ def write_to_csv(readfile):
               "Number of tested thorns", "Number of tests passed",
               "Number passed only to set tolerance", "Number failed",
               "Time Taken", "Compile Time Warnings", "Build Number"]
-    # TODO: open from other branch
     with open('test_nums.csv','a') as csvfile:
         if csvfile.tell() == 0:
             csvfile.write(",".join(fields) + "\n")
@@ -476,32 +451,10 @@ def write_to_csv(readfile):
 
 
 if __name__ == "__main__":
-    # Store data of latest build in CSV file
     write_to_csv(curr)
     summary_to_html(curr,"docs/index.html")
     copy_index(get_version())
     test_comparison=test_comp(curr,last)
-
-    # Commit all changes before switching back to scripts branch
-    # TODO: remove the duplicate commit from the workflow file?
-    index = repo.index
-    index.add_all()
-    index.write()
-    ref = "HEAD"
-    author = Signature('github runner', 'maintainers@einsteintoolkit.org')
-    committer = Signature('github runner', 'maintainers@einsteintoolkit.org')
-    message = "Updated test report HTML files from logpage.py"
-    tree = index.write_tree()
-    parents = [repo.head.targe]
-    repo.create_commit(ref, author, committer, message, tree, parents)
-
-    # Switch back to local scripts branch again, after all test report data is logged
-    # TODO: check if this works in GitHub's CI pipeline too
-    scripts_branch = repo.branches.local['scripts']
-    scripts_ref = repo.lookup_reference(scripts_branch.name)
-    repo.checkout(scripts_ref)
-    print('\n\nScripts branch checked out again? ', scripts_branch.is_checked_out(), '\n\n')
-
     if len(test_comparison["Failed Tests"])!=0 or len(test_comparison["Newly Passing Tests"])!=0 :
         dir = os.path.split(__file__)[0]
         os.system(f"python3 {dir}/mail.py {REPO}")
