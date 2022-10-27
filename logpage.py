@@ -20,7 +20,7 @@ from bokeh.resources import CDN
 from bokeh.embed import file_html
 
 # to generate a commit log
-from pygit2 import Repository, Oid
+from pygit2 import Repository, Oid, Signature
 from pygit2 import GIT_SORT_TOPOLOGICAL, GIT_SORT_REVERSE
 from datetime import datetime, timezone, timedelta
 import time
@@ -469,6 +469,19 @@ if __name__ == "__main__":
     summary_to_html(curr,"docs/index.html")
     copy_index(get_version())
     test_comparison=test_comp(curr,last)
+
+    # Commit all changes before switching back to scripts branch
+    # TODO: remove the duplicate commit from the workflow file?
+    index = repo.index
+    index.add_all()
+    index.write()
+    ref = "HEAD"
+    author = Signature('github runner', 'maintainers@einsteintoolkit.org')
+    committer = Signature('github runner', 'maintainers@einsteintoolkit.org')
+    message = "Updated test report HTML files from logpage.py"
+    tree = index.write_tree()
+    parents = []
+    repo.create_commit(ref, author, committer, message, tree, parents)
 
     # TODO: switch back to local scripts branch again, after all test report data is logged
     scripts_branch = repo.branches.local['scripts']
