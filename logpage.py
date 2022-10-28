@@ -44,11 +44,11 @@ repo = Repository(f"{REPO}/.git")
 # local_ref = repo.lookup_reference(local_output_branch.name)
 # print(f'{local_output_branch.name} has ref: {local_ref}')
 
-output_branch = repo.lookup_branch('gh-pages')
-output_ref = repo.lookup_reference(output_branch.name)
-print(f'{output_branch.name} has ref: {output_ref}')
-repo.checkout(output_ref)
-print('\n\ngh-pages branch checked out? ', output_branch.is_checked_out(), '\n\n')
+# output_branch = repo.lookup_branch('gh-pages')
+# output_ref = repo.lookup_reference(output_branch.name)
+# print(f'{output_branch.name} has ref: {output_ref}')
+# repo.checkout(output_ref)
+# print('\n\ngh-pages branch checked out? ', output_branch.is_checked_out(), '\n\n')
 
 records=os.listdir("./records")
 curr_ver=get_version()
@@ -474,25 +474,25 @@ if __name__ == "__main__":
     copy_index(get_version())
     test_comparison=test_comp(curr,last)
 
-    # Commit all changes before switching back to scripts branch
-    # TODO: remove the duplicate commit from the workflow file?
-    index = repo.index
-    index.add_all()
-    index.write()
-    ref = "HEAD"
-    author = Signature('github runner', 'maintainers@einsteintoolkit.org')
-    committer = Signature('github runner', 'maintainers@einsteintoolkit.org')
-    message = "Updated test report HTML files from logpage.py"
-    tree = index.write_tree()
-    parents = [repo.head.target]
-    repo.create_commit(ref, author, committer, message, tree, parents)
+    # # Commit all changes before switching back to scripts branch
+    # # TODO: remove the duplicate commit from the workflow file?
+    # index = repo.index
+    # index.add_all()
+    # index.write()
+    # ref = "HEAD"
+    # author = Signature('github runner', 'maintainers@einsteintoolkit.org')
+    # committer = Signature('github runner', 'maintainers@einsteintoolkit.org')
+    # message = "Updated test report HTML files from logpage.py"
+    # tree = index.write_tree()
+    # parents = [repo.head.target]
+    # repo.create_commit(ref, author, committer, message, tree, parents)
 
-    # Switch back to local scripts branch again, after all test report data is logged
-    # TODO: check if this works in GitHub's CI pipeline too
-    scripts_branch = repo.branches.local['scripts']
-    scripts_ref = repo.lookup_reference(scripts_branch.name)
-    repo.checkout(scripts_ref)
-    print('\n\nScripts branch checked out again? ', scripts_branch.is_checked_out(), '\n\n')
+    # # Switch back to local scripts branch again, after all test report data is logged
+    # # TODO: check if this works in GitHub's CI pipeline too
+    # scripts_branch = repo.branches.local['scripts']
+    # scripts_ref = repo.lookup_reference(scripts_branch.name)
+    # repo.checkout(scripts_ref)
+    # print('\n\nScripts branch checked out again? ', scripts_branch.is_checked_out(), '\n\n')
 
     if len(test_comparison["Failed Tests"])!=0 or len(test_comparison["Newly Passing Tests"])!=0 :
         dir = os.path.split(__file__)[0]
