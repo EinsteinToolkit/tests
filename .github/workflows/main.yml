@@ -98,52 +98,49 @@ jobs:
               
         # Clone the master branch of the einstein toolkit and copy the scripts used to run tests and parse them into that folder
         # TODO: operate on files from original location instead of copying into master
-#       - name: Use files from master
-#         run: |
-#           cd ..
-#           git clone $GITHUB_SERVER_URL/$GITHUB_REPOSITORY test
-#           cp ./${GITHUB_REPOSITORY##*/}/parser.py ./test
-#           cp ./${GITHUB_REPOSITORY##*/}/mail.py ./test
-#           cp ./${GITHUB_REPOSITORY##*/}/logpage.py ./test
-#           cp ./${GITHUB_REPOSITORY##*/}/store.py ./test
-#           cp ./${GITHUB_REPOSITORY##*/}/test_nums.csv ./test
-#           cp ./${GITHUB_REPOSITORY##*/}/build-and-test.sh ./test
-#           cp -lr ./${GITHUB_REPOSITORY##*/}/records ./test
-#           cp -lr ./${GITHUB_REPOSITORY##*/}/docs ./test
-#           cd test
-#           ls
+      - name: Use files from master
+        run: |
+          cd ..
+          git clone $GITHUB_SERVER_URL/$GITHUB_REPOSITORY test
+          cp ./${GITHUB_REPOSITORY##*/}/scripts/parser.py ./test
+          cp ./${GITHUB_REPOSITORY##*/}/scripts/mail.py ./test
+          cp ./${GITHUB_REPOSITORY##*/}/scripts/logpage.py ./test
+          cp ./${GITHUB_REPOSITORY##*/}/scripts/store.py ./test
+          cp ./${GITHUB_REPOSITORY##*/}/gh-pages/test_nums.csv ./test
+          cp ./${GITHUB_REPOSITORY##*/}/scripts/build-and-test.sh ./test
+          cp -lr ./${GITHUB_REPOSITORY##*/}/gh-pages/records ./test
+          cp -lr ./${GITHUB_REPOSITORY##*/}/gh-pages/docs ./test
+          cd test
+          ls
       
       # Run the script to build and test
       # The script that runs the html script outputs if any tests are failed and that is stored as an environment variable
       - name: Run build and test script
         run: |
-          echo $GITHUB_WORKSPACE
-          ls
-          cd ${GITHUB_WORKSPACE}/scripts
-          ls
+          cd ..
+          cd test
           chmod +x build-and-test.sh
           ./build-and-test.sh
           python3 logpage.py .
 
       # The old log files are stored in the github pages branch so it is copied there to be pushed
       # TODO: write output directly into "gh-pages" branch instead of copying
-#       - name: Store files
-#         run: |
-#           cd ..
-#           cd test
-#           cp -flr records ../${GITHUB_REPOSITORY##*/}
-#           cp -flr docs ../${GITHUB_REPOSITORY##*/}
-#           cp test_nums.csv ../${GITHUB_REPOSITORY##*/}
+      - name: Store files
+        run: |
+          cd ..
+          cd test
+          cp -flr records ../${GITHUB_REPOSITORY##*/gh-pages}
+          cp -flr docs ../${GITHUB_REPOSITORY##*/gh-pages}
+          cp test_nums.csv ../${GITHUB_REPOSITORY##*/gh-pages}
+          
       # Push the files from gh-pages that need to be preserved for future use
       - name: Add index.html and previous logs from gh-pages
         run: |
-          cd ..
-          cd ${GITHUB_WORKSPACE}/gh-pages
-          ls
           git status
           git add docs
           git add records
           git add test_nums.csv
+          
       - name: Commit files from gh-pages
         run: |
           git config --local user.email "maintainers@einsteintoolkit.org"
@@ -154,7 +151,7 @@ jobs:
       - name: Check for changes
         run: |
           git fetch origin # fetch changes from origin remote
-          if ! git diff --quiet gh-pages..origin/gh-pages ; then
+          if ! git diff --quiet master..origin/master ; then
             echo "CHANGES_MADE=True" >> $GITHUB_ENV
           fi
 
