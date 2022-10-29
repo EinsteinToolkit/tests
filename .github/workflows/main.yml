@@ -7,16 +7,29 @@ name: CI
 on:
   push:
     branches: [ "master" ]
+  # Allows you to run this workflow manually from the Actions tab   
   workflow_dispatch:
+#   # Allows external webhook trigger, but only from default branch (see https://gist.github.com/br3ndonland/f9c753eb27381f97336aa21b8d932be6)
+#   repository_dispatch:
+#     types:
+#       - webhook
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parall
+# concurrency:
+#   group: et-tests
+#   cancel-in-progress: false
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   pre_job:
     # continue-on-error: true # Uncomment once integration is finished
+    # The type of runner that the job will run on
     runs-on: ubuntu-20.04
+#     container: einsteintoolkit/tests:latest
     # Map a step output to a job output
     outputs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
+      
+    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       - id: skip_check
         uses: fkirc/skip-duplicate-actions@master # See https://github.com/fkirc/skip-duplicate-actions for more details
@@ -30,23 +43,36 @@ jobs:
     # The type of runner that the job will run on
     needs: pre_job
     runs-on: ubuntu-latest
+    # Run workflow steps if there are no duplicate actions
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
+      # Below the runner checks-out multiple branches side by side, under different paths
+      # Check-out gh-pages branch for storing test report output
+      - uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+          # 0 indicates all history for all branches and tags
+          fetch-depth: 0
+          ref: gh-pages
+          path: gh-pages
+      # Check-out scripts branch to access Python/Bash scripts to run
+      - uses: actions/checkout@v3
         with:
           persist-credentials: false
           fetch-depth: 0
-          ref: "gh-pages"
+          ref: scripts
+          path: scripts
       
       # This step stores certain environment variables in a file that is on githubs clouds
       - name: Create Environment Variables
         run: |
+          pwd
+          ls
+          git status
           echo "CHANGES_MADE=False" >> $GITHUB_ENV
           echo "TESTS_FAILED=False" >> $GITHUB_ENV
-          pwd
-          git status
     
       # Install prerequisite libraries for einstein toolkit
 #       - name: Install pre-requisite libraries
@@ -74,22 +100,27 @@ jobs:
 #               pip install pygit2
               
         # Clone the master branch of the einstein toolkit and copy the scripts used to run tests and parse them into that folder
+        # TODO: operate on files from original location instead of copying into master
       - name: Use files from master
         run: |
-          cd ..
-          git clone $GITHUB_SERVER_URL/$GITHUB_REPOSITORY test
-          cp ./${GITHUB_REPOSITORY##*/}/parser.py ./test
-          cp ./${GITHUB_REPOSITORY##*/}/mail.py ./test
-          cp ./${GITHUB_REPOSITORY##*/}/logpage.py ./test
-          cp ./${GITHUB_REPOSITORY##*/}/store.py ./test
-          cp ./${GITHUB_REPOSITORY##*/}/test_nums.csv ./test
-          cp ./${GITHUB_REPOSITORY##*/}/build-and-test.sh ./test
-          cp -lr ./${GITHUB_REPOSITORY##*/}/records ./test
-          cp -lr ./${GITHUB_REPOSITORY##*/}/docs ./test
-          echo ${GITHUB_REPOSITORY##*/}
           pwd
           ls
+          git status
+          cd ..
+          git clone $GITHUB_SERVER_URL/$GITHUB_REPOSITORY test
+          cp ./${GITHUB_REPOSITORY##*/}/scripts/parser.py ./test
+          cp ./${GITHUB_REPOSITORY##*/}/scripts/mail.py ./test
+          cp ./${GITHUB_REPOSITORY##*/}/scripts/logpage.py ./test
+          cp ./${GITHUB_REPOSITORY##*/}/scripts/store.py ./test
+          cp ./${GITHUB_REPOSITORY##*/}/gh-pages/test_nums.csv ./test
+          cp ./${GITHUB_REPOSITORY##*/}/scripts/build-and-test.sh ./test
+          cp -lr ./${GITHUB_REPOSITORY##*/}/gh-pages/records ./test
+          cp -lr ./${GITHUB_REPOSITORY##*/}/gh-pages/docs ./test
           cd test
+          pwd
+          echo ${GITHUB_REPOSITORY##*/}
+          echo -e "Contents of newly created test repo:\n"
+          ls
           git status
       
       # Run the script to build and test
@@ -101,46 +132,65 @@ jobs:
 #           chmod +x build-and-test.sh
 #           ./build-and-test.sh
 #           python3 logpage.py .
+
       # The old log files are stored in the github pages branch so it is copied there to be pushed
+      # TODO: write output directly into "gh-pages" branch instead of copying
       - name: Store files
         run: |
           pwd
+          ls
           git status
           cd ..
           cd test
-          pwd
-          cp -flr records ../${GITHUB_REPOSITORY##*/}
-          cp -flr docs ../${GITHUB_REPOSITORY##*/}
-          cp test_nums.csv ../${GITHUB_REPOSITORY##*/}
-          pwd
+          pwd 
+          ls
           git status
-      # Push the files that need to be preserverd for future use
-      - name: Add index.html and previous logs
+          cp -flr records ../${GITHUB_REPOSITORY##*/}/gh-pages
+          cp -flr docs ../${GITHUB_REPOSITORY##*/}/gh-pages
+          cp test_nums.csv ../${GITHUB_REPOSITORY##*/}/gh-pages
+          pwd
+          ls
+          git status
+      # Push the files from gh-pages that need to be preserved for future use
+      - name: Add index.html and previous logs from gh-pages
         run: |
           pwd
+          ls
+          cd ..
+          cd gh-pages
           git status
           git add docs
           git add records
           git add test_nums.csv
-      - name: Commit files
+          git status
+      - name: Commit files from gh-pages
         run: |
           pwd
+          ls
+          git status
+          cd ..
+          cd gh-pages
           git status
           git config --local user.email "maintainers@einsteintoolkit.org"
           git config --local user.name "github runner"
-          git commit -m "updated html file" || true
+          git commit -m "CI workflow updated html file" || true
           git status
           
         # If there were changes made while this workflow is running set the environment variable CHANGES_MADE to true
       - name: Check for changes
         run: |
+          pwd 
+          ls
+          git status
           cd ..
           cd test
+          pwd
           git status
           git fetch origin # fetch changes from origin remote
           if ! git diff --quiet master..origin/master ; then
             echo "CHANGES_MADE=True" >> $GITHUB_ENV
           fi
+          git status
       - name: Push changes
         uses: ad-m/github-push-action@master
         with:
@@ -162,4 +212,3 @@ jobs:
       - name: Clean up
         if: ${{env.TESTS_FAILED == 'True'}}
         run: exit 1
-    
