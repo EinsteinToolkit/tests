@@ -304,6 +304,7 @@ def gen_unrunnable(readfile):
     output+="</table>"
     return output
 
+
 def summary_to_html(readfile,writefile):
     '''
         This function reads the log file and outputs and html
@@ -322,6 +323,9 @@ def summary_to_html(readfile,writefile):
         status="Some Tests Failed"
         # Send email if tests failed
         #os.system(f'python3 mail.py')
+    # TODO: find better way of detecting a build fail
+    if data["Total available tests"]==0:
+        status="Build Failed"
     dateFormatter = "%a %b %d %H:%M:%S %Z %Y"
     build_dt = datetime.strptime(data["Time"], dateFormatter)
     build_dt_utc = build_dt.replace(tzinfo=timezone.utc)  # changing to UTC
@@ -389,7 +393,7 @@ def summary_to_html(readfile,writefile):
             <script src='version.js'>
             </script>
             <div class="container">
-                <h1 style="text-align:center">{status}</h1>
+                <h1 class="build-status" style="text-align:center">{status}</h1>
                 <h3 style="text-align:center"><a href="{baseurl}/tree/gh-pages/records/version_{curr_ver}">Build #{curr_ver}</a></h3>
                 <h3 style="text-align:center">{build_date}</h3>
                 <table class="table table-bordered " >
