@@ -20,7 +20,7 @@ from bokeh.resources import CDN
 from bokeh.embed import file_html
 
 # to generate a commit log
-from pygit2 import Repository, Oid, Signature
+from pygit2 import Repository, Oid
 from pygit2 import GIT_SORT_TOPOLOGICAL, GIT_SORT_REVERSE
 from datetime import datetime, timezone, timedelta
 import time
@@ -30,32 +30,15 @@ from parser import create_summary, get_tests, get_warning_thorns, get_warning_ty
     longest_tests,get_unrunnable,get_data,get_compile
 import glob
 
-# the path of the repository to open, done to prevent hardcoding of repo link
 REPO = sys.argv[1]
-repo = Repository(f"{REPO}/.git") 
-
-# Checkout origin/gh-pages for logging output 
-# TODO: Check if this works in CI pipeline, else use repo.lookup_branch -> https://stackoverflow.com/questions/24356804/how-do-you-checkout-a-branch-with-pygit2
-# output_branch = repo.branches.remote['origin/gh-pages']
-# output_ref = repo.lookup_reference(output_branch.name)
-# print(f'{output_branch.name} has ref: {output_ref}')
-
-# local_output_branch = repo.branches.local['gh-pages']
-# local_ref = repo.lookup_reference(local_output_branch.name)
-# print(f'{local_output_branch.name} has ref: {local_ref}')
-
-# output_branch = repo.lookup_branch('gh-pages')
-# output_ref = repo.lookup_reference(output_branch.name)
-# print(f'{output_branch.name} has ref: {output_ref}')
-# repo.checkout(output_ref)
-# print('\n\ngh-pages branch checked out? ', output_branch.is_checked_out(), '\n\n')
+repo = Repository(f"{REPO}/.git") # Done to prevent hardcoding of repo link 
 
 records=os.listdir("./records")
 curr_ver=get_version()
 curr=f"./records/version_{curr_ver}/build__2_1_{curr_ver}.log"
 last=f"./records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
 
-# repo with gh-pages data
+# repo wit gh-pages data
 gh_repo = Repository(f'.git')
 baseurl = gh_repo.remotes["origin"].url.replace("git@", "https://").replace(".git","")
 
@@ -399,7 +382,6 @@ def summary_to_html(readfile,writefile):
             <script src="https://cdn.bokeh.org/bokeh/release/bokeh-2.0.1.min.js"
             crossorigin="anonymous"></script>
             {script}
-
         </head>
         <body>
             <div class="sidebar">
@@ -468,34 +450,10 @@ def write_to_csv(readfile):
 
 
 if __name__ == "__main__":
-    # Store data of latest build in CSV file
     write_to_csv(curr)
     summary_to_html(curr,"docs/index.html")
     copy_index(get_version())
     test_comparison=test_comp(curr,last)
-
-    # # Commit all changes before switching back to scripts branch
-    # # TODO: remove the duplicate commit from the workflow file?
-    # index = repo.index
-    # index.add_all()
-    # index.write()
-    # ref = "HEAD"
-    # author = Signature('github runner', 'maintainers@einsteintoolkit.org')
-    # committer = Signature('github runner', 'maintainers@einsteintoolkit.org')
-    # message = "Updated test report HTML files from logpage.py"
-    # tree = index.write_tree()
-    # parents = [repo.head.target]
-    # repo.create_commit(ref, author, committer, message, tree, parents)
-
-    # # Switch back to local scripts branch again, after all test report data is logged
-    # # TODO: check if this works in GitHub's CI pipeline too
-    # scripts_branch = repo.branches.local['scripts']
-    # scripts_ref = repo.lookup_reference(scripts_branch.name)
-    # repo.checkout(scripts_ref)
-    # print('\n\nScripts branch checked out again? ', scripts_branch.is_checked_out(), '\n\n')
-
     if len(test_comparison["Failed Tests"])!=0 or len(test_comparison["Newly Passing Tests"])!=0 :
         dir = os.path.split(__file__)[0]
         os.system(f"python3 {dir}/mail.py {REPO}")
-
-
