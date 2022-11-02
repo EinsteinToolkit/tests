@@ -15,7 +15,7 @@ build_status = document.getElementsByClassName('build-status');
 
 lines.slice().sort((a, b) => a - b).reverse().forEach(element => {
     if (element != '') { // skips empty element at end of file
-        if (build_status.innerHTML == 'Some Tests Failed' || build_status.innerHTML == 'Build Failed') {
+        if (build_status.innerHTML == 'Some Tests Failed' || build_status.innerHTML == 'No Tests Available') {
             // Red colored build in sidebar
             text += '<a href="index_'+ element +'.html">Build #'+ element +' style="color:indianred;" </a>'
         } else {

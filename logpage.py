@@ -319,20 +319,21 @@ def summary_to_html(readfile,writefile):
 
     # Check Status Using the data from the summary
     status="All Tests Passed"
+    # The following two statuses will be indicated by a red color in the sidebar
+    # Note that in the case of a build fail, the step of running tests would never have started, 
+    # meaning store.py and logpage.py assume a successful build
     if data["Number failed"]!=0:
         status="Some Tests Failed"
         # Send email if tests failed
         #os.system(f'python3 mail.py')
-    # TODO: find better way of detecting a build fail
     if data["Total available tests"]==0:
-        status="Build Failed"
+        status="No Tests Available"
     dateFormatter = "%a %b %d %H:%M:%S %Z %Y"
     build_dt = datetime.strptime(data["Time"], dateFormatter)
     build_dt_utc = build_dt.replace(tzinfo=timezone.utc)  # changing to UTC
     build_date = build_dt_utc.strftime(dateFormatter)
     with open(writefile,"w") as fp:
         for key in ["Total available tests", "Unrunnable tests", "Runnable tests", "Total number of thorns", "Number of tested thorns", "Number of tests passed", "Number passed only to set tolerance", "Number failed"]:
-
             # Add a table row for each data field
             contents+=f"        <tr><th>{key}</th><td>{data[key]}</td><tr>\n"
 
