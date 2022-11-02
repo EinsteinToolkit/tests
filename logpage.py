@@ -304,6 +304,7 @@ def gen_unrunnable(readfile):
     output+="</table>"
     return output
 
+
 def summary_to_html(readfile,writefile):
     '''
         This function reads the log file and outputs and html
@@ -318,17 +319,21 @@ def summary_to_html(readfile,writefile):
 
     # Check Status Using the data from the summary
     status="All Tests Passed"
+    # The following two statuses will be indicated by a red color in the sidebar
+    # Note that in the case of a build fail, the step of running tests would never have started, 
+    # meaning store.py and logpage.py assume a successful build
     if data["Number failed"]!=0:
         status="Some Tests Failed"
         # Send email if tests failed
         #os.system(f'python3 mail.py')
+    if data["Total available tests"]==0:
+        status="No Tests Available"
     dateFormatter = "%a %b %d %H:%M:%S %Z %Y"
     build_dt = datetime.strptime(data["Time"], dateFormatter)
     build_dt_utc = build_dt.replace(tzinfo=timezone.utc)  # changing to UTC
     build_date = build_dt_utc.strftime(dateFormatter)
     with open(writefile,"w") as fp:
         for key in ["Total available tests", "Unrunnable tests", "Runnable tests", "Total number of thorns", "Number of tested thorns", "Number of tests passed", "Number passed only to set tolerance", "Number failed"]:
-
             # Add a table row for each data field
             contents+=f"        <tr><th>{key}</th><td>{data[key]}</td><tr>\n"
 
@@ -389,7 +394,7 @@ def summary_to_html(readfile,writefile):
             <script src='version.js'>
             </script>
             <div class="container">
-                <h1 style="text-align:center">{status}</h1>
+                <h1 class="build-status" style="text-align:center">{status}</h1>
                 <h3 style="text-align:center"><a href="{baseurl}/tree/gh-pages/records/version_{curr_ver}">Build #{curr_ver}</a></h3>
                 <h3 style="text-align:center">{build_date}</h3>
                 <table class="table table-bordered " >
