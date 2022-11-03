@@ -391,10 +391,8 @@ def summary_to_html(readfile,writefile):
         <body>
             <div class="sidebar">
             </div>
-            <script src='version.js'>
-            </script>
             <div class="container">
-                <h1 class="build-status" style="text-align:center">{status}</h1>
+                <h1 style="text-align:center">{status}</h1>
                 <h3 style="text-align:center"><a href="{baseurl}/tree/gh-pages/records/version_{curr_ver}">Build #{curr_ver}</a></h3>
                 <h3 style="text-align:center">{build_date}</h3>
                 <table class="table table-bordered " >
@@ -419,7 +417,9 @@ def summary_to_html(readfile,writefile):
                 <table style="margin: 0 auto;">
                     {div}
                 </table>
-            <div>
+            </div>
+            <script src='version.js'>
+            </script>
             
         </body>
     </html>
