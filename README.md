@@ -37,12 +37,17 @@ After creating the token it can be stored as shown here https://docs.github.com/
 
 ### File Overview
 
+master:
 - `main.yml` - Executes the workflow
+
+scripts:
 - `build-and-test.sh` - Compiles and runs the tests
 - `parser.py` - Parses the log files
 - `logpage.py` - Generates the HTML pages
 - `store.py` - Stores logs for future use
 - `mail.py` - Send email each time tests are run
+
+gh-pages:
 - `test_nums.csv` - Stores summary stats from logs
 - `records/` - Folder contains compilation logs, logs with summary of tests, and individual test logs and diffs. 
 - `docs/index.html` - HTML page that is displayed on mojamil.github.io/einsteintoolkit/
@@ -67,17 +72,14 @@ The second workflow run in this picture ends in 18s as the
 third one was running at the same time
 ![skipping-result](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/images/skip2.png)
 
-I checkout the gh-pages branch as that is where the scripts
-are to parse and output the data.
+The CI runner checks-out both the scripts branch (contains the scripts are to parse and output the data) and the gh-pages branch (contains test log files and HTML output).
 
-Then all the required libraries are installed and then a clone 
-of the master branch is created and the files from the gh-pages
-branch are copied over and run:
+Then all the required libraries are installed, after which a clone of the master branch is created and the files from the gh-pages and scripts 
+branches are copied over into a new repository on GitHub's cloud and run:
 
 ![copy](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/images/copy.png)
 
-Then I copied back the files with the data that needs to be stored
-and push it to the github pages branch.
+Then the files with the data that needs to be stored are copied back and pushed to the remote gh-pages branch.
 
 In order check if there was a workflow run that was cancelled the workflow
 checks if there were in any changes made to the repository and if so it runs
@@ -145,8 +147,7 @@ returns 1
 
 Logpage.py generates tables for the html report page and outputs as an html page as
 shown here:
-
-![mojamil.github.io/einsteintoolkit/](mojamil.github.io/einsteintoolkit/)
+https://einsteintoolkit.github.io/tests/
 
 This file gets the last few commits using githubs REST API for commits and workflow runs as 
 shown in these documentation links: https://docs.github.com/en/rest/reference/repos#commits and https://docs.github.com/en/rest/reference/actions
