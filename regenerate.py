@@ -21,8 +21,8 @@ from bokeh.resources import CDN
 from bokeh.embed import file_html
 
 # to generate a commit log
-from pygit2 import Repository, Oid
-from pygit2 import GIT_SORT_TOPOLOGICAL, GIT_SORT_REVERSE
+from ._pygit2 import Repository, Oid
+from ._pygit2 import GIT_SORT_TOPOLOGICAL, GIT_SORT_REVERSE
 from datetime import datetime, timezone, timedelta
 import time
 
