@@ -1,5 +1,3 @@
-// TODO: copy file to gh-pages branch docs/ folder
-
 try {
     var membersFile = new XMLHttpRequest();
     membersFile.open("GET", "version.txt", false);
