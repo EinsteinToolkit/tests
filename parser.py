@@ -170,7 +170,7 @@ def get_unrunnable(readfile):
                     line = fp.readline()
                     missing = line.split(":")[1].split()
                     miss_th[thorn] = missing
-                line = fp.readline()
+                    line = fp.readline()
                 continue # re-parse line
             elif re.match("\s*Tests missed for different number of processors required:",line):
                 line = fp.readline() # read empty line
