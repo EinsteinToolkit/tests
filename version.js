@@ -1,3 +1,5 @@
+// TODO: copy file to gh-pages branch docs/ folder
+
 try {
     var membersFile = new XMLHttpRequest();
     membersFile.open("GET", "version.txt", false);
@@ -33,11 +35,11 @@ lines.slice().sort((a, b) => a - b).reverse().forEach(element => {
         if (build_status == 'Some Tests Failed' || build_status == 'No Tests Available') {
             // text += '<a href="index_'+ element +'.html" style="color:indianred;"> Build #'+ element +' </a>'
             text += '<a href="index_'+ element +'.html"> Build #'+ element +' </a>'
-                   + '<img src="../images/exclamation.svg" style="display: inline; width: 30px; height: 30px; float: right; margin-right: 14px;">';
+                   + '<img src="../docs/exclamation.svg" style="display: inline; width: 30px; height: 30px; float: right; margin-right: 14px;">';
         } else {
             // text += '<a href="index_'+ element + '.html" style="color:lawngreen;"> Build #' + element + ' </a>'
             text += '<a href="index_'+ element + '.html"> Build #' + element + ' </a>'
-            + '<img src="../images/check.svg" style="display: inline; width: 27px; height: 27px; float: right; margin-right: 15px;">';
+            + '<img src="../docs/check.svg" style="display: inline; width: 27px; height: 27px; float: right; margin-right: 15px;">';
         }
     }
 });
