@@ -84,13 +84,13 @@ def gen_diffs(readfile):
 
     # The test_comp function provides tests that failed, were newly added or newly removed
     test_comparison=test_comp(readfile,last)
-    if len(test_comparison["Failed Tests"])!=0:
-        print("TESTS_FAILED=True", file=open(os.environ["GITHUB_ENV"], "a"))
+    # if len(test_comparison["Failed Tests"])!=0:
+    #     print("TESTS_FAILED=True", file=open(os.environ["GITHUB_ENV"], "a"))
 
     # Setup the header for the table
     output='''<table class="table table-bordered " >
     <caption style="text-align:center;font-weight: bold;caption-side:top">Failed Tests and Changes</caption>
-    <tr><th></th><th>logs(1_process)</th><th>logs(2_processes)</th><th>diffs(1_process)</th><th>diffs(2_processes)</th></tr>\n'''
+    <tr><th></th><th>logs(1_process)</th><th>logs(2_processes)</th><th>diffs(1_process)</th><th>diffs(2_processes)</th><th>first failure</th></tr>\n'''
 
     for result in test_comparison.keys():
         # For each test make a header with the description of why that test is being shown(failed, newly added, newly failing)
@@ -131,13 +131,44 @@ def gen_diffs(readfile):
             else:
                 output+=f"<td>Not Available</td>"  
             if(os.path.isfile("./"+diffl2[diffl2.find("records"):])):
-                output+=f"<td><a href='{diffl2}'>diff</a></td></tr>\n"
+                output+=f"<td><a href='{diffl2}'>diff</a></td>\n"
             else:
-                output+=f"<td>Not Available</td></tr>\n"  
+                output+=f"<td>Not Available</td>\n"  
+
+            # If this test instance was a failed test, find the first time it failed
+            if(result == 'Failed Tests'):
+                first_failure =  get_first_failure(test)
+                # No report found with first failure
+                if (first_failure) == -1:
+                    output+=f"<td>Not Available</td>\n"  
+                else :
+                    first_failure_link=f'https://einsteintoolkit.github.io/tests/index_{first_failure}.html'
+                    output+=f"<td><a href='{first_failure_link}'>report</a></td></tr>\n"
     
     output+="</table>"
     return output
 
+def get_first_failure(test_name):
+    '''
+        This function returns the number of the first version when this test failed
+    '''
+    # Dummy value which will be returned if none found
+    first_failure = -1
+
+    for i in range(curr_ver, 1, -1):
+        log_to_check=f"./records/version_{i}/build__2_1_{i}.log"
+        prev_log_to_check=f"./records/version_{i-1}/build__2_1_{i-1}.log"
+        # Dictionary containing keys: "Failed Tests","Newly Passing Tests","Newly Failing Tests","Newly Added Tests", "Removed Tests"
+        curr_res = test_comp(log_to_check, prev_log_to_check)
+        if (test_name in curr_res["Newly Failing Tests"]):
+            first_failure = i
+            break
+        # If i = 2 and test is not found under "Newly failing tests", then it must have failed for the first time in report 1
+        elif (i == 2):
+            first_failure = 1
+
+    return first_failure
+    
 
 def gen_time(readfile):
     '''
@@ -393,7 +424,7 @@ def summary_to_html(readfile,writefile):
             <div class="sidebar">
             </div>
             <div class="container">
-                <h1 class="build-status" style="text-align:center">{status}</h1>
+                <h1 style="text-align:center">{status}</h1>
                 <h3 style="text-align:center"><a href="{baseurl}/tree/gh-pages/records/version_{curr_ver}">Build #{curr_ver}</a></h3>
                 <h3 style="text-align:center">{build_date}</h3>
                 <table class="table table-bordered " >
