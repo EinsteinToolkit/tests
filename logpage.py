@@ -142,7 +142,7 @@ def gen_diffs(readfile):
                 if (first_failure) == -1:
                     output+=f"<td>Not Available</td>\n"  
                 else :
-                    first_failure_link=f'https://einsteintoolkit.github.io/tests/index_{first_failure}.html'
+                    first_failure_link=f'index_{first_failure}.html'
                     output+=f"<td><a href='{first_failure_link}'>report</a></td></tr>\n"
     
     output+="</table>"
