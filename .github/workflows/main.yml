@@ -94,6 +94,7 @@ jobs:
           cp ./${GITHUB_REPOSITORY##*/}/scripts/parser.py ./test
           cp ./${GITHUB_REPOSITORY##*/}/scripts/mail.py ./test
           cp ./${GITHUB_REPOSITORY##*/}/scripts/logpage.py ./test
+          cp ./${GITHUB_REPOSITORY##*/}/scripts/regenerate.py ./test
           cp ./${GITHUB_REPOSITORY##*/}/scripts/version.js ./test
           cp ./${GITHUB_REPOSITORY##*/}/scripts/store.py ./test
           cp ./${GITHUB_REPOSITORY##*/}/scripts/build-and-test.sh ./test
@@ -102,8 +103,8 @@ jobs:
           cp -lr ./${GITHUB_REPOSITORY##*/}/docs ./test
           cd test
       
-#       # Run the script to build and test
-#       # The script that runs the html script outputs if any tests are failed and that is stored as an environment variable
+      # Run the script to build and test
+      # The script that runs the html script outputs if any tests are failed and that is stored as an environment variable
 #       - name: Run build and test script
 #         run: |
 #           cd ..
@@ -111,13 +112,11 @@ jobs:
 #           chmod +x build-and-test.sh
 #           ./build-and-test.sh
 #           python3 logpage.py .
-      # Run the script to build and test
-      # The script that runs the html script outputs if any tests are failed and that is stored as an environment variable
-      - name: Run build and test script
+      - name: Regenerate all HTML pages
         run: |
           cd ..
           cd test
-          python3 logpage.py .
+          python3 regenerate.py .
       # The old log files are stored in the github pages branch so it is copied there to be pushed
       - name: Store files
         run: |
@@ -126,28 +125,37 @@ jobs:
           cp -flr records ../${GITHUB_REPOSITORY##*/}
           cp -flr docs ../${GITHUB_REPOSITORY##*/}
           cp test_nums.csv ../${GITHUB_REPOSITORY##*/}
-#       Push the files from gh-pages that need to be preserved for future use
+      # Push the files from gh-pages that need to be preserved for future use
+#       - name: Add index.html and previous logs from gh-pages
+#         run: |
+#           git status
+#           git add docs
+#           git add records
+#           git add test_nums.csv
       - name: Add index.html and previous logs from gh-pages
         run: |
           git status
           git add docs
-          git add records
-          git add test_nums.csv
+#       - name: Commit files from gh-pages
+#         run: |
+#           git config --local user.email "maintainers@einsteintoolkit.org"
+#           git config --local user.name "github runner"
+#           git commit -m "CI workflow updated html file" || true
       - name: Commit files from gh-pages
         run: |
           git config --local user.email "maintainers@einsteintoolkit.org"
           git config --local user.name "github runner"
-          git commit -m "CI workflow updated html file" || true
+          git commit -m "Regenerated all HTML files" || true
           
 #         # If there were changes made while this workflow is running set the environment variable CHANGES_MADE to true
-      - name: Check for changes
-        run: |
-          cd ..
-          cd test
-          git fetch origin # fetch changes from origin remote
-          if ! git diff --quiet master..origin/master ; then
-            echo "CHANGES_MADE=True" >> $GITHUB_ENV
-          fi
+#       - name: Check for changes
+#         run: |
+#           cd ..
+#           cd test
+#           git fetch origin # fetch changes from origin remote
+#           if ! git diff --quiet master..origin/master ; then
+#             echo "CHANGES_MADE=True" >> $GITHUB_ENV
+#           fi
       - name: Push changes
         uses: ad-m/github-push-action@master
         with:
