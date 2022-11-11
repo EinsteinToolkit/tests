@@ -336,6 +336,30 @@ def gen_unrunnable(readfile):
     output+="</table>"
     return output
 
+def create_sidebar():
+    '''
+        Creates sidebar.html containing all build numbers 
+        that gets injected into the HTML page created in summary_to_html
+    '''
+    
+    # Add GitHub badge on top of sidebar
+    template ='<img src="https://github.com/einsteintoolkit/tests/actions/workflows/main.yml/badge.svg" style="display:block;margin-left: auto;margin-right: auto;">';
+
+    # For every version, create link and symbol in sidebar
+    for i in range(curr_ver, 0, -1):
+        template +='<a href="index_' + str(i) + '.html"> Build #' + str(i) + '</a>'
+        # Check whether the build passed or not by calling parser
+        log_to_check=f"./records/version_{i}/build__2_1_{i}.log"
+        # Get failed tests only from returned tuple
+        curr_res = get_tests(log_to_check)[1]
+        if len(curr_res) != 0:
+            template += '<img src="exclamation.svg" style="display: inline; width: 30px; height: 30px; float: right; margin-right: 14px;">'
+        else:
+            template += '<img src="check.svg" style="display: inline; width: 30px; height: 30px; float: right; margin-right: 14px;">'
+    
+    sidebar_file = "docs/sidebar.html"
+    with open(sidebar_file,"w") as sb:
+        sb.write(template)
 
 def summary_to_html(readfile,writefile):
     '''
@@ -348,7 +372,6 @@ def summary_to_html(readfile,writefile):
     contents=""
     script,div=plot_test_data(readfile)
 
-
     # Check Status Using the data from the summary
     status="All Tests Passed"
     # The following two statuses will be indicated by a red color in the sidebar
@@ -358,12 +381,14 @@ def summary_to_html(readfile,writefile):
         status="Some Tests Failed"
         # Send email if tests failed
         #os.system(f'python3 mail.py')
-    if data["Total available tests"]==0:
-        status="No Tests Available"
     dateFormatter = "%a %b %d %H:%M:%S %Z %Y"
     build_dt = datetime.strptime(data["Time"], dateFormatter)
     build_dt_utc = build_dt.replace(tzinfo=timezone.utc)  # changing to UTC
     build_date = build_dt_utc.strftime(dateFormatter)
+
+    # TODO: try to add iframe to get rid of version.js
+    create_sidebar()
+
     with open(writefile,"w") as fp:
         for key in ["Total available tests", "Unrunnable tests", "Runnable tests", "Total number of thorns", "Number of tested thorns", "Number of tests passed", "Number passed only to set tolerance", "Number failed"]:
             # Add a table row for each data field
@@ -492,6 +517,7 @@ def write_to_csv(readfile):
 if __name__ == "__main__":
     write_to_csv(curr)
     summary_to_html(curr,"docs/index.html")
+    # create_sidebar()
     copy_index(get_version())
     test_comparison=test_comp(curr,last)
     if len(test_comparison["Failed Tests"])!=0 or len(test_comparison["Newly Passing Tests"])!=0 :
