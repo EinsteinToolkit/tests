@@ -341,12 +341,12 @@ def create_sidebar():
         Creates sidebar.html containing all build numbers 
         that gets injected into the HTML page created in summary_to_html
     '''
-    
+
     # Add GitHub badge on top of sidebar
     template ='<img src="https://github.com/einsteintoolkit/tests/actions/workflows/main.yml/badge.svg" style="display:block;margin-left: auto;margin-right: auto;">';
 
     # For every version, create link and symbol in sidebar
-    for i in range(curr_ver, 0, -1):
+    for i in range(get_version(), 0, -1):
         template +='<a href="index_' + str(i) + '.html"> Build #' + str(i) + '</a>'
         # Check whether the build passed or not by calling parser
         log_to_check=f"./records/version_{i}/build__2_1_{i}.log"
@@ -357,26 +357,24 @@ def create_sidebar():
         else:
             template += '<img src="check.svg" style="display: inline; width: 30px; height: 30px; float: right; margin-right: 14px;">'
     
+    # TODO: get rid of this additional html file ?
     sidebar_file = "docs/sidebar.html"
     with open(sidebar_file,"w") as sb:
         sb.write(template)
+    return template
 
-def summary_to_html(readfile,writefile):
+def create_test_results(readfile):
     '''
-        This function reads the log file and outputs and html
-        page with the summary in a table
+        Creates test results for the given log file,
+        which gets displayed to the right of the sidebar
     '''
 
     data=create_summary(readfile)
-    
     contents=""
-    script,div=plot_test_data(readfile)
+    script, div=plot_test_data(readfile)
 
     # Check Status Using the data from the summary
     status="All Tests Passed"
-    # The following two statuses will be indicated by a red color in the sidebar
-    # Note that in the case of a build fail, the step of running tests would never have started, 
-    # meaning store.py and logpage.py assume a successful build
     if data["Number failed"]!=0:
         status="Some Tests Failed"
         # Send email if tests failed
@@ -386,8 +384,45 @@ def summary_to_html(readfile,writefile):
     build_dt_utc = build_dt.replace(tzinfo=timezone.utc)  # changing to UTC
     build_date = build_dt_utc.strftime(dateFormatter)
 
-    # TODO: try to add iframe to get rid of version.js
-    create_sidebar()
+    template= f'''
+                <h1 style="text-align:center">{status}</h1>
+                <h3 style="text-align:center"><a href="{baseurl}/tree/gh-pages/records/version_{curr_ver}">Build #{curr_ver}</a></h3>
+                <h3 style="text-align:center">{build_date}</h3>
+                <table class="table table-bordered " >
+                <caption style="text-align:center;font-weight: bold;caption-side:top">Summary</caption>
+                {contents}
+                </table>
+                <br>
+                <table class="table table-bordered " >
+                <caption style="text-align:center;font-weight: bold;caption-side:top">Commits in Last Push</caption>
+                {gen_commits()}
+                </table>
+                {gen_diffs(readfile)}
+                <br>
+                {gen_time(readfile)}
+                <br>
+                {gen_unrunnable(readfile)}
+                <br>
+                <table style="margin: 0 auto;">
+                    <!-- height determined by height of plots inside (600ox) -->
+                    <iframe src="plot.html" style="height: 700px; width: 100%"></iframe>
+                </table>
+                <table style="margin: 0 auto;">
+                    {div}
+                </table>
+                '''
+    return template, script, contents, data
+
+def summary_to_html(readfile,writefile):
+    '''
+        This function reads the log file and outputs and html
+        page with the summary in a table
+    '''
+
+    # TODO: try to add iframe for test results to fix scrollbar issue
+    # TODO: get rid of version.js
+    sidebar_template = create_sidebar()
+    test_results_template, script, contents, data = create_test_results(readfile)
 
     with open(writefile,"w") as fp:
         for key in ["Total available tests", "Unrunnable tests", "Runnable tests", "Total number of thorns", "Number of tested thorns", "Number of tests passed", "Number passed only to set tolerance", "Number failed"]:
@@ -447,43 +482,15 @@ def summary_to_html(readfile,writefile):
         </head>
         <body>
             <div class="sidebar">
+                {sidebar_template}
             </div>
             <div class="container">
-                <h1 style="text-align:center">{status}</h1>
-                <h3 style="text-align:center"><a href="{baseurl}/tree/gh-pages/records/version_{curr_ver}">Build #{curr_ver}</a></h3>
-                <h3 style="text-align:center">{build_date}</h3>
-                <table class="table table-bordered " >
-                <caption style="text-align:center;font-weight: bold;caption-side:top">Summary</caption>
-                {contents}
-                </table>
-                <br>
-                <table class="table table-bordered " >
-                <caption style="text-align:center;font-weight: bold;caption-side:top">Commits in Last Push</caption>
-                {gen_commits()}
-                </table>
-                {gen_diffs(readfile)}
-                <br>
-                {gen_time(readfile)}
-                <br>
-                {gen_unrunnable(readfile)}
-                <br>
-                <table style="margin: 0 auto;">
-                    <!-- height determined by height of plots inside (600ox) -->
-                    <iframe src="plot.html" style="height: 700px; width: 100%"></iframe>
-                </table>
-                <table style="margin: 0 auto;">
-                    {div}
-                </table>
+                {test_results_template}
             </div>
-            <script src='version.js'>
-            </script>
             
         </body>
     </html>
         '''
-        # Copy version.js to docs/ folder (in gh-pages branch), since it is part of the HTML
-        # This ensures all content in docs/ is autogenerated, enabling one to start from scratch
-        shutil.copy("version.js", "./docs")
         fp.write(template)
 
 def write_to_csv(readfile):
