@@ -343,11 +343,14 @@ def create_sidebar():
     '''
 
     # Add GitHub badge on top of sidebar
-    template ='<img src="https://github.com/einsteintoolkit/tests/actions/workflows/main.yml/badge.svg" style="display:block;margin-left: auto;margin-right: auto;">';
+    template =f'''
+        <img src="{baseurl}/actions/workflows/main.yml/badge.svg" style="display:block;margin-left: auto;margin-right: auto;">
+    '''
 
     # For every version, create link and symbol in sidebar
     for i in range(get_version(), 0, -1):
-        template +='<a href="index_' + str(i) + '.html"> Build #' + str(i) + '</a>'
+        # The build file will be displayed in iframe to the right of the sidebar
+        template +='<a href="build_' + str(i) + '.html" target="results_iframe"> Build #' + str(i) + '</a>'
         # Check whether the build passed or not by calling parser
         log_to_check=f"./records/version_{i}/build__2_1_{i}.log"
         # Get failed tests only from returned tuple
@@ -356,11 +359,7 @@ def create_sidebar():
             template += '<img src="exclamation.svg" style="display: inline; width: 30px; height: 30px; float: right; margin-right: 14px;">'
         else:
             template += '<img src="check.svg" style="display: inline; width: 30px; height: 30px; float: right; margin-right: 14px;">'
-    
-    # TODO: get rid of this additional html file ?
-    sidebar_file = "docs/sidebar.html"
-    with open(sidebar_file,"w") as sb:
-        sb.write(template)
+
     return template
 
 def create_test_results(readfile):
@@ -370,7 +369,6 @@ def create_test_results(readfile):
     '''
 
     data=create_summary(readfile)
-    contents=""
     script, div=plot_test_data(readfile)
 
     # Check Status Using the data from the summary
@@ -384,110 +382,137 @@ def create_test_results(readfile):
     build_dt_utc = build_dt.replace(tzinfo=timezone.utc)  # changing to UTC
     build_date = build_dt_utc.strftime(dateFormatter)
 
+    summary_contents=""
+    for key in ["Total available tests", "Unrunnable tests", "Runnable tests", "Total number of thorns", "Number of tested thorns", "Number of tests passed", "Number passed only to set tolerance", "Number failed"]:
+        # Add a table row for each data field
+        summary_contents+=f"<tr><th>{key}</th><td>{data[key]}</td><tr>\n"
+
     template= f'''
-                <h1 style="text-align:center">{status}</h1>
-                <h3 style="text-align:center"><a href="{baseurl}/tree/gh-pages/records/version_{curr_ver}">Build #{curr_ver}</a></h3>
-                <h3 style="text-align:center">{build_date}</h3>
-                <table class="table table-bordered " >
-                <caption style="text-align:center;font-weight: bold;caption-side:top">Summary</caption>
-                {contents}
-                </table>
-                <br>
-                <table class="table table-bordered " >
-                <caption style="text-align:center;font-weight: bold;caption-side:top">Commits in Last Push</caption>
-                {gen_commits()}
-                </table>
-                {gen_diffs(readfile)}
-                <br>
-                {gen_time(readfile)}
-                <br>
-                {gen_unrunnable(readfile)}
-                <br>
-                <table style="margin: 0 auto;">
-                    <!-- height determined by height of plots inside (600ox) -->
-                    <iframe src="plot.html" style="height: 700px; width: 100%"></iframe>
-                </table>
-                <table style="margin: 0 auto;">
-                    {div}
-                </table>
+                <!doctype html>
+                <html lang="en">
+                <head>
+                    <title>Results of Tests</title>
+                    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+                    <style>
+                    .bk-root .bk {{
+                        margin: 0 auto !important;
+                    }}
+                    </style>
+                    <style>
+                    .container{{
+                        padding-left: 150px;
+                        font-size: 18px;
+                    }}
+                    /* On screens that are less than 700px wide, make the sidebar into a topbar */
+                    @media screen and (max-width: 500px) {{
+                    .container {{
+                        padding-left:0px;
+                    }}
+                    }}
+                    </style>
+                    <script src="https://cdn.bokeh.org/bokeh/release/bokeh-2.0.1.min.js"
+                    crossorigin="anonymous"></script>
+                    {script}
+                </head>
+                <body>
+                    <h1 style="text-align:center">{status}</h1>
+                    <h3 style="text-align:center">
+                        <a href="{baseurl}/tree/gh-pages/records/version_{curr_ver}">Build #{curr_ver}</a>
+                    </h3>
+                    <h6 style="text-align:center">
+                        <a href="index.html" target="_blank">Go to latest build</a>
+                    </h6>
+                    <h3 style="text-align:center">{build_date}</h3>
+                    <table class="table table-bordered " >
+                    <caption style="text-align:center;font-weight: bold;caption-side:top">Summary</caption>
+                    {summary_contents}
+                    </table>
+                    <br>
+                    <table class="table table-bordered " >
+                    <caption style="text-align:center;font-weight: bold;caption-side:top">Commits in Last Push</caption>
+                    {gen_commits()}
+                    </table>
+                    {gen_diffs(readfile)}
+                    <br>
+                    {gen_time(readfile)}
+                    <br>
+                    {gen_unrunnable(readfile)}
+                    <br>
+                    <table style="margin: 0 auto;">
+                        <!-- height determined by height of plots inside (600ox) -->
+                        <iframe src="plot.html" style="height: 700px; width: 100%"></iframe>
+                    </table>
+                    <table style="margin: 0 auto;">
+                        {div}
+                    </table>
+                    <br>
+                    <br>
+                </body>
+                </html>
                 '''
-    return template, script, contents, data
+        
+    results_file = f"./docs/index_{curr_ver}.html"
+    if os.path.exists(results_file):
+        with open(results_file,"w") as rf:
+            rf.write(template)
+    return results_file
+
 
 def summary_to_html(readfile,writefile):
     '''
         This function reads the log file and outputs and html
         page with the summary in a table
     '''
-
-    # TODO: try to add iframe for test results to fix scrollbar issue
-    # TODO: get rid of version.js
+    # TODO: Check if width of iframe works ok for all browsers and screens
     sidebar_template = create_sidebar()
-    test_results_template, script, contents, data = create_test_results(readfile)
-
     with open(writefile,"w") as fp:
-        for key in ["Total available tests", "Unrunnable tests", "Runnable tests", "Total number of thorns", "Number of tested thorns", "Number of tests passed", "Number passed only to set tolerance", "Number failed"]:
-            # Add a table row for each data field
-            contents+=f"        <tr><th>{key}</th><td>{data[key]}</td><tr>\n"
+        curr_build_file = create_test_results(readfile).split('/')[2]
 
-        # The formatted string holds the html template and loads in the values for content and status    
+        # The formatted string holds the html template and loads in the values for content and status  
+        # This templated gets injected to index.html, holding both the sidebar and test results  
         template=f'''<!doctype html>
-    <html lang="en">
+        <html lang="en">
         <head>
             <title>Summary of Tests</title>
             <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
             <style>
-            .bk-root .bk {{
-                margin: 0 auto !important;
-            }}
+                    .bk-root .bk {{
+                        margin: 0 auto !important;
+                    }}
+                    .sidebar {{
+                        height: 100%; 
+                        width: 175px;
+                        position: fixed;
+                        z-index: 1; 
+                        top: 0; 
+                        left: 0;
+                        background-color: #212529; 
+                        overflow-x: hidden;
+                        padding-top: 20px; 
+                    }}
+                    .sidebar a {{
+                        padding: 6px 8px 6px 16px;
+                        text-decoration: none;
+                        font-size: 16px;
+                        color: #dbdcdd;
+                        display: inline-block;
+                        }}
+                    .sidebar a:hover {{
+                        color: white;
+                    }}
+                    /* On screens that are less than 700px wide, make the sidebar into a topbar */
+                    @media screen and (max-width: 500px) {{
+                    .sidebar {{
+                        display: none;
+                    }}
+                    }}
             </style>
-            <style>
-            .sidebar {{
-                height: 100%; 
-                width: 175px;
-                position: fixed;
-                z-index: 1; 
-                top: 0; 
-                left: 0;
-                background-color: #212529; 
-                overflow-x: hidden;
-                padding-top: 20px; 
-            }}
-            .sidebar a {{
-                padding: 6px 8px 6px 16px;
-                text-decoration: none;
-                font-size: 18px;
-                color: #dbdcdd;
-                display: inline-block;
-                }}
-            .sidebar a:hover {{
-                color: white;
-            }}
-            .container{{
-              padding-left: 150px;
-              font-size: 18px;
-            }}
-                        /* On screens that are less than 700px wide, make the sidebar into a topbar */
-            @media screen and (max-width: 500px) {{
-            .sidebar {{
-              display: none;
-            }}
-            .container {{
-              padding-left:0px;
-            }}
-            }}
-            </style>
-            <script src="https://cdn.bokeh.org/bokeh/release/bokeh-2.0.1.min.js"
-            crossorigin="anonymous"></script>
-            {script}
         </head>
         <body>
             <div class="sidebar">
                 {sidebar_template}
             </div>
-            <div class="container">
-                {test_results_template}
-            </div>
-            
+            <iframe src={curr_build_file} name="results_iframe" style="padding-left: 200px; height: 660px; width: 100%";></iframe>
         </body>
     </html>
         '''
@@ -524,8 +549,7 @@ def write_to_csv(readfile):
 if __name__ == "__main__":
     write_to_csv(curr)
     summary_to_html(curr,"docs/index.html")
-    # create_sidebar()
-    copy_index(get_version())
+    # copy_index(get_version())
     test_comparison=test_comp(curr,last)
     if len(test_comparison["Failed Tests"])!=0 or len(test_comparison["Newly Passing Tests"])!=0 :
         dir = os.path.split(__file__)[0]
