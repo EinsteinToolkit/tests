@@ -14,7 +14,7 @@ import bokeh.models.callbacks as bcall
 from bokeh.resources import CDN
 from bokeh.embed import components
 from bokeh.layouts import row
-from store import get_version,copy_index,get_commit_id
+from store import get_version,copy_build,get_commit_id
 from bokeh.palettes import viridis
 from bokeh.transform import factor_cmap
 from bokeh.resources import CDN
@@ -451,10 +451,8 @@ def create_test_results(readfile):
                 </html>
                 '''
         
-    results_file = f"./docs/index_{curr_ver}.html"
-    if os.path.exists(results_file):
-        with open(results_file,"w") as rf:
-            rf.write(template)
+    # Writes test results to new build_x.html file to be displayed in iframe
+    results_file = copy_build(curr_ver, template)
     return results_file
 
 
