@@ -183,7 +183,6 @@ def get_first_failure(test_name):
     return first_failure
     
 
-
 def gen_time(readfile):
     '''
         This function generates a table with the tests that took the longest time
@@ -350,7 +349,6 @@ def gen_unrunnable(readfile):
     output+="</table>"
     return output
 
-
 def create_sidebar():
     '''
         Creates sidebar.html containing all build numbers 
@@ -358,10 +356,11 @@ def create_sidebar():
     '''
 
     # Add GitHub badge on top of sidebar
+    # TODO: let JS inject badge depending on workflow status requested via API
     template =f'''
-        <img src="{baseurl}/actions/workflows/main.yml/badge.svg" style="display:block;margin-left: auto;margin-right: auto;">
+        <div class="workflow-status"> 
+        </div>
     '''
-
     # For every version, create link and symbol in sidebar
     for i in range(get_version(), 0, -1):
         # The build file will be displayed in iframe to the right of the sidebar
@@ -476,7 +475,6 @@ def summary_to_html(readfile,writefile):
         This function reads the log file and outputs and html
         page with the summary in a table
     '''
-    # TODO: Check if width of iframe works ok for all browsers and screens
     sidebar_template = create_sidebar()
     with open(writefile,"w") as fp:
         curr_build_file = create_test_results(readfile).split('/')[2]
@@ -492,6 +490,22 @@ def summary_to_html(readfile,writefile):
                     .bk-root .bk {{
                         margin: 0 auto !important;
                     }}
+                    html, body {{
+                        height: 100%;
+                        -ms-overflow-style: none;  /* Prevent scrollbar in IE and Edge */
+                        scrollbar-width: none;  /* Prevent scrollbar in Firefox */
+                        overflow-x: hidden;
+                        overflow-y: hidden;
+                    }}
+                    /* Prevent scrollbar in Chrome */
+                    .html::-webkit-scrollbar {{
+                        display: none;
+                    }}  
+                    body {{
+                        border-width: 0px;
+                        margin-left: 10px; 
+                        margin-right:10px;
+                    }}        
                     .sidebar {{
                         height: 100%; 
                         width: 175px;
@@ -513,6 +527,9 @@ def summary_to_html(readfile,writefile):
                     .sidebar a:hover {{
                         color: white;
                     }}
+                    .workflow-status {{
+                        color: white;
+                    }}
                     /* On screens that are less than 700px wide, make the sidebar into a topbar */
                     @media screen and (max-width: 500px) {{
                     .sidebar {{
@@ -525,12 +542,14 @@ def summary_to_html(readfile,writefile):
             <div class="sidebar">
                 {sidebar_template}
             </div>
-            <iframe src={curr_build_file} name="results_iframe" style="padding-left: 200px; height: 660px; width: 100%";></iframe>
+            <iframe src={curr_build_file} name="results_iframe" style="padding-left: 200px; height: 100%; width: 100%";></iframe>
         </body>
+        <script src='version.js'>
+        </script>
     </html>
         '''
+        shutil.copy("version.js", "docs")
         fp.write(template)
-
 
 def write_to_csv(readfile):
     '''
@@ -556,7 +575,7 @@ def write_to_csv(readfile):
         if csvfile.tell() == 0:
             csvfile.write(",".join(fields) + "\n")
         csvfile.write(",".join([str(data[key]) for key in fields]) + "\n")
-#import glob, glob.glob("records/*/"build_1_2_*")
+#import glob, glob.glob("records/*/"build_1_2_*"
 
 
 
@@ -569,6 +588,7 @@ if __name__ == "__main__":
         set_curr_version(count)
         write_to_csv(curr)
         summary_to_html(curr,"docs/index.html")
+        # os.rename(f"docs/index_{count}.html", f"docs/build_{count}.html")
         # copy_index(get_version()-i)
         test_comparison=test_comp(curr,last)
         if len(test_comparison["Failed Tests"])!=0 or len(test_comparison["Newly Passing Tests"])!=0 :
