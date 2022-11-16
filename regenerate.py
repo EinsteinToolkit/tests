@@ -570,7 +570,6 @@ if __name__ == "__main__":
         set_curr_version(count)
         write_to_csv(curr)
         summary_to_html(curr,"docs/index.html")
-        os.rename(f"docs/index_{count}.html", f"docs/build_{count}.html")
         # copy_index(get_version()-i)
         test_comparison=test_comp(curr,last)
         if len(test_comparison["Failed Tests"])!=0 or len(test_comparison["Newly Passing Tests"])!=0 :
