@@ -492,6 +492,22 @@ def summary_to_html(readfile,writefile):
                     .bk-root .bk {{
                         margin: 0 auto !important;
                     }}
+                    html, body {{
+                        height: 100%;
+                        -ms-overflow-style: none;  /* Prevent scrollbar in IE and Edge */
+                        scrollbar-width: none;  /* Prevent scrollbar in Firefox */
+                        overflow-x: hidden;
+                        overflow-y: hidden;
+                    }}
+                    /* Prevent scrollbar in Chrome */
+                    .html::-webkit-scrollbar {{
+                        display: none;
+                    }}  
+                    body {{
+                        border-width: 0px;
+                        margin-left: 10px; 
+                        margin-right:10px;
+                    }}        
                     .sidebar {{
                         height: 100%; 
                         width: 175px;
@@ -525,7 +541,7 @@ def summary_to_html(readfile,writefile):
             <div class="sidebar">
                 {sidebar_template}
             </div>
-            <iframe src={curr_build_file} name="results_iframe" style="padding-left: 200px; height: 660px; width: 100%";></iframe>
+            <iframe src={curr_build_file} name="results_iframe" style="padding-left: 200px; height: 100%; width: 100%";></iframe>
         </body>
     </html>
         '''
@@ -569,6 +585,7 @@ if __name__ == "__main__":
         set_curr_version(count)
         write_to_csv(curr)
         summary_to_html(curr,"docs/index.html")
+        # os.rename(f"docs/index_{count}.html", f"docs/build_{count}.html")
         # copy_index(get_version()-i)
         test_comparison=test_comp(curr,last)
         if len(test_comparison["Failed Tests"])!=0 or len(test_comparison["Newly Passing Tests"])!=0 :
