@@ -14,7 +14,7 @@ import bokeh.models.callbacks as bcall
 from bokeh.resources import CDN
 from bokeh.embed import components
 from bokeh.layouts import row
-from store import get_version,copy_index,get_commit_id
+from store import get_version,copy_build,get_commit_id
 from bokeh.palettes import viridis
 from bokeh.transform import factor_cmap
 from bokeh.resources import CDN
@@ -466,10 +466,8 @@ def create_test_results(readfile):
                 </html>
                 '''
         
-    results_file = f"./docs/index_{curr_ver}.html"
-    if os.path.exists(results_file):
-        with open(results_file,"w") as rf:
-            rf.write(template)
+    # Writes test results to new build_x.html file to be displayed in iframe
+    results_file = copy_build(curr_ver, template)
     return results_file
 
 
@@ -563,6 +561,7 @@ def write_to_csv(readfile):
 
 
 if __name__ == "__main__":
+
     for i in range(get_version()-1, -1, -1):
         # Ascending order from build 1 to the latest
         count = get_version()-i
@@ -570,7 +569,11 @@ if __name__ == "__main__":
         set_curr_version(count)
         write_to_csv(curr)
         summary_to_html(curr,"docs/index.html")
-        os.rename(f"docs/index_{count}.html", f"docs/build_{count}.html")
+        # TODO: delete all index_x.html files in gh-pages
+        idx_file = f"docs/index_{i}.html"
+        if os.path.exists(idx_file):
+            os.remove(idx_file)
+        # os.rename(f"docs/index_{count}.html", f"docs/build_{count}.html")
         # copy_index(get_version()-i)
         test_comparison=test_comp(curr,last)
         if len(test_comparison["Failed Tests"])!=0 or len(test_comparison["Newly Passing Tests"])!=0 :

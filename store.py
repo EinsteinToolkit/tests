@@ -43,15 +43,16 @@ def copy_logs(test_dir,version):
     shutil.copy(log,dst+build)
 
 
-def copy_index(version):
+def copy_build(version, test_results):
     '''
-        This copies the old html files showing test
+        This copies the old html build files showing test
         results for future use
     '''
-    dst=f"./docs/index_{version}.html"
-    index="./docs/index.html"
-    if os.path.exists(index):
-        shutil.copy(index,dst)
+    dst=f"build_{version}.html"
+    with open(os.path.join(f"./docs", dst), 'w') as fp:
+        fp.write(test_results)
+    return f"./docs/build_{version}.html"
+
 def copy_compile_log(version):
     '''
         This copies the compilation logs for future use
