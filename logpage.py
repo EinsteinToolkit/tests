@@ -461,7 +461,6 @@ def summary_to_html(readfile,writefile):
         This function reads the log file and outputs and html
         page with the summary in a table
     '''
-    # TODO: Check if width of iframe works ok for all browsers and screens
     sidebar_template = create_sidebar()
     with open(writefile,"w") as fp:
         curr_build_file = create_test_results(readfile).split('/')[2]
@@ -477,6 +476,22 @@ def summary_to_html(readfile,writefile):
                     .bk-root .bk {{
                         margin: 0 auto !important;
                     }}
+                    html, body {{
+                        height: 100%;
+                        -ms-overflow-style: none;  /* Prevent scrollbar in IE and Edge */
+                        scrollbar-width: none;  /* Prevent scrollbar in Firefox */
+                        overflow-x: hidden;
+                        overflow-y: hidden;
+                    }}
+                    /* Prevent scrollbar in Chrome */
+                    .html::-webkit-scrollbar {{
+                        display: none;
+                    }}  
+                    body {{
+                        border-width: 0px;
+                        margin-left: 10px; 
+                        margin-right:10px;
+                    }}        
                     .sidebar {{
                         height: 100%; 
                         width: 175px;
@@ -510,7 +525,7 @@ def summary_to_html(readfile,writefile):
             <div class="sidebar">
                 {sidebar_template}
             </div>
-            <iframe src={curr_build_file} name="results_iframe" style="padding-left: 200px; height: 660px; width: 100%";></iframe>
+            <iframe src={curr_build_file} name="results_iframe" style="padding-left: 200px; height: 100%; width: 100%";></iframe>
         </body>
     </html>
         '''
