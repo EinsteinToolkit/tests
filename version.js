@@ -1,6 +1,6 @@
 try {
     var workflowFile = new XMLHttpRequest();
-    workflowFile.open("GET", "https://api.github.com/repos/EinsteinToolkit/tests/actions/runs", false);
+    workflowFile.open("GET", "https://api.github.com/repos/EinsteinToolkit/tests/actions/workflows/main.yml/runs", false);
     workflowFile.send();
 
     var jsonResponse = JSON.parse(workflowFile.responseText);
