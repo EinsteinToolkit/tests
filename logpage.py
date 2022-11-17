@@ -529,6 +529,7 @@ def summary_to_html(readfile,writefile):
         </body>
     </html>
         '''
+        shutil.copy("version.js", "docs")
         fp.write(template)
 
 def write_to_csv(readfile):
