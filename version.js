@@ -6,26 +6,32 @@ try {
     var jsonResponse = JSON.parse(workflowFile.responseText);
     count = jsonResponse["total_count"];
     if (count > 0) {
-        latest_run = jsonResponse["workflow_runs"][0];
-        console.log(latest_run);
-        stat = latest_run.status; // completed, requested, in-progress
-        conclusion = latest_run.conclusion; // success, failure
+        latestRun = jsonResponse["workflow_runs"][0];
+        stat = latestRun.status; // completed, requested, in-progress
+        conclusion = latestRun.conclusion; // success, failure
+        actionLink = latestRun.html_url; // link to (pending) workflow in GitHub
+        console.log(actionLink)
     }
 } catch (e) {
   console.log(e.message);
 }
 
+workflowLink = "https://einsteintoolkit.github.io/tests/";
 if (conclusion == "failure") {
-    badge_to_display = "failing-status.svg"
+    badgeToDisplay = "failing-status.svg";
 } else if (stat == "completed") {
-    badge_to_display = "passing-status.svg" 
+    badgeToDisplay = "passing-status.svg";
 } else {
-    badge_to_display = "pending-status.svg" 
+    badgeToDisplay = "pending-status.svg";
+    // If CI is currently pending, badge links to the action in GitHub
+    workflowLink= actionLink;
 }
 
 try {
-    sidebar = document.getElementsByClassName('workflow-status');
-    sidebar[0].innerHTML = '<img src="' + badge_to_display + '" style="display:block; margin-left: auto; margin-right: auto;">';
+    badgeLink = document.getElementsByClassName('workflow-status');
+    badgeLink[0].innerHTML = '<a href="' + workflowLink + '" style="display:block; margin-left: auto; margin-right: auto;">' 
+                         + '<img src="' + badgeToDisplay + '">'
+                         + '</a>';
 } catch (err) {
     console.log(err);
 }

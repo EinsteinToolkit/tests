@@ -341,10 +341,9 @@ def create_sidebar():
         Creates sidebar.html containing all build numbers 
         that gets injected into the HTML page created in summary_to_html
     '''
-
-    # Add GitHub badge on top of sidebar
+    # Add GitHub badge on top of sidebar, will be injected by version.js
     template =f'''
-        <img src="{baseurl}/actions/workflows/main.yml/badge.svg" style="display:block;margin-left: auto;margin-right: auto;">
+        <div class="workflow-status"> </div>
     '''
 
     # For every version, create link and symbol in sidebar
@@ -526,6 +525,8 @@ def summary_to_html(readfile,writefile):
                 {sidebar_template}
             </div>
             <iframe src={curr_build_file} name="results_iframe" style="padding-left: 200px; height: 100%; width: 100%";></iframe>
+            <script src='version.js'>
+            </script>
         </body>
     </html>
         '''
