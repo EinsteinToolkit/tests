@@ -10,7 +10,6 @@ try {
         stat = latestRun.status; // completed, requested, in-progress
         conclusion = latestRun.conclusion; // success, failure
         actionLink = latestRun.html_url; // link to (pending) workflow in GitHub
-        console.log(actionLink)
     }
 } catch (e) {
   console.log(e.message);
