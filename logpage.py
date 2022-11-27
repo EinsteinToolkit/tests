@@ -416,7 +416,7 @@ def create_test_results(readfile):
                 <body>
                     <h1 style="text-align:center">{status}</h1>
                     <h3 style="text-align:center">
-                        <a href="{baseurl}/tree/gh-pages/records/version_{curr_ver}">Build #{curr_ver}</a>
+                        <a href="{baseurl}/tree/gh-pages/records/version_{curr_ver}" target="_blank">Build #{curr_ver}</a>
                     </h3>
                     <h6 style="text-align:center">
                         <a href="index.html" target="_blank">Go to latest build</a>
