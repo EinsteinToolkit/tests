@@ -11,7 +11,7 @@ def copy_tests(test_dir,version,procs):
         It takes the directory of the logs, the version number 
         and then number of proceses.
     '''
-    dst=f"./records/version_{version}/sim_{version}_{procs}"
+    dst=f"{gh_pages}/records/version_{version}/sim_{version}_{procs}"
     dirlist=os.listdir(test_dir)
     if not os.path.isdir(dst):
         os.mkdir(dst)
@@ -32,7 +32,7 @@ def copy_logs(test_dir,version):
     '''
         This copies the test logs for future use
     '''
-    dst=f"./records/version_{version}/"
+    dst=f"{gh_pages}/records/version_{version}/"
     log=f"{test_dir}/summary.log"
     # TODO: move into separate function and return Python object
     config=configparser.ConfigParser()
@@ -48,17 +48,17 @@ def copy_build(version, test_results):
         This copies the old html build files showing test
         results for future use
     '''
-    dst=f"build_{version}.html"
-    with open(os.path.join(f"./docs", dst), 'w') as fp:
+    dst=f"{gh_pages}/docs/build_{version}.html"
+    with open(os.path.join(f"{gh_pages}/docs", dst), 'w') as fp:
         fp.write(test_results)
-    return f"./docs/build_{version}.html"
+    return f"{gh_pages}/docs/build_{version}.html"
 
 def copy_compile_log(version):
     '''
         This copies the compilation logs for future use
     '''
     global REPO
-    dst=f"./records/version_{version}/build_{version}.log"
+    dst=f"{gh_pages}/records/version_{version}/build_{version}.log"
     # TODO: fix this to not be relative to repo anymore
     build=f"{REPO}/build.log"
     shutil.copy(build,dst)
@@ -68,7 +68,7 @@ def store_commit_id(version):
         This stores the current git HEAD hash for future use
     '''
     global REPO
-    dst=f"./records/version_{version}/id.txt"
+    dst=f"{gh_pages}/records/version_{version}/id.txt"
     # TODO: use pygit2 for this
     id=f"{REPO}/.git/refs/heads/master"
     shutil.copy(id,dst)
@@ -92,7 +92,7 @@ def store_version(next_build):
         This stores the version of the current build
         in the list of build numbers file.
     '''
-    with open("./docs/version.txt",'a') as vers:
+    with open(f"{gh_pages}/docs/version.txt",'a') as vers:
         vers.write(f"{next_build}\n")
 
 def get_commit_id(version):
@@ -100,7 +100,7 @@ def get_commit_id(version):
         Returns the code commit id that this version corresponds to.
     '''
     try:
-        with open(f"./records/version_{version}/id.txt", "r") as fh:
+        with open(f"{gh_pages}/records/version_{version}/id.txt", "r") as fh:
             id = fh.readline().strip()
     except FileNotFoundError:
         id = "0"
@@ -108,12 +108,15 @@ def get_commit_id(version):
 
 if __name__ == "__main__":
     # FIXME: this is quite bad, use some better argparse
+    # Store.py is called in build-and-test.sh
+    # TODO: add arg for gh-pages in workflow?? $ ./build-and-test.sh "$GITHUB_WORKSPACE/gh-pages"
     REPO = sys.argv[1]
     dir1 = sys.argv[2]
     dir2 = sys.argv[3]
-    version=get_version()+1
+    gh_pages = sys.argv[4]
+    version=get_version(gh_pages)+1
     store_version(version)
-    os.mkdir(f"./records/version_{version}/")
+    os.mkdir(f"{gh_pages}/records/version_{version}/")
     copy_compile_log(version)
     copy_logs(dir1,version)
     copy_logs(dir2,version)

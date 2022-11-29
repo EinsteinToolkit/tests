@@ -4,6 +4,8 @@ This file parses the log files such as build__2_1.log
 
 from collections import defaultdict
 import re
+import sys
+
 
 def create_summary(file):
     '''
@@ -194,7 +196,7 @@ def get_data(name):
         Retrieves singular field of data from the data csv as a list
     '''
     data={}
-    with open('test_nums.csv','r') as csvfile:
+    with open(f"{gh_pages}/test_nums.csv",'r') as csvfile:
         fields=csvfile.readline().strip().split(",")
         name_i=fields.index(name)
         line=csvfile.readline()
@@ -263,3 +265,5 @@ def get_warning_thorns(name):
                     warning_types[trunc]+=1
     return warning_types
 
+if __name__ == "__main__":
+    gh_pages = sys.argv[1]
