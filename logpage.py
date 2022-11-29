@@ -32,6 +32,8 @@ from parser import create_summary, get_tests, get_warning_thorns, get_warning_ty
 import glob
 
 REPO = sys.argv[1]
+# -------------------------------------- DEBUG ---------------------------------------
+print(sys.argv)
 repo = Repository(f"{REPO}/.git") # Done to prevent hardcoding of repo link 
 
 records=os.listdir("./records")
