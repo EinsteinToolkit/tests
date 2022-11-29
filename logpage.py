@@ -36,6 +36,7 @@ master = sys.argv[1]
 gh_pages = sys.argv[2] 
 scripts = sys.argv[3]
 repo = Repository(f"{master}/.git") 
+print(repo.listall_references)
 baseurl = repo.remotes["origin"].url.replace("git@", "https://").replace(".git","")
 
 print(repo)
