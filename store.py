@@ -73,13 +73,13 @@ def store_commit_id(version):
     id=f"{REPO}/.git/refs/heads/master"
     shutil.copy(id,dst)
 
-def get_version():
+def get_version(gh_pages):
     '''
         This checks the version of the current build
         by looking at the file names from old builds.
     '''
     current=0
-    build_records=glob.glob("./records/version_*")
+    build_records=glob.glob(f"{gh_pages}/records/version_*")
     builds=[int(x.split("_")[-1].split(".")[0]) for x in build_records]
     try:
         current_build=max(builds)

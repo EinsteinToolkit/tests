@@ -31,24 +31,20 @@ from parser import create_summary, get_tests, get_warning_thorns, get_warning_ty
     longest_tests,get_unrunnable,get_data,get_compile
 import glob
 
-REPO = sys.argv[1]
-repo = Repository(f"{REPO}/.git") # Done to prevent hardcoding of repo link 
-
-records=os.listdir("./records")
-curr_ver=get_version()
-curr=f"./records/version_{curr_ver}/build__2_1_{curr_ver}.log"
-last=f"./records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
-
-# repo wit gh-pages data
-gh_repo = Repository(f'.git')
-baseurl = gh_repo.remotes["origin"].url.replace("git@", "https://").replace(".git","")
-
-# -------------------------------------- DEBUG ---------------------------------------
 print(sys.argv)
-print("\n\n Repo: ", repo, "\n")
-print("\nGh-repo: ", gh_repo, "\n")
-print("\nbaseurl: ", baseurl, "\n\n")
-# -------------------------------------- DEBUG ---------------------------------------
+master = sys.argv[1]
+gh_pages = sys.argv[2] 
+scripts = sys.argv[3]
+repo = Repository(f"{master}/.git") 
+baseurl = repo.remotes["origin"].url.replace("git@", "https://").replace(".git","")
+
+print(repo)
+print(baseurl)
+
+records=os.listdir(f"{gh_pages}/records")
+curr_ver=get_version(gh_pages)
+curr=f"{gh_pages}/records/version_{curr_ver}/build__2_1_{curr_ver}.log"
+last=f"{gh_pages}/records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
 
 def gen_commits():
     '''
@@ -554,7 +550,7 @@ def write_to_csv(readfile):
     data["Build Number"] = curr_ver
     # normal date format. This helps in plotting as all x axis elements are now unique
     #local_time+=f"({curr_ver})"
-    data["Compile Time Warnings"]=get_compile(f"records/version_{curr_ver}/build_{curr_ver}.log")
+    data["Compile Time Warnings"]=get_compile(f"{gh_pages}/records/version_{curr_ver}/build_{curr_ver}.log")
     fields = ["Date", "Total available tests", "Unrunnable tests",
               "Runnable tests", "Total number of thorns",
               "Number of tested thorns", "Number of tests passed",
@@ -570,9 +566,8 @@ def write_to_csv(readfile):
 
 if __name__ == "__main__":
     write_to_csv(curr)
-    summary_to_html(curr,"docs/index.html")
-    # copy_index(get_version())
+    summary_to_html(curr,f"{gh_pages}/docs/index.html")
     test_comparison=test_comp(curr,last)
     if len(test_comparison["Failed Tests"])!=0 or len(test_comparison["Newly Passing Tests"])!=0 :
         dir = os.path.split(__file__)[0]
-        os.system(f"python3 {dir}/mail.py {REPO}")
+        os.system(f"python3 {dir}/mail.py {master} {gh_pages}")

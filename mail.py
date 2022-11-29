@@ -13,15 +13,17 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-REPO = sys.argv[1]
-logpage.REPO =  REPO
-repo = Repository(f'{REPO}/.git')
+# TODO: check if this works
+master = sys.argv[1]
+gh_pages = sys.argv[2]
+# TODO: remove? logpage.master =  master
+repo = Repository(f'{master}/.git')
 
 # Create the body of the message (a plain-text and an HTML version).
 text = "HTML only email, please see https://einsteintoolkit.github.io/carpetx-tests for output"
 
-curr_ver = get_version()
-summary=f"./records/version_{curr_ver}/build__2_1_{curr_ver}.log"
+curr_ver = get_version(gh_pages)
+summary=f"{gh_pages}/records/version_{curr_ver}/build__2_1_{curr_ver}.log"
 baseurl = repo.remotes["origin"].url.replace("git@", "https://").replace(".git","")
 
 data = logpage.create_summary(summary)
