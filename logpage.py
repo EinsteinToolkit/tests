@@ -43,6 +43,13 @@ last=f"./records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
 gh_repo = Repository(f'.git')
 baseurl = gh_repo.remotes["origin"].url.replace("git@", "https://").replace(".git","")
 
+# -------------------------------------- DEBUG ---------------------------------------
+print(sys.argv)
+print("\n\n Repo: ", repo, "\n")
+print("\nGh-repo: ", gh_repo, "\n")
+print("\nbaseurl: ", baseurl, "\n\n")
+# -------------------------------------- DEBUG ---------------------------------------
+
 def gen_commits():
     '''
         This function generates a list of commits that have been made since the last run
@@ -119,19 +126,19 @@ def gen_diffs(readfile):
 
             # Check if these files are available if not display not avaible on the table 
             if(os.path.isfile("./"+logl1[logl1.find("records"):])):
-                output+=f"  <tr><td>{test}</td><td><a href='{logl1}'>log</a></td>"
+                output+=f"  <tr><td>{test}</td><td><a href='{logl1}' target='_blank'>log</a></td>"
             else:
                 output+=f" <tr><td>{test}</td><td>Not Available</td>"
             if(os.path.isfile("./"+logl2[logl2.find("records"):])):
-                output+=f"  <td><a href='{logl2}'>log</a></td>"
+                output+=f"  <td><a href='{logl2}' target='_blank'>log</a></td>"
             else:
                 output+=f" <td>Not Available</td>"
             if(os.path.isfile("./"+diffl1[diffl1.find("records"):])):
-                output+=f"<td><a href='{diffl1}'>diff</a></td>"
+                output+=f"<td><a href='{diffl1}' target='_blank'>diff</a></td>"
             else:
                 output+=f"<td>Not Available</td>"  
             if(os.path.isfile("./"+diffl2[diffl2.find("records"):])):
-                output+=f"<td><a href='{diffl2}'>diff</a></td>\n"
+                output+=f"<td><a href='{diffl2}' target='_blank'>diff</a></td>\n"
             else:
                 output+=f"<td>Not Available</td>\n"  
 
@@ -142,8 +149,8 @@ def gen_diffs(readfile):
                 if (first_failure) == -1:
                     output+=f"<td>Not Available</td>\n"  
                 else :
-                    first_failure_link=f'index_{first_failure}.html'
-                    output+=f"<td><a href='{first_failure_link}'>report</a></td></tr>\n"
+                    first_failure_link=f'build_{first_failure}.html'
+                    output+=f"<td><a href='{first_failure_link}' target='_blank'>report</a></td></tr>\n"
     
     output+="</table>"
     return output
