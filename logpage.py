@@ -32,8 +32,6 @@ from parser import create_summary, get_tests, get_warning_thorns, get_warning_ty
 import glob
 
 REPO = sys.argv[1]
-# -------------------------------------- DEBUG ---------------------------------------
-print(sys.argv)
 repo = Repository(f"{REPO}/.git") # Done to prevent hardcoding of repo link 
 
 records=os.listdir("./records")
@@ -44,6 +42,13 @@ last=f"./records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
 # repo wit gh-pages data
 gh_repo = Repository(f'.git')
 baseurl = gh_repo.remotes["origin"].url.replace("git@", "https://").replace(".git","")
+
+# -------------------------------------- DEBUG ---------------------------------------
+print(sys.argv)
+print("\n\n Repo: ", repo, "\n")
+print("\nGh-repo: ", gh_repo, "\n")
+print("\nbaseurl: ", baseurl, "\n\n")
+# -------------------------------------- DEBUG ---------------------------------------
 
 def gen_commits():
     '''
