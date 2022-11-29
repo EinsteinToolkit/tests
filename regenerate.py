@@ -132,19 +132,19 @@ def gen_diffs(readfile):
 
             # Check if these files are available if not display not avaible on the table 
             if(os.path.isfile("./"+logl1[logl1.find("records"):])):
-                output+=f"  <tr><td>{test}</td><td><a href='{logl1}'>log</a></td>"
+                output+=f"  <tr><td>{test}</td><td><a href='{logl1}' target='_blank'>log</a></td>"
             else:
                 output+=f" <tr><td>{test}</td><td>Not Available</td>"
             if(os.path.isfile("./"+logl2[logl2.find("records"):])):
-                output+=f"  <td><a href='{logl2}'>log</a></td>"
+                output+=f"  <td><a href='{logl2}' target='_blank'>log</a></td>"
             else:
                 output+=f" <td>Not Available</td>"
             if(os.path.isfile("./"+diffl1[diffl1.find("records"):])):
-                output+=f"<td><a href='{diffl1}'>diff</a></td>"
+                output+=f"<td><a href='{diffl1}' target='_blank'>diff</a></td>"
             else:
                 output+=f"<td>Not Available</td>"  
             if(os.path.isfile("./"+diffl2[diffl2.find("records"):])):
-                output+=f"<td><a href='{diffl2}'>diff</a></td>\n"
+                output+=f"<td><a href='{diffl2}' target='_blank'>diff</a></td>\n"
             else:
                 output+=f"<td>Not Available</td>\n"  
 
@@ -155,8 +155,8 @@ def gen_diffs(readfile):
                 if (first_failure) == -1:
                     output+=f"<td>Not Available</td>\n"  
                 else :
-                    first_failure_link=f'index_{first_failure}.html'
-                    output+=f"<td><a href='{first_failure_link}'>report</a></td></tr>\n"
+                    first_failure_link=f'build_{first_failure}.html'
+                    output+=f"<td><a href='{first_failure_link}' target='_blank'>report</a></td></tr>\n"
     
     output+="</table>"
     return output
@@ -354,12 +354,11 @@ def create_sidebar():
         Creates sidebar.html containing all build numbers 
         that gets injected into the HTML page created in summary_to_html
     '''
-
-    # Add GitHub badge on top of sidebar
+    # Add GitHub badge on top of sidebar, will be injected by version.js
     template =f'''
-        <div class="workflow-status"> 
-        </div>
+        <div class="workflow-status"> </div>
     '''
+
     # For every version, create link and symbol in sidebar
     for i in range(get_version(), 0, -1):
         # The build file will be displayed in iframe to the right of the sidebar
@@ -526,9 +525,6 @@ def summary_to_html(readfile,writefile):
                     .sidebar a:hover {{
                         color: white;
                     }}
-                    .workflow-status {{
-                        color: white;
-                    }}
                     /* On screens that are less than 700px wide, make the sidebar into a topbar */
                     @media screen and (max-width: 500px) {{
                     .sidebar {{
@@ -542,9 +538,9 @@ def summary_to_html(readfile,writefile):
                 {sidebar_template}
             </div>
             <iframe src={curr_build_file} name="results_iframe" style="padding-left: 200px; height: 100%; width: 100%";></iframe>
+            <script src='version.js'>
+            </script>
         </body>
-        <script src='version.js'>
-        </script>
     </html>
         '''
         shutil.copy("version.js", "docs")
@@ -574,8 +570,7 @@ def write_to_csv(readfile):
         if csvfile.tell() == 0:
             csvfile.write(",".join(fields) + "\n")
         csvfile.write(",".join([str(data[key]) for key in fields]) + "\n")
-#import glob, glob.glob("records/*/"build_1_2_*"
-
+#import glob, glob.glob("records/*/"build_1_2_*")
 
 
 if __name__ == "__main__":
