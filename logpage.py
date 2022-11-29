@@ -32,17 +32,19 @@ from parser import create_summary, get_tests, get_warning_thorns, get_warning_ty
 import glob
 
 print(sys.argv)
-master_branch = sys.argv[1]
-gh_pages_branch = sys.argv[2] 
-scripts_branch = sys.argv[3]
-repo = Repository(f"{master_branch}/.git") 
-baseurl = repo.remotes["origin"].url.replace("git@", "https://").replace(".git","")
+master = sys.argv[1]
+gh_pages = sys.argv[2] 
+scripts = sys.argv[3]
+REPO = Repository(f"{master}/.git") 
+baseurl = REPO.remotes["origin"].url.replace("git@", "https://").replace(".git","")
 
-records=os.listdir(f"{gh_pages_branch}/records")
-print(records)
-curr_ver=get_version()
-curr=f"./records/version_{curr_ver}/build__2_1_{curr_ver}.log"
-last=f"./records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
+print(REPO)
+print(baseurl)
+
+records=os.listdir(f"{gh_pages}/records")
+curr_ver=get_version(gh_pages)
+curr=f"{gh_pages}/records/version_{curr_ver}/build__2_1_{curr_ver}.log"
+last=f"{gh_pages}/records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
 
 def gen_commits():
     '''
@@ -54,7 +56,7 @@ def gen_commits():
     curr_commit_id = Oid(hex=get_commit_id(curr_ver))
     last_commit_id = Oid(hex=get_commit_id(curr_ver-1))
     commits = []
-    for commit in repo.walk(curr_commit_id, GIT_SORT_TOPOLOGICAL):
+    for commit in REPO.walk(curr_commit_id, GIT_SORT_TOPOLOGICAL):
         if(commit.id == last_commit_id):
             break
         commits.append(commit)
@@ -564,9 +566,8 @@ def write_to_csv(readfile):
 
 if __name__ == "__main__":
     write_to_csv(curr)
-    summary_to_html(curr,"docs/index.html")
-    # copy_index(get_version())
+    summary_to_html(curr,f"{gh_pages}/docs/index.html")
     test_comparison=test_comp(curr,last)
     if len(test_comparison["Failed Tests"])!=0 or len(test_comparison["Newly Passing Tests"])!=0 :
         dir = os.path.split(__file__)[0]
-        os.system(f"python3 {dir}/mail.py {REPO}")
+        os.system(f"python3 {dir}/mail.py {master}")
