@@ -5,6 +5,14 @@ import shutil,os,glob
 import sys
 import configparser
 
+# FIXME: this is quite bad, use some better argparse
+# Store.py is called in build-and-test.sh
+# TODO: add arg for gh-pages in workflow?? $ ./build-and-test.sh "$GITHUB_WORKSPACE/gh-pages"
+REPO = sys.argv[1]
+dir1 = sys.argv[2]
+dir2 = sys.argv[3]
+gh_pages = sys.argv[4]
+
 def copy_tests(test_dir,version,procs):
     '''
         This function copies individual test logs and diffs.
@@ -107,13 +115,6 @@ def get_commit_id(version):
     return id
 
 if __name__ == "__main__":
-    # FIXME: this is quite bad, use some better argparse
-    # Store.py is called in build-and-test.sh
-    # TODO: add arg for gh-pages in workflow?? $ ./build-and-test.sh "$GITHUB_WORKSPACE/gh-pages"
-    REPO = sys.argv[1]
-    dir1 = sys.argv[2]
-    dir2 = sys.argv[3]
-    gh_pages = sys.argv[4]
     version=get_version(gh_pages)+1
     store_version(version)
     os.mkdir(f"{gh_pages}/records/version_{version}/")

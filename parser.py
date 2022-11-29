@@ -6,6 +6,8 @@ from collections import defaultdict
 import re
 import sys
 
+gh_pages = sys.argv[1]
+
 
 def create_summary(file):
     '''
@@ -264,6 +266,3 @@ def get_warning_thorns(name):
                     trunc=trunc[:trunc.find("/")]
                     warning_types[trunc]+=1
     return warning_types
-
-if __name__ == "__main__":
-    gh_pages = sys.argv[1]
