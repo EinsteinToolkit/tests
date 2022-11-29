@@ -43,6 +43,13 @@ last=f"./records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
 gh_repo = Repository(f'.git')
 baseurl = gh_repo.remotes["origin"].url.replace("git@", "https://").replace(".git","")
 
+# -------------------------------------- DEBUG ---------------------------------------
+print(sys.argv)
+print("\n\n Repo: ", repo, "\n")
+print("\nGh-repo: ", gh_repo, "\n")
+print("\nbaseurl: ", baseurl, "\n\n")
+# -------------------------------------- DEBUG ---------------------------------------
+
 def gen_commits():
     '''
         This function generates a list of commits that have been made since the last run
