@@ -41,7 +41,7 @@ print("repo in logpage.py: ", repo, "\n")
 print("baseurl in logpage.py", baseurl, "\n")
 
 records=os.listdir(f"{gh_pages}/records")
-curr_ver=get_version(gh_pages)
+curr_ver=get_version()
 curr=f"{gh_pages}/records/version_{curr_ver}/build__2_1_{curr_ver}.log"
 last=f"{gh_pages}/records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
 
@@ -350,7 +350,7 @@ def create_sidebar():
     '''
 
     # For every version, create link and symbol in sidebar
-    for i in range(get_version(gh_pages), 0, -1):
+    for i in range(get_version(), 0, -1):
         # The build file will be displayed in new tab
         template +='<a href="build_' + str(i) + '.html" target="results_iframe"> Build #' + str(i) + '</a>'
         # Check whether the build passed or not by calling parser

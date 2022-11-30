@@ -10,7 +10,6 @@ print('Sysargv from parser.py: ', sys.argv, "\n\n")
 # Since parser.py is called by logpage.py, its args are used
 gh_pages = sys.argv[2]
 
-
 def create_summary(file):
     '''
         This function parses the test results from the build__2_1.log file

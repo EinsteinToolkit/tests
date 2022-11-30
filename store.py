@@ -6,6 +6,7 @@ import sys
 import configparser
 
 print('Sysargv from store.py: ', sys.argv, "\n\n")
+# This is the arg passed to logpage.py, whereas the args in main are passed by build-and-test.sh!
 gh_pages = sys.argv[2]
 
 def copy_tests(test_dir,version,procs):
@@ -76,7 +77,7 @@ def store_commit_id(version):
     id=f"{REPO}/.git/refs/heads/master"
     shutil.copy(id,dst)
 
-def get_version(gh_pages):
+def get_version():
     '''
         This checks the version of the current build
         by looking at the file names from old builds.
@@ -117,7 +118,7 @@ if __name__ == "__main__":
     REPO = sys.argv[1]
     dir1 = sys.argv[2]
     dir2 = sys.argv[3]
-    version=get_version(gh_pages)+1
+    version=get_version()+1
     store_version(version)
     os.mkdir(f"{gh_pages}/records/version_{version}/")
     copy_compile_log(version)
