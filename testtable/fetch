@@ -1,0 +1,18 @@
+#!/bin/bash
+set -e
+
+# https://build.barrywardell.net/view/EinsteinToolkitMulti/job/EinsteinToolkitMulti
+job_url="$1"
+
+machines=($(curl -f -s ${job_url}/api/xml | python3.2 -c 'import xml.etree.ElementTree as et; import sys; root=et.parse(sys.stdin); configs = root.findall("./activeConfiguration/name")
+for c in configs: print(c.text.split(",")[0].split("=")[1]);'))
+
+rm -f machines/*
+
+for f in ${machines[*]}; do
+    echo $f
+    curl -f -o machines/${f}.xml ${job_url}/MACHINE=${f},label=master/lastSuccessfulBuild/artifact/testresults.xml
+    curl -f -o machines/${f}.timestamp ${job_url}/MACHINE=${f},label=master/lastSuccessfulBuild/artifact/results/REVISION_TIMESTAMP || true
+    curl -f -o machines/${f}.log ${job_url}/MACHINE=${f},label=master/lastSuccessfulBuild/artifact/results/REVISION_LOG || true
+    curl -f -o machines/${f}.seq ${job_url}/MACHINE=${f},label=master/lastSuccessfulBuild/artifact/results/REVISION_SEQUENCE_NO || true
+done

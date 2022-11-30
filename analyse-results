@@ -1,0 +1,129 @@
+#!/bin/bash
+
+test_arg=$1
+
+set -e
+set -u
+set -x
+
+: "${MACHINE:=BRANCH}"
+export MACHINE
+
+CACTUS_JENKINS=$WORKSPACE/cactusjenkins
+
+cd $WORKSPACE
+
+if [ -z ${GIT_COMMIT+x} ]; then
+    GIT_COMMIT=temp
+fi
+
+function rgit()
+{
+  git --git-dir $WORKSPACE/results/.git --work-tree $WORKSPACE/results "$*"
+}
+
+# Check for outdated results
+if [ -r $WORKSPACE/results/REVISION_TIMESTAMP ]; then
+    newest_result=0
+    for b in $(rgit ls-remote --heads origin|sed 's/.*\///'); do
+        timestamp=$(rgit show origin/${b}:REVISION_TIMESTAMP || echo -1)
+        if [ $timestamp -gt $newest_result ]; then
+            newest_result=$timestamp
+        fi
+    done
+    this_timestamp=$(cat $WORKSPACE/results/REVISION_TIMESTAMP)
+    if [ $this_timestamp -lt $newest_result ]; then
+        touch $WORKSPACE/OUTDATED
+    else
+        rm -f $WORKSPACE/OUTDATED
+    fi
+fi
+
+if [ -r $WORKSPACE/results/CHANGES ]; then
+    cp $WORKSPACE/results/CHANGES $WORKSPACE/custom-history.txt
+elif [ -r $WORKSPACE/results/REVISION_ID ]; then
+    cp $WORKSPACE/results/REVISION_ID $WORKSPACE/custom-history.txt
+fi
+
+echo "<testsuite>" >testresults.xml
+simdir=$WORKSPACE/results
+for nprocs in 1 2 4; do
+    simname=build-and-test_${nprocs}
+
+    testdir=$simdir/$simname/output-0000/TEST
+
+    if [ ! -d $simdir/$simname ]; then
+        echo "No simulation data in $simdir/$simname; skipping"
+        continue
+    fi
+
+    config=$(basename $(ls -1 $testdir|tail -1))
+    
+    if [ ! -r $testdir/$config/summary.log ]; then
+        echo "No such file $testdir/sim/summary.log"
+        cat $simdir/$simname/output-0000/${simname}.out
+        cat $simdir/$simname/output-0000/${simname}.err
+        continue
+    fi
+
+    awk -v nprocs=$nprocs -v testdir=$testdir '/Run details for configuration/,/============/ \
+{if (NF==2) {thorn=substr($1,1,length($1)-1); test=$2;}\
+ else if (thorn != "" && NF > 1)\
+ {status = substr($1,1,length($1)-1);
+  print thorn, test, status}}' <$testdir/$config/summary.log |
+    while read thorn test status; do
+	time=$(awk '$1 == "RUNTIME" {print $3}' ${testdir}/$config/${thorn}/${test}.log)
+	echo "<testcase classname=\"${thorn}\" name=\"${test}/${nprocs}procs\" time=\"${time}\">";
+
+	# We output the log file if the test failed
+	if [ "z${status}" = "zFailure" ]; then
+	    echo "<system-out><![CDATA[" 
+	    outfile=${testdir}/$config/${thorn}/${test}.log
+	    cat $outfile | tr -d '\001-\010\013-\037\177-\377'
+	    echo "]]>"
+	    echo "</system-out>"
+	fi
+
+	if [ "z${status}" = "zFailure" ]; then
+
+	    diffsfile=${testdir}/$config/${thorn}/${test}.diffs
+
+	    # If the diffs file exists, we call this a "failure"
+	    if [ -r "$diffsfile" ]; then
+		echo "<failure type=\"Test failed\">"
+		echo "<![CDATA["
+		cat $diffsfile
+		echo "]]>"
+		echo "</failure>"
+	    else
+            # The diffs file doesn't exist, so something must have
+            # gone wrong. We call this an "error".
+
+                errormsg=$(grep -m 1 -A 3 -i "warning level 0" $outfile || true)
+
+		if [ -z "$errormsg" ]; then
+		    errormsg=$(grep -m 1 -i "Assertion .* failed" $outfile || true)
+		fi
+
+		errormsg_quoted=$(python -c 'import xml.sax.saxutils; import sys; x=sys.argv[1]; x="".join([i for i in x if ord(i) in range(32, 127)]); print xml.sax.saxutils.quoteattr(x)' "$errormsg")
+		
+		echo "<error message=${errormsg_quoted}>"
+		btfile=$(ls ${testdir}/$config/${thorn}/${test}/backtrace.*.txt 2>/dev/null |head -1 || true)
+		if [ -n "$btfile" ]; then
+		    echo "<![CDATA["
+		    cat $btfile
+		    echo "]]>"
+		fi
+		echo "</error>"
+	    fi
+	elif [ "z${status}" = "zSuccess" ]; then
+	    echo >/dev/null
+	else
+	    echo "Unrecognised status: \"$status\"" >&2
+	    exit 1
+	fi
+	echo "</testcase>"
+   done  >>testresults.xml
+#   rm -rf $simdir/$simname
+done
+echo "</testsuite>" >>testresults.xml

@@ -1,0 +1,60 @@
+#!/bin/bash
+
+set -e
+set -x
+
+thornlist=$1
+CACTUS_JENKINS=$WORKSPACE/cactusjenkins
+. $CACTUS_JENKINS/sim-functions.sh
+
+simdir=$WORKSPACE/../simulations
+mkdir -p $simdir
+
+if [ -z "$USER" ]; then
+export USER=jenkins
+fi
+
+cd $WORKSPACE
+
+host=$(hostname -f)
+
+########################################################################################
+# Configure SimFactory
+########################################################################################
+
+# Remove any simfactory configuration from previous runs
+rm -f simfactory/etc/defs.local.ini
+rm -f simfactory/mdb/machines/${host}.ini
+
+simfactory/bin/sim setup-silent
+
+machine=$(simfactory/bin/sim whoami|grep 'Current machine'|awk '{print $3}')
+echo "machine = $machine"
+
+cat <<EOF >simfactory/etc/filter.local.rules
+- simulations/
+EOF
+
+simfactory/bin/sim whoami
+
+machine=$(simfactory/bin/sim whoami|grep 'Current machine'|awk '{print $3}')
+
+########################################################################################
+# Build
+########################################################################################
+
+export CCACHE_DIR=$WORKSPACE/ccache
+mkdir -p $CCACHE_DIR
+
+# disable colours in error messages and warnings
+export GCC_COLORS=
+
+if [ ! "z${BUILD_TYPE}" = "zIncremental" ]; then
+    rm -rf configs/sim
+fi
+
+runscript=$(mdbentry $machine runscript)
+optionlist=$(mdbentry $machine optionlist)
+submitscript=$(mdbentry $machine submitscript)
+
+time simfactory/bin/sim build --mdbkey make 'make -j2' --thornlist $thornlist --runscript $runscript --optionlist $optionlist --submitscript $submitscript --reconfig
