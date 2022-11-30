@@ -31,15 +31,14 @@ from parser import create_summary, get_tests, get_warning_thorns, get_warning_ty
     longest_tests,get_unrunnable,get_data,get_compile
 import glob
 
-print(sys.argv)
+print("Sys argv in logpage.py: ", sys.argv, "\n")
 master = sys.argv[1]
 gh_pages = sys.argv[2] 
 repo = Repository(f"{master}/.git") 
-print(repo.listall_references)
 baseurl = repo.remotes["origin"].url.replace("git@", "https://").replace(".git","")
 
-print(repo)
-print(baseurl)
+print("repo in logpage.py: ", repo, "\n")
+print("baseurl in logpage.py", baseurl, "\n")
 
 records=os.listdir(f"{gh_pages}/records")
 curr_ver=get_version(gh_pages)
@@ -567,6 +566,7 @@ def write_to_csv(readfile):
 
 if __name__ == "__main__":
     # Pass gh_pages dir to parser.py
+    print('Arg passed to parser.py: ', gh_pages)
     os.system(f"python3 {dir}/parser.py {gh_pages}")
     write_to_csv(curr)
     summary_to_html(curr,f"{gh_pages}/docs/index.html")
