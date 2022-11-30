@@ -33,14 +33,14 @@ git submodule update --init #--force
 # Undo any local changes (do not use --force above since it always touches files)
 git submodule foreach "git diff --quiet || git reset --hard"
 
-# TODO: keep check?
+# TODO: keep checks?
 # if [ "$CLEAN_CACTUS_JENKINS" = "true" -o ! -r $WORKSPACE/cactusjenkins ]; then
 #   rm -rf $WORKSPACE/cactusjenkins
 #   git clone https://bitbucket.org/ianhinder/cactusjenkins.git $WORKSPACE/cactusjenkins
 # fi
-# if [ -r $WORKSPACE/configs/sim ]; then
-#   ( cd $WORKSPACE; make sim-cleandeps )
-# fi
+if [ -r $WORKSPACE/configs/sim ]; then
+  ( cd $WORKSPACE; make sim-cleandeps )
+fi
 
 # Need to force formattting of time so that we can parse it later
 export LC_TIME=C
