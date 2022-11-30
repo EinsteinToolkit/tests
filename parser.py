@@ -6,6 +6,7 @@ from collections import defaultdict
 import re
 import sys
 
+print('Sysargv from parser.py: ', sys.argv)
 gh_pages = sys.argv[1]
 
 

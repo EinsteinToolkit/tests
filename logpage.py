@@ -34,8 +34,6 @@ import glob
 print(sys.argv)
 master = sys.argv[1]
 gh_pages = sys.argv[2] 
-# TODO: remove arg for scripts
-scripts = sys.argv[3]
 repo = Repository(f"{master}/.git") 
 print(repo.listall_references)
 baseurl = repo.remotes["origin"].url.replace("git@", "https://").replace(".git","")
