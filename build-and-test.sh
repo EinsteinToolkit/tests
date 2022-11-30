@@ -1,6 +1,5 @@
 #!/bin/bash
-
-# TODO: pass $GITHUB_WORKSPACE/master to build-and-test.sh
+# TODO: remove debug prints
 echo "Master dir to refer to for testing: $1";
 echo "Gh-pages dir to be passed to store.py: $2";
 
@@ -46,11 +45,12 @@ fi
 # Need to force formattting of time so that we can parse it later
 export LC_TIME=C
 
-# TODO: pass MASTER and GH_PAGES to the referenced scripts (check final line in test-cactus)
 # Make files executable
 chmod +x test-cactus
 chmod +x build-cactus
 # "time" outputs three times: real, user and sys
-# "tee" reads from the standard input and writes to ./build.log
+# "tee" reads from the standard input and writes to (new) ./build.log file
+# TODO: (pass and) use MASTER in build-cactus
 time $WORKSPACE/build-cactus $MASTER/manifest/einsteintoolkit.th 2>&1 | tee ./build.log
+# TODO: (pass and) use MASTER in test-cactus
 time $WORKSPACE/test-cactus all

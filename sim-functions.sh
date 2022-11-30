@@ -1,6 +1,6 @@
 function sim()
 {
-    simfactory/bin/sim "$@"
+    $MASTER/simfactory/bin/sim "$@"
 }
 
 function mdbentry()
@@ -20,5 +20,5 @@ function mdbentry()
 
 function current_machine()
 {
-    simfactory/bin/sim whoami|grep 'Current machine'|awk '{print $3}'
+    $MASTER/simfactory/bin/sim whoami|grep 'Current machine'|awk '{print $3}'
 }

@@ -1,16 +1,13 @@
 #!/bin/bash
 
 set -x 
-export JOB_NAME="TestJob01" 
-export WORKSPACE=$PWD 
-test_arg=$1
-
 set -e
 set -u
-#set -x
-
-CACTUS_JENKINS=$WORKSPACE/cactusjenkins
-. $CACTUS_JENKINS/sim-functions.sh
+export JOB_NAME="TestJob01" 
+export WORKSPACE=$PWD 
+# Env vars exported in/passed by build-and-test.sh
+test_arg=$1
+. sim-functions.sh
 
 # Run jobs in the foreground.  If this will in future also work on
 # clusters, then we should adjust this
@@ -50,9 +47,9 @@ rm -rf $simdir/$simname
     # submit command defined, but simfactory thinks that all machines
     # have submit commands
     if [ "${SIMFACTORY_FOREGROUND}" = "1" ]; then
-        simfactory/bin/sim create-run $common_args
+        $MASTER/simfactory/bin/sim create-run $common_args
     else
-        simfactory/bin/sim create-submit --walltime 1:00:00 $common_args
+        $MASTER/simfactory/bin/sim create-submit --walltime 1:00:00 $common_args
     fi
 done
 
