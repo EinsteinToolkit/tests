@@ -1,13 +1,17 @@
 #!/bin/bash
 
-# echo "Master dir to refer to for testing: $1";
-# echo "Gh-pages dir to be passed to store.py: $2";
-echo "Gh-pages dir passed to build-and-test: $1";
+# TODO: pass $GITHUB_WORKSPACE/master to build-and-test.sh
+echo "Master dir to refer to for testing: $1";
+echo "Gh-pages dir to be passed to store.py: $2";
 
+# Set env vars and make available to child processes
 export SYNC_SUBMODULES=true
 export CLEAN_CACTUS_JENKINS=true
 export BUILD_TYPE=Incremental
 export WORKSPACE=$PWD
+export MASTER=$1
+export GH_PAGES=$2
+# Stop execution instantly as a query exits while having a non-zero status and xtrace
 set -e -x
 
 export ENABLED_THORNS="
@@ -16,6 +20,7 @@ export ENABLED_THORNS="
   ExternalLibraries/PETSc
 "
 
+# TODO: remove this? Or access via gh-pages
 rm -f build__*.log
 # Work around bugs in Jenkins
 
