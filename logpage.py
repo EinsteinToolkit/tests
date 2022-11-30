@@ -31,7 +31,7 @@ from parser import create_summary, get_tests, get_warning_thorns, get_warning_ty
     longest_tests,get_unrunnable,get_data,get_compile
 import glob
 
-print("Sys argv in logpage.py: ", sys.argv, "\n")
+print("Sys argv in logpage.py: ", sys.argv, "\n\n")
 master = sys.argv[1]
 gh_pages = sys.argv[2] 
 repo = Repository(f"{master}/.git") 
@@ -566,7 +566,7 @@ def write_to_csv(readfile):
 
 if __name__ == "__main__":
     # Pass gh_pages dir to parser.py
-    # os.system(f"python3 {dir}/parser.py {gh_pages}")
+    # os.system(f"python3 {dir}/store.py {gh_pages}")
     write_to_csv(curr)
     summary_to_html(curr,f"{gh_pages}/docs/index.html")
     test_comparison=test_comp(curr,last)

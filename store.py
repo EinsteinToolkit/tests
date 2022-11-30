@@ -5,6 +5,9 @@ import shutil,os,glob
 import sys
 import configparser
 
+print('Sysargv from store.py: ', sys.argv, "\n\n")
+gh_pages = sys.argv[2]
+
 def copy_tests(test_dir,version,procs):
     '''
         This function copies individual test logs and diffs.
@@ -114,7 +117,6 @@ if __name__ == "__main__":
     REPO = sys.argv[1]
     dir1 = sys.argv[2]
     dir2 = sys.argv[3]
-    gh_pages = sys.argv[4]
     version=get_version(gh_pages)+1
     store_version(version)
     os.mkdir(f"{gh_pages}/records/version_{version}/")
