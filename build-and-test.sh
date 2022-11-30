@@ -1,7 +1,8 @@
 #!/bin/bash
 
-echo "Master dir to refer to for testing: $1";
-echo "Gh-pages dir to be passed to store.py: $2";
+# echo "Master dir to refer to for testing: $1";
+# echo "Gh-pages dir to be passed to store.py: $2";
+echo "Gh-pages dir passed to build-and-test: $1";
 
 export SYNC_SUBMODULES=true
 export CLEAN_CACTUS_JENKINS=true
@@ -38,11 +39,11 @@ fi
 # need to force formattting of time so that we can parse it later
 export LC_TIME=C
 
-time $WORKSPACE/cactusjenkins/build-cactus $1/manifest/einsteintoolkit.th 2>&1 | tee ./build.log
+time $WORKSPACE/cactusjenkins/build-cactus manifest/einsteintoolkit.th 2>&1 | tee ./build.log
 sed -i '2a export WORKSPACE=$PWD ' cactusjenkins/test-cactus
 sed -i '2a export JOB_NAME="TestJob01" ' cactusjenkins/test-cactus
 sed -i '2a set -x ' cactusjenkins/test-cactus
 sed -i '/rm -rf \$simdir\/\$simname/d' cactusjenkins/test-cactus
 sed -i '43a rm -rf \$simdir\/\$simname' cactusjenkins/test-cactus
-sed -i -e '$a python3 store.py . $2 $HOME/simulations/TestJob01_temp_1/output-0000/TEST/sim $HOME/simulations/TestJob01_temp_2/output-0000/TEST/sim || true' cactusjenkins/test-cactus
+sed -i -e '$a python3 store.py . $1 $HOME/simulations/TestJob01_temp_1/output-0000/TEST/sim $HOME/simulations/TestJob01_temp_2/output-0000/TEST/sim || true' cactusjenkins/test-cactus
 time $WORKSPACE/cactusjenkins/test-cactus all
