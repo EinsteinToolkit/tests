@@ -566,8 +566,7 @@ def write_to_csv(readfile):
 
 if __name__ == "__main__":
     # Pass gh_pages dir to parser.py
-    print('Arg passed to parser.py: ', gh_pages)
-    os.system(f"python3 {dir}/parser.py {gh_pages}")
+    # os.system(f"python3 {dir}/parser.py {gh_pages}")
     write_to_csv(curr)
     summary_to_html(curr,f"{gh_pages}/docs/index.html")
     test_comparison=test_comp(curr,last)

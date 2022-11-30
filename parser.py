@@ -7,7 +7,7 @@ import re
 import sys
 
 print('Sysargv from parser.py: ', sys.argv)
-gh_pages = sys.argv[1]
+gh_pages = sys.argv[2]
 
 
 def create_summary(file):

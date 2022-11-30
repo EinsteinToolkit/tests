@@ -110,7 +110,7 @@ if __name__ == "__main__":
     # FIXME: this is quite bad, use some better argparse
     # Store.py is called in build-and-test.sh
     # TODO: add arg for gh-pages in workflow?? $ ./build-and-test.sh "$GITHUB_WORKSPACE/gh-pages"
-    print(sys.argv)
+    print("Sys argv from store.py: ", sys.argv, "\n")
     REPO = sys.argv[1]
     dir1 = sys.argv[2]
     dir2 = sys.argv[3]
