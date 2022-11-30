@@ -41,5 +41,6 @@ sed -i '2a set -x ' cactusjenkins/test-cactus
 sed -i '/rm -rf \$simdir\/\$simname/d' cactusjenkins/test-cactus
 sed -i '43a rm -rf \$simdir\/\$simname' cactusjenkins/test-cactus
 # First arg $1 is path to $GITHUB_WORKSPACE/gh-pages, passed by CI
+echo $1
 sed -i -e '$a python3 store.py . $HOME/simulations/TestJob01_temp_1/output-0000/TEST/sim $HOME/simulations/TestJob01_temp_2/output-0000/TEST/sim $1 || true' cactusjenkins/test-cactus
 time $WORKSPACE/cactusjenkins/test-cactus all
