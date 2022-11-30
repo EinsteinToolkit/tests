@@ -7,7 +7,6 @@ import configparser
 
 print('Sysargv from store.py: ', sys.argv, "\n\n")
 # This is the arg passed to logpage.py, whereas the args in main are passed by build-and-test.sh!
-# TODO: this is not needed anymore given that build-and-test.sh passes gh-pages already!
 gh_pages = sys.argv[2]
 
 def copy_tests(test_dir,version,procs):
