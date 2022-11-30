@@ -51,6 +51,6 @@ chmod +x build-cactus
 # "time" outputs three times: real, user and sys
 # "tee" reads from the standard input and writes to (new) ./build.log file
 # TODO: (pass and) use MASTER in build-cactus
-time $WORKSPACE/build-cactus $MASTER/manifest/einsteintoolkit.th 2>&1 | tee ./build.log
+time $WORKSPACE/cactus/build-cactus $MASTER/manifest/einsteintoolkit.th 2>&1 | tee ./build.log
 # TODO: (pass and) use MASTER in test-cactus
-time $WORKSPACE/test-cactus all
+time $WORKSPACE/cactus/test-cactus all
