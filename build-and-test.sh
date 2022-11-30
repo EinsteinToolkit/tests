@@ -38,19 +38,19 @@ git submodule foreach "git diff --quiet || git reset --hard"
 #   rm -rf $WORKSPACE/cactusjenkins
 #   git clone https://bitbucket.org/ianhinder/cactusjenkins.git $WORKSPACE/cactusjenkins
 # fi
-if [ -r $WORKSPACE/configs/sim ]; then
-  ( cd $WORKSPACE; make sim-cleandeps )
-fi
+# if [ -r $WORKSPACE/configs/sim ]; then
+#   ( cd $WORKSPACE; make sim-cleandeps )
+# fi
 
 # Need to force formattting of time so that we can parse it later
 export LC_TIME=C
 
 # Make files executable
-chmod +x test-cactus
-chmod +x build-cactus
+chmod +x cactus/test-cactus
+chmod +x cactus/build-cactus
 # "time" outputs three times: real, user and sys
 # "tee" reads from the standard input and writes to (new) ./build.log file
 # TODO: (pass and) use MASTER in build-cactus
-time $WORKSPACE/cactus/build-cactus $MASTER/manifest/einsteintoolkit.th 2>&1 | tee ./build.log
+time cactus/build-cactus $MASTER/manifest/einsteintoolkit.th 2>&1 | tee ./build.log
 # TODO: (pass and) use MASTER in test-cactus
-time $WORKSPACE/cactus/test-cactus all
+time cactus/test-cactus all
