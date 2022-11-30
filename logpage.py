@@ -567,6 +567,7 @@ def write_to_csv(readfile):
 if __name__ == "__main__":
     # Pass gh_pages dir to parser.py
     # os.system(f"python3 {dir}/store.py {gh_pages}")
+    print("\n\nLogpage.py is running....\n\n")
     write_to_csv(curr)
     summary_to_html(curr,f"{gh_pages}/docs/index.html")
     test_comparison=test_comp(curr,last)
