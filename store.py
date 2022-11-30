@@ -8,6 +8,7 @@ import configparser
 # FIXME: this is quite bad, use some better argparse
 # Store.py is called in build-and-test.sh
 # TODO: add arg for gh-pages in workflow?? $ ./build-and-test.sh "$GITHUB_WORKSPACE/gh-pages"
+print(sys.argv)
 REPO = sys.argv[1]
 dir1 = sys.argv[2]
 dir2 = sys.argv[3]
