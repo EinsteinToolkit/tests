@@ -14,7 +14,6 @@ test_arg=$1
 SIMFACTORY_FOREGROUND=1
 
 machine=$(current_machine)
-
 simdir=$(mdbentry $machine basedir)
 
 # if [ "${machine}" = "build" ]; then
@@ -23,7 +22,7 @@ simdir=$(mdbentry $machine basedir)
 #     simdir=$(simfactory/bin/sim print-mdb-entry $machine |grep '^[ \t]*basedir[ \t]*=[ \t]\(.*\)[\t ]*$'|awk '{print $3}'|sed "s/@USER@/$USER/")
 # fi
 
-cd $WORKSPACE
+cd $MASTER
 
 if [ $test_arg = all -o $# = 0 ]; then
     tests=""
@@ -47,15 +46,16 @@ rm -rf $simdir/$simname
     # submit command defined, but simfactory thinks that all machines
     # have submit commands
     if [ "${SIMFACTORY_FOREGROUND}" = "1" ]; then
-    # FIXME: 
-    # /home/runner/work/einstein-toolkit-tests/einstein-toolkit-tests/master/simfactory/bin/sim create-run --testsuite --procs 2 --num-threads 2 TestJob01_temp_1
-    # Warning: Current Working directory does not match Cactus sourcetree, changing to /home/runner/work/einstein-toolkit-tests/einstein-toolkit-tests/master
-    # make: *** No rule to make target 'sim-testsuite'.  Stop.
         simfactory/bin/sim create-run $common_args
     else
         simfactory/bin/sim create-submit --walltime 1:00:00 $common_args
     fi
 done
+
+# FIXME: 
+# /home/runner/work/einstein-toolkit-tests/einstein-toolkit-tests/master/simfactory/bin/sim create-run --testsuite --procs 2 --num-threads 2 TestJob01_temp_1
+# Warning: Current Working directory does not match Cactus sourcetree, changing to /home/runner/work/einstein-toolkit-tests/einstein-toolkit-tests/master
+# make: *** No rule to make target 'sim-testsuite'.  Stop.
 
 for nprocs in 1 2; do
     simname=${JOB_NAME}_${GIT_COMMIT}_${nprocs}
@@ -63,7 +63,7 @@ for nprocs in 1 2; do
     if [ "${SIMFACTORY_FOREGROUND}" -ne "1" ]; then
         echo "Waiting for ${simname}" >&2
         while true; do
-            output=$($MASTER/simfactory/bin/sim list-simulations ${simname})
+            output=$(simfactory/bin/sim list-simulations ${simname})
             case ${output?} in
                 *QUEUED*|*RUNNING*)
                     echo "Waiting for ${simname}" >&2

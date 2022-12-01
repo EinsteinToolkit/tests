@@ -14,7 +14,7 @@ if [ -z "$USER" ]; then
 export USER=jenkins
 fi
 
-cd $WORKSPACE
+cd $MASTER
 
 host=$(hostname -f)
 
@@ -23,21 +23,21 @@ host=$(hostname -f)
 ########################################################################################
 
 # Remove any simfactory configuration from previous runs
-rm -f $MASTER/simfactory/etc/defs.local.ini
-rm -f $MASTER/simfactory/mdb/machines/${host}.ini
+rm -f simfactory/etc/defs.local.ini
+rm -f simfactory/mdb/machines/${host}.ini
 
-$MASTER/simfactory/bin/sim setup-silent
+simfactory/bin/sim setup-silent
 
-machine=$($MASTER/simfactory/bin/sim whoami|grep 'Current machine'|awk '{print $3}')
+machine=$(simfactory/bin/sim whoami|grep 'Current machine'|awk '{print $3}')
 echo "machine = $machine"
 
-cat <<EOF >$MASTER/simfactory/etc/filter.local.rules
+cat <<EOF >simfactory/etc/filter.local.rules
 - simulations/
 EOF
 
-$MASTER/simfactory/bin/sim whoami
+simfactory/bin/sim whoami
 
-machine=$($MASTER/simfactory/bin/sim whoami|grep 'Current machine'|awk '{print $3}')
+machine=$(simfactory/bin/sim whoami|grep 'Current machine'|awk '{print $3}')
 
 ########################################################################################
 # Build
@@ -57,4 +57,4 @@ runscript=$(mdbentry $machine runscript)
 optionlist=$(mdbentry $machine optionlist)
 submitscript=$(mdbentry $machine submitscript)
 
-time $MASTER/simfactory/bin/sim build --mdbkey make 'make -j2' --thornlist $thornlist --runscript $runscript --optionlist $optionlist --submitscript $submitscript --reconfig
+time simfactory/bin/sim build --mdbkey make 'make -j2' --thornlist $thornlist --runscript $runscript --optionlist $optionlist --submitscript $submitscript --reconfig
