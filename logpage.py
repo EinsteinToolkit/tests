@@ -31,6 +31,7 @@ from parser import create_summary, get_tests, get_warning_thorns, get_warning_ty
     longest_tests,get_unrunnable,get_data,get_compile
 import glob
 
+# TODO: remove debug prints!
 print("Sys argv in logpage.py: ", sys.argv, "\n\n")
 master = sys.argv[1]
 gh_pages = sys.argv[2] 

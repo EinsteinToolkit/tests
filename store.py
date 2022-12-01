@@ -6,7 +6,7 @@ import sys
 import configparser
 
 print('Sysargv from store.py: ', sys.argv, "\n\n")
-# This is the arg passed to logpage.py, whereas the args in main are passed by build-and-test.sh!
+# This is the arg passed to logpage.py (when it imports store), whereas the args in main are passed by build-and-test.sh!
 # TODO: use ArgParser with names for args to avoid confusion!
 gh_pages = sys.argv[2]
 
@@ -113,9 +113,9 @@ def get_commit_id(version):
 
 if __name__ == "__main__":
     # FIXME: this is quite bad, use some better argparse
-    # Store.py is called in build-and-test.sh
-    # TODO: add arg for gh-pages in workflow?? $ ./build-and-test.sh "$GITHUB_WORKSPACE/gh-pages"
+    # TODO: remove debug print
     print("Sys argv from store.py MAIN: ", sys.argv, "\n")
+    # These args are passed by test-cactus, which is called by build-and-test.sh
     REPO = sys.argv[1]
     gh_pages = sys.argv[2]
     dir1 = sys.argv[3]
