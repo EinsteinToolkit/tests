@@ -49,6 +49,4 @@ chmod +x cactus/build-cactus
 # store.py copies this ./build.log file to {gh_pages}/records/version_{version}/build_{version}.log
 # TODO: access manifest directly?
 time cactus/build-cactus $MASTER/manifest/einsteintoolkit.th 2>&1 | tee ./build.log
-# TODO: remove
-# time cactus/test-cactus all
-time cactus/test-cactus select-tests
+time cactus/test-cactus all
