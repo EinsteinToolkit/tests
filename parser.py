@@ -133,6 +133,7 @@ def get_times(readfile):
             ind+=1
 
     return {test:ti for test,ti in sorted(times.items(),key= lambda x : x[1],reverse=True)} # This is a dictionary comprehension that uses sorted to order the items in times.items() into a dictionary
+
 def exceed_thresh(time_dict,thresh):
     '''
         This function finds tests that exceed a certain time threshhold

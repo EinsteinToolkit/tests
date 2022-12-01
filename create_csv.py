@@ -3,7 +3,7 @@ import re
 import glob
 from datetime import datetime, timezone
 
-# TODO: parse args containing paths to $WORKSPACE/MASTER and $WORKSPACE/GH-PAGES
+# TODO: parse args containing paths to $WORKSPACE/MASTER and $WORKSPACE/GH-PAGES when calling create_csv.py
 
 def stuff_to_write(file):
     with open(file, "r") as fp:
