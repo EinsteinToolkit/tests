@@ -5,9 +5,9 @@ echo "Gh-pages dir to be passed to store.py: $2";
 
 # Set env vars and make available to child processes
 export SYNC_SUBMODULES=true
-export CLEAN_CACTUS_JENKINS=true
 export BUILD_TYPE=Incremental
 export WORKSPACE=$PWD
+# These are the args passed by main.yml, giving access to the dirs where master and gh-pages are checked out
 export MASTER=$1
 export GH_PAGES=$2
 
@@ -21,7 +21,7 @@ export ENABLED_THORNS="
 "
 
 # TODO: remove this? Or access via GH_PAGES?
-rm -f build__*.log
+# rm -f build__*.log
 # Work around bugs in Jenkins
 
 if [ "$SYNC_SUBMODULES" = "true" ]; then
@@ -33,11 +33,6 @@ git submodule update --init #--force
 # Undo any local changes (do not use --force above since it always touches files)
 git submodule foreach "git diff --quiet || git reset --hard"
 
-# TODO: keep checks?
-# if [ "$CLEAN_CACTUS_JENKINS" = "true" -o ! -r $WORKSPACE/cactusjenkins ]; then
-#   rm -rf $WORKSPACE/cactusjenkins
-#   git clone https://bitbucket.org/ianhinder/cactusjenkins.git $WORKSPACE/cactusjenkins
-# fi
 if [ -r $WORKSPACE/configs/sim ]; then
   ( cd $WORKSPACE; make sim-cleandeps )
 fi
@@ -50,7 +45,5 @@ chmod +x cactus/test-cactus
 chmod +x cactus/build-cactus
 # "time" outputs three times: real, user and sys
 # "tee" reads from the standard input and writes to (new) ./build.log file
-# TODO: (pass and) use MASTER in build-cactus
 time cactus/build-cactus $MASTER/manifest/einsteintoolkit.th 2>&1 | tee ./build.log
-# TODO: (pass and) use MASTER in test-cactus
 time cactus/test-cactus all
