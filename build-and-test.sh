@@ -44,6 +44,7 @@ export LC_TIME=C
 chmod +x cactus/test-cactus
 chmod +x cactus/build-cactus
 # "time" outputs three times: real, user and sys
+# "2>" redirects stderr to an (unspecified) file, "&1" redirects stderr to stdout.
 # "tee" reads from the standard input and writes to (new) ./build.log file
 time cactus/build-cactus $MASTER/manifest/einsteintoolkit.th 2>&1 | tee ./build.log
 time cactus/test-cactus all
