@@ -5,9 +5,7 @@ import shutil,os,glob
 import sys
 import configparser
 
-print('Sysargv from store.py: ', sys.argv, "\n\n")
-# This is the arg passed to logpage.py (when it imports store), whereas the args in main are passed by build-and-test.sh!
-# TODO: use ArgParser with names for args to avoid confusion!
+# This can be the arg passed down from logpage.py, or the args passed by build-and-test.sh
 gh_pages = sys.argv[2]
 
 def copy_tests(test_dir,version,procs):
@@ -62,9 +60,7 @@ def copy_compile_log(version):
     '''
         This copies the compilation logs for future use
     '''
-    # global REPO
     dst=f"{gh_pages}/records/version_{version}/build_{version}.log"
-    # TODO: fix this to not be relative to repo anymore
     build=f"./build.log"
     shutil.copy(build,dst)
 
@@ -72,13 +68,9 @@ def store_commit_id(version):
     '''
         This stores the current git HEAD hash for future use
     '''
-    # global REPO
     dst=f"{gh_pages}/records/version_{version}/id.txt"
     # TODO: use pygit2 for this
-    # id=f"{REPO}/.git/refs/heads/master"
     id=f"{master}/.git/refs/heads/master"
-    # TODO: remove debug print
-    print("\n\n Commit id returned (and stored) from store.py: ", id)
     shutil.copy(id,dst)
 
 def get_version():
@@ -116,9 +108,7 @@ def get_commit_id(version):
 
 if __name__ == "__main__":
     # FIXME: this is quite bad, use some better argparse
-    # TODO: remove debug print
-    print("Sys argv from store.py MAIN: ", sys.argv, "\n")
-    # These args are passed by test-cactus, which is called by build-and-test.sh
+    # These args are passed by test-cactus, via build-and-test.sh
     master = sys.argv[1]
     gh_pages = sys.argv[2]
     dir1 = sys.argv[3]

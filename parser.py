@@ -6,8 +6,7 @@ from collections import defaultdict
 import re
 import sys
 
-print('Sysargv from parser.py: ', sys.argv, "\n\n")
-# Since parser.py is called by logpage.py, its args are used
+# Passed down from logpage.py
 gh_pages = sys.argv[2]
 
 def create_summary(file):

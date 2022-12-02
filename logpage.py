@@ -31,15 +31,10 @@ from parser import create_summary, get_tests, get_warning_thorns, get_warning_ty
     longest_tests,get_unrunnable,get_data,get_compile
 import glob
 
-# TODO: remove debug prints!
-print("Sys argv in logpage.py: ", sys.argv, "\n\n")
 master = sys.argv[1]
 gh_pages = sys.argv[2] 
 repo = Repository(f"{master}/.git") 
 baseurl = repo.remotes["origin"].url.replace("git@", "https://").replace(".git","")
-
-print("repo in logpage.py: ", repo, "\n")
-print("baseurl in logpage.py", baseurl, "\n")
 
 records=os.listdir(f"{gh_pages}/records")
 curr_ver=get_version()
@@ -53,8 +48,6 @@ def gen_commits():
     '''
 
     # TODO: turn into convenience function
-    print("\n\n Curr_ver = ", curr_ver)
-    print("get_commit_id returns: ", get_commit_id(curr_ver))
     curr_commit_id = Oid(hex=get_commit_id(curr_ver))
     last_commit_id = Oid(hex=get_commit_id(curr_ver-1))
     commits = []
@@ -229,7 +222,6 @@ def plot_test_data(readfile):
 
     # The python library bokeh has a special data structure called a column data source that functions similarly
     # to a dictionary
-    # TODO: check if the url is correct
     src=bplt.ColumnDataSource(data=dict(
         t=times,
         nt = axis,
@@ -568,14 +560,9 @@ def write_to_csv(readfile):
 
 
 if __name__ == "__main__":
-    # Pass gh_pages dir to parser.py
-    # os.system(f"python3 {dir}/store.py {gh_pages}")
-    # TODO: remove debug print
-    print("\n\nLogpage.py is running....\n\n")
     write_to_csv(curr)
     summary_to_html(curr,f"{gh_pages}/docs/index.html")
     test_comparison=test_comp(curr,last)
     if len(test_comparison["Failed Tests"])!=0 or len(test_comparison["Newly Passing Tests"])!=0 :
         dir = os.path.split(__file__)[0]
-        # TODO: check if mail works
         os.system(f"python3 {dir}/mail.py {master} {gh_pages}")

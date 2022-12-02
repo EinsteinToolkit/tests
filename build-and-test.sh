@@ -1,8 +1,4 @@
 #!/bin/bash
-# TODO: remove debug prints
-echo "Master dir to refer to for testing: $1";
-echo "Gh-pages dir to be passed to store.py: $2";
-echo "\n\nWORKSPACE=PWD from build-and-test.sh: $PWD"
 
 # Set env vars and make available to child processes
 export SYNC_SUBMODULES=true
@@ -20,10 +16,6 @@ export ENABLED_THORNS="
   CactusUtils/TATPETSc
   ExternalLibraries/PETSc
 "
-
-# TODO: remove this? Or access via GH_PAGES?
-# rm -f build__*.log
-# Work around bugs in Jenkins
 
 if [ "$SYNC_SUBMODULES" = "true" ]; then
   git submodule sync
@@ -48,6 +40,5 @@ chmod +x cactus/build-cactus
 # "2>" redirects stderr to an (unspecified) file, "&1" redirects stderr to stdout.
 # "tee" reads from the standard input and writes to (new) ./build.log file
 # store.py copies this ./build.log file to {gh_pages}/records/version_{version}/build_{version}.log
-# TODO: access manifest directly?
 time cactus/build-cactus $MASTER/manifest/einsteintoolkit.th 2>&1 | tee ./build.log
 time cactus/test-cactus all

@@ -13,10 +13,8 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-# TODO: check if this works
 master = sys.argv[1]
 gh_pages = sys.argv[2]
-# TODO: remove? logpage.master =  master
 repo = Repository(f'{master}/.git')
 
 # Create the body of the message (a plain-text and an HTML version).
