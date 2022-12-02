@@ -2,6 +2,7 @@
 # TODO: remove debug prints
 echo "Master dir to refer to for testing: $1";
 echo "Gh-pages dir to be passed to store.py: $2";
+echo "\n\nWORKSPACE=PWD from build-and-test.sh: $PWD"
 
 # Set env vars and make available to child processes
 export SYNC_SUBMODULES=true
