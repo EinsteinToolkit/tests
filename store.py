@@ -62,20 +62,23 @@ def copy_compile_log(version):
     '''
         This copies the compilation logs for future use
     '''
-    global REPO
+    # global REPO
     dst=f"{gh_pages}/records/version_{version}/build_{version}.log"
     # TODO: fix this to not be relative to repo anymore
-    build=f"{REPO}/build.log"
+    build=f"./build.log"
     shutil.copy(build,dst)
 
 def store_commit_id(version):
     '''
         This stores the current git HEAD hash for future use
     '''
-    global REPO
+    # global REPO
     dst=f"{gh_pages}/records/version_{version}/id.txt"
     # TODO: use pygit2 for this
-    id=f"{REPO}/.git/refs/heads/master"
+    # id=f"{REPO}/.git/refs/heads/master"
+    id=f"{master}/.git/refs/heads/master"
+    # TODO: remove debug print
+    print("\n\n Commit id returned (and stored) from store.py: ", id)
     shutil.copy(id,dst)
 
 def get_version():
@@ -116,7 +119,7 @@ if __name__ == "__main__":
     # TODO: remove debug print
     print("Sys argv from store.py MAIN: ", sys.argv, "\n")
     # These args are passed by test-cactus, which is called by build-and-test.sh
-    REPO = sys.argv[1]
+    master = sys.argv[1]
     gh_pages = sys.argv[2]
     dir1 = sys.argv[3]
     dir2 = sys.argv[4]
