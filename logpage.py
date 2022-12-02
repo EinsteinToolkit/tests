@@ -53,6 +53,8 @@ def gen_commits():
     '''
 
     # TODO: turn into convenience function
+    print("\n\n Curr_ver = ", curr_ver)
+    print("get_commit_id returns: ", get_commit_id(curr_ver))
     curr_commit_id = Oid(hex=get_commit_id(curr_ver))
     last_commit_id = Oid(hex=get_commit_id(curr_ver-1))
     commits = []
