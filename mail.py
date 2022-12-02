@@ -20,7 +20,7 @@ repo = Repository(f'{master}/.git')
 # Create the body of the message (a plain-text and an HTML version).
 text = "HTML only email, please see https://einsteintoolkit.github.io/carpetx-tests for output"
 
-curr_ver = get_version(gh_pages)
+curr_ver = get_version()
 summary=f"{gh_pages}/records/version_{curr_ver}/build__2_1_{curr_ver}.log"
 baseurl = repo.remotes["origin"].url.replace("git@", "https://").replace(".git","")
 
@@ -52,7 +52,8 @@ html = f'''<!doctype html>
 msg = MIMEMultipart('alternative')
 msg['Subject'] = f"Einstein Toolkit test report: {status}"
 msg['From'] = "jenkins@build-test.barrywardell.net"
-msg['To'] = "test@einsteintoolkit.org"
+# msg['To'] = "test@einsteintoolkit.org"
+msg['To'] = "hnkuo2@illinois.edu"
 
 # Record the MIME types of both parts - text/plain and text/html.
 part1 = MIMEText(text, 'plain')
