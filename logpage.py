@@ -560,7 +560,8 @@ def write_to_csv(readfile):
 
 
 if __name__ == "__main__":
-    os.system(f"python3 {dir}/mail.py {master} {gh_pages}") 
+    print("Running logpage.py...")
+    os.system(f"python3 ./mail.py {master} {gh_pages}") 
     # write_to_csv(curr)
     # summary_to_html(curr,f"{gh_pages}/docs/index.html")
     # test_comparison=test_comp(curr,last)
