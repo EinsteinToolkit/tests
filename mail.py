@@ -67,5 +67,12 @@ msg.attach(part2)
 
 # Send the message via our own SMTP server.
 s = smtplib.SMTP('mail.einsteintoolkit.org')
+s.set_debuglevel(True)
 s.send_message(msg)
+
+# TODO: remove debug
+code, message = s.rcpt("hnkuo2@illinois.edu")
+
+print("\n\n Code: ", code, " and message: ", message, "\n\n")
+
 s.quit()
