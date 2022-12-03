@@ -52,8 +52,7 @@ html = f'''<!doctype html>
 msg = MIMEMultipart('alternative')
 msg['Subject'] = f"Einstein Toolkit test report: {status}"
 msg['From'] = "jenkins@build-test.barrywardell.net"
-# msg['To'] = "test@einsteintoolkit.org"
-msg['To'] = "hnkuo2@illinois.edu"
+msg['To'] = "test@einsteintoolkit.org"
 
 # Record the MIME types of both parts - text/plain and text/html.
 part1 = MIMEText(text, 'plain')
@@ -70,9 +69,7 @@ s = smtplib.SMTP('mail.einsteintoolkit.org')
 s.set_debuglevel(True)
 s.send_message(msg)
 
-# TODO: remove debug
-code, message = s.rcpt("hnkuo2@illinois.edu")
-
+code, message = s.rcpt("test@einsteintoolkit.org")
 print("\n\n Code: ", code, " and message: ", message, "\n\n")
 
 s.quit()
