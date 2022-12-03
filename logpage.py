@@ -560,11 +560,9 @@ def write_to_csv(readfile):
 
 
 if __name__ == "__main__":
-    print("Running logpage.py...")
-    os.system(f"python3 ./mail.py {master} {gh_pages}") 
-    # write_to_csv(curr)
-    # summary_to_html(curr,f"{gh_pages}/docs/index.html")
-    # test_comparison=test_comp(curr,last)
-    # if len(test_comparison["Failed Tests"])!=0 or len(test_comparison["Newly Passing Tests"])!=0 :
-    #     dir = os.path.split(__file__)[0]
-    #     os.system(f"python3 {dir}/mail.py {master} {gh_pages}") 
+    write_to_csv(curr)
+    summary_to_html(curr,f"{gh_pages}/docs/index.html")
+    test_comparison=test_comp(curr,last)
+    if len(test_comparison["Failed Tests"])!=0 or len(test_comparison["Newly Passing Tests"])!=0 :
+        dir = os.path.split(__file__)[0]
+        os.system(f"python3 ./mail.py {master} {gh_pages}") 
