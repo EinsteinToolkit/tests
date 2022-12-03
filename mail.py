@@ -69,7 +69,7 @@ s = smtplib.SMTP('mail.einsteintoolkit.org')
 s.set_debuglevel(True)
 s.send_message(msg)
 
-code, message = s.rcpt("test@einsteintoolkit.org")
-print("\n\n Code: ", code, " and message: ", message, "\n\n")
+# code, message = s.rcpt("test@einsteintoolkit.org")
+# print("\n\n Code: ", code, " and message: ", message, "\n\n")
 
 s.quit()
