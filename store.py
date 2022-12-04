@@ -54,7 +54,7 @@ def copy_build(version, test_results):
     dst=f"{gh_pages}/docs/build_{version}.html"
     with open(os.path.join(f"{gh_pages}/docs", dst), 'w') as fp:
         fp.write(test_results)
-    return f"{gh_pages}/docs/build_{version}.html"
+    return f"build_{version}.html"
 
 def copy_compile_log(version):
     '''
