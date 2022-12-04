@@ -4,6 +4,10 @@ This file parses the log files such as build__2_1.log
 
 from collections import defaultdict
 import re
+import sys
+
+# Passed down from logpage.py
+gh_pages = sys.argv[2]
 
 def create_summary(file):
     '''
@@ -128,6 +132,7 @@ def get_times(readfile):
             ind+=1
 
     return {test:ti for test,ti in sorted(times.items(),key= lambda x : x[1],reverse=True)} # This is a dictionary comprehension that uses sorted to order the items in times.items() into a dictionary
+
 def exceed_thresh(time_dict,thresh):
     '''
         This function finds tests that exceed a certain time threshhold
@@ -194,7 +199,7 @@ def get_data(name):
         Retrieves singular field of data from the data csv as a list
     '''
     data={}
-    with open('test_nums.csv','r') as csvfile:
+    with open(f"{gh_pages}/test_nums.csv",'r') as csvfile:
         fields=csvfile.readline().strip().split(",")
         name_i=fields.index(name)
         line=csvfile.readline()
@@ -262,4 +267,3 @@ def get_warning_thorns(name):
                     trunc=trunc[:trunc.find("/")]
                     warning_types[trunc]+=1
     return warning_types
-

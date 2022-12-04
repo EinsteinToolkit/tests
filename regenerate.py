@@ -31,14 +31,15 @@ from parser import create_summary, get_tests, get_warning_thorns, get_warning_ty
     longest_tests,get_unrunnable,get_data,get_compile
 import glob
 
-REPO = sys.argv[1]
-repo = Repository(f"{REPO}/.git") # Done to prevent hardcoding of repo link 
+master = sys.argv[1]
+gh_pages = sys.argv[2] 
+repo = Repository(f"{master}/.git") 
+baseurl = repo.remotes["origin"].url.replace("git@", "https://").replace(".git","")
 
-# repo wit gh-pages data
-gh_repo = Repository(f'.git')
-baseurl = gh_repo.remotes["origin"].url.replace("git@", "https://").replace(".git","")
-
-records=os.listdir("./records")
+records=os.listdir(f"{gh_pages}/records")
+# curr_ver=get_version()
+# curr=f"{gh_pages}/records/version_{curr_ver}/build__2_1_{curr_ver}.log"
+# last=f"{gh_pages}/records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
 curr_ver=-1
 curr = None
 last = None
@@ -52,8 +53,8 @@ def set_curr_version(count):
     global curr
     global last
     curr_ver = count
-    curr=f"./records/version_{curr_ver}/build__2_1_{curr_ver}.log"
-    last=f"./records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
+    curr=f"{gh_pages}/records/version_{curr_ver}/build__2_1_{curr_ver}.log"
+    last=f"{gh_pages}/records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
     return curr_ver
 
 def gen_commits():
@@ -169,8 +170,8 @@ def get_first_failure(test_name):
     first_failure = -1
 
     for i in range(curr_ver, 1, -1):
-        log_to_check=f"./records/version_{i}/build__2_1_{i}.log"
-        prev_log_to_check=f"./records/version_{i-1}/build__2_1_{i-1}.log"
+        log_to_check=f"{gh_pages}/records/version_{i}/build__2_1_{i}.log"
+        prev_log_to_check=f"{gh_pages}/records/version_{i-1}/build__2_1_{i-1}.log"
         # Dictionary containing keys: "Failed Tests","Newly Passing Tests","Newly Failing Tests","Newly Added Tests", "Removed Tests"
         curr_res = test_comp(log_to_check, prev_log_to_check)
         if (test_name in curr_res["Newly Failing Tests"]):
@@ -210,7 +211,7 @@ def plot_test_data(readfile):
     build_no=list(get_data("Build Number").values())
 
     # Get the of dictionary of thorns with their warning counts
-    warning_thorns=get_warning_thorns(f"records/version_{curr_ver}/build_{curr_ver}.log")
+    warning_thorns=get_warning_thorns(f"{gh_pages}/records/version_{curr_ver}/build_{curr_ver}.log")
 
     # Turn that dictionary into lists so you can pick the thorns with most warnings
     counts=list(warning_thorns.values())
@@ -237,6 +238,7 @@ def plot_test_data(readfile):
 
     # The python library bokeh has a special data structure called a column data source that functions similarly
     # to a dictionary
+    # TODO: check if the url is correct
     src=bplt.ColumnDataSource(data=dict(
         t=times,
         nt = axis,
@@ -247,7 +249,7 @@ def plot_test_data(readfile):
         timet=time_taken,
         cmt=compile_warn,
         xax=[0]*len(times),
-        url=[f"./index_{x+1}.html" for x in range(0,curr_ver)],
+        url=[f"./build_{x+1}.html" for x in range(0,curr_ver)],
     ))
 
     # p is the first figure an area chart with the number of tests passed out of the ones ran
@@ -325,7 +327,7 @@ def plot_test_data(readfile):
 
     # Bokeh createst the html script and javscript for the plots using this code
     html = file_html(Tabs(tabs=[tab1, tab2,tab3]), CDN, "Plots")
-    with open("./docs/plot.html","w") as fp:
+    with open(f"{gh_pages}/docs/plot.html","w") as fp:
         fp.write(html)
     #script, div = components(Tabs(tabs=[tab1, tab2,tab3]))
     script, div=components(p3)
@@ -361,10 +363,10 @@ def create_sidebar():
 
     # For every version, create link and symbol in sidebar
     for i in range(get_version(), 0, -1):
-        # The build file will be displayed in iframe to the right of the sidebar
+        # The build file will be displayed in new tab
         template +='<a href="build_' + str(i) + '.html" target="results_iframe"> Build #' + str(i) + '</a>'
         # Check whether the build passed or not by calling parser
-        log_to_check=f"./records/version_{i}/build__2_1_{i}.log"
+        log_to_check=f"{gh_pages}/records/version_{i}/build__2_1_{i}.log"
         # Get failed tests only from returned tuple
         curr_res = get_tests(log_to_check)[1]
         if len(curr_res) != 0:
@@ -543,7 +545,7 @@ def summary_to_html(readfile,writefile):
         </body>
     </html>
         '''
-        shutil.copy("version.js", "docs")
+        shutil.copy("version.js", f"{gh_pages}/docs")
         fp.write(template)
 
 def write_to_csv(readfile):
@@ -560,13 +562,13 @@ def write_to_csv(readfile):
     data["Build Number"] = curr_ver
     # normal date format. This helps in plotting as all x axis elements are now unique
     #local_time+=f"({curr_ver})"
-    data["Compile Time Warnings"]=get_compile(f"records/version_{curr_ver}/build_{curr_ver}.log")
+    data["Compile Time Warnings"]=get_compile(f"{gh_pages}/records/version_{curr_ver}/build_{curr_ver}.log")
     fields = ["Date", "Total available tests", "Unrunnable tests",
               "Runnable tests", "Total number of thorns",
               "Number of tested thorns", "Number of tests passed",
               "Number passed only to set tolerance", "Number failed",
               "Time Taken", "Compile Time Warnings", "Build Number"]
-    with open('test_nums.csv','a') as csvfile:
+    with open(f"{gh_pages}/test_nums.csv",'a') as csvfile:
         if csvfile.tell() == 0:
             csvfile.write(",".join(fields) + "\n")
         csvfile.write(",".join([str(data[key]) for key in fields]) + "\n")
@@ -581,10 +583,7 @@ if __name__ == "__main__":
         # Sets the curr_version, curr and last record files
         set_curr_version(count)
         write_to_csv(curr)
-        summary_to_html(curr,"docs/index.html")
-        # os.rename(f"docs/index_{count}.html", f"docs/build_{count}.html")
-        # copy_index(get_version()-i)
+        summary_to_html(curr,f"{gh_pages}/docs/index.html")
         test_comparison=test_comp(curr,last)
         if len(test_comparison["Failed Tests"])!=0 or len(test_comparison["Newly Passing Tests"])!=0 :
             dir = os.path.split(__file__)[0]
-            # os.system(f"python3 {dir}/mail.py {REPO}")

@@ -1,0 +1,101 @@
+
+Creating a Build Slave
+======================
+
+This document describes how to create a "build slave" virtual machine
+suitable for running build+test for Cactus.
+
+• Check that you can use KVM virtualisation:
+
+  $ kvm-ok
+  INFO: /dev/kvm exists
+  KVM acceleration can be used
+
+• Install virtualisation packages on the host machine:
+
+  sudo apt-get install kvm libvirt-bin virtinst virt-viewer
+
+• Give yourself permissions to manage virtual machines:
+
+  sudo adduser $USER libvirtd
+  (log out and back in again to get these privileges in your session)
+
+• Check out the cactusjenkins repository which contains the script to
+  create the build slave:
+
+  git clone https://bitbucket.org/ianhinder/cactusjenkins.git
+
+• Take a look at the Configuration section of the script
+  cactusjenkins/create-build-slave-vm and see if the VM_ variables are
+  suitable.  The defaults should all be fine to get started with, but
+  check that the VM_DOMAIN and VM_TIMEZONE are correct.  The default
+  username will be "jenkins" (don't change this) and the password will
+  be "password".  You can change the password if you like.  You can
+  set up these configuration variables in ~/.cactusjenkinsvm or in
+  your environment.
+
+• Create the build slave VM:
+
+  cactusjenkins/create-build-slave-vm build1
+
+  This will take a few seconds to return control to you, after which
+  the VM will be running and installing Ubuntu from the network.  The
+  can take some time.
+
+• Monitor the installation using virt-viewer
+
+  virt-viewer -c qemu:///system build1
+
+ This requires an X server.  The installation should be fully
+ automatic, but if it takes longer than you expect, it is useful to
+ monitor it to debug.
+
+• You can see the active VMs using
+
+  virsh list
+
+The build1 VM should show as active until the installation is
+finished, when it will shut down.  
+
+• Start the build1 VM:
+
+  virsh start build1
+
+• After a few seconds, you should be able to log in to it using ssh.
+  One issue is finding its IP address.  It will be using a private IP
+  address and NAT with the host as the gateway.  If you have avahi
+  working correctly on the host, then you will be able to access the
+  guest using
+
+  ssh jenkins@build1.local
+
+  (password by default is "password", unless you changed it by setting
+  VM_PASSWORD_HASH as described in the script comment)
+
+  If avahi is not working, you can check /var/log/syslog for dhcp
+  messages telling you the IP address, or log in using virt-viewer.
+  Best to get avahi working.  sudo apt-get install avahi-daemon on the
+  host should be sufficient.  
+
+• Check that you have network access in the VM. This will be needed by
+  jenkins for checkout of the repositories etc.
+
+• The following commands do the obvious things:
+
+  virsh shutdown build1
+  virsh reboot build1
+
+• To start from scratch and try again:
+
+  virsh destroy build1
+  virsh undefine build1
+  sudo rm -rf ~/vms/build1
+
+Useful resources:
+
+* https://help.ubuntu.com/12.04/serverguide/libvirt.html
+
+Notes:
+
+• virsh refers to kvm virtual machines as "domains".  This is a bit
+  confusing if you don't expect it.

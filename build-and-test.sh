@@ -1,8 +1,14 @@
 #!/bin/bash
+
+# Set env vars and make available to child processes
 export SYNC_SUBMODULES=true
-export CLEAN_CACTUS_JENKINS=true
 export BUILD_TYPE=Incremental
 export WORKSPACE=$PWD
+# These are the args passed by main.yml, giving access to the dirs where master and gh-pages are checked out
+export MASTER=$1
+export GH_PAGES=$2
+
+# Stop execution instantly as a query exits while having a non-zero status and xtrace
 set -e -x
 
 export ENABLED_THORNS="
@@ -11,34 +17,28 @@ export ENABLED_THORNS="
   ExternalLibraries/PETSc
 "
 
-rm -f build__*.log
-# Work around bugs in Jenkins
-
 if [ "$SYNC_SUBMODULES" = "true" ]; then
   git submodule sync
 fi
 
+# Creates the local configuration file for the submodules, if this configuration does not exist
 git submodule update --init #--force
-# undo any local changes (do not use --force above since it always touches
-# files)
+# Undo any local changes (do not use --force above since it always touches files)
 git submodule foreach "git diff --quiet || git reset --hard"
 
-if [ "$CLEAN_CACTUS_JENKINS" = "true" -o ! -r $WORKSPACE/cactusjenkins ]; then
-  rm -rf $WORKSPACE/cactusjenkins
-  git clone https://bitbucket.org/ianhinder/cactusjenkins.git $WORKSPACE/cactusjenkins
-fi
 if [ -r $WORKSPACE/configs/sim ]; then
   ( cd $WORKSPACE; make sim-cleandeps )
 fi
 
-# need to force formattting of time so that we can parse it later
+# Need to force formattting of time so that we can parse it later
 export LC_TIME=C
 
-time $WORKSPACE/cactusjenkins/build-cactus manifest/einsteintoolkit.th 2>&1 | tee ./build.log
-sed -i '2a export WORKSPACE=$PWD ' cactusjenkins/test-cactus
-sed -i '2a export JOB_NAME="TestJob01" ' cactusjenkins/test-cactus
-sed -i '2a set -x ' cactusjenkins/test-cactus
-sed -i '/rm -rf \$simdir\/\$simname/d' cactusjenkins/test-cactus
-sed -i '43a rm -rf \$simdir\/\$simname' cactusjenkins/test-cactus
-sed -i -e '$a python3 store.py . $HOME/simulations/TestJob01_temp_1/output-0000/TEST/sim $HOME/simulations/TestJob01_temp_2/output-0000/TEST/sim || true' cactusjenkins/test-cactus
-time $WORKSPACE/cactusjenkins/test-cactus all
+# Make files executable
+chmod +x cactus/test-cactus
+chmod +x cactus/build-cactus
+# "time" outputs three times: real, user and sys
+# "2>" redirects stderr to an (unspecified) file, "&1" redirects stderr to stdout.
+# "tee" reads from the standard input and writes to (new) ./build.log file
+# store.py copies this ./build.log file to {gh_pages}/records/version_{version}/build_{version}.log
+time cactus/build-cactus $MASTER/manifest/einsteintoolkit.th 2>&1 | tee ./build.log
+time cactus/test-cactus all

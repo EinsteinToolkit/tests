@@ -1,0 +1,155 @@
+#!/bin/bash
+
+set -x 
+set -e
+set -u
+export JOB_NAME="TestJob01" 
+
+# Env vars exported in/passed by build-and-test.sh
+test_arg=$1
+. cactus/sim-functions.sh
+
+# Run jobs in the foreground.  If this will in future also work on
+# clusters, then we should adjust this
+SIMFACTORY_FOREGROUND=1
+
+machine=$(current_machine)
+simdir=$(mdbentry $machine basedir)
+
+# if [ "${machine}" = "build" ]; then
+#     simdir=$WORKSPACE/../simulations
+# else
+#     simdir=$(simfactory/bin/sim print-mdb-entry $machine |grep '^[ \t]*basedir[ \t]*=[ \t]\(.*\)[\t ]*$'|awk '{print $3}'|sed "s/@USER@/$USER/")
+# fi
+
+cd $MASTER
+
+if [ $test_arg = all -o $# = 0 ]; then
+    tests=""
+else
+    tests="--select-tests $test_arg"
+fi
+
+if [ -z ${GIT_COMMIT+x} ]; then
+    GIT_COMMIT=temp
+fi
+
+echo "<testsuite>" >testresults.xml
+for nprocs in 1 2; do
+    simname=${JOB_NAME}_${GIT_COMMIT}_${nprocs}
+rm -rf $simdir/$simname
+
+    cores=$(mdbentry $machine ppn)
+
+    common_args="--testsuite $tests --procs $cores --num-threads $((cores/nprocs)) $simname"
+    # Ideally, this condition would come from whether there was a
+    # submit command defined, but simfactory thinks that all machines
+    # have submit commands
+    if [ "${SIMFACTORY_FOREGROUND}" = "1" ]; then
+        simfactory/bin/sim create-run $common_args
+    else
+        simfactory/bin/sim create-submit --walltime 1:00:00 $common_args
+    fi
+done
+
+for nprocs in 1 2; do
+    simname=${JOB_NAME}_${GIT_COMMIT}_${nprocs}
+
+    if [ "${SIMFACTORY_FOREGROUND}" -ne "1" ]; then
+        echo "Waiting for ${simname}" >&2
+        while true; do
+            output=$(simfactory/bin/sim list-simulations ${simname})
+            case ${output?} in
+                *QUEUED*|*RUNNING*)
+                    echo "Waiting for ${simname}" >&2
+                    sleep 10
+                    ;;
+                *FINISHED*|*INACTIVE*)
+                    echo "${simname} has finished" >&2
+                    break
+                    ;;
+                *)
+                    log "Unrecognised output from sim list-simulations: ${output?}"
+                    exit 1
+                    break
+            esac
+        done
+    fi
+
+    testdir=$simdir/$simname/output-0000/TEST
+    
+    if [ ! -r $testdir/sim/summary.log ]; then
+        echo "No such file $testdir/sim/summary.log; aborting">&2
+        cat $simdir/$simname/output-0000/${simname}.out
+        cat $simdir/$simname/output-0000/${simname}.err
+        exit 1
+    fi
+
+    cores=$(mdbentry $machine ppn)
+    threads=$((cores/nprocs))
+    cp $testdir/sim/summary.log build__${nprocs}_${threads}.log
+
+    awk -v nprocs=$nprocs -v testdir=$testdir '/Run details for configuration/,/============/ \
+{if (NF==2) {thorn=substr($1,1,length($1)-1); test=$2;}\
+ else if (thorn != "" && NF > 1)\
+ {status = substr($1,1,length($1)-1);
+  print thorn, test, status}}' <$testdir/sim/summary.log |
+    while read thorn test status; do
+	time=$(awk '$1 == "RUNTIME" {print $3}' ${testdir}/sim/${thorn}/${test}.log)
+	echo "<testcase classname=\"${thorn}\" name=\"${test}/${nprocs}procs\" time=\"${time}\">";
+
+	# We output the log file if the test failed
+	if [ "z${status}" = "zFailure" ]; then
+	    echo "<system-out><![CDATA[" 
+	    outfile=${testdir}/sim/${thorn}/${test}.log
+	    cat $outfile | tr -d '\001-\010\013-\037\177-\377'
+	    echo "]]>"
+	    echo "</system-out>"
+	fi
+
+	if [ "z${status}" = "zFailure" ]; then
+
+	    diffsfile=${testdir}/sim/${thorn}/${test}.diffs
+
+	    # If the diffs file exists, we call this a "failure"
+	    if [ -r "$diffsfile" ]; then
+		echo "<failure type=\"Test failed\">"
+		echo "<![CDATA["
+		cat $diffsfile
+		echo "]]>"
+		echo "</failure>"
+	    else
+            # The diffs file doesn't exist, so something must have
+            # gone wrong. We call this an "error".
+
+                errormsg=$(grep -m 1 -A 3 -i "warning level 0" $outfile || true)
+
+		if [ -z "$errormsg" ]; then
+		    errormsg=$(grep -m 1 -i "Assertion .* failed" $outfile || true)
+		fi
+
+		errormsg_quoted=$(python2 -c 'import xml.sax.saxutils; import sys; print xml.sax.saxutils.quoteattr(sys.argv[1])' "$errormsg")
+		
+		echo "<error message=${errormsg_quoted}>"
+		btfile=$(ls ${testdir}/sim/${thorn}/${test}/backtrace.*.txt 2>/dev/null |head -1 || true)
+		if [ -n "$btfile" ]; then
+		    echo "<![CDATA["
+		    cat $btfile
+		    echo "]]>"
+		fi
+		echo "</error>"
+	    fi
+	elif [ "z${status}" = "zSuccess" ]; then
+	    echo >/dev/null
+	else
+	    echo "Unrecognised status: \"$status\"" >&2
+	    exit 1
+	fi
+	echo "</testcase>"
+   done  >>testresults.xml
+done
+echo "</testsuite>" >>testresults.xml
+
+# Enter $GTIHUB_WORKSPACE/scripts to run store.py
+cd $WORKSPACE
+python3 store.py $MASTER $GH_PAGES $HOME/simulations/TestJob01_temp_1/output-0000/TEST/sim $HOME/simulations/TestJob01_temp_2/output-0000/TEST/sim || true

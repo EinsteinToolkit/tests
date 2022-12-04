@@ -1,0 +1,150 @@
+#!/bin/bash
+
+set -e
+set -x
+set -u
+
+# TODO: stop the simulations on error or interrupt
+
+exec 9>build-and-test.lock
+while ! flock -n 9; do
+    echo "$0: script is currently running - skipping"
+    exit 0
+done
+
+configname=sim
+thornlist=$PWD/manifest/einsteintoolkit.th
+CACTUS_JENKINS=$PWD/repos/cactusjenkins
+source $CACTUS_JENKINS/sim-functions.sh
+resultsdir=$PWD/build-and-test
+releaseinfodir=$resultsdir/release-info
+jenkins_job_name=EinsteinToolkitDatura
+jenkins_token_file=$HOME/.datura-jenkins.tok
+
+function simname()
+{
+    local nprocs=$1
+    echo "build-and-test_${nprocs}"
+}
+# Reset known changed files
+git checkout doc/UsersGuide.pdf
+git checkout doc/ReferenceManual.pdf
+
+# Update
+old_head=$(git rev-parse HEAD)
+git pull
+git submodule update
+new_head=$(git rev-parse HEAD)
+
+if [ $new_head = $old_head -a ! -r FORCE ]; then
+    exit 0
+fi
+
+if [ $new_head != $old_head ]; then
+    git log ${old_head}..${new_head} >$resultsdir/CHANGES
+else
+    git log -n 1 ${new_head} >$resultsdir/CHANGES
+fi
+
+rm -f FORCE
+
+echo "${new_head}" >$resultsdir/REVISION_ID
+
+TZ=UTC git log --date=local -1 --format="%ct" >$resultsdir/REVISION_TIMESTAMP
+
+git log -1 >$resultsdir/REVISION_LOG
+
+git rev-list HEAD | wc -l > $resultsdir/REVISION_SEQUENCE_NO
+
+# Read simfactory variables
+machine=$(current_machine)
+ppn=$(mdbentry $machine ppn)
+cores=$ppn
+
+# TODO: move this into simfactory
+if [ $machine = datura ]; then
+    set +u ; source /etc/profile; set -u
+fi
+
+# Build
+mkdir -p $resultsdir
+sim build $configname --thornlist $thornlist >$resultsdir/build.log 2>&1
+
+# Test
+for nprocs in 1 2; do
+    sim=$(simname ${nprocs})
+    threads=$((cores/nprocs))
+    # TODO: check the simulation is not currently running (should be in simfactory)
+    sim purge $sim || true
+    sim create-submit $sim --walltime 1:00:00 --testsuite --procs $cores --num-threads $threads
+done
+
+# # Wait
+for nprocs in 1 2; do
+    sim=$(simname ${nprocs})
+    echo "Waiting for ${sim}" >&2
+    while true; do
+        output=$(sim list-simulations ${sim})
+        case ${output?} in
+            *QUEUED*|*RUNNING*)
+                echo "Waiting for ${sim}" >&2
+                sleep 10
+                ;;
+            *FINISHED*|*INACTIVE*)
+                echo "${sim} has finished" >&2
+                break
+                ;;
+            *)
+                echo "Unrecognised output from sim list-simulations: ${output?}" >&2
+                exit 1
+                break
+        esac
+    done
+done
+
+# Report
+for nprocs in 1 2; do
+    sim=$(simname ${nprocs})
+    simdir=$(mdbentry $machine basedir)
+    testdir=$simdir/$sim/output-0000/TEST
+    summary=$testdir/sim/summary.log
+    if [ ! -r $summary ]; then
+        echo "No such file $summary; aborting" >&2
+        exit 1
+    fi
+    threads=$((cores/nprocs))
+    resultlog="${releaseinfodir}/${machine}__${nprocs}_${threads}.log"
+    mkdir -p ${releaseinfodir}
+    cp $summary $resultlog
+done
+
+# Archive
+for nprocs in 1 2; do
+    sim=$(simname ${nprocs})
+    simdir=$(mdbentry $machine basedir)
+    testdir=$simdir/$sim/output-0000/TEST
+    summary=$testdir/sim/summary.log
+    if [ ! -r $summary ]; then
+        echo "No such file $summary; aborting" >&2
+        exit 1
+    fi
+
+    rsync -av --include "/*" --include "/*/output-0000" --include "/*/output-0000/TEST" --include "/*/output-0000/TEST/*" --include "/*/output-0000/TEST/*/*" --include "/*/output-0000/TEST/*/*/*.log" --include "/*/output-0000/TEST/*/*/*.diffs" --include "/*/SIMFACTORY" --include "/*/SIMFACTORY/cfg" --include "/*/SIMFACTORY/cfg/OptionList" --exclude "*" --delete --delete-excluded $simdir/$sim $resultsdir
+done
+
+(
+    set -e
+    cd $resultsdir
+    if [ ! -r .git ]; then
+        echo "No .git directory in $PWD. Aborting." >&2
+        exit 1
+    fi
+
+    git add .
+    git commit -a -m "Update build-and-test results for $machine"
+    git push origin master:${machine}
+    if [ -r ${jenkins_token_file} ]; then
+        token=$(cat ${jenkins_token_file})
+        curl -X POST https://build.barrywardell.net/job/${jenkins_job_name}/build?token=$token
+    fi
+)

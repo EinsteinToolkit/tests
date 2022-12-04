@@ -1,0 +1,30 @@
+#!/bin/sh
+
+echo "Preparing:"
+set -x                          # Output commands
+set -e                          # Abort on errors
+
+echo "Checking:"
+pwd
+hostname
+date
+
+echo "Environment:"
+export OMP_NUM_THREADS=@NUM_THREADS@
+#env | sort > SIMFACTORY/ENVIRONMENT
+
+echo "Starting:"
+export CACTUS_STARTTIME=$(date +%s)
+STARTTIME=$(date +%s.%N)
+
+if [ @RUNDEBUG@ -eq 0 ]; then
+    mpirun -np @NUM_PROCS@ @EXECUTABLE@ -L 3 @PARFILE@
+else
+    gdb --args @EXECUTABLE@ -L 3 @PARFILE@
+fi
+
+ENDTIME=$(date +%s.%N)
+echo RUNTIME = $(perl -e "print $ENDTIME - $STARTTIME")
+
+echo "Stopping:"
+date

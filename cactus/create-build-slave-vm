@@ -1,0 +1,114 @@
+#!/bin/bash
+
+set -e
+set -u
+
+#############################
+# Arguments
+#############################
+
+if [ $# -ne 1 ]; then
+    echo "Usage: $0 <name>"
+    exit 1
+fi
+
+vmname=$1
+
+#############################
+# Configuration
+#############################
+
+: ${VM_LANGUAGE:=$LANGUAGE}
+: ${VM_LOCALE:=en_US}
+: ${VM_UBUNTU_VERSION:=precise}
+: ${VM_UBUNTU_HOSTNAME:=archive.ubuntu.com}
+: ${VM_UBUNTU_DIRECTORY:=/ubuntu}
+: ${VM_DOMAIN:=$(dnsdomainname)}
+: ${VM_PASSWORD_HASH:='$1$nd.xreKj$oQjMMP0b6/Wdu4gptOI71.'} # This is printf "password" | mkpasswd -s -m md5
+: ${VM_TIMEZONE:=$(cat /etc/timezone)}
+: ${VM_HOME:=$HOME/vms}
+
+configfile=~/.cactusjenkinsvm
+if [ -r $configfile ]; then
+    source $configfile
+fi
+
+if [ -z "$VM_TIMEZONE" ]; then
+    echo "Timezone cannot be determined automatically; please set VM_TIMEZONE"
+fi
+
+if [ -z "$VM_DOMAIN" ]; then
+    echo "DNS domain cannot be determined automatically; please set VM_DOMAIN"
+fi
+
+vars=(VM_LANGUAGE VM_LOCALE VM_UBUNTU_VERSION VM_UBUNTU_HOSTNAME VM_UBUNTU_DIRECTORY VM_DOMAIN VM_PASSWORD_HASH VM_TIMEZONE VM_HOME)
+
+for v in ${vars[*]}; do
+    eval "echo $v=\$$v"
+done
+
+#############################
+# Location
+#############################
+
+mkdir -p $VM_HOME
+vmdir=$VM_HOME/$vmname
+if [ -r $vmdir ]; then
+    echo "$vmdir already exists; please delete it before running $0"
+    exit 1
+fi
+mkdir $vmdir
+
+#############################
+# Preseed
+#############################
+
+vmpreseed=$vmdir/preseed.cfg
+cat >$vmpreseed <<EOF
+base-installer	base-installer/kernel/image	select	linux-virtual
+d-i clock-setup/ntp boolean true
+d-i clock-setup/utc boolean true
+d-i console-setup/ask_detect boolean false
+d-i dbconf/language	string $VM_LANGUAGE
+d-i debian-installer/locale string $VM_LOCALE
+d-i finish-install/reboot_in_progress note
+d-i grub-installer/only_debian boolean true
+d-i grub-installer/with_other_os boolean true
+d-i keyboard-configuration/layoutcode string us
+d-i mirror/country string manual
+d-i mirror/http/hostname string $VM_UBUNTU_HOSTNAME
+d-i mirror/http/directory string $VM_UBUNTU_DIRECTORY
+d-i mirror/http/proxy string
+d-i netcfg/choose_interface select auto
+d-i netcfg/get_domain string $VM_DOMAIN
+d-i netcfg/get_hostname string $vmname
+d-i netcfg/wireless_wep string
+d-i partman-auto-lvm/guided_size string max
+d-i partman-auto/choose_recipe select atomic
+d-i partman-auto/disk string /dev/vda
+d-i partman-auto/method string regular
+d-i partman-lvm/confirm boolean true
+d-i partman-lvm/devide_remove_lvm boolean true
+d-i partman-md/device_remove_md boolean true
+d-i partman/choose_partition select finish
+d-i partman/confirm boolean true
+d-i partman/confirm_nooverwrite boolean true
+d-i partman/confirm_write_new_label boolean true
+d-i partman/default_filesystem string ext4
+d-i passwd/user-fullname string Jenkins
+d-i passwd/user-password-crypted password $VM_PASSWORD_HASH
+d-i passwd/username string jenkins
+d-i pkgsel/include  string acpid openssh-server default-jre-headless avahi-daemon git nano subversion build-essential subversion gfortran mpich2 libhdf5-serial-dev libfftw3-dev libgsl0-dev libssl-dev liblapack-dev hdf5-tools ccache pkg-config texlive-latex-extra tex4ht
+d-i pkgsel/language-packs multiselect en
+d-i time/zone string $VM_TIMEZONE
+d-i user-setup/allow-password-weak boolean true
+d-i user-setup/encrypt-home boolean false
+tasksel tasksel/skip-tasks      string standard
+tzsetup-udeb time/zone string $VM_TIMEZONE
+EOF
+
+#############################
+# VM creation
+#############################
+
+virt-install -d -n $vmname -r 2048 --vcpus=4 --disk path=$vmdir/root.qcow2,format=qcow2,bus=virtio,size=50 --location=http://$VM_UBUNTU_HOSTNAME/$VM_UBUNTU_DIRECTORY/dists/$VM_UBUNTU_VERSION/main/installer-amd64/ --accelerate --network network=default,model=virtio --connect=qemu:///system --vnc -v --extra-args="auto=true priority=critical initrd=/install/initrd.gz" --initrd-inject=$vmpreseed --noautoconsole
