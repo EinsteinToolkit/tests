@@ -394,17 +394,9 @@ def create_test_results(readfile):
                     .bk-root .bk {{
                         margin: 0 auto !important;
                     }}
-                    </style>
-                    <style>
-                    .container{{
-                        padding-left: 150px;
-                        font-size: 18px;
-                    }}
-                    /* On screens that are less than 700px wide, make the sidebar into a topbar */
-                    @media screen and (max-width: 500px) {{
-                    .container {{
-                        padding-left:0px;
-                    }}
+                    html {{
+                        padding-left: 150px; 
+                        padding-right: 150px;
                     }}
                     </style>
                     <script src="https://cdn.bokeh.org/bokeh/release/bokeh-2.0.1.min.js"
@@ -439,9 +431,9 @@ def create_test_results(readfile):
                         <!-- height determined by height of plots inside (600ox) -->
                         <iframe src="plot.html" style="height: 700px; width: 100%"></iframe>
                     </table>
-                    <table style="margin: 0 auto;">
+                    <div style="margin: 0 auto;">
                         {div}
-                    </table>
+                    </div>
                     <br>
                     <br>
                 </body>
@@ -486,9 +478,7 @@ def summary_to_html(readfile,writefile):
                     }}  
                     body {{
                         border-width: 0px;
-                        margin-left: 10px; 
-                        margin-right:10px;
-                    }}        
+                    }}  
                     .sidebar {{
                         height: 100%; 
                         width: 175px;
@@ -510,6 +500,12 @@ def summary_to_html(readfile,writefile):
                     .sidebar a:hover {{
                         color: white;
                     }}
+                    .iframe {{
+                        border: none;
+                        height: 100%; 
+                        width: 100%;
+                        padding-left: 200px; 
+                    }}
                     /* On screens that are less than 700px wide, make the sidebar into a topbar */
                     @media screen and (max-width: 500px) {{
                     .sidebar {{
@@ -522,7 +518,7 @@ def summary_to_html(readfile,writefile):
             <div class="sidebar">
                 {sidebar_template}
             </div>
-            <iframe src={curr_build_file} name="results_iframe" style="padding-left: 200px; height: 100%; width: 100%";></iframe>
+            <iframe class="iframe" src={curr_build_file} name="results_iframe"></iframe>
             <script src='version.js'>
             </script>
         </body>
