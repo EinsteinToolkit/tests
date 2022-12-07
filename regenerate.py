@@ -469,7 +469,7 @@ def summary_to_html(readfile,writefile):
     '''
     sidebar_template = create_sidebar()
     with open(writefile,"w") as fp:
-        curr_build_file = create_test_results(readfile).split('/')[2]
+        curr_build_file = create_test_results(readfile)
 
         # The formatted string holds the html template and loads in the values for content and status  
         # This templated gets injected to index.html, holding both the sidebar and test results  
