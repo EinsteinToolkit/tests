@@ -23,12 +23,12 @@ eval set --$opts
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --master)
-      export MASTER==$2
+      export MASTER=$2
       shift 2
       ;;
 
     --ghpages)
-      export GH_PAGES==$2
+      export GH_PAGES=$2
       shift 2
       ;;
 
