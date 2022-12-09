@@ -23,12 +23,12 @@ eval set --$opts
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --master)
-      masterArg=$2
+      export MASTER==$2
       shift 2
       ;;
 
     --ghpages)
-      ghpagesArg=$2
+      export GH_PAGES==$2
       shift 2
       ;;
 
@@ -37,9 +37,6 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
-
-export MASTER=masterArg
-export GH_PAGES=ghpagesArg
 
 # Stop execution instantly as a query exits while having a non-zero status and xtrace
 set -e -x
