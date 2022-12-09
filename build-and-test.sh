@@ -4,9 +4,42 @@
 export SYNC_SUBMODULES=true
 export BUILD_TYPE=Incremental
 export WORKSPACE=$PWD
+
 # These are the args passed by main.yml, giving access to the dirs where master and gh-pages are checked out
-export MASTER=$1
-export GH_PAGES=$2
+ARGUMENT_LIST=(
+  "master"
+  "gh-pages"
+)
+# Read arguments using getopt (allows for long option, whereas getopts does not)
+opts=$(getopt \
+  --longoptions "$(printf "%s:," "${ARGUMENT_LIST[@]}")" \
+  --name "$(basename "$0")" \
+  --options "" \
+  -- "$@"
+)
+
+eval set --$opts
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --master)
+      masterArg=$2
+      shift 2
+      ;;
+
+    --gh-pages)
+      ghpagesArg=$2
+      shift 2
+      ;;
+
+    *)
+      break
+      ;;
+  esac
+done
+
+export MASTER=masterArg
+export GH_PAGES=ghpagesArg
 
 # Stop execution instantly as a query exits while having a non-zero status and xtrace
 set -e -x
