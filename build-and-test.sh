@@ -8,7 +8,7 @@ export WORKSPACE=$PWD
 # These are the args passed by main.yml, giving access to the dirs where master and gh-pages are checked out
 ARGUMENT_LIST=(
   "master"
-  "gh-pages"
+  "ghpages"
 )
 # Read arguments using getopt (allows for long option, whereas getopts does not)
 opts=$(getopt \
@@ -27,7 +27,7 @@ while [[ $# -gt 0 ]]; do
       shift 2
       ;;
 
-    --gh-pages)
+    --ghpages)
       ghpagesArg=$2
       shift 2
       ;;
