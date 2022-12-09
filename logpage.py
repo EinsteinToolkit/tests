@@ -27,7 +27,7 @@ from datetime import datetime, timezone, timedelta
 import time
 
 # Functions from parser.py
-from logparser import test_func, create_summary, get_tests, get_warning_thorns, get_warning_type,test_comp,get_times,exceed_thresh,\
+from logparser import create_summary, get_tests, get_warning_thorns, get_warning_type,test_comp,get_times,exceed_thresh,\
     longest_tests,get_unrunnable,get_data,get_compile
 import glob
 import argparse
