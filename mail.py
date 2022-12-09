@@ -12,10 +12,18 @@ import smtplib
 # Import the email modules we'll need
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+import argparse
 
-master = sys.argv[1]
-gh_pages = sys.argv[2]
-repo = Repository(f'{master}/.git')
+parser = argparse.ArgumentParser()
+parser.add_argument('--master', type=str, required=True)
+parser.add_argument('--ghpages', type=str, required=True)
+args = parser.parse_args()
+if args.master is None or args.ghpages is None:
+    raise argparse.ArgumentError
+else:    
+    master = args.master
+    gh_pages = args.ghpages
+    repo = Repository(f'{master}/.git')
 
 # Create the body of the message (a plain-text and an HTML version).
 text = "HTML only email, please see https://einsteintoolkit.github.io/carpetx-tests for output"

@@ -18,6 +18,7 @@ if args.master is None or args.ghpages is None:
 else:    
     master = args.master
     gh_pages = args.ghpages
+# Provided by build-and-test.sh
 if args.dir1 is not None and args.dir2 is not None:
     dir1 = args.dir1
     dir2 = args.dir2
