@@ -30,16 +30,32 @@ import time
 from parser import create_summary, get_tests, get_warning_thorns, get_warning_type,test_comp,get_times,exceed_thresh,\
     longest_tests,get_unrunnable,get_data,get_compile
 import glob
+import argparse
 
-master = sys.argv[1]
-gh_pages = sys.argv[2] 
-repo = Repository(f"{master}/.git") 
-baseurl = repo.remotes["origin"].url.replace("git@", "https://").replace(".git","")
+parser = argparse.ArgumentParser()
+parser.add_argument('--master', type=str, required=True)
+parser.add_argument('--ghpages', type=str, required=True)
+args = parser.parse_args()
+if args.master is None or args.ghpages is None:
+    raise argparse.ArgumentError
+else:    
+    master = args.master
+    gh_pages = args.ghpages
+    curr_ver=get_version()
+    repo = Repository(f"{master}/.git") 
+    baseurl = repo.remotes["origin"].url.replace("git@", "https://").replace(".git","")
 
-records=os.listdir(f"{gh_pages}/records")
-curr_ver=get_version()
-curr=f"{gh_pages}/records/version_{curr_ver}/build__2_1_{curr_ver}.log"
-last=f"{gh_pages}/records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
+    records=os.listdir(f"{gh_pages}/records")
+    curr=f"{gh_pages}/records/version_{curr_ver}/build__2_1_{curr_ver}.log"
+    last=f"{gh_pages}/records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
+
+def main():
+    write_to_csv(curr)
+    summary_to_html(curr, f"{gh_pages}/docs/index.html")
+    test_comparison=test_comp(curr, last)
+    if len(test_comparison["Failed Tests"])!=0 or len(test_comparison["Newly Passing Tests"])!=0 :
+        # TODO: pass args with flags
+        os.system(f"python3 ./mail.py {master} {gh_pages}") 
 
 def gen_commits():
     '''
@@ -556,9 +572,4 @@ def write_to_csv(readfile):
 
 
 if __name__ == "__main__":
-    write_to_csv(curr)
-    summary_to_html(curr,f"{gh_pages}/docs/index.html")
-    test_comparison=test_comp(curr,last)
-    if len(test_comparison["Failed Tests"])!=0 or len(test_comparison["Newly Passing Tests"])!=0 :
-        dir = os.path.split(__file__)[0]
-        os.system(f"python3 ./mail.py {master} {gh_pages}") 
+    main()
