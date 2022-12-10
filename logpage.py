@@ -14,7 +14,6 @@ import bokeh.models.callbacks as bcall
 from bokeh.resources import CDN
 from bokeh.embed import components
 from bokeh.layouts import row
-from store import get_version,copy_build,get_commit_id
 from bokeh.palettes import viridis
 from bokeh.transform import factor_cmap
 from bokeh.resources import CDN
@@ -26,9 +25,6 @@ from pygit2 import GIT_SORT_TOPOLOGICAL, GIT_SORT_REVERSE
 from datetime import datetime, timezone, timedelta
 import time
 
-# Functions from parser.py
-from logparser import create_summary, get_tests, get_warning_thorns, get_warning_type,test_comp,get_times,exceed_thresh,\
-    longest_tests,get_unrunnable,get_data,get_compile
 import argparse
 
 parser = argparse.ArgumentParser()
@@ -47,6 +43,10 @@ else:
     records=os.listdir(f"{gh_pages}/records")
     curr=f"{gh_pages}/records/version_{curr_ver}/build__2_1_{curr_ver}.log"
     last=f"{gh_pages}/records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
+
+from logparser import create_summary, get_tests, get_warning_thorns, get_warning_type,test_comp,get_times,exceed_thresh,\
+    longest_tests,get_unrunnable,get_data,get_compile
+from store import get_version,copy_build,get_commit_id
 
 def main():
     write_to_csv(curr)

@@ -4,8 +4,7 @@ This file parses the log files such as build__2_1.log
 
 from collections import defaultdict
 import re 
-import logpage
-gh_pages = logpage.gh_pages
+from logpage import gh_pages
 
 def create_summary(file):
     '''

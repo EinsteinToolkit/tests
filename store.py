@@ -4,8 +4,7 @@ This file stores logs for future use in the records folder
 import shutil,os,glob
 import configparser
 import argparse
-import logpage
-gh_pages = logpage.gh_pages
+from logpage import gh_pages
 
 # Sys args passed down from logpage.py, or passed by test-cactus
 parser = argparse.ArgumentParser()

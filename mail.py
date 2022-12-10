@@ -12,10 +12,7 @@ import smtplib
 # Import the email modules we'll need
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-import logpage
-gh_pages = logpage.gh_pages
-repo = logpage.repo
-
+from logpage import gh_pages, repo
 
 # Create the body of the message (a plain-text and an HTML version).
 text = "HTML only email, please see https://einsteintoolkit.github.io/carpetx-tests for output"
