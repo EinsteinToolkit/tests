@@ -532,9 +532,9 @@ def write_to_csv(readfile):
         This function is used to store data between builds into a csv
     '''
 
-    total=sum(x[1] for x in get_times(readfile).items()) #
+    total=sum(x[1] for x in get_times(readfile).items())
 
-    data=lp.create_summary(readfile)
+    data = create_summary(readfile)
     data["Time Taken"]=total/60
     local_time = str(int(time.time()))  #datetime.today().strftime('%s') to convert to unix timestamp instead of a
     data["Date"] = local_time
