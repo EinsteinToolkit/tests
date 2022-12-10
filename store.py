@@ -4,9 +4,8 @@ This file stores logs for future use in the records folder
 import shutil,os,glob
 import configparser
 import argparse
-from logpage import gh_pages
 
-# Sys args passed down from logpage.py, or passed by test-cactus
+# Sys args passed by test-cactus, providing test output directories
 parser = argparse.ArgumentParser()
 parser.add_argument('--dir1', type=str, required=False)
 parser.add_argument('--dir2', type=str, required=False)
@@ -18,6 +17,13 @@ if args.dir1 is not None and args.dir2 is not None:
 else:
     raise argparse.ArgumentError
 
+def init(output_path):
+    '''
+        This function is triggered by logpage.py when it imports this module
+    '''
+    global gh_pages
+    gh_pages = output_path
+
 def main():
     version=get_version()+1
     store_version(version)
@@ -28,7 +34,6 @@ def main():
     copy_tests(dir1,version,1)
     copy_tests(dir2,version,2)
     store_commit_id(version)
-
 
 def copy_tests(test_dir,version,procs):
     '''

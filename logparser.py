@@ -4,7 +4,15 @@ This file parses the log files such as build__2_1.log
 
 from collections import defaultdict
 import re 
-from logpage import gh_pages
+
+gh_pages=None
+
+def init(output_path):
+    '''
+        This function is triggered by logpage.py when it imports this module
+    '''
+    global gh_pages
+    gh_pages = output_path
 
 def create_summary(file):
     '''
