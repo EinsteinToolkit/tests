@@ -24,8 +24,10 @@ from pygit2 import Repository, Oid
 from pygit2 import GIT_SORT_TOPOLOGICAL, GIT_SORT_REVERSE
 from datetime import datetime, timezone, timedelta
 import time
-
 import argparse
+
+from logparser import create_summary, get_tests, get_warning_thorns, get_warning_type,test_comp,get_times,exceed_thresh,\
+    longest_tests,get_unrunnable,get_data,get_compile
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--master', type=str, required=True)
@@ -36,6 +38,8 @@ if args.master is None or args.ghpages is None:
 else:    
     master = args.master
     gh_pages = args.ghpages
+    # gh_pages has to be initialized, as store.py imports it
+    from store import get_version,copy_build,get_commit_id
     curr_ver=get_version()
     repo = Repository(f"{master}/.git") 
     baseurl = repo.remotes["origin"].url.replace("git@", "https://").replace(".git","")
@@ -43,10 +47,6 @@ else:
     records=os.listdir(f"{gh_pages}/records")
     curr=f"{gh_pages}/records/version_{curr_ver}/build__2_1_{curr_ver}.log"
     last=f"{gh_pages}/records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
-
-from logparser import create_summary, get_tests, get_warning_thorns, get_warning_type,test_comp,get_times,exceed_thresh,\
-    longest_tests,get_unrunnable,get_data,get_compile
-from store import get_version,copy_build,get_commit_id
 
 def main():
     write_to_csv(curr)
