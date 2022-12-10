@@ -6,20 +6,21 @@ import configparser
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--master', type=str, required=False)
-parser.add_argument('--ghpages', type=str, required=True)
-parser.add_argument('--dir1', type=str, required=False)
-parser.add_argument('--dir2', type=str, required=False)
+ms_arg = parser.add_argument('--master', type=str, required=False)
+gh_arg = parser.add_argument('--ghpages', type=str, required=True)
+dir1_arg = parser.add_argument('--dir1', type=str, required=False)
+dir2_arg = parser.add_argument('--dir2', type=str, required=False)
 args = parser.parse_args()
-# Passed down from logpage.py
-if args.ghpages is not None:
+
+if args.ghpages is None:
+    raise argparse.ArgumentError(gh_arg, 'Please provide path to gh pages dir as argument!')
+else:
     gh_pages = args.ghpages
+
 # Sys args passed by test-cactus, providing test output directories
 if args.dir1 is not None and args.dir2 is not None:
     dir1 = args.dir1
     dir2 = args.dir2
-else:
-    raise argparse.ArgumentError
 
 def main():
     version=get_version()+1

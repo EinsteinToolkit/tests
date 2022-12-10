@@ -24,21 +24,23 @@ from logparser import test_comp, longest_tests, get_data, get_warning_thorns, ge
 from store import get_version, get_commit_id, copy_build
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--master', type=str, required=True)
-parser.add_argument('--ghpages', type=str, required=True)
+ms_arg = parser.add_argument('--master', type=str, required=True)
+gh_arg = parser.add_argument('--ghpages', type=str, required=True)
 args = parser.parse_args()
-if args.master is None or args.ghpages is None:
-    raise argparse.ArgumentError
-else:    
-    master = args.master
-    gh_pages = args.ghpages
-    curr_ver = get_version()
-    repo = Repository(f"{master}/.git") 
-    baseurl = repo.remotes["origin"].url.replace("git@", "https://").replace(".git","")
+if args.master is None:
+    raise argparse.ArgumentError(ms_arg, 'Please provide path to master dir as argument!')
+if args.ghpages is None:
+    raise argparse.ArgumentError(gh_arg, 'Please provide path to gh pages dir as argument!')
+    
+master = args.master
+gh_pages = args.ghpages
+curr_ver = get_version()
+repo = Repository(f"{master}/.git") 
+baseurl = repo.remotes["origin"].url.replace("git@", "https://").replace(".git","")
 
-    records = os.listdir(f"{gh_pages}/records")
-    curr = f"{gh_pages}/records/version_{curr_ver}/build__2_1_{curr_ver}.log"
-    last = f"{gh_pages}/records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
+records = os.listdir(f"{gh_pages}/records")
+curr = f"{gh_pages}/records/version_{curr_ver}/build__2_1_{curr_ver}.log"
+last = f"{gh_pages}/records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
 
 def main():
     write_to_csv(curr)

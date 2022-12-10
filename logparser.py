@@ -7,14 +7,14 @@ import re
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--master', type=str, required=False)
-parser.add_argument('--ghpages', type=str, required=True)
+ms_arg = parser.add_argument('--master', type=str, required=False)
+gh_arg = parser.add_argument('--ghpages', type=str, required=True)
 args = parser.parse_args()
-# Passed down from logpage.py
-if args.ghpages is not None:
-    gh_pages = args.ghpages
+
+if args.ghpages is None:
+    raise argparse.ArgumentError(gh_arg, 'Please provide path to gh pages dir as argument!')
 else:
-    raise argparse.ArgumentError
+    gh_pages = args.ghpages
 
 def create_summary(file):
     '''
