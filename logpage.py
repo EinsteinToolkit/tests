@@ -26,9 +26,6 @@ from datetime import datetime, timezone, timedelta
 import time
 import argparse
 
-from logparser import create_summary, get_tests, get_warning_thorns, get_warning_type,test_comp,get_times,exceed_thresh,\
-    longest_tests,get_unrunnable,get_data,get_compile
-
 parser = argparse.ArgumentParser()
 parser.add_argument('--master', type=str, required=True)
 parser.add_argument('--ghpages', type=str, required=True)
@@ -38,7 +35,9 @@ if args.master is None or args.ghpages is None:
 else:    
     master = args.master
     gh_pages = args.ghpages
-    # gh_pages has to be initialized, as store.py imports it
+    # gh_pages has to be initialized, as logparser.py and store.py import it
+    from logparser import create_summary, get_tests, get_warning_thorns, get_warning_type,test_comp,get_times,exceed_thresh,\
+    longest_tests,get_unrunnable,get_data,get_compile
     from store import get_version,copy_build,get_commit_id
     curr_ver=get_version()
     repo = Repository(f"{master}/.git") 
