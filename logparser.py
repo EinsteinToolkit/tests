@@ -4,19 +4,7 @@ This file parses the log files such as build__2_1.log
 
 from collections import defaultdict
 import re
-import sys
-import argparse
-
-# Sys args passed down from logpage.py
-parser = argparse.ArgumentParser()
-parser.add_argument('--master', type=str, required=True)
-parser.add_argument('--ghpages', type=str, required=True)
-args = parser.parse_args()
-if args.master is None or args.ghpages is None:
-    raise argparse.ArgumentError
-else:    
-    master = args.master
-    gh_pages = args.ghpages
+from logpage import gh_pages
 
 def create_summary(file):
     '''

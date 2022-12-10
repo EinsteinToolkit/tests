@@ -2,26 +2,21 @@
 This file stores logs for future use in the records folder
 '''
 import shutil,os,glob
-import sys
 import configparser
 import argparse
+from logpage import gh_pages
 
 # Sys args passed down from logpage.py, or passed by test-cactus
 parser = argparse.ArgumentParser()
-parser.add_argument('--master', type=str, required=True)
-parser.add_argument('--ghpages', type=str, required=True)
 parser.add_argument('--dir1', type=str, required=False)
 parser.add_argument('--dir2', type=str, required=False)
 args = parser.parse_args()
-if args.master is None or args.ghpages is None:
-    raise argparse.ArgumentError
-else:    
-    master = args.master
-    gh_pages = args.ghpages
 # Provided by build-and-test.sh
 if args.dir1 is not None and args.dir2 is not None:
     dir1 = args.dir1
     dir2 = args.dir2
+else:
+    raise argparse.ArgumentError
 
 def main():
     version=get_version()+1
