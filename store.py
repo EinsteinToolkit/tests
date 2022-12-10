@@ -5,24 +5,21 @@ import shutil,os,glob
 import configparser
 import argparse
 
-# Sys args passed by test-cactus, providing test output directories
 parser = argparse.ArgumentParser()
+parser.add_argument('--master', type=str, required=False)
+parser.add_argument('--ghpages', type=str, required=True)
 parser.add_argument('--dir1', type=str, required=False)
 parser.add_argument('--dir2', type=str, required=False)
 args = parser.parse_args()
-# Provided by build-and-test.sh
+# Passed down from logpage.py
+if args.ghpages is not None:
+    gh_pages = args.ghpages
+# Sys args passed by test-cactus, providing test output directories
 if args.dir1 is not None and args.dir2 is not None:
     dir1 = args.dir1
     dir2 = args.dir2
 else:
     raise argparse.ArgumentError
-
-def init(output_path):
-    '''
-        This function is triggered by logpage.py when it imports this module
-    '''
-    global gh_pages
-    gh_pages = output_path
 
 def main():
     version=get_version()+1

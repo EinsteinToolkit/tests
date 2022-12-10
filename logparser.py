@@ -4,15 +4,17 @@ This file parses the log files such as build__2_1.log
 
 from collections import defaultdict
 import re 
+import argparse
 
-gh_pages=None
-
-def init(output_path):
-    '''
-        This function is triggered by logpage.py when it imports this module
-    '''
-    global gh_pages
-    gh_pages = output_path
+parser = argparse.ArgumentParser()
+parser.add_argument('--master', type=str, required=False)
+parser.add_argument('--ghpages', type=str, required=True)
+args = parser.parse_args()
+# Passed down from logpage.py
+if args.ghpages is not None:
+    gh_pages = args.ghpages
+else:
+    raise argparse.ArgumentError
 
 def create_summary(file):
     '''

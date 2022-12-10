@@ -1,18 +1,14 @@
-from requests.api import get
 import os,time,math
 from datetime import datetime
-import matplotlib.pyplot as plt
 import shutil
 
 # Different Bokeh modules
-from bokeh.models.annotations import Legend
 import bokeh.plotting as bplt
 import bokeh.models.tools as btools
-from bokeh.models import Panel, Tabs, DataRange1d
+from bokeh.models import Panel, Tabs
 import bokeh.models.callbacks as bcall
 from bokeh.resources import CDN
 from bokeh.embed import components
-from bokeh.layouts import row
 from bokeh.palettes import viridis
 from bokeh.transform import factor_cmap
 from bokeh.resources import CDN
@@ -20,12 +16,12 @@ from bokeh.embed import file_html
 
 # to generate a commit log
 from pygit2 import Repository, Oid
-from pygit2 import GIT_SORT_TOPOLOGICAL, GIT_SORT_REVERSE
+from pygit2 import GIT_SORT_TOPOLOGICAL
 from datetime import datetime, timezone, timedelta
 import time
 import argparse
-import logparser as lp
-import store as st
+from logparser import test_comp, longest_tests, get_data, get_warning_thorns, get_tests, get_compile, get_times, get_unrunnable, create_summary
+from store import get_version, get_commit_id, copy_build
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--master', type=str, required=True)
@@ -36,21 +32,18 @@ if args.master is None or args.ghpages is None:
 else:    
     master = args.master
     gh_pages = args.ghpages
-    # Pass necessary data to helper modules for parsing and storing test data
-    lp.init(gh_pages)
-    st.init(gh_pages)
-    curr_ver=st.get_version()
+    curr_ver = get_version()
     repo = Repository(f"{master}/.git") 
     baseurl = repo.remotes["origin"].url.replace("git@", "https://").replace(".git","")
 
-    records=os.listdir(f"{gh_pages}/records")
-    curr=f"{gh_pages}/records/version_{curr_ver}/build__2_1_{curr_ver}.log"
-    last=f"{gh_pages}/records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
+    records = os.listdir(f"{gh_pages}/records")
+    curr = f"{gh_pages}/records/version_{curr_ver}/build__2_1_{curr_ver}.log"
+    last = f"{gh_pages}/records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
 
 def main():
     write_to_csv(curr)
     summary_to_html(curr, f"{gh_pages}/docs/index.html")
-    test_comparison=lp.test_comp(curr, last)
+    test_comparison = test_comp(curr, last)
     if len(test_comparison["Failed Tests"])!=0 or len(test_comparison["Newly Passing Tests"])!=0 :
         os.system(f"python3 ./mail.py") 
 
@@ -61,8 +54,8 @@ def gen_commits():
     '''
 
     # TODO: turn into convenience function
-    curr_commit_id = Oid(hex=st.get_commit_id(curr_ver))
-    last_commit_id = Oid(hex=st.get_commit_id(curr_ver-1))
+    curr_commit_id = Oid(hex = get_commit_id(curr_ver))
+    last_commit_id = Oid(hex = get_commit_id(curr_ver-1))
     commits = []
     for commit in repo.walk(curr_commit_id, GIT_SORT_TOPOLOGICAL):
         if(commit.id == last_commit_id):
@@ -75,17 +68,13 @@ def gen_commits():
         message=message.replace("\n\n","\n")
         message=message.replace('\n','<br>')
         tzinfo = timezone(timedelta(minutes=commit.author.offset))
-        #print(tzinfo)
         dt = datetime.fromtimestamp(commit.author.time, tz=timezone.utc)
-        #print(dt)
         date = str(dt)
         lines.append("<tr> <td> <b> Commit: </b> </td> <td> <b> "+str(count+1)+" </b> </td> </tr> \n")
         lines.append("<tr> <td> Date: (In UTC)  </td> <td> "+date+"  </td> </tr> \n")
         lines.append("<tr> <td> Message: </td> <td>"+message+"</td> </tr> \n")
-        #print(lines)
     return "\n".join(lines)
 
-# log_link=f"{baseurl}/blob/master/records/version_{last_ver}/{last[ext-1:]+str(last_ver+1)}"
 def gen_diffs(readfile):
     '''
         This function generates the html table that shows
@@ -94,10 +83,7 @@ def gen_diffs(readfile):
     '''
 
     # The test_comp function provides tests that failed, were newly added or newly removed
-    test_comparison=lp.test_comp(readfile,last)
-    # if len(test_comparison["Failed Tests"])!=0:
-    #     print("TESTS_FAILED=True", file=open(os.environ["GITHUB_ENV"], "a"))
-
+    test_comparison = test_comp(readfile,last)
     # Setup the header for the table
     output='''<table class="table table-bordered " >
     <caption style="text-align:center;font-weight: bold;caption-side:top">Failed Tests and Changes</caption>
@@ -170,7 +156,7 @@ def get_first_failure(test_name):
         log_to_check=f"{gh_pages}/records/version_{i}/build__2_1_{i}.log"
         prev_log_to_check=f"{gh_pages}/records/version_{i-1}/build__2_1_{i-1}.log"
         # Dictionary containing keys: "Failed Tests","Newly Passing Tests","Newly Failing Tests","Newly Added Tests", "Removed Tests"
-        curr_res = lp.test_comp(log_to_check, prev_log_to_check)
+        curr_res = test_comp(log_to_check, prev_log_to_check)
         if (test_name in curr_res["Newly Failing Tests"]):
             first_failure = i
             break
@@ -186,13 +172,13 @@ def gen_time(readfile):
         This function generates a table with the tests that took the longest time
     '''
     # The get_times function parses the data from the log files
-    time_dict=lp.get_times(readfile)
+    time_dict = get_times(readfile)
 
     # This part creates html table contianing the top 10 longest tests
     output='''<table class="table table-bordered " >
     <caption style="text-align:center;font-weight: bold;caption-side:top">Longest Tests</caption>\n'''
     output+="<tr><th>Test Name</th><th>Running Time</th>"
-    for times in lp.longest_tests(time_dict,10).keys():
+    for times in longest_tests(time_dict,10).keys():
         output+=f"   <tr><td>{times}</td><td>{time_dict[times]}s</td></tr>\n"
     output+="</table><br>"
     return output
@@ -200,15 +186,15 @@ def gen_time(readfile):
 def plot_test_data(readfile):
 
     # Get dataa from the csv and create lists for each field
-    runnable=list(lp.get_data("Runnable tests").values())
-    times=list(lp.get_data("Number of tests passed").keys())
-    passed=list(lp.get_data("Number of tests passed").values())
-    time_taken=list(lp.get_data("Time Taken").values())
-    compile_warn=list((lp.get_data("Compile Time Warnings").values()))
-    build_no=list(lp.get_data("Build Number").values())
+    runnable=list(get_data("Runnable tests").values())
+    times=list(get_data("Number of tests passed").keys())
+    passed=list(get_data("Number of tests passed").values())
+    time_taken=list(get_data("Time Taken").values())
+    compile_warn=list((get_data("Compile Time Warnings").values()))
+    build_no=list(get_data("Build Number").values())
 
     # Get the of dictionary of thorns with their warning counts
-    warning_thorns=lp.get_warning_thorns(f"{gh_pages}/records/version_{curr_ver}/build_{curr_ver}.log")
+    warning_thorns=get_warning_thorns(f"{gh_pages}/records/version_{curr_ver}/build_{curr_ver}.log")
 
     # Turn that dictionary into lists so you can pick the thorns with most warnings
     counts=list(warning_thorns.values())
@@ -231,7 +217,6 @@ def plot_test_data(readfile):
         date = datetime.fromtimestamp(float(float(times[i])), tz=None) # changing to UNIX timestamp from float
         axis.append(date)
         Date.append(date.strftime("%Y-%m-%d"))
-        #print(axis)
 
     # The python library bokeh has a special data structure called a column data source that functions similarly
     # to a dictionary
@@ -334,7 +319,7 @@ def gen_unrunnable(readfile):
     '''
         This function generates a html showing which tests could not be run and the reason
     '''
-    m,n=lp.get_unrunnable(readfile)
+    m,n = get_unrunnable(readfile)
     output=''' <table class="table table-bordered " >
     <caption style="text-align:center;font-weight: bold;caption-side:top">Unrunnable Tests</caption>\n'''
     output+="<tr><th>Tests Missed for Lack Of Thorns</th><th>Missing Thorns</th></tr>\n"
@@ -358,13 +343,13 @@ def create_sidebar():
     '''
 
     # For every version, create link and symbol in sidebar
-    for i in range(st.get_version(), 0, -1):
+    for i in range(get_version(), 0, -1):
         # The build file will be displayed in new tab
         template +='<a href="build_' + str(i) + '.html" target="results_iframe"> Build #' + str(i) + '</a>'
         # Check whether the build passed or not by calling parser
         log_to_check=f"{gh_pages}/records/version_{i}/build__2_1_{i}.log"
         # Get failed tests only from returned tuple
-        curr_res = lp.get_tests(log_to_check)[1]
+        curr_res = get_tests(log_to_check)[1]
         if len(curr_res) != 0:
             template += '<img src="exclamation.svg" style="display: inline; width: 30px; height: 30px; float: right; margin-right: 14px;">'
         else:
@@ -378,7 +363,7 @@ def create_test_results(readfile):
         which gets displayed to the right of the sidebar
     '''
 
-    data=lp.create_summary(readfile)
+    data = create_summary(readfile)
     script, div=plot_test_data(readfile)
 
     # Check Status Using the data from the summary
@@ -454,7 +439,7 @@ def create_test_results(readfile):
                 '''
         
     # Writes test results to new build_x.html file to be displayed in iframe
-    results_file = st.copy_build(curr_ver, template)
+    results_file = copy_build(curr_ver, template)
     return results_file
 
 
@@ -545,7 +530,7 @@ def write_to_csv(readfile):
         This function is used to store data between builds into a csv
     '''
 
-    total=sum(x[1] for x in lp.get_times(readfile).items()) #
+    total=sum(x[1] for x in get_times(readfile).items()) #
 
     data=lp.create_summary(readfile)
     data["Time Taken"]=total/60
@@ -554,7 +539,7 @@ def write_to_csv(readfile):
     data["Build Number"] = curr_ver
     # normal date format. This helps in plotting as all x axis elements are now unique
     #local_time+=f"({curr_ver})"
-    data["Compile Time Warnings"]=lp.get_compile(f"{gh_pages}/records/version_{curr_ver}/build_{curr_ver}.log")
+    data["Compile Time Warnings"] = get_compile(f"{gh_pages}/records/version_{curr_ver}/build_{curr_ver}.log")
     fields = ["Date", "Total available tests", "Unrunnable tests",
               "Runnable tests", "Total number of thorns",
               "Number of tested thorns", "Number of tests passed",
