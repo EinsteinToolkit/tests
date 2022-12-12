@@ -1,20 +1,14 @@
-from requests.api import get
-import sys
-import os,csv,time,requests,math
+import os,time,math
 from datetime import datetime
-import matplotlib.pyplot as plt
 import shutil
 
 # Different Bokeh modules
-from bokeh.models.annotations import Legend
 import bokeh.plotting as bplt
 import bokeh.models.tools as btools
-from bokeh.models import Panel, Tabs, DataRange1d
+from bokeh.models import Panel, Tabs
 import bokeh.models.callbacks as bcall
 from bokeh.resources import CDN
 from bokeh.embed import components
-from bokeh.layouts import row
-from store import get_version,copy_build,get_commit_id
 from bokeh.palettes import viridis
 from bokeh.transform import factor_cmap
 from bokeh.resources import CDN
@@ -22,24 +16,38 @@ from bokeh.embed import file_html
 
 # to generate a commit log
 from pygit2 import Repository, Oid
-from pygit2 import GIT_SORT_TOPOLOGICAL, GIT_SORT_REVERSE
+from pygit2 import GIT_SORT_TOPOLOGICAL
 from datetime import datetime, timezone, timedelta
 import time
+import argparse
+from logparser import test_comp, longest_tests, get_data, get_warning_thorns, get_tests, get_compile, get_times, get_unrunnable, create_summary
+from store import get_version, get_commit_id, copy_build
 
-# Functions from parser.py
-from parser import create_summary, get_tests, get_warning_thorns, get_warning_type,test_comp,get_times,exceed_thresh,\
-    longest_tests,get_unrunnable,get_data,get_compile
-import glob
-
-master = sys.argv[1]
-gh_pages = sys.argv[2] 
+parser = argparse.ArgumentParser()
+ms_arg = parser.add_argument('--master', type=str, required=True)
+gh_arg = parser.add_argument('--ghpages', type=str, required=True)
+args = parser.parse_args()
+if args.master is None:
+    raise argparse.ArgumentError(ms_arg, 'Please provide path to master dir as argument!')
+if args.ghpages is None:
+    raise argparse.ArgumentError(gh_arg, 'Please provide path to gh pages dir as argument!')
+    
+master = args.master
+gh_pages = args.ghpages
+curr_ver = get_version()
 repo = Repository(f"{master}/.git") 
 baseurl = repo.remotes["origin"].url.replace("git@", "https://").replace(".git","")
 
-records=os.listdir(f"{gh_pages}/records")
-curr_ver=get_version()
-curr=f"{gh_pages}/records/version_{curr_ver}/build__2_1_{curr_ver}.log"
-last=f"{gh_pages}/records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
+records = os.listdir(f"{gh_pages}/records")
+curr = f"{gh_pages}/records/version_{curr_ver}/build__2_1_{curr_ver}.log"
+last = f"{gh_pages}/records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
+
+def main():
+    write_to_csv(curr)
+    summary_to_html(curr, f"{gh_pages}/docs/index.html")
+    test_comparison = test_comp(curr, last)
+    if len(test_comparison["Failed Tests"])!=0 or len(test_comparison["Newly Passing Tests"])!=0 :
+        os.system(f"python3 ./mail.py") 
 
 def gen_commits():
     '''
@@ -48,8 +56,8 @@ def gen_commits():
     '''
 
     # TODO: turn into convenience function
-    curr_commit_id = Oid(hex=get_commit_id(curr_ver))
-    last_commit_id = Oid(hex=get_commit_id(curr_ver-1))
+    curr_commit_id = Oid(hex = get_commit_id(curr_ver))
+    last_commit_id = Oid(hex = get_commit_id(curr_ver-1))
     commits = []
     for commit in repo.walk(curr_commit_id, GIT_SORT_TOPOLOGICAL):
         if(commit.id == last_commit_id):
@@ -62,17 +70,13 @@ def gen_commits():
         message=message.replace("\n\n","\n")
         message=message.replace('\n','<br>')
         tzinfo = timezone(timedelta(minutes=commit.author.offset))
-        #print(tzinfo)
         dt = datetime.fromtimestamp(commit.author.time, tz=timezone.utc)
-        #print(dt)
         date = str(dt)
         lines.append("<tr> <td> <b> Commit: </b> </td> <td> <b> "+str(count+1)+" </b> </td> </tr> \n")
         lines.append("<tr> <td> Date: (In UTC)  </td> <td> "+date+"  </td> </tr> \n")
         lines.append("<tr> <td> Message: </td> <td>"+message+"</td> </tr> \n")
-        #print(lines)
     return "\n".join(lines)
 
-# log_link=f"{baseurl}/blob/master/records/version_{last_ver}/{last[ext-1:]+str(last_ver+1)}"
 def gen_diffs(readfile):
     '''
         This function generates the html table that shows
@@ -81,10 +85,7 @@ def gen_diffs(readfile):
     '''
 
     # The test_comp function provides tests that failed, were newly added or newly removed
-    test_comparison=test_comp(readfile,last)
-    # if len(test_comparison["Failed Tests"])!=0:
-    #     print("TESTS_FAILED=True", file=open(os.environ["GITHUB_ENV"], "a"))
-
+    test_comparison = test_comp(readfile,last)
     # Setup the header for the table
     output='''<table class="table table-bordered " >
     <caption style="text-align:center;font-weight: bold;caption-side:top">Failed Tests and Changes</caption>
@@ -173,7 +174,7 @@ def gen_time(readfile):
         This function generates a table with the tests that took the longest time
     '''
     # The get_times function parses the data from the log files
-    time_dict=get_times(readfile)
+    time_dict = get_times(readfile)
 
     # This part creates html table contianing the top 10 longest tests
     output='''<table class="table table-bordered " >
@@ -218,7 +219,6 @@ def plot_test_data(readfile):
         date = datetime.fromtimestamp(float(float(times[i])), tz=None) # changing to UNIX timestamp from float
         axis.append(date)
         Date.append(date.strftime("%Y-%m-%d"))
-        #print(axis)
 
     # The python library bokeh has a special data structure called a column data source that functions similarly
     # to a dictionary
@@ -321,7 +321,7 @@ def gen_unrunnable(readfile):
     '''
         This function generates a html showing which tests could not be run and the reason
     '''
-    m,n=get_unrunnable(readfile)
+    m,n = get_unrunnable(readfile)
     output=''' <table class="table table-bordered " >
     <caption style="text-align:center;font-weight: bold;caption-side:top">Unrunnable Tests</caption>\n'''
     output+="<tr><th>Tests Missed for Lack Of Thorns</th><th>Missing Thorns</th></tr>\n"
@@ -365,7 +365,7 @@ def create_test_results(readfile):
         which gets displayed to the right of the sidebar
     '''
 
-    data=create_summary(readfile)
+    data = create_summary(readfile)
     script, div=plot_test_data(readfile)
 
     # Check Status Using the data from the summary
@@ -532,16 +532,16 @@ def write_to_csv(readfile):
         This function is used to store data between builds into a csv
     '''
 
-    total=sum(x[1] for x in get_times(readfile).items()) #
+    total=sum(x[1] for x in get_times(readfile).items())
 
-    data=create_summary(readfile)
+    data = create_summary(readfile)
     data["Time Taken"]=total/60
     local_time = str(int(time.time()))  #datetime.today().strftime('%s') to convert to unix timestamp instead of a
     data["Date"] = local_time
     data["Build Number"] = curr_ver
     # normal date format. This helps in plotting as all x axis elements are now unique
     #local_time+=f"({curr_ver})"
-    data["Compile Time Warnings"]=get_compile(f"{gh_pages}/records/version_{curr_ver}/build_{curr_ver}.log")
+    data["Compile Time Warnings"] = get_compile(f"{gh_pages}/records/version_{curr_ver}/build_{curr_ver}.log")
     fields = ["Date", "Total available tests", "Unrunnable tests",
               "Runnable tests", "Total number of thorns",
               "Number of tested thorns", "Number of tests passed",
@@ -556,9 +556,4 @@ def write_to_csv(readfile):
 
 
 if __name__ == "__main__":
-    write_to_csv(curr)
-    summary_to_html(curr,f"{gh_pages}/docs/index.html")
-    test_comparison=test_comp(curr,last)
-    if len(test_comparison["Failed Tests"])!=0 or len(test_comparison["Newly Passing Tests"])!=0 :
-        dir = os.path.split(__file__)[0]
-        os.system(f"python3 ./mail.py {master} {gh_pages}") 
+    main()

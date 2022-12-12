@@ -2,11 +2,36 @@
 This file stores logs for future use in the records folder
 '''
 import shutil,os,glob
-import sys
 import configparser
+import argparse
 
-# This can be the arg passed down from logpage.py, or the args passed by build-and-test.sh
-gh_pages = sys.argv[2]
+parser = argparse.ArgumentParser()
+ms_arg = parser.add_argument('--master', type=str, required=False)
+gh_arg = parser.add_argument('--ghpages', type=str, required=True)
+dir1_arg = parser.add_argument('--dir1', type=str, required=False)
+dir2_arg = parser.add_argument('--dir2', type=str, required=False)
+args = parser.parse_args()
+
+if args.ghpages is None:
+    raise argparse.ArgumentError(gh_arg, 'Please provide path to gh pages dir as argument!')
+else:
+    gh_pages = args.ghpages
+
+# Sys args passed by test-cactus, providing test output directories
+if args.dir1 is not None and args.dir2 is not None:
+    dir1 = args.dir1
+    dir2 = args.dir2
+
+def main():
+    version=get_version()+1
+    store_version(version)
+    os.mkdir(f"{gh_pages}/records/version_{version}/")
+    copy_compile_log(version)
+    copy_logs(dir1,version)
+    copy_logs(dir2,version)
+    copy_tests(dir1,version,1)
+    copy_tests(dir2,version,2)
+    store_commit_id(version)
 
 def copy_tests(test_dir,version,procs):
     '''
@@ -107,18 +132,4 @@ def get_commit_id(version):
     return id
 
 if __name__ == "__main__":
-    # FIXME: this is quite bad, use some better argparse
-    # These args are passed by test-cactus, via build-and-test.sh
-    master = sys.argv[1]
-    gh_pages = sys.argv[2]
-    dir1 = sys.argv[3]
-    dir2 = sys.argv[4]
-    version=get_version()+1
-    store_version(version)
-    os.mkdir(f"{gh_pages}/records/version_{version}/")
-    copy_compile_log(version)
-    copy_logs(dir1,version)
-    copy_logs(dir2,version)
-    copy_tests(dir1,version,1)
-    copy_tests(dir2,version,2)
-    store_commit_id(version)
+    main()

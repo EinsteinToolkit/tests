@@ -3,8 +3,31 @@
 set -e
 set -x
 
-# Env vars exported in/passed by build-and-test.sh
-thornlist=$1
+ARGUMENT_LIST=(
+  "thornlist"
+)
+# Read arguments using getopt (allows for long option, whereas getopts does not)
+opts=$(getopt \
+  --longoptions "$(printf "%s:," "${ARGUMENT_LIST[@]}")" \
+  --name "$(basename "$0")" \
+  --options "" \
+  -- "$@"
+)
+
+eval set --$opts
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --thornlist)
+      thornlist=$2
+      shift 2
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
 . cactus/sim-functions.sh
 
 simdir=$WORKSPACE/../simulations
@@ -14,6 +37,8 @@ if [ -z "$USER" ]; then
 export USER=jenkins
 fi
 
+# Arg exported by build-and-test.sh
+# Simfactory assumes it is in master
 cd $MASTER
 
 host=$(hostname -f)

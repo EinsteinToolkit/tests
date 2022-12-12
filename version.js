@@ -8,7 +8,7 @@ try {
     if (count > 0) {
         latestRun = jsonResponse["workflow_runs"][0];
         stat = latestRun.status; // completed, requested, in-progress
-        conclusion = latestRun.conclusion; // success, failure
+        conclusion = latestRun.conclusion; // success, failure, cancelled, null
         actionLink = latestRun.html_url; // link to (pending) workflow in GitHub
     }
 } catch (e) {

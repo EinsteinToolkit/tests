@@ -27,22 +27,41 @@ from datetime import datetime, timezone, timedelta
 import time
 
 # Functions from parser.py
-from parser import create_summary, get_tests, get_warning_thorns, get_warning_type,test_comp,get_times,exceed_thresh,\
+from logparser import create_summary, get_tests, get_warning_thorns, get_warning_type,test_comp,get_times,exceed_thresh,\
     longest_tests,get_unrunnable,get_data,get_compile
-import glob
+import argparse
 
-master = sys.argv[1]
-gh_pages = sys.argv[2] 
-repo = Repository(f"{master}/.git") 
-baseurl = repo.remotes["origin"].url.replace("git@", "https://").replace(".git","")
+parser = argparse.ArgumentParser()
+parser.add_argument('--master', type=str, required=True)
+parser.add_argument('--ghpages', type=str, required=True)
+args = parser.parse_args()
+if args.master is None or args.ghpages is None:
+    raise argparse.ArgumentError
+else:    
+    master = args.master
+    gh_pages = args.ghpages
+    repo = Repository(f"{master}/.git") 
+    baseurl = repo.remotes["origin"].url.replace("git@", "https://").replace(".git","")
 
-records=os.listdir(f"{gh_pages}/records")
-# curr_ver=get_version()
-# curr=f"{gh_pages}/records/version_{curr_ver}/build__2_1_{curr_ver}.log"
-# last=f"{gh_pages}/records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
-curr_ver=-1
-curr = None
-last = None
+    records=os.listdir(f"{gh_pages}/records")
+    # curr_ver=get_version()
+    # curr=f"{gh_pages}/records/version_{curr_ver}/build__2_1_{curr_ver}.log"
+    # last=f"{gh_pages}/records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
+    curr_ver=-1
+    curr = None
+    last = None
+
+def main():
+    for i in range(get_version()-1, -1, -1):
+        # Ascending order from build 1 to the latest
+        count = get_version()-i
+        # Sets the curr_version, curr and last record files
+        set_curr_version(count)
+        write_to_csv(curr)
+        summary_to_html(curr,f"{gh_pages}/docs/index.html")
+        test_comparison=test_comp(curr,last)
+        if len(test_comparison["Failed Tests"])!=0 or len(test_comparison["Newly Passing Tests"])!=0 :
+            dir = os.path.split(__file__)[0]
 
 def set_curr_version(count):
     '''
@@ -572,14 +591,4 @@ def write_to_csv(readfile):
 
 
 if __name__ == "__main__":
-
-    for i in range(get_version()-1, -1, -1):
-        # Ascending order from build 1 to the latest
-        count = get_version()-i
-        # Sets the curr_version, curr and last record files
-        set_curr_version(count)
-        write_to_csv(curr)
-        summary_to_html(curr,f"{gh_pages}/docs/index.html")
-        test_comparison=test_comp(curr,last)
-        if len(test_comparison["Failed Tests"])!=0 or len(test_comparison["Newly Passing Tests"])!=0 :
-            dir = os.path.split(__file__)[0]
+    main()

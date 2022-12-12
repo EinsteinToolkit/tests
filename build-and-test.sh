@@ -4,9 +4,39 @@
 export SYNC_SUBMODULES=true
 export BUILD_TYPE=Incremental
 export WORKSPACE=$PWD
+
 # These are the args passed by main.yml, giving access to the dirs where master and gh-pages are checked out
-export MASTER=$1
-export GH_PAGES=$2
+ARGUMENT_LIST=(
+  "master"
+  "ghpages"
+)
+# Read arguments using getopt (allows for long option, whereas getopts does not)
+opts=$(getopt \
+  --longoptions "$(printf "%s:," "${ARGUMENT_LIST[@]}")" \
+  --name "$(basename "$0")" \
+  --options "" \
+  -- "$@"
+)
+
+eval set --$opts
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --master)
+      export MASTER=$2
+      shift 2
+      ;;
+
+    --ghpages)
+      export GH_PAGES=$2
+      shift 2
+      ;;
+
+    *)
+      break
+      ;;
+  esac
+done
 
 # Stop execution instantly as a query exits while having a non-zero status and xtrace
 set -e -x
@@ -40,5 +70,5 @@ chmod +x cactus/build-cactus
 # "2>" redirects stderr to an (unspecified) file, "&1" redirects stderr to stdout.
 # "tee" reads from the standard input and writes to (new) ./build.log file
 # store.py copies this ./build.log file to {gh_pages}/records/version_{version}/build_{version}.log
-time cactus/build-cactus $MASTER/manifest/einsteintoolkit.th 2>&1 | tee ./build.log
-time cactus/test-cactus all
+time cactus/build-cactus --thornlist $MASTER/manifest/einsteintoolkit.th 2>&1 | tee ./build.log
+time cactus/test-cactus --testmode all
