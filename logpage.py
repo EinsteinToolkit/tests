@@ -34,7 +34,7 @@ if args.ghpages is None:
     
 master = args.master
 gh_pages = args.ghpages
-curr_ver = get_version()
+curr_ver = get_version(gh_pages)
 repo = Repository(f"{master}/.git") 
 baseurl = repo.remotes["origin"].url.replace("git@", "https://").replace(".git","")
 
@@ -56,8 +56,8 @@ def gen_commits():
     '''
 
     # TODO: turn into convenience function
-    curr_commit_id = Oid(hex = get_commit_id(curr_ver))
-    last_commit_id = Oid(hex = get_commit_id(curr_ver-1))
+    curr_commit_id = Oid(hex = get_commit_id(curr_ver, gh_pages))
+    last_commit_id = Oid(hex = get_commit_id(curr_ver-1, gh_pages))
     commits = []
     for commit in repo.walk(curr_commit_id, GIT_SORT_TOPOLOGICAL):
         if(commit.id == last_commit_id):
@@ -345,7 +345,7 @@ def create_sidebar():
     '''
 
     # For every version, create link and symbol in sidebar
-    for i in range(get_version(), 0, -1):
+    for i in range(get_version(gh_pages), 0, -1):
         # The build file will be displayed in new tab
         template +='<a href="build_' + str(i) + '.html" target="results_iframe"> Build #' + str(i) + '</a>'
         # Check whether the build passed or not by calling parser
@@ -441,7 +441,7 @@ def create_test_results(readfile):
                 '''
         
     # Writes test results to new build_x.html file to be displayed in iframe
-    results_file = copy_build(curr_ver, template)
+    results_file = copy_build(curr_ver, template, gh_pages)
     return results_file
 
 
