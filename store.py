@@ -5,24 +5,36 @@ import shutil,os,glob
 import configparser
 import argparse
 
-parser = argparse.ArgumentParser()
-ms_arg = parser.add_argument('--master', type=str, required=False)
-gh_arg = parser.add_argument('--ghpages', type=str, required=True)
-dir1_arg = parser.add_argument('--dir1', type=str, required=False)
-dir2_arg = parser.add_argument('--dir2', type=str, required=False)
-args = parser.parse_args()
-
-if args.ghpages is None:
-    raise argparse.ArgumentError(gh_arg, 'Please provide path to gh pages dir as argument!')
-else:
-    gh_pages = args.ghpages
-
-# Sys args passed by test-cactus, providing test output directories
-if args.dir1 is not None and args.dir2 is not None:
-    dir1 = args.dir1
-    dir2 = args.dir2
+# module global variables
+# TODO: make how these are used uniform, see how ohter Python modules handles this
+master = None
+gh_pages = None
+dir1 = None
+dir2 = None
 
 def main():
+    global master, gh_pages, dir1, dir2
+
+    parser = argparse.ArgumentParser()
+    ms_arg = parser.add_argument('--master', type=str, required=False)
+    gh_arg = parser.add_argument('--ghpages', type=str, required=True)
+    dir1_arg = parser.add_argument('--dir1', type=str, required=False)
+    dir2_arg = parser.add_argument('--dir2', type=str, required=False)
+    args = parser.parse_args()
+
+    if args.master is not None:
+        master = args.master
+
+    if args.ghpages is None:
+        raise argparse.ArgumentError(gh_arg, 'Please provide path to gh pages dir as argument!')
+    else:
+        gh_pages = args.ghpages
+
+    # Sys args passed by test-cactus, providing test output directories
+    if args.dir1 is not None and args.dir2 is not None:
+        dir1 = args.dir1
+        dir2 = args.dir2
+
     version=get_version()+1
     store_version(version)
     os.mkdir(f"{gh_pages}/records/version_{version}/")
@@ -71,13 +83,16 @@ def copy_logs(test_dir,version):
     shutil.copy(log,dst+build)
 
 
-def copy_build(version, test_results):
+def copy_build(version, test_results, store = None):
     '''
         This copies the old html build files showing test
         results for future use
     '''
-    dst=f"{gh_pages}/docs/build_{version}.html"
-    with open(os.path.join(f"{gh_pages}/docs", dst), 'w') as fp:
+    if(store == None):
+        store = gh_pages
+
+    dst=f"{store}/docs/build_{version}.html"
+    with open(os.path.join(f"{store}/docs", dst), 'w') as fp:
         fp.write(test_results)
     return f"build_{version}.html"
 
@@ -98,13 +113,16 @@ def store_commit_id(version):
     id=f"{master}/.git/refs/heads/master"
     shutil.copy(id,dst)
 
-def get_version():
+def get_version(store = None):
     '''
         This checks the version of the current build
         by looking at the file names from old builds.
     '''
+    if(store == None):
+        store = gh_pages
+
     current=0
-    build_records=glob.glob(f"{gh_pages}/records/version_*")
+    build_records=glob.glob(f"{store}/records/version_*")
     builds=[int(x.split("_")[-1].split(".")[0]) for x in build_records]
     try:
         current_build=max(builds)
@@ -120,12 +138,15 @@ def store_version(next_build):
     with open(f"{gh_pages}/docs/version.txt",'a') as vers:
         vers.write(f"{next_build}\n")
 
-def get_commit_id(version):
+def get_commit_id(version, store = None):
     '''
         Returns the code commit id that this version corresponds to.
     '''
+    if(store == None):
+        store = gh_pages
+
     try:
-        with open(f"{gh_pages}/records/version_{version}/id.txt", "r") as fh:
+        with open(f"{store}/records/version_{version}/id.txt", "r") as fh:
             id = fh.readline().strip()
     except FileNotFoundError:
         id = "0"
