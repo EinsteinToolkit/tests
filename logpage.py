@@ -409,7 +409,10 @@ def create_test_results(readfile):
                         <a href="{baseurl}/tree/gh-pages/records/version_{curr_ver}" target="_blank">Build #{curr_ver}</a>
                     </h3>
                     <h6 style="text-align:center">
-                        <a href="index.html">Go to latest build</a>
+                        <a href="index.html"id="current_build">Go to latest build</a>
+                        <script>if(window!==window.parent) // embedded in iframe (works also locally with cross-origin protection)
+                            document.getElementById("current_build")["href"] = "build.html";
+                        </script>
                     </h6>
                     <h3 style="text-align:center">{build_date}</h3>
                     <table class="table table-bordered " >
@@ -453,6 +456,11 @@ def summary_to_html(readfile,writefile):
     sidebar_template = create_sidebar()
     with open(writefile,"w") as fp:
         curr_build_file = create_test_results(readfile)
+        try:
+            os.remove(f"{gh_pages}/docs/build.html")
+        except FileNotFoundError:
+            pass
+        os.symlink(curr_build_file, f"{gh_pages}/docs/build.html")
 
         # The formatted string holds the html template and loads in the values for content and status  
         # This templated gets injected to index.html, holding both the sidebar and test results  
@@ -518,7 +526,7 @@ def summary_to_html(readfile,writefile):
             <div class="sidebar">
                 {sidebar_template}
             </div>
-            <iframe class="iframe" src={curr_build_file} name="results_iframe"></iframe>
+            <iframe class="iframe" src="build.html" name="results_iframe"></iframe>
             <script src='version.js'>
             </script>
         </body>
