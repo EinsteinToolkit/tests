@@ -71,10 +71,12 @@ We use github concurrency to acheive this: https://docs.github.com/en/actions/us
 
 The CI runner checks-out both the scripts branch (contains the scripts are to parse and output the data) and the gh-pages branch (contains test log files and HTML output).
 
+![check-out](https://github.com/EinsteinToolkit/tests/blob/gh-pages/images/check-out.png)
+
 Then all the required libraries are installed, after which a clone of the master branch is created and the files from the gh-pages and scripts 
 branches are copied over into a new repository on GitHub's cloud and run:
 
-![copy](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/images/copy.png)
+![copy](https://github.com/EinsteinToolkit/tests/blob/gh-pages/images/libraries.png)
 
 Then the files with the data that needs to be stored are copied back and pushed to the remote gh-pages branch.
 
@@ -84,7 +86,7 @@ the workflow again. This workflow would be run again using this plugin: https://
 
 ![check](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/images/check.png)
 
-### parser
+### logparser
 
 This python script is used to parse the log files for required data.
 The parsing is done by using regex expression matching to find the
