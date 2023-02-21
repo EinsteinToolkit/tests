@@ -73,7 +73,9 @@ The CI runner checks-out both the scripts branch (contains the scripts are to pa
 
 ![check-out](https://github.com/EinsteinToolkit/tests/blob/gh-pages/images/check-out.png)
 
-Then all the required libraries are installed, after which a clone of the master branch is created and the files from the gh-pages and scripts 
+It is important to note that for every workflow run, a link to the master branch and gh-pages branch have to be passed. This done to minimize hardcoding of the workflow and help improve transferability of the testing framework.
+
+Then, all the required libraries are installed, after which a clone of the master branch is created and the files from the gh-pages and scripts 
 branches are copied over into a new repository on GitHub's cloud and run:
 
 ![copy](https://github.com/EinsteinToolkit/tests/blob/gh-pages/images/libraries.png)
@@ -84,30 +86,33 @@ In order check if there was a workflow run that was cancelled the workflow
 checks if there were in any changes made to the repository and if so it runs
 the workflow again. This workflow would be run again using this plugin: https://github.com/benc-uk/workflow-dispatch
 
-![check](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/images/check.png)
+![check](https://github.com/EinsteinToolkit/tests/blob/gh-pages/images/check.png)
 
 ### logparser
 
 This python script is used to parse the log files for required data.
 The parsing is done by using regex expression matching to find the
-necessary information. A brief description of what each function
-does
+necessary information. Initially, logparser looks through the arguments provided for the master and gh-pages branch.
+
+A brief description of what each function does:
 
 `create_summary(file)` This function looks for the summary of the tests stored in log files such
 as build__2_1.log or build__1_2.log:
 
-![summary](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/images/summary.png)
+![summary](https://github.com/EinsteinToolkit/tests/blob/gh-pages/images/summary.png)
 
 `get_tests(file)` Gets the name of the test that passed and failed as listed in log files such
 as build__2_1.log or build__1_2.log:
 
-![pass-fail](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/images/pass-fail.png)
+![pass-fail](https://github.com/EinsteinToolkit/tests/blob/gh-pages/images/pass-fail.png)
 
 `test_comp(file1,file2)` Compares the passed and failed tests from file1 and file2 and returns
 which files are newly passing,newly failing, newly added and removed.
 
 `get_times(file)` This function finds the times taken for each test in the log
 file and then stores that in a dictionary and then sorts those tests in descending order by time
+
+`exceed_thresh(time_dict,thresh)` This function finds tests that exceed a certain time threshhold
 
 `longest_tests(time_dict,num_tests)` This function uses output from get_times i.e. time_dict to find
 num_tests number of the longest test
@@ -126,21 +131,30 @@ and outputs the number of warnings per thorn:
 
 `get_compile(file)` Gets the total number of compilation warnings
 
+`get_warning_type(file)`  Compiles of counts of what types of warnings are produced the most
+ during compilation
+
+`get_warning_thorns(file)` This code finds how many compile time warnings are related each thorn
+
 ### store
 
-`copy_tests(test_dir,version,procs)`  copies logs and diffs for each test. test_dir is where the test logs 
-and diffs are.The version number and number of procs is used to store the files as shown below:
+`copy_tests(test_dir,version,procs)`  copies logs and diffs for each test. test_dir is where the test logs and diffs are.The version number and number of procs is used to store the files as shown below:
 
 ![vers_proc](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/images/vers_proc.png)
 
-`copy_logs(version)` This copies the test logs for future use
+`copy_logs(test_dir, version)` This copies the test logs for future use
+
+`copy_build(version, test_results, store = None)` This copies the old html build files showing test results for future use
 
 `copy_compile_log(version)` This copies the compilation logs for future use
 
-`copy_index(version)`  This copies the old html files showing test results for future use
+`store_commit_id(version)` This stores the current git HEAD hash for future use
 
-`get_version()` Gets the version based on the stored files if there are no stored files
-returns 1
+`get_version(store = None)` Gets the version based on the stored files if there are no stored files returns 1
+
+`store_version(next_build)` This stores the version of the current build in the list of build numbers file.
+
+`get_commit_id(version, store = None)` This returns the code commit id that this version corresponds to.
 
 ### logpage
 
@@ -154,8 +168,8 @@ shown in these documentation links: https://docs.github.com/en/rest/reference/re
 This file uses bokeh, a python library, to generate plots. The plots are created using python code and bokeh
 then converts to javascript and html.
 
-![bokeh](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/images/bokeh.png)
-![plot](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/images/plot.PNG)
+![bokeh](https://github.com/EinsteinToolkit/tests/blob/gh-pages/images/bokeh.png)
+![plot](https://github.com/EinsteinToolkit/tests/blob/gh-pages/images/plot.PNG)
 
 Bokeh's plotting works similar to other plotting libraries. First a figure is generated and attributes can
 be added such as tools to zoom, labels, axis ranges, etc. Bokeh plots using glyphs i.e. given data it will
@@ -163,5 +177,5 @@ plot it in the format specified for example p.line shown above generates a line 
 used for scatter plots. Bokeh can show its plot locally and save it as a file or generate html and javascript
 for the plot as shown below:
 
-![bokeh2](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/images/bokeh2.png)
+![bokeh2](https://github.com/EinsteinToolkit/tests/blob/gh-pages/images/bokeh2.png)
 
