@@ -39,6 +39,8 @@ After creating the token it can be stored as shown here https://docs.github.com/
 
 master:
 - `main.yml` - Executes the workflow
+- `docs.yml` - Periodically checks for new commits in the repo
+
 
 scripts:
 - `build-and-test.sh` - Compiles and runs the tests
