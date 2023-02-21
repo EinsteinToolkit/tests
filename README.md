@@ -46,8 +46,8 @@ scripts:
 - `logpage.py` - Generates the HTML pages
 - `store.py` - Stores logs for future use
 - `mail.py` - Send email each time tests are run
-- 'regenrate.py` - Used to regenerate all HTML pages when new design is created
-- 'create_csv.py' - Used to create new CSV files when columns are added
+- `regenerate.py` - Used to regenerate all HTML pages when new design is created
+- `create_csv.py` - Used to create new CSV files when columns are added
 
 gh-pages:
 - `test_nums.csv` - Stores summary stats from logs
