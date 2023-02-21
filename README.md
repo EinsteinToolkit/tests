@@ -47,7 +47,7 @@ scripts:
 - `store.py` - Stores logs for future use
 - `mail.py` - Send email each time tests are run
 - `regenerate.py` - Used to regenerate all HTML pages when new design is created
-- `create_csv.py` - Used to create new CSV files when columns are added
+- `create_csv.py` - Used to recreate CSV files when new columns are added
 
 gh-pages:
 - `test_nums.csv` - Stores summary stats from logs
@@ -64,15 +64,10 @@ and pushes all the generated log and html files to the repository.
 
 The workflow is run on each push and can also be run manually
 
-The first part of the workflow is checking if there is already a
-workflow run in progress, and if that is true, this new run is not
-performed. This uses this plugin: https://github.com/fkirc/skip-duplicate-actions
+The first part of the workflow is checking if there is already a workflow run in progress, and if that is true, this new run is put into a pending state. If there exists a pending run and the workflow is triggered, the pending workflow is cancelled, and the new workflow has pending status.
+We use github concurrency to acheive this: https://docs.github.com/en/actions/using-jobs/using-concurrency
 
-![skipping-code](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/images/skip.png)
-
-The second workflow run in this picture ends in 18s as the
-third one was running at the same time
-![skipping-result](https://github.com/mojamil/einsteintoolkit/blob/gh-pages/images/skip2.png)
+![skipping-code](https://github.com/EinsteinToolkit/tests/blob/gh-pages/images/conc-manual.png)
 
 The CI runner checks-out both the scripts branch (contains the scripts are to parse and output the data) and the gh-pages branch (contains test log files and HTML output).
 
