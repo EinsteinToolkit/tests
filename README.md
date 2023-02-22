@@ -13,6 +13,7 @@
     - [logpage](#logpage)
     - [regenerate](#regenerate)
     - [create_csv](#create_csv)
+    - [i-frames and badge](#sidebar.html)
   
 ## Introduction
 
@@ -164,6 +165,7 @@ Logpage.py generates tables for the html report page and outputs as an html page
 shown here:
 https://einsteintoolkit.github.io/tests/
 
+
 This file gets the last few commits using githubs REST API for commits and workflow runs as 
 shown in these documentation links: https://docs.github.com/en/rest/reference/repos#commits and https://docs.github.com/en/rest/reference/actions
 
@@ -204,6 +206,9 @@ for the plot as shown below:
 ![unrunnable](https://github.com/EinsteinToolkit/tests/blob/gh-pages/images/unrunnable.png)
 
 `create_sidebar()` This creates sidebar.html containing all build numbers that gets injected into the HTML page created in summary_to_html
+
+#there is a badge on the einstein toolkit website. Document on how to add this
+# Put in i-frames and version.js (change extension to HTML)
 
 ![sidebar](https://github.com/EinsteinToolkit/tests/blob/gh-pages/images/sidebar.png)
 
