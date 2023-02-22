@@ -11,6 +11,8 @@
     - [logparser](#logparser)
     - [store](#store)
     - [logpage](#logpage)
+    - [regenerate](#regenerate)
+    - [create_csv](#create_csv)
   
 ## Introduction
 
@@ -210,6 +212,14 @@ for the plot as shown below:
 `summary_to_html(readfile,writefile)` This function reads the log file and outputs and html page with the summary in a table
 
 `write_to_csv(readfile)` This function is used to store data between builds into a csv
+
+### regenerate
+
+This python script is used to regenerate all HTML builds in the case of design changes. This file is similar to logpage. These functions are slightly modified so that the design changes can be run in a for-loop, and hence affect all builds up to date
+
+### create_csv
+
+This python script is used to add columns and automate the creation of a new csv file with previous and newly added data. This file is also similar to logpage. However, since we are only modifying the CSV file, we do not use functions related to thhe HTML page in logpage. 
         
 
 
