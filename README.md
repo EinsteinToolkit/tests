@@ -219,7 +219,7 @@ This python script is used to regenerate all HTML builds in the case of design c
 
 ### create_csv
 
-This python script is used to add columns and automate the creation of a new csv file with previous and newly added data. This file is also similar to logpage. However, since we are only modifying the CSV file, we do not use functions related to thhe HTML page in logpage. 
+This python script is used to add columns and automate the creation of a new csv file with previous and newly added data. This file is also similar to logpage. However, since we are only modifying the CSV file, we do not use logpage functions that modify the HTML site. 
         
 
 
