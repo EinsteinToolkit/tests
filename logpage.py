@@ -102,59 +102,59 @@ def gen_diffs(readfile):
         # For each test get the thorn name and the current version
         for result in test_comparison.keys():
         # For each test make a header with the description of why that test is being shown(failed, newly added, newly failing)
-        output+=f'''<tr><th colspan="5">'''+result+"</th></tr>\n"
+            output+=f'''<tr><th colspan="5">'''+result+"</th></tr>\n"
 
-        # If no such test exists add empty row
-        if(len(test_comparison[result])==0):
-            output+="<tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>"
+            # If no such test exists add empty row
+            if(len(test_comparison[result])==0):
+                output+="<tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>"
 
-        # For each test get the thorn name and the current version
-        for test in test_comparison[result]:
-            thorn=test.split()[-1]
-            thorn=thorn[:len(thorn)-1]
-            test_name=test.split()[0]
-            ver=curr_ver
+            # For each test get the thorn name and the current version
+            for test in test_comparison[result]:
+                thorn=test.split()[-1]
+                thorn=thorn[:len(thorn)-1]
+                test_name=test.split()[0]
+                ver=curr_ver
 
-            # Since the removed test would have been stored in the curr version subtract 1 from the version number
-            if("Removed" in result):
-                ver-=1
+                # Since the removed test would have been stored in the curr version subtract 1 from the version number
+                if("Removed" in result):
+                    ver-=1
 
-            # Links for logs and diffs of the tests in the test_comparison dictionary based on the number of procs
-            logl1=f"{baseurl}/tree/gh-pages/records/version_{ver}/sim_{ver}_1/{thorn}/{test_name}.log"
-            print(logl1)
-            logl2=f"{baseurl}/tree/gh-pages/records/version_{ver}/sim_{ver}_2/{thorn}/{test_name}.log"
-            diffl1=f"{baseurl}/tree/gh-pages/records/version_{ver}/sim_{ver}_1/{thorn}/{test_name}.diffs"
-            diffl2=f"{baseurl}/tree/gh-pages/records/version_{ver}/sim_{ver}_2/{thorn}/{test_name}.diffs"
+                # Links for logs and diffs of the tests in the test_comparison dictionary based on the number of procs
+                logl1=f"{baseurl}/tree/gh-pages/records/version_{ver}/sim_{ver}_1/{thorn}/{test_name}.log"
+                print(logl1)
+                logl2=f"{baseurl}/tree/gh-pages/records/version_{ver}/sim_{ver}_2/{thorn}/{test_name}.log"
+                diffl1=f"{baseurl}/tree/gh-pages/records/version_{ver}/sim_{ver}_1/{thorn}/{test_name}.diffs"
+                diffl2=f"{baseurl}/tree/gh-pages/records/version_{ver}/sim_{ver}_2/{thorn}/{test_name}.diffs"
 
-            # Check if these files are available if not display not avaible on the table 
-            if(os.path.isfile("./"+logl1[logl1.find("records"):])):
-                output+=f"  <tr><td>{test}</td><td><a href='{logl1}' target='_blank'>log</a></td>"
-            else:
-                output+=f" <tr><td>{test}</td><td>Not Available</td>"
-            if(os.path.isfile("./"+logl2[logl2.find("records"):])):
-                output+=f"  <td><a href='{logl2}' target='_blank'>log</a></td>"
-            else:
-                output+=f" <td>Not Available</td>"
-            if(os.path.isfile("./"+diffl1[diffl1.find("records"):])):
-                output+=f"<td><a href='{diffl1}' target='_blank'>diff</a></td>"
-            else:
-                output+=f"<td>Not Available</td>"  
-            if(os.path.isfile("./"+diffl2[diffl2.find("records"):])):
-                output+=f"<td><a href='{diffl2}' target='_blank'>diff</a></td></tr>\n"
-            else:
-                output+=f"<td>Not Available</td>\n"  
+                # Check if these files are available if not display not avaible on the table 
+                if(os.path.isfile("./"+logl1[logl1.find("records"):])):
+                    output+=f"  <tr><td>{test}</td><td><a href='{logl1}' target='_blank'>log</a></td>"
+                else:
+                    output+=f" <tr><td>{test}</td><td>Not Available</td>"
+                if(os.path.isfile("./"+logl2[logl2.find("records"):])):
+                    output+=f"  <td><a href='{logl2}' target='_blank'>log</a></td>"
+                else:
+                    output+=f" <td>Not Available</td>"
+                if(os.path.isfile("./"+diffl1[diffl1.find("records"):])):
+                    output+=f"<td><a href='{diffl1}' target='_blank'>diff</a></td>"
+                else:
+                    output+=f"<td>Not Available</td>"  
+                if(os.path.isfile("./"+diffl2[diffl2.find("records"):])):
+                    output+=f"<td><a href='{diffl2}' target='_blank'>diff</a></td></tr>\n"
+                else:
+                    output+=f"<td>Not Available</td>\n"  
 
-            # If this test instance was a failed test, find the first time it failed
-            if(result == 'Failed Tests'):
-                first_failure =  get_first_failure(test)
-                # No report found with first failure
-                if (first_failure) == -1:
-                    output+=f"<td>Not Available</td></tr>\n"  
-                else :
-                    first_failure_link=f'build_{first_failure}.html'
-                    output+=f"<td><a href='{first_failure_link}' target='_blank'>report</a></td></tr>\n"
-            else:
-                output+= f"<td></td></tr>"
+                # If this test instance was a failed test, find the first time it failed
+                if(result == 'Failed Tests'):
+                    first_failure =  get_first_failure(test)
+                    # No report found with first failure
+                    if (first_failure) == -1:
+                        output+=f"<td>Not Available</td></tr>\n"  
+                    else :
+                        first_failure_link=f'build_{first_failure}.html'
+                        output+=f"<td><a href='{first_failure_link}' target='_blank'>report</a></td></tr>\n"
+                else:
+                    output+= f"<td></td></tr>"
     
     output+="</table>"
     return output
