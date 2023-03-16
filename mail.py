@@ -17,7 +17,7 @@ from logpage import gh_pages, repo
 # Create the body of the message (a plain-text and an HTML version).
 text = "HTML only email, please see https://einsteintoolkit.github.io/carpetx-tests for output"
 
-curr_ver = get_version()
+curr_ver = get_version(gh_pages)
 summary=f"{gh_pages}/records/version_{curr_ver}/build__2_1_{curr_ver}.log"
 baseurl = repo.remotes["origin"].url.replace("git@", "https://").replace(".git","")
 
