@@ -47,7 +47,7 @@ def main():
     summary_to_html(curr, f"{gh_pages}/docs/index.html")
     test_comparison = test_comp(curr, last)
     if len(test_comparison["Failed Tests"])!=0 or len(test_comparison["Newly Passing Tests"])!=0 :
-        os.system(f"python3 ./mail.py") 
+        os.system(f"python3 ./mail.py --master {master} --ghpages {gh_pages}") 
 
 def gen_commits():
     '''
@@ -97,7 +97,7 @@ def gen_diffs(readfile):
 
         # If no such test exists add empty row
         if(len(test_comparison[result])==0):
-            output+="<tr><td></td></tr>"
+            output+="<tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>"
 
         # For each test get the thorn name and the current version
         for result in test_comparison.keys():
