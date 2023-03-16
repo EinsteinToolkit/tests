@@ -100,6 +100,15 @@ def gen_diffs(readfile):
             output+="<tr><td></td></tr>"
 
         # For each test get the thorn name and the current version
+        for result in test_comparison.keys():
+        # For each test make a header with the description of why that test is being shown(failed, newly added, newly failing)
+        output+=f'''<tr><th colspan="5">'''+result+"</th></tr>\n"
+
+        # If no such test exists add empty row
+        if(len(test_comparison[result])==0):
+            output+="<tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>"
+
+        # For each test get the thorn name and the current version
         for test in test_comparison[result]:
             thorn=test.split()[-1]
             thorn=thorn[:len(thorn)-1]
@@ -112,6 +121,7 @@ def gen_diffs(readfile):
 
             # Links for logs and diffs of the tests in the test_comparison dictionary based on the number of procs
             logl1=f"{baseurl}/tree/gh-pages/records/version_{ver}/sim_{ver}_1/{thorn}/{test_name}.log"
+            print(logl1)
             logl2=f"{baseurl}/tree/gh-pages/records/version_{ver}/sim_{ver}_2/{thorn}/{test_name}.log"
             diffl1=f"{baseurl}/tree/gh-pages/records/version_{ver}/sim_{ver}_1/{thorn}/{test_name}.diffs"
             diffl2=f"{baseurl}/tree/gh-pages/records/version_{ver}/sim_{ver}_2/{thorn}/{test_name}.diffs"
@@ -130,7 +140,7 @@ def gen_diffs(readfile):
             else:
                 output+=f"<td>Not Available</td>"  
             if(os.path.isfile("./"+diffl2[diffl2.find("records"):])):
-                output+=f"<td><a href='{diffl2}' target='_blank'>diff</a></td>\n"
+                output+=f"<td><a href='{diffl2}' target='_blank'>diff</a></td></tr>\n"
             else:
                 output+=f"<td>Not Available</td>\n"  
 
@@ -139,10 +149,12 @@ def gen_diffs(readfile):
                 first_failure =  get_first_failure(test)
                 # No report found with first failure
                 if (first_failure) == -1:
-                    output+=f"<td>Not Available</td>\n"  
+                    output+=f"<td>Not Available</td></tr>\n"  
                 else :
                     first_failure_link=f'build_{first_failure}.html'
                     output+=f"<td><a href='{first_failure_link}' target='_blank'>report</a></td></tr>\n"
+            else:
+                output+= f"<td></td></tr>"
     
     output+="</table>"
     return output
