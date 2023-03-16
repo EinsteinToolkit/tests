@@ -120,11 +120,10 @@ def gen_diffs(readfile):
                     ver-=1
 
                 # Links for logs and diffs of the tests in the test_comparison dictionary based on the number of procs
-                logl1=f"{baseurl}/tree/gh-pages/records/version_{ver}/sim_{ver}_1/{thorn}/{test_name}.log"
-                print(logl1)
-                logl2=f"{baseurl}/tree/gh-pages/records/version_{ver}/sim_{ver}_2/{thorn}/{test_name}.log"
-                diffl1=f"{baseurl}/tree/gh-pages/records/version_{ver}/sim_{ver}_1/{thorn}/{test_name}.diffs"
-                diffl2=f"{baseurl}/tree/gh-pages/records/version_{ver}/sim_{ver}_2/{thorn}/{test_name}.diffs"
+                logl1=f"{baseurl}/blob/gh-pages/records/version_{ver}/sim_{ver}_1/{thorn}/{test_name}.log"
+                logl2=f"{baseurl}/blob/gh-pages/records/version_{ver}/sim_{ver}_2/{thorn}/{test_name}.log"
+                diffl1=f"{baseurl}/blob/gh-pages/records/version_{ver}/sim_{ver}_1/{thorn}/{test_name}.diffs"
+                diffl2=f"{baseurl}/blob/gh-pages/records/version_{ver}/sim_{ver}_2/{thorn}/{test_name}.diffs"
 
                 # Check if these files are available if not display not avaible on the table 
                 if(os.path.isfile("./"+logl1[logl1.find("records"):])):
