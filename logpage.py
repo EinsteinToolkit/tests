@@ -131,7 +131,7 @@ def gen_diffs(readfile):
             else:
                 output+=f"<td>Not Available</td>"  
             if(os.path.isfile(gh_pages + "/"+diffl2[diffl2.find("records"):])):
-                output+=f"<td><a href='{diffl2}' target='_blank'>diff</a></td></tr>\n"
+                output+=f"<td><a href='{diffl2}' target='_blank'>diff</a></td>\n"
             else:
                 output+=f"<td>Not Available</td>\n"
 
