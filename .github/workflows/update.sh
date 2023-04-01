@@ -6,7 +6,7 @@ git submodule init
 awk '{print} /^[[]submodule "/{print "update = !git reset --quiet --mixed"}' .git/config >.git/config.tmp
 mv .git/config.tmp .git/config
 # --init required to due Kranc containing another submodule
-git submodule update --init --recursive --remote --no-fetch --depth 1 --jobs 4
+git submodule update --init --recursive --remote --no-fetch --depth 1 --no-single-branch --jobs 4
 git add --all
 
 # need commits to produce list of changes
