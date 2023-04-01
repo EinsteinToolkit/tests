@@ -3,7 +3,7 @@
 set -e -x
 
 git submodule init
-awk '/^[[]submodule "/{print "update = !git reset --quiet --mixed"} {print}' .git/config >.git/config.tmp
+awk '{print} /^[[]submodule "/{print "update = !git reset --quiet --mixed"}' .git/config >.git/config.tmp
 mv .git/config.tmp .git/config
 # --init required to due Kranc containing another submodule
 git submodule update --init --recursive --remote --no-fetch --depth 1 --jobs 4
