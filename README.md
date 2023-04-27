@@ -8,7 +8,7 @@
     - [File Overview](#file-overview)
   - [Explanation of Files](#explanation-of-files)
     - [main.yml](#mainyml)
-    - [parser](#parser)
+    - [logparser](#logparser)
     - [store](#store)
     - [logpage](#logpage)
   
