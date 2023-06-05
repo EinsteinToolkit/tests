@@ -112,6 +112,14 @@ for nprocs in 1 2; do
     cores=$(mdbentry $machine ppn)
     threads=$((cores/nprocs))
     cp $testdir/sim/summary.log build__${nprocs}_${threads}.log
+
+    # check for a failure in tests
+    if [ -n "$GITHUB_ENV" ] ; then
+        if ! [ -r $testdir/sim/summary.log ] || \
+           grep -q 'Number failed *-> [^0]' $testdir/sim/summary.log ; then
+            echo "TESTS_FAILED=True" >> $GITHUB_ENV
+        fi
+    fi
 done
 
 # Enter $GTIHUB_WORKSPACE/scripts to run store.py
