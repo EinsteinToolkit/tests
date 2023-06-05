@@ -59,7 +59,6 @@ if [ -z ${GIT_COMMIT+x} ]; then
     GIT_COMMIT=temp
 fi
 
-echo "<testsuite>" >testresults.xml
 for nprocs in 1 2; do
     simname=${JOB_NAME}_${GIT_COMMIT}_${nprocs}
 rm -rf $simdir/$simname
@@ -113,67 +112,7 @@ for nprocs in 1 2; do
     cores=$(mdbentry $machine ppn)
     threads=$((cores/nprocs))
     cp $testdir/sim/summary.log build__${nprocs}_${threads}.log
-
-    awk -v nprocs=$nprocs -v testdir=$testdir '/Run details for configuration/,/============/ \
-{if (NF==2) {thorn=substr($1,1,length($1)-1); test=$2;}\
- else if (thorn != "" && NF > 1)\
- {status = substr($1,1,length($1)-1);
-  print thorn, test, status}}' <$testdir/sim/summary.log |
-    while read thorn test status; do
-	time=$(awk '$1 == "RUNTIME" {print $3}' ${testdir}/sim/${thorn}/${test}.log)
-	echo "<testcase classname=\"${thorn}\" name=\"${test}/${nprocs}procs\" time=\"${time}\">";
-
-	# We output the log file if the test failed
-	if [ "z${status}" = "zFailure" ]; then
-	    echo "<system-out><![CDATA[" 
-	    outfile=${testdir}/sim/${thorn}/${test}.log
-	    cat $outfile | tr -d '\001-\010\013-\037\177-\377'
-	    echo "]]>"
-	    echo "</system-out>"
-	fi
-
-	if [ "z${status}" = "zFailure" ]; then
-
-	    diffsfile=${testdir}/sim/${thorn}/${test}.diffs
-
-	    # If the diffs file exists, we call this a "failure"
-	    if [ -r "$diffsfile" ]; then
-		echo "<failure type=\"Test failed\">"
-		echo "<![CDATA["
-		cat $diffsfile
-		echo "]]>"
-		echo "</failure>"
-	    else
-            # The diffs file doesn't exist, so something must have
-            # gone wrong. We call this an "error".
-
-                errormsg=$(grep -m 1 -A 3 -i "warning level 0" $outfile || true)
-
-		if [ -z "$errormsg" ]; then
-		    errormsg=$(grep -m 1 -i "Assertion .* failed" $outfile || true)
-		fi
-
-		errormsg_quoted=$(python2 -c 'import xml.sax.saxutils; import sys; print xml.sax.saxutils.quoteattr(sys.argv[1])' "$errormsg")
-		
-		echo "<error message=${errormsg_quoted}>"
-		btfile=$(ls ${testdir}/sim/${thorn}/${test}/backtrace.*.txt 2>/dev/null |head -1 || true)
-		if [ -n "$btfile" ]; then
-		    echo "<![CDATA["
-		    cat $btfile
-		    echo "]]>"
-		fi
-		echo "</error>"
-	    fi
-	elif [ "z${status}" = "zSuccess" ]; then
-	    echo >/dev/null
-	else
-	    echo "Unrecognised status: \"$status\"" >&2
-	    exit 1
-	fi
-	echo "</testcase>"
-   done  >>testresults.xml
 done
-echo "</testsuite>" >>testresults.xml
 
 # Enter $GTIHUB_WORKSPACE/scripts to run store.py
 # TODO: remove this assumption about relative location of repos
