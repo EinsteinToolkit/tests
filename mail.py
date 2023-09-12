@@ -6,16 +6,9 @@ from store import get_version
 import logpage
 from pygit2 import Repository
 
-# Import smtplib for the actual sending function
-import smtplib
-
-# Import the email modules we'll need
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 from logpage import gh_pages, repo
 
-# Create the body of the message (a plain-text and an HTML version).
-text = "HTML only email, please see https://einsteintoolkit.github.io/carpetx-tests for output"
+import requests
 
 curr_ver = get_version(gh_pages)
 summary=f"{gh_pages}/records/version_{curr_ver}/build__2_1_{curr_ver}.log"
@@ -46,24 +39,9 @@ html = f'''<!doctype html>
 	</html>
 '''
 
-msg = MIMEMultipart('alternative')
-msg['Subject'] = f"Einstein Toolkit test report: {status}"
-msg['From'] = "jenkins@build-test.barrywardell.net"
-msg['To'] = "test@einsteintoolkit.org"
+subject = f"Einstein Toolkit test report: {status}"
 
-# Record the MIME types of both parts - text/plain and text/html.
-part1 = MIMEText(text, 'plain')
-part2 = MIMEText(html, 'html')
+r = requests.post('https://www.einsteintoolkit.org/hooks/tests_finished.php?secret=ntdUMP30w0lR3KqXzZds7mftkZox8CHO23',
+                   json={"subject": subject, "message": html})
 
-# Attach parts into message container.
-# According to RFC 2046, the last part of a multipart message, in this case
-# the HTML message, is best and preferred.
-msg.attach(part1)
-msg.attach(part2)
-
-# Send the message via our own SMTP server.
-s = smtplib.SMTP('mail.einsteintoolkit.org')
-s.set_debuglevel(True)
-s.send_message(msg)
-
-s.quit()
+sys.exit(0 if r.status_code == 200 else 1)
