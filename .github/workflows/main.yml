@@ -21,7 +21,7 @@ jobs:
   # This workflow contains a single job called "build"
   build:
     # The type of runner that the job will run on
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Below the runner checks-out multiple branches side by side, under different paths
@@ -33,7 +33,7 @@ jobs:
           fetch-depth: 0
           path: master
           submodules: recursive
-          single-branch: true
+#           single-branch: true
       # Check-out scripts branch under $GITHUB_WORKSPACE/scripts to access scripts to run
       - uses: actions/checkout@v3
         with:
@@ -52,14 +52,13 @@ jobs:
       # This step stores certain environment variables in a file that is on githubs clouds
       - name: Create Environment Variables
         run: |
-          echo "CHANGES_MADE=False" >> $GITHUB_ENV
           echo "TESTS_FAILED=False" >> $GITHUB_ENV
     
       # Install prerequisite libraries for einstein toolkit
       - name: Install pre-requisite libraries
         run:  |
           sudo apt update
-          $(sudo -l sudo) su -c 'apt-get install --fix-missing -y pkg-config subversion gcc git numactl libgit2-dev libgsl-dev libpapi-dev python-is-python3 libhwloc-dev libudev-dev make libopenmpi-dev libhdf5-openmpi-dev libfftw3-dev libssl-dev liblapack-dev g++ curl gfortran patch pkg-config libhdf5-dev libjpeg-turbo?-dev'
+          $(sudo -l sudo) su -c 'apt-get install --fix-missing -y pkg-config subversion gcc git numactl libgit2-dev=1.1.0+dfsg.1-4.1build1 libgsl-dev libpapi-dev python-is-python3 libhwloc-dev libudev-dev make libopenmpi-dev libhdf5-openmpi-dev libfftw3-dev libssl-dev liblapack-dev g++ curl gfortran patch pkg-config libhdf5-dev libjpeg-turbo?-dev'
       
       - name: Set up Python 3.x
         uses: actions/setup-python@v4
@@ -78,7 +77,8 @@ jobs:
               pip install bokeh==2.0.1
               pip install matplotlib
               pip install requests
-              pip install pygit2==1.0.3
+              # must be compatible with libgit2-dev from apt
+              pip install pygit2==1.4.0
               
       # Run the script to build and test (build-and-test.sh) and write results to HTML pages (logpage.py)
       # The script that runs the html script outputs if any tests are failed and that is stored as an environment variable
@@ -105,14 +105,6 @@ jobs:
           git config --local user.name "github runner"
           git commit -m "CI workflow updated html file" || true
           
-#         # If there were changes made while this workflow is running set the environment variable CHANGES_MADE to true
-      - name: Check for changes
-        run: |
-          cd master
-          git fetch origin # fetch changes from origin remote
-          if ! git diff --quiet master..origin/master ; then
-            echo "CHANGES_MADE=True" >> $GITHUB_ENV
-          fi
       - name: Push changes
         uses: ad-m/github-push-action@master
         with:
@@ -120,17 +112,6 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           branch: "gh-pages"
           
-      # For more info on workflow dispathces see https://github.com/benc-uk/workflow-dispatch
-      - name: Workflow Dispatch
-        # You may pin to the exact commit or the version.
-        # uses: benc-uk/workflow-dispatch@4c044c1613fabbe5250deadc65452d54c4ad4fc7
-        if: ${{env.CHANGES_MADE == 'True'}}
-        uses: benc-uk/workflow-dispatch@v1
-        with:
-          # Name or ID of workflow to run
-          workflow: 'CI'
-          # GitHub token with repo write access, can NOT use secrets.GITHUB_TOKEN, see readme
-          token: ${{ secrets.PERSONAL_TOKEN }}
       # If a test failed the workflow exit with a failing status
       - name: Clean up
         if: ${{env.TESTS_FAILED == 'True'}}

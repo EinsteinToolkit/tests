@@ -3,10 +3,10 @@
 set -e -x
 
 git submodule init
-awk '/^[[]submodule "/{print "update = !git reset --quiet --mixed"} {print}' .git/config >.git/config.tmp
+awk '{print} /^[[]submodule "/{print "update = !git reset --quiet --mixed"}' .git/config >.git/config.tmp
 mv .git/config.tmp .git/config
 # --init required to due Kranc containing another submodule
-git submodule update --init --recursive --remote --no-fetch --depth 1 --jobs 4
+git submodule update --init --recursive --remote --no-fetch --depth 1 --no-single-branch --jobs 4
 git add --all
 
 # need commits to produce list of changes
@@ -18,8 +18,8 @@ for m in $(git diff --cached --name-only) ; do  (
 ) done
 
 if ! git diff --cached --exit-code --quiet ; then
-  git config --global user.email "maintainters@einsteintoolkit.org"
-  git config --global user.name "GitHub updater"
+  git config user.email "maintainters@einsteintoolkit.org"
+  git config user.name "GitHub updater"
   git commit -q -F - <<EOF
 updated submodules
 
