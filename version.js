@@ -15,15 +15,14 @@ try {
   console.log(e.message);
 }
 
-workflowLink = "https://einsteintoolkit.github.io/tests/";
+// workflowLink = "https://einsteintoolkit.github.io/tests/";
+workflowLink= actionLink;
 if (conclusion == "failure") {
     badgeToDisplay = "failing-status.svg";
 } else if (stat == "completed") {
     badgeToDisplay = "passing-status.svg";
 } else {
     badgeToDisplay = "pending-status.svg";
-    // If CI is currently pending, badge links to the action in GitHub
-    workflowLink= actionLink;
 }
 
 try {
