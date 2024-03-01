@@ -342,7 +342,7 @@ def create_sidebar():
         Creates sidebar.html containing all build numbers 
         that gets injected into the HTML page created in summary_to_html
     '''
-    # Add GitHub badge on top of sidebar, will be injected by version.js
+    # Add GitHub badge on top of sidebar, will be injected by badge.js
     template =f'''
         <div class="workflow-status"> </div>
     '''
@@ -530,12 +530,12 @@ def summary_to_html(readfile,writefile):
                 {sidebar_template}
             </div>
             <iframe class="iframe" src="build.html" name="results_iframe"></iframe>
-            <script src='version.js'>
+            <script src='badge.js'>
             </script>
         </body>
     </html>
         '''
-        shutil.copy("version.js", f"{gh_pages}/docs")
+        shutil.copy("badge.js", f"{gh_pages}/docs")
         fp.write(template)
 
 def write_to_csv(readfile):
