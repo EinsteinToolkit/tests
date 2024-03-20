@@ -1,4 +1,5 @@
 var stat, conclusion, actionlink;
+stat = "unknown";
 try {
     var workflowFile = new XMLHttpRequest();
     workflowFile.open("GET", "https://api.github.com/repos/EinsteinToolkit/tests/actions/workflows/main.yml/runs", false);
@@ -16,6 +17,9 @@ try {
                 run_number = i;
                 console.log("run number: "+i);
                 break;
+            } else if (stat == "pending") {
+                run_number = i;
+                console.log("run number: "+i);
             }
         }
         latestRun = jsonResponse["workflow_runs"][run_number];
@@ -37,7 +41,7 @@ if (stat == "completed") {
     } else {
         badgeToDisplay = "unknown";
     }
-} else if (stat == "in_progress") {
+} else if (stat == "in_progress" || stat == "pending") {
     badgeToDisplay = "pending-status.svg";
 } else {
     badgeToDisplay = "unknown";
