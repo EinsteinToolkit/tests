@@ -1,0 +1,429 @@
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn EinsteinInitialData/Exact.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Always:}& {\bf Conditional:} \\ 
+ Exact\_pars\_int &  Exact\_slice\\ 
+ Exact\_pars\_real &  Exact\_slicetemp1\\ 
+~ &  Exact\_slicetemp2\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PARAMCHECK} 
+
+\hspace{5mm} exact\_paramcheck 
+
+\hspace{5mm}{\it do consistency checks on our parameters } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf ADMBase\_InitialData}   (conditional) 
+
+\hspace{5mm} exact\_\_decode\_pars 
+
+\hspace{5mm}{\it decode/copy thorn exact parameters into grid scalars } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & exact::decoded\_exact\_model(everywhere) \\ 
+~& ~ &exact::exact\_pars\_real(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PRESTEP}   (conditional) 
+
+\hspace{5mm} exact\_\_initialize 
+
+\hspace{5mm}{\it set data from exact solution on an exact slice } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Reads:  & grid::x \\ 
+~& ~ &grid::y\\ 
+~& ~ &grid::z\\ 
+~& ~ &exact::decoded\_exact\_model\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & admbase::metric(everywhere) \\ 
+~& ~ &admbase::curv(everywhere)\\ 
+~& ~ &staticconformal::psi(everywhere)\\ 
+~& ~ &staticconformal::confac\_1derivs(everywhere)\\ 
+~& ~ &staticconformal::confac\_2derivs(everywhere)\\ 
+~& ~ &staticconformal::conformal\_state(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_PostStep}   (conditional) 
+
+\hspace{5mm} exact\_\_initialize 
+
+\hspace{5mm}{\it set data from exact solution on an exact slice } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & admbase\_setadmvars \\ 
+~ & Language:  & fortran \\ 
+~ & Reads:  & grid::x \\ 
+~& ~ &grid::y\\ 
+~& ~ &grid::z\\ 
+~& ~ &exact::decoded\_exact\_model\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & admbase::metric(everywhere) \\ 
+~& ~ &admbase::curv(everywhere)\\ 
+~& ~ &staticconformal::psi(everywhere)\\ 
+~& ~ &staticconformal::confac\_1derivs(everywhere)\\ 
+~& ~ &staticconformal::confac\_2derivs(everywhere)\\ 
+~& ~ &staticconformal::conformal\_state(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTSTEP}   (conditional) 
+
+\hspace{5mm} exact\_\_boundary 
+
+\hspace{5mm}{\it overwrite g and k on the boundary with exact solution data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Reads:  & grid::x \\ 
+~& ~ &grid::y\\ 
+~& ~ &grid::z\\ 
+~& ~ &staticconformal::conformal\_state(everywhere)\\ 
+~& ~ &exact::decoded\_exact\_model(everywhere)\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & admbase::metric(boundary) \\ 
+~& ~ &admbase::curv(boundary)\\ 
+~& ~ &admbase::alp(boundary)\\ 
+~& ~ &admbase::shift(boundary)\\ 
+~& ~ &admbase::dtalp(boundary)\\ 
+~& ~ &admbase::dtshift(boundary)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf AddToTmunu} 
+
+\hspace{5mm} exact\_addtotmunu 
+
+\hspace{5mm}{\it set stress energy tansor based on exact solution } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Reads:  & grid::x \\ 
+~& ~ &grid::y\\ 
+~& ~ &grid::z\\ 
+~& ~ &staticconformal::conformal\_state(everywhere)\\ 
+~& ~ &exact::decoded\_exact\_model(everywhere)\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf } 
+
+\hspace{5mm} exact\_\_slice\_data 
+
+\hspace{5mm}{\it  } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Reads:  & grid::x \\ 
+~& ~ &grid::y\\ 
+~& ~ &grid::z\\ 
+~& ~ &exact::exact\_slice(interior)\\ 
+~& ~ &admbase::shift(interior)\\ 
+~& ~ &admbase::alp(interior)\\ 
+~& ~ &staticconformal::conformal\_state(everywhere)\\ 
+~& ~ &exact::decoded\_exact\_model(everywhere)\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & admbase::metric(everywhere) \\ 
+~& ~ &admbase::curv(everywhere)\\ 
+~& ~ &exact::exact\_slicetemp2(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf } 
+
+\hspace{5mm} exact\_\_linear\_extrap\_one\_bndry 
+
+\hspace{5mm}{\it  } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf ADMBase\_InitialData}   (conditional) 
+
+\hspace{5mm} exact\_\_initialize 
+
+\hspace{5mm}{\it set initial data from exact solution on a trivial slice } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & exact\_\_decode\_pars \\ 
+~ & Language:  & fortran \\ 
+~ & Reads:  & grid::x \\ 
+~& ~ &grid::y\\ 
+~& ~ &grid::z\\ 
+~& ~ &exact::decoded\_exact\_model\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & admbase::metric(everywhere) \\ 
+~& ~ &admbase::curv(everywhere)\\ 
+~& ~ &staticconformal::psi(everywhere)\\ 
+~& ~ &staticconformal::confac\_1derivs(everywhere)\\ 
+~& ~ &staticconformal::confac\_2derivs(everywhere)\\ 
+~& ~ &staticconformal::conformal\_state(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf ADMBase\_InitialData}   (conditional) 
+
+\hspace{5mm} exact\_\_slice\_initialize 
+
+\hspace{5mm}{\it set initial data from exact solution on an arbitrary slice } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & exact\_\_decode\_pars \\ 
+~ & Language:  & fortran \\ 
+~ & Reads:  & grid::x \\ 
+~& ~ &grid::y\\ 
+~& ~ &grid::z\\ 
+~& ~ &admbase::shift(interior)\\ 
+~& ~ &admbase::alp(interior)\\ 
+~& ~ &staticconformal::conformal\_state\\ 
+~& ~ &exact::decoded\_exact\_model\\ 
+~ & Storage:  & exact\_slice \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & admbase::metric(everywhere) \\ 
+~& ~ &admbase::curv(everywhere)\\ 
+~& ~ &exact::exact\_slice(everywhere)\\ 
+~& ~ &exact::exact\_slicetemp2(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf ADMBase\_InitialGauge}   (conditional) 
+
+\hspace{5mm} exact\_\_gauge 
+
+\hspace{5mm}{\it set initial lapse and/or shift from exact solution on a trivial slice } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Reads:  & grid::x \\ 
+~& ~ &grid::y\\ 
+~& ~ &grid::z\\ 
+~& ~ &staticconformal::conformal\_state\\ 
+~& ~ &exact::decoded\_exact\_model\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & admbase::alp(everywhere) \\ 
+~& ~ &admbase::shift(everywhere)\\ 
+~& ~ &admbase::dtalp(everywhere)\\ 
+~& ~ &admbase::dtshift(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_STARTUP}   (conditional) 
+
+\hspace{5mm} exact\_\_registerslicing 
+
+\hspace{5mm}{\it register slicings } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PRESTEP}   (conditional) 
+
+\hspace{5mm} exact\_\_gauge 
+
+\hspace{5mm}{\it set evolution lapse and/or shift from exact solution on a trivial slice } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Reads:  & grid::x \\ 
+~& ~ &grid::y\\ 
+~& ~ &grid::z\\ 
+~& ~ &staticconformal::conformal\_state\\ 
+~& ~ &exact::decoded\_exact\_model\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & admbase::alp(everywhere) \\ 
+~& ~ &admbase::shift(everywhere)\\ 
+~& ~ &admbase::dtalp(everywhere)\\ 
+~& ~ &admbase::dtshift(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_PostStep}   (conditional) 
+
+\hspace{5mm} exact\_\_gauge 
+
+\hspace{5mm}{\it set evolution lapse and/or shift from exact solution on a trivial slice } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & admbase\_setadmvars \\ 
+~ & Language:  & fortran \\ 
+~ & Reads:  & grid::x \\ 
+~& ~ &grid::y\\ 
+~& ~ &grid::z\\ 
+~& ~ &staticconformal::conformal\_state\\ 
+~& ~ &exact::decoded\_exact\_model\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & admbase::alp(everywhere) \\ 
+~& ~ &admbase::shift(everywhere)\\ 
+~& ~ &admbase::dtalp(everywhere)\\ 
+~& ~ &admbase::dtshift(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf ADMBase\_InitialData}   (conditional) 
+
+\hspace{5mm} exact\_\_slice\_initialize 
+
+\hspace{5mm}{\it set initial data from exact solution on arbitrary slice } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & exact\_\_decode\_pars \\ 
+~ & Language:  & fortran \\ 
+~ & Reads:  & grid::x \\ 
+~& ~ &grid::y\\ 
+~& ~ &grid::z\\ 
+~& ~ &admbase::shift(interior)\\ 
+~& ~ &admbase::alp(interior)\\ 
+~& ~ &staticconformal::conformal\_state\\ 
+~& ~ &exact::decoded\_exact\_model\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & admbase::metric(interior) \\ 
+~& ~ &admbase::curv(interior)\\ 
+~& ~ &exact::exact\_slice(everywhere)\\ 
+~& ~ &exact::exact\_slicetemp2(interior)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_EVOL}   (conditional) 
+
+\hspace{5mm} exact\_\_slice\_evolve 
+
+\hspace{5mm}{\it evolve arbitrary slice and extract cauchy data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Reads:  & grid::x \\ 
+~& ~ &grid::y\\ 
+~& ~ &grid::z\\ 
+~& ~ &admbase::shift(interior)\\ 
+~& ~ &admbase::alp(interior)\\ 
+~& ~ &exact::exact\_slice(everywhere)\\ 
+~& ~ &exact::exact\_slicetemp2(everywhere)\\ 
+~& ~ &staticconformal::conformal\_state(everywhere)\\ 
+~& ~ &exact::decoded\_exact\_model(everywhere)\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & admbase::metric(everywhere) \\ 
+~& ~ &admbase::curv(everywhere)\\ 
+~& ~ &exact::exact\_slice(everywhere)\\ 
+~& ~ &exact::exact\_slicetemp1(everywhere)\\ 
+~& ~ &exact::exact\_slicetemp2(everywhere)\\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
