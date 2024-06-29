@@ -1,0 +1,1174 @@
+% *======================================================================*
+%  Cactus Thorn template for ThornGuide documentation
+%  Author: Ian Kelley
+%  Date: Sun Jun 02, 2002
+%  $Header$
+%
+%  Thorn documentation in the latex file doc/documentation.tex
+%  will be included in ThornGuides built with the Cactus make system.
+%  The scripts employed by the make system automatically include
+%  pages about variables, parameters and scheduling parsed from the
+%  relevant thorn CCL files.
+%
+%  This template contains guidelines which help to assure that your
+%  documentation will be correctly added to ThornGuides. More
+%  information is available in the Cactus UsersGuide.
+%
+%  Guidelines:
+%   - Do not change anything before the line
+%       % START CACTUS THORNGUIDE",
+%     except for filling in the title, author, date, etc. fields.
+%        - Each of these fields should only be on ONE line.
+%        - Author names should be separated with a \\ or a comma.
+%   - You can define your own macros, but they must appear after
+%     the START CACTUS THORNGUIDE line, and must not redefine standard
+%     latex commands.
+%   - To avoid name clashes with other thorns, 'labels', 'citations',
+%     'references', and 'image' names should conform to the following
+%     convention:
+%       ARRANGEMENT_THORN_LABEL
+%     For example, an image wave.eps in the arrangement CactusWave and
+%     thorn WaveToyC should be renamed to CactusWave_WaveToyC_wave.eps
+%   - Graphics should only be included using the graphicx package.
+%     More specifically, with the "\includegraphics" command.  Do
+%     not specify any graphic file extensions in your .tex file. This
+%     will allow us to create a PDF version of the ThornGuide
+%     via pdflatex.
+%   - References should be included with the latex "\bibitem" command.
+%   - Use \begin{abstract}...\end{abstract} instead of \abstract{...}
+%   - Do not use \appendix, instead include any appendices you need as
+%     standard sections.
+%   - For the benefit of our Perl scripts, and for future extensions,
+%     please use simple latex.
+%
+% *======================================================================*
+%
+% Example of including a graphic image:
+%    \begin{figure}[ht]
+% 	\begin{center}
+%    	   \includegraphics[width=6cm]{/home/runner/work/tests/tests/arrangements/WVUThorns/GiRaFFE/doc/MyArrangement_MyThorn_MyFigure}
+% 	\end{center}
+% 	\caption{Illustration of this and that}
+% 	\label{MyArrangement_MyThorn_MyLabel}
+%    \end{figure}
+%
+% Example of using a label:
+%   \label{MyArrangement_MyThorn_MyLabel}
+%
+% Example of a citation:
+%    \cite{MyArrangement_MyThorn_Author99}
+%
+% Example of including a reference
+%   \bibitem{MyArrangement_MyThorn_Author99}
+%   {J. Author, {\em The Title of the Book, Journal, or periodical}, 1 (1999),
+%   1--16. {\tt http://www.nowhere.com/}}
+%
+% *======================================================================*
+
+% If you are using CVS use this line to give version information
+% $Header$
+
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+% The author of the documentation
+\author{Zachariah B.~Etienne \textless zachetie *at* gmail *dot* com\textgreater\\ Mew-Bing Wan\\ Maria C.~Babiuc\\ Sean T.~McWilliams\\ Ashok Choudhary}
+
+% The title of the document (not necessarily the name of the Thorn)
+\title{GiRaFFE: An Open-Source General Relativistic Force-Free Electrodynamics Code}
+
+% the date your document was last changed, if your document is in CVS,
+% please use:
+%    \date{$ $Date$ $}
+\date{November 19, 2018}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+% Add all definitions used in this documentation here
+%   \def\mydef etc
+\newcommand{\beq}{\begin{equation}}
+\newcommand{\eeq}{\end{equation}}
+\newcommand{\beqn}{\begin{eqnarray}}
+\newcommand{\eeqn}{\end{eqnarray}}
+\newcommand{\half} {{1\over 2}}
+\newcommand{\sgam} {\sqrt{\gamma}}
+\newcommand{\tB}{\tilde{B}}
+\newcommand{\tS}{\tilde{S}}
+\newcommand{\tF}{\tilde{F}}
+\newcommand{\tf}{\tilde{f}}
+\newcommand{\tT}{\tilde{T}}
+\newcommand{\sg}{\sqrt{\gamma}\,}
+\newcommand{\ve}[1]{\mbox{\boldmath $#1$}}
+
+\newcommand{\GiR}{{\texttt{GiRaFFE}}}
+\newcommand{\IGM}{{\texttt{IllinoisGRMHD}}}
+
+\linespread{1.0}
+
+\newenvironment{packed_itemize}{
+\begin{itemize}
+  \setlength{\itemsep}{0.0pt}
+  \setlength{\parskip}{0.0pt}
+  \setlength{\parsep}{ 0.0pt}
+}{\end{itemize}}
+
+\newenvironment{packed_enumerate}{
+\begin{enumerate}
+  \setlength{\itemsep}{0.0pt}
+  \setlength{\parskip}{0.0pt}
+  \setlength{\parsep}{ 0.0pt}
+}{\end{enumerate}}
+
+% Add an abstract for this thorn's documentation
+\begin{abstract}
+\GiR{} solves the equations of General Relativistic
+Force-Free Electrodynamics (GRFFE) using a high-resolution shock capturing scheme.
+It is based on \IGM, which is a rewrite of the Illinois Numerical Relativity
+(ILNR) group's GRMHD code.
+
+\GiR{} is particularly good at modeling black hole magnetospheres. Its
+conservative-to-primitive solver has also been modified to check the
+physicality of conservative variables prior to primitive inversion, and move them
+into the physical range if they become unphysical.
+
+Currently \GiR{} consists of
+\begin{packed_enumerate}
+\item the Piecewise Parabolic Method (PPM) for reconstruction,
+\item the Harten, Lax, van Leer (HLL/HLLE) approximate Riemann solver, and
+\item a modified HARM Conservative-to-Primitive solver.
+\end{packed_enumerate}
+
+\GiR{} evolves the vector potential $A_{\mu}$ (on staggered grids)
+instead of the magnetic fields ($B^i$) directly, to guarantee that the
+magnetic fields will remain divergenceless even at AMR boundaries. On
+uniform resolution grids, this vector potential formulation produces
+results equivalent to those generated using the standard, staggered
+flux-CT scheme.
+\end{abstract}
+
+\section{Paper Reference}
+
+The basic equations, algorithms, and code validation tests for \GiR{}
+are described in the code announcement paper, which supplements the
+many code comments as an excellent resource for understanding this
+code. To find the code announcement paper, search the arXiv for
+``GiRaFFE: An Open-Source General Relativistic Force-Free
+Electrodynamics Code''.
+
+The relevant sections of the paper regarding the GRFFE formalism we
+adopt as well as the basic algorithmic approach are pasted below.
+
+\section{Adopted GRFFE Formalism}
+\label{formalism}
+
+All equations are written in geometrized units, such that
+$G=c=1$, and Einstein notation is chosen for implied summation. Greek
+indices span all 4 spacetime dimensions, and Latin indices span only
+the 3 spatial dimensions.
+
+The line element for our spacetime in standard 3+1 form is given by
+\beq
+ds^2 = -\alpha^2 dt^2 + \gamma_{ij} (dx^i + \beta^i dt)(dx^j + \beta^j dt),
+\eeq
+where $\alpha dt$ denotes the proper time interval between adjacent
+spatial hypersurfaces separated by coordinate times $t=t_0$ and
+$t=t_0+dt$, $\beta^i$ the magnitude of the spatial coordinate shift between adjacent
+hypersurfaces, and $\gamma_{ij}$ is the three-metric within a given
+hypersurface at coordinate time $t$.
+
+Our 3+1 GRFFE formalism is written in terms of electric and magnetic
+fields as measured by an observer co-moving and normal to the spatial
+hypersurface, with 4-velocity $n^{\mu}=(1/\alpha,-\beta^i/\alpha)$. 
+The stress-energy tensor of the electromagnetic field is defined as:
+% Eq 15 in Paschalidis and Shapiro 
+\beq
+T_{\rm EM}^{\mu\nu} = F^{\mu}_{\sigma} F^{\nu \sigma} - \frac{1}{4}g^{\mu \nu}F_{\sigma \eta} F^{\sigma \eta}. 
+\eeq
+where $F^{\mu\nu}$ is the electromagnetic (or Faraday) tensor:
+% Eq 3 in Paschalidis and Shapiro 
+\beq
+F^{\mu\nu} = n^{\mu} E^{\nu} - n^{\nu} E^{\mu} - \epsilon^{\mu\nu\sigma\eta}B_{\sigma}n_{\eta}, 
+\eeq
+In terms of the Faraday tensor, the electric $E^\nu$ and magnetic $B^\nu$ fields in this frame are given by
+\beqn
+% Eq 4 in Paschalidis and Shapiro 
+E^{\nu} &=& n_{\mu} F^{\mu\nu} \\
+% Eq 5 in Paschalidis and Shapiro 
+B^{\nu} &=& -\frac{1}{2} n_{\mu} \epsilon^{\nu\mu\sigma\eta}
+F_{\sigma\eta} =  n_{\mu} {}^*F^{\mu\nu},
+\eeqn
+where ${}^*F^{\mu\nu}$ is the dual of the Faraday tensor, 
+and $\epsilon^{\nu\mu\sigma\eta}=[\nu\mu\sigma\eta]/\sqrt{|g|}$ 
+is the rank-4 Levi-Civita tensor, with $[\nu\mu\sigma\eta]$ the
+regular permutation symbol. In ideal MHD, the electric field vanishes
+for observers moving {\it parallel} to the plasma with 4-velocity $u^\nu$:
+\beq
+% Same as Eq 21 in Paschalidis and Shapiro, just adding the sqrt4pi and
+% flipping the indices on antisymmetric Faraday tensor.
+F^{\mu\nu} u_{\nu} = -\sqrt{4 \pi} E^{\mu}_{(u)} = 0.
+\eeq
+I.e., when an observer moves in a direction parallel to the magnetic
+field lines, the electric field vanishes.
+This is simply a statement of Ohm's law for the case of perfect
+conductivity. One implication of perfect conductivity is that
+``magnetic field lines remain attached to the fluid elements they
+connect''---the so-called ``frozen-in condition of MHD''. In addition,
+so long as $F^{\mu\nu} \ne 0$, the ideal MHD condition implies that
+\beqn
+% Eq 10 in Paschalidis and Shapiro. Note that the 4pi's should cancel out.
+F^{\mu\nu} F_{\mu\nu} = 2(B^2-E^2) &>& 0\quad \rightarrow \quad B^2 > E^2,\quad {\rm and} \\
+{}^*F^{\mu\nu} F_{\mu\nu} = 4 E_\mu B^\mu &=& 0. 
+\eeqn
+See, \textit{e.g.}, \cite{Komissarov:2002,Paschalidis:2013} for further discussion.
+
+In addition to the ideal MHD condition $E^{\mu}_{(u)} = 0$, force-free
+electrodynamics also assumes that the plasma dynamics are
+completely driven by the electromagnetic fields (as opposed to, e.g.,
+hydrodynamic pressure gradients).
+This implies that the stress-energy of the plasma:
+ $T^{\mu\nu}= T_{\rm matter}^{\mu\nu} + T_{\rm EM}^{\mu\nu}$,
+is completely dominated by the electromagnetic
+terms, which yields the conservation equation \cite{Palenzuela:2010,Parfrey:2012a}:
+%Refs 15,17 of https://arxiv.org/pdf/1501.05394.pdf}:
+\beqn
+% Eq 9 of Sean's paper: https://arxiv.org/pdf/1501.05394.pdf ,
+% Eq 37 of https://arxiv.org/pdf/1310.3274.pdf
+% Eq 9 in Palenzuela et al https://arxiv.org/pdf/1007.1198v1.pdf
+&& \nabla_{\nu} T^{\mu\nu} \approx \nabla_{\nu} T^{\mu\nu}_{\rm EM}=-F^{\mu\nu} J_{\nu}=0 \\
+\label{forcefree}
+&& \rightarrow \rho E^i + n_\nu \epsilon^{\nu ijk} J^{(3)}_j B_k = 0.
+\eeqn
+where 
+%$\epsilon^{\nu ijk}$ is the Levi-Civita tensor, 
+$J^{(3)}_i$ is
+the 3-current, and $\rho$ the charge density. 
+This formalism is valid in the tenuous plasma of the stellar magnetosphere, where the rest-mass density is vanishingly small and assumed to be zero. 
+From these, the 4-current can be expressed 
+$J^{\nu}=\rho n^{\nu}+\gamma^{i}_{j}J^{j}=\gamma^{\nu}_{\mu}J^{\mu}$ 
+
+The left-hand side of Eq.~\ref{forcefree} is simply the general
+relativistic expression for the Lorentz force, indicating that indeed
+the Lorentz force is zero in GRFFE.
+Notice that if we assume we are not in electrovacuum ($J^\mu \ne 0$),
+multiplying Eq.~\ref{forcefree} by $B_i$ yields the familiar $B^i E_i
+= 0$ constraint of force-free electrodynamics (see
+\cite{Komissarov:2002,Paschalidis:2013} for full derivation).
+
+In summary, the force-free constraints can be written
+%https://arxiv.org/pdf/astro-ph/0202447v1.pdf,Paschalidis and Shapiro}
+\beqn
+% 4 pi's should cancel here.
+\label{eq:BandEorthogconstraint}
+&& B_i E^i = 0,\quad {\rm and}\\
+&& B^2 > E^2.
+\eeqn
+
+Under these constraints, the GRFFE evolution equations
+consist of the Cauchy momentum equation and the induction
+equation (see
+\cite{Komissarov:2002,McKinney:2006,Paschalidis:2013}
+%Refs 77 and 73 of Paschalidis and Shapiro} 
+for derivation):
+\begin{enumerate}
+\item The Cauchy momentum equation follows directly from the spatial
+  components of 
+$\nabla_\mu T^{\mu\nu}=\nabla_\mu T^{\mu\nu}_{\rm  EM}=0$ (the time
+  component yields the energy equation, which in GRFFE is
+  redundant). We choose to write the momentum equation in conservative
+  form and in terms of the densitized spatial Poynting flux one-form
+  $\tilde{S}_i = \sqrt{\gamma}S_i$, 
+\beq
+% Eq 84 in Paschalidis and Shapiro 
+\label{eq:momentum}
+\partial_t \tilde{S}_i + \partial_j \left(\alpha \sqrt{\gamma}
+T^j_{\rm EM}{}_i\right) = \frac{1}{2} \alpha \sqrt{\gamma}
+T^{\mu\nu}_{\rm EM} \partial_i g_{\mu\nu},
+\eeq
+where $S_i$ can be derived from the expression of the Poynting one-form, 
+\beq
+% above Eq 67 in Paschalidis and Shapiro 
+\label{eq:Poynting}
+S_{\mu}=-n_{\nu} T^{\nu}_{{\rm EM}\mu}.
+\eeq
+
+\item The induction equation in the force-free limit is derived from
+  the spatial components of $\nabla_\mu {}^*F^{\mu\nu}=0$ (the time
+  components yield the ``no-monopoles'' constraint), and can be
+  written in terms of the densitized magnetic field $\tilde{B^i} =
+  \sqrt{\gamma}B^i$ as
+\beq
+% Eq 83 in Paschalidis and Shapiro 
+\label{eq:induction}
+\partial_t \tilde{B}^i + \partial_j \left(v^j \tilde{B}^i - v^i \tilde{B}^j\right)=0,
+\eeq
+where $v^j = u^j/u^0$. 
+As detailed in Appendix A of\cite{Paschalidis:2013}, the force-free
+conditions do not uniquely constrain $u^\mu$, allowing for the freedom
+to choose from a one-parameter family. As in
+\cite{McKinney:2006,Paschalidis:2013}, we choose $u^\mu$ to correspond
+to the {\it minimum} plasma 3-velocity that satisfies $F^{\mu\nu}
+u_{\nu}=0$. This choice of $v^j$ is often referred to as the {\it
+  drift} velocity, which can be defined in terms of known variables as
+\beq
+% Eq 85 in Paschalidis and Shapiro 
+\label{eq:vfromS}
+v^i = 4\pi \alpha \frac{\gamma^{ij} \tilde{S}_j}{\sqrt{\gamma}B^2}-\beta^i.
+\eeq
+\end{enumerate}
+
+\section{Numerical Algorithms}
+\label{algorithms}
+
+We briefly review the numerical algorithms employed in \GiR{} to
+solve the equations of GRFFE as outlined in Sec.~\ref{formalism}. 
+
+\GiR{} fully supports Cartesian adaptive mesh refinement (AMR) grids via
+the Cactus/Carpet \cite{Carpet} infrastructure within the Einstein
+Toolkit \cite{EinsteinToolkit}.
+
+As in \IGM, \GiR{} guarantees that the magnetic fields remain
+divergenceless to roundoff error {\it even on AMR grids} by evolving
+the vector potential $\mathcal{A}_\mu = \Phi n_\mu + A_\mu$, where
+$A_\mu$ is spatial ($A_\mu n^\mu=0$), instead of the magnetic
+fields directly.
+
+\begin{table}
+\begin{center}
+\caption{Storage location on grid of the magnetic field $B^i$ and
+  vector potential $\mathcal{A}_{\mu}$. Note that $\ve{P}$ is the vector of
+  primitive variables $\{v^i\}$}
+\begin{tabular}{cc}
+\hline
+  Variable(s) & storage location \\
+\hline
+  Metric terms, $\ve{P}$, $\tilde{S}_i$ & $(i,j,k)$ \\
+  $B^x$, $\tilde{B}^x$ & $(i+\half,j,k)$ \\
+  $B^y$, $\tilde{B}^y$ & $(i,j+\half,k)$ \\ 
+  $B^z$, $\tilde{B}^z$ & $(i,j,k+\half)$ \\
+  $A_x$ & $(i,j+\half,k+\half)$ \\
+  $A_y$ & $(i+\half,j,k+\half)$ \\
+  $A_z$ & $(i+\half,j+\half,k)$ \\
+  $\sgam \Phi$ & $(i+\half,j+\half,k+\half)$ \\
+\hline
+\end{tabular}
+\label{tab:staggeredBA}
+\end{center}
+\end{table}
+
+The vector potential fields exist on a staggered grid
+(as defined in Table~\ref{tab:staggeredBA} such that our
+magnetic fields are evolved 
+according to the flux constrained transport (FluxCT) algorithm of
+Refs.~\cite{Balsara:1999,Toth:2000}.
+
+{\bf As in \IGM, this choice of staggering in \GiR{} means that standard
+  symmetry thorns within the Einstein Toolkit cannot be used. To add
+  this, one option is to modify
+  \verb|src/symmetry__set_gzs_staggered_gfs.C|.}
+
+Our choice of vector potential requires that we solve the vector
+potential version of the induction equation 
+\beq
+\label{eq:Ainduction}
+\partial_t A_i = \epsilon_{ijk} v^j B^k - \partial_i (\alpha \Phi-\beta^j A_j),
+\eeq
+where $\epsilon_{ijk} = [ijk] \sqrt{\gamma}$ is the anti-symmetric
+Levi-Civita tensor and $\gamma$ is the 3-metric determinant, which in
+a flat spacetime in Cartesian coordinates reduces to 1. $B^k$ in
+Eq.~\ref{eq:Ainduction} is computed from the vector potential via
+\beq
+\label{eq:bfroma}
+B^i=\epsilon^{ijk}\partial_j A_k=\frac{[ijk]}{\sqrt\gamma}\partial_j A_k.
+\eeq
+
+$\Phi$ is evolved via an additional electromagnetic gauge evolution
+equation, which was devised specifically to avoid the buildup of
+numerical errors due to zero-speed characteristic modes \cite{Etienne:2011re} on AMR grids. 
+Our electromagnetic gauge is identical to the Lorenz gauge, but with an exponential
+damping term with damping constant $\xi$ \cite{Farris:2012ux}:
+\beq
+\label{eq:EMgauge}
+\partial_t \left[\sqrt{\gamma} \Phi \right] +
+\partial_j \left(\alpha \sqrt{\gamma} A^j - \beta^j \left[\sqrt{\gamma} \Phi \right]\right)
+= -\xi \alpha \left[\sqrt{\gamma}\Phi\right].
+\eeq
+
+{\bf Step 0: Initial data}: In addition to 3+1 metric quantities in
+the Arnowitt-Deser-Misner (ADM) formalism \cite{Arnowitt:1959},
+\GiR{} requires that the ``Valencia'' 3-velocity $\bar{v}^i$ and vector
+potential one-form $A_\mu$ be set initially. Regarding the former, the
+``Valencia'' 3-velocity $\bar{v}^i$ is related to the 3-velocity
+appearing in the induction equation $v^i$ via 
+\beq
+v^i = \frac{u^i}{u^0} = \alpha \bar{v}^i-\beta^i.
+\eeq
+As for $A_\mu$, for all cases in this paper, we set the evolution
+variable $\left[\sqrt{\gamma}\Phi\right]=0$ initially, and $A_i$ is
+set based on our initial physical scenario.
+
+After $v^i$ and $A_\mu$ are set, $B^i$ is computed via
+Eq.~\ref{eq:bfroma}, and then the evolution variable $\tilde{S}_i$ is
+given by
+\beq
+\label{eq:Sfromv}
+\tilde{S}_i = \frac{\gamma_{ij} (v^j + \beta^j) \sqrt{\gamma} B^2}{4\pi\alpha}.
+\eeq
+
+{\bf Step 1: Evaluation of evolution equations}: In tandem with the
+high-resolution shock-capturing (HRSC) scheme within \GiR, the
+Runge-Kutta fourth-order (RK4) scheme is chosen to march
+our evolution variables $A_i$ and $\tilde{S}_i$ forward in time from
+their initial values, adopting precisely the same reconstruction and
+Riemann solver algorithms as in \IGM{}  (see Ref.~\cite{Etienne:2015cea}
+for more details). In short, $A_i$ and $\tilde{S}_i$ are evolved
+forward in time using the Piecewise Parabolic Method
+(PPM)~\cite{Colella:1984} for reconstruction and a Harten-Lax-van Leer
+(HLL)-based algorithm~\cite{Harten:1983,DelZanna:2003} for
+approximately solving the Riemann problem. Meanwhile, spatial
+derivatives within $\left[\sqrt{\gamma}\Phi\right]$'s evolution
+equation (Eq.~\ref{eq:EMgauge}) are evaluated via finite difference
+techniques (as in \IGM).
+
+{\bf Step 2: Boundary conditions on $A_\mu$}: At the end of each RK4
+substep, the evolved variables $A_i$ and $\tilde{S}_i$ have been
+updated at all points except the outer boundaries. So next the
+outer boundary conditions on $A_i$ and
+$\left[\sqrt{\gamma}\Phi\right]$ are applied. As no exact outer
+boundary conditions typically exist for systems of interest to \GiR,
+we typically take advantage of AMR and push our outer boundary out of
+causal contact from the physical system of interest. However, to retain
+good numerical stability, we apply ``reasonable'' outer boundary
+conditions. Specifically, values of $A_i$ and
+$\left[\sqrt{\gamma}\Phi\right]$ in the interior grid are linearly
+extrapolated to the outer boundary.
+
+{\bf Step 3: Computing $B^i$}: $B^i$ is next computed from $A_i$ via
+Eq.~\ref{eq:bfroma}.
+
+{\bf Step 4: Applying GRFFE constraints \& computing $v^i$}:
+Truncation, roundoff, and under-sampling errors will at times push
+physical quantities into regions that violate the GRFFE
+constraints. To nudge the variables back into a physically realistic
+domain, we apply the same strategy as was devised in
+Ref.~\cite{Paschalidis:2013} to guarantee that the GRFFE constraints
+remain satisfied:
+
+First, we adjust $\tilde{S}_i$ via
+\beq
+\tilde{S}_i \to \tilde{S}_i - \frac{(\tilde{S}_j \tilde{B}^j) \tilde{B}_i}{\tilde{B}^2}
+\eeq
+to enforce $B^i S_i=0$, which as shown by Ref.~\cite{Paschalidis:2013}, is
+equivalent to the GRFFE constraint Eq.~\ref{eq:BandEorthogconstraint}.
+
+Next, we limit the Lorentz factor of the plasma, typically to be
+2,000, by rescaling $\tilde{S}_i$ according to Eq.~92 in
+Ref.~\cite{Paschalidis:2013}. After $\tilde{S}_i$ is rescaled the
+3-velocity $v^i$ is recomputed via Eq.~\ref{eq:vfromS}.
+
+Finally, errors within our numerical scheme dissipate
+sharp features, so when current sheets appear, they are quickly
+and unphysically dissipated. This is unfortunate because current
+sheets lie at the heart of many GRFFE phenomena. So to remedy the
+situation, we apply the basic strategy of McKinney
+\cite{McKinney:2006} (that was also adopted by Paschalidis and Shapiro 
+\cite{Paschalidis:2013}) and set the velocity perpendicular to the
+current sheet $v^\perp$ to zero. For example, if the current sheet
+exists on the $z=0$ plane, then $v^\perp=v^z$, which we set to zero
+via $n_i v^i=0$, where $n_i=\gamma_{ij} n^j$ is a unit normal one-form
+with $n^j=\delta^{jz}$. Specifically, in the case of a current sheet
+on the $z=0$ plane, we set
+\beq
+v^z = -\frac{\gamma_{xz} v^x + \gamma_{yz} v^y}{\gamma_{zz}}
+\eeq
+at all gridpoints that lie within $|z|\le 4\Delta z$ of the current
+sheet.
+
+At present the code addresses numerical dissipation of current
+sheets only if they appear on the equatorial plane. For cases in which
+current sheets appear off of the equatorial plane or spontaneously,
+\cite{McKinney:2006} suggest the development of algorithms akin to
+reconnection-capturing
+strategies~\cite{StonePringle2001MNRAS.322..461S}. We intend to
+explore such approaches in future work.
+
+{\bf Step 5: Boundary conditions on $v^i$}: $v^i$ is set to zero at a
+given face of our outermost AMR grid cube unless the velocity is {\it
+  outgoing}. Otherwise the value for the velocity is simply copied
+from the interior grid to the nearest neighbor on a face-by-face
+basis.
+
+After boundary conditions on $v^i$ are updated, all data needed for
+the next RK4 substep have been generated, so we return to Step 1.
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{min\_radius\_inside\_of\_which\_conserv\_to\_prims\_ffe\_and\_ffe\_evolution\_is\_disabled}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{damp\_lorenz} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Damping factor for the generalized Lorenz gauge. Has units of 1/length = 1/M. Typically set this parameter to 1.5/(maximum Delta t on AMR grids).}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{current\_sheet\_null\_v} & {\bf Scope:} restricted & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Shall we null the velocity normal to the current sheet?}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{em\_bc} & {\bf Scope:} restricted & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em EM field boundary condition}} \\
+\hline{\bf Range} & &  {\bf Default:} copy \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering copy} & \multicolumn{2}{p{\paraWidth}|}{Copy data from nearest boundary point} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering frozen} & \multicolumn{2}{p{\paraWidth}|}{Frozen boundaries} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{gamma\_speed\_limit} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Maximum relativistic gamma factor. Note the default is much higher than IllinoisGRMHD. (GRFFE can handle higher Lorentz factors)}} \\
+\hline{\bf Range} & &  {\bf Default:} 2000.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{Positive {\textgreater} 1, though you'll likely have troubles far above 2000.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{min\_radius\_inside\_of\_which\_conserv\_to\_prims\_ffe\_and\_ffe\_evolution\_is\_disabled} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em As parameter suggests, this is the minimum radius inside of which the conservatives-to-primitives solver is disabled. In the Aligned Rotator test, this should be set equal to R\_NS\_aligned\_rotator.}} \\
+\hline{\bf Range} & &  {\bf Default:} -1. \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1.} & \multicolumn{2}{p{\paraWidth}|}{"disable the conservative-to-prim 
+itive solver modification"} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{any positive value} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{sym\_bz} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em In-progress equatorial symmetry support: Symmetry parameter across z axis for magnetic fields = +/- 1}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1.0:1.0} & \multicolumn{2}{p{\paraWidth}|}{Set to +1 or -1.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{symmetry} & {\bf Scope:} restricted & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Currently only no symmetry supported, though work has begun in adding equatorial-symmetry support. FIXME: Extend ET symmetry interface to support symmetries on staggered gridfunctions}} \\
+\hline{\bf Range} & &  {\bf Default:} none \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering none} & \multicolumn{2}{p{\paraWidth}|}{no symmetry, full 3d domain} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{velocity\_bc} & {\bf Scope:} restricted & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Chosen fluid velocity boundary condition}} \\
+\hline{\bf Range} & &  {\bf Default:} outflow \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering outflow} & \multicolumn{2}{p{\paraWidth}|}{Outflow boundary conditions} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering copy} & \multicolumn{2}{p{\paraWidth}|}{Copy data from nearest boundary point} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering frozen} & \multicolumn{2}{p{\paraWidth}|}{Frozen boundaries} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{lapse\_timelevels} & {\bf Scope:} shared from ADMBASE & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{metric\_timelevels} & {\bf Scope:} shared from ADMBASE & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{shift\_timelevels} & {\bf Scope:} shared from ADMBASE & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+giraffe
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+admbase
+
+boundary
+
+spacemask
+
+tmunubase
+
+hydrobase
+
+grid
+\vspace{2mm}
+\subsection*{Grid Variables}
+\vspace{5mm}\subsubsection{PRIVATE GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+diagnostic\_gfs &  & compact & 0 \\ 
+ & failure\_checker & description & Gridfunction to track conservative-to-primitives solver fixes. Beware that this gridfunction is overwritten at each RK substep. \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+grmhd\_primitives\_reconstructed\_temps &  & compact & 0 \\ 
+ & temporary & description & Temporary variables used for primitives reconstruction \\ 
+ & vxr & dimensions & 3 \\ 
+ & vyr & distribution & DEFAULT \\ 
+ & vzr & group type & GF \\ 
+ & Bxr & tags & prolongation="none" Checkpoint="no" \\ 
+ & Byr & timelevels & 1 \\ 
+ & Bzr & variable type & REAL \\ 
+\hline 
+grmhd\_conservatives\_rhs &  & compact & 0 \\ 
+ & st\_x\_rhs & description & Storage for the right-hand side of the partial\_t tilde\{S\}\_i equations. Needed for MoL timestepping. \\ 
+ & st\_y\_rhs & dimensions & 3 \\ 
+ & st\_z\_rhs & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+em\_ax\_rhs &  & compact & 0 \\ 
+ & Ax\_rhs & description & Storage for the right-hand side of the partial\_t A\_x equation. Needed for MoL timestepping. \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+em\_ay\_rhs &  & compact & 0 \\ 
+ & Ay\_rhs & description & Storage for the right-hand side of the partial\_t A\_y equation. Needed for MoL timestepping. \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+em\_az\_rhs &  & compact & 0 \\ 
+ & Az\_rhs & description & Storage for the right-hand side of the partial\_t A\_z equation. Needed for MoL timestepping. \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~ \\ 
+\hline 
+em\_psi6phi\_rhs &  & compact & 0 \\ 
+ & psi6phi\_rhs & description & Storage for the right-hand side of the partial\_t (psi\^6 Phi) equation. Needed for MoL timestepping. \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+grmhd\_cmin\_cmax\_temps &  & compact & 0 \\ 
+ & cmin\_x & description & Store min and max characteristic speeds in all three directions. \\ 
+ & cmax\_x & dimensions & 3 \\ 
+ & cmin\_y & distribution & DEFAULT \\ 
+ & cmax\_y & group type & GF \\ 
+ & cmin\_z & tags & prolongation="none" Checkpoint="no" \\ 
+ & cmax\_z & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+grmhd\_flux\_temps &  & compact & 0 \\ 
+ & st\_x\_flux & description & Temporary variables for storing the flux terms of tilde\{S\}\_i. \\ 
+ & st\_y\_flux & dimensions & 3 \\ 
+ & st\_z\_flux & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+tupmunu &  & compact & 0 \\ 
+ & TUPtt & description & T\^\{mu nu\} \\ 
+& ~ & description &  stored to avoid expensive recomputation \\ 
+ & TUPtx & dimensions & 3 \\ 
+ & TUPty & distribution & DEFAULT \\ 
+ & TUPtz & group type & GF \\ 
+ & TUPxx & tags & prolongation="none" Checkpoint="no" \\ 
+ & TUPxy & timelevels & 1 \\ 
+ & TUPxz & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+\vspace{5mm}\subsubsection{PUBLIC GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+grmhd\_conservatives &  & compact & 0 \\ 
+ & mhd\_st\_x & description & Evolved mhd variables \\ 
+ & mhd\_st\_y & dimensions & 3 \\ 
+ & mhd\_st\_z & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+em\_ax &  & compact & 0 \\ 
+ & Ax & description & x-component of the vector potential \\ 
+& ~ & description &  evolved when constrained\_transport\_scheme==3 \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & Prolongation="STAGGER011" \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+em\_ay &  & compact & 0 \\ 
+ & Ay & description & y-component of the vector potential \\ 
+& ~ & description &  evolved when constrained\_transport\_scheme==3 \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & Prolongation="STAGGER101" \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+em\_az &  & compact & 0 \\ 
+ & Az & description & z-component of the vector potential \\ 
+& ~ & description &  evolved when constrained\_transport\_scheme==3 \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & Prolongation="STAGGER110" \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+em\_psi6phi &  & compact & 0 \\ 
+ & psi6phi & description & sqrt\{gamma\} Phi \\ 
+& ~ & description &  where Phi is the em scalar potential \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & Prolongation="STAGGER111" \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+grmhd\_primitives\_allbutbi &  & compact & 0 \\ 
+ & vx & description & Components of three velocity \\ 
+& ~ & description &  defined in terms of 4-velocity as: v\^i = u\^i/u\^0. Note that this definition differs from the Valencia formalism. \\ 
+ & vy & dimensions & 3 \\ 
+ & vz & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & InterpNumTimelevels=1 prolongation="none" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~ \\ 
+\hline 
+grmhd\_primitives\_bi &  & compact & 0 \\ 
+ & Bx & description & B-field components defined both at vertices (Bx \\ 
+& ~ & description & By \\ 
+ & Bx & description & Bz) as well as at staggered points [Bx\_stagger at (i+1/2 \\ 
+ & Bx & description & j \\ 
+ & Bx & description & k) \\ 
+ & Bx & description & By\_stagger at (i \\ 
+ & Bx & description & j+1/2 \\ 
+ & Bx & description & k) \\ 
+ & Bx & description & Bz\_stagger at (i \\ 
+ & Bx & description & j \\ 
+ & Bx & description & k+1/2)]. \\ 
+ & By & dimensions & 3 \\ 
+ & Bz & distribution & DEFAULT \\ 
+ & Bx\_stagger & group type & GF \\ 
+ & By\_stagger & tags & InterpNumTimelevels=1 prolongation="none" \\ 
+ & Bz\_stagger & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+bssn\_quantities &  & compact & 0 \\ 
+ & gtxx & description & BSSN quantities \\ 
+& ~ & description &  computed from ADM quantities \\ 
+ & gtxy & dimensions & 3 \\ 
+ & gtxz & distribution & DEFAULT \\ 
+ & gtyy & group type & GF \\ 
+ & gtyz & tags & prolongation="none" Checkpoint="no" \\ 
+ & gtzz & timelevels & 1 \\ 
+ & gtupxx & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+
+\noindent {\bf Adds header}: 
+
+
+
+GiRaFFE\_headers.h
+\vspace{2mm}
+
+\noindent {\bf Uses header}: 
+
+Symmetry.h
+\vspace{2mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn WVUThorns/GiRaFFE.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Always:}&  ~ \\ 
+ ADMBase::metric[metric\_timelevels] ADMBase::curv[metric\_timelevels] ADMBase::lapse[lapse\_timelevels] ADMBase::shift[shift\_timelevels] & ~\\ 
+ GiRaFFE::BSSN\_quantities & ~\\ 
+ grmhd\_conservatives[3] em\_Ax[3] em\_Ay[3] em\_Az[3] em\_psi6phi[3] & ~\\ 
+ grmhd\_primitives\_allbutBi grmhd\_primitives\_Bi grmhd\_primitives\_reconstructed\_temps grmhd\_conservatives\_rhs em\_Ax\_rhs em\_Ay\_rhs em\_Az\_rhs em\_psi6phi\_rhs grmhd\_cmin\_cmax\_temps grmhd\_flux\_temps TUPmunu diagnostic\_gfs & ~\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf MoL\_Register} 
+
+\hspace{5mm} giraffe\_registervars 
+
+\hspace{5mm}{\it register evolved, rhs variables in giraffe for mol } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & bssn\_registervars \\ 
+~& ~ &lapse\_registervars\\ 
+~ & Language:  & c \\ 
+~ & Options:  & meta \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_BASEGRID} 
+
+\hspace{5mm} giraffe\_initsymbound 
+
+\hspace{5mm}{\it schedule symmetries } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & lapse\_initsymbound \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Boundaries} 
+
+\hspace{5mm} giraffe\_compute\_b\_and\_bstagger\_from\_a 
+
+\hspace{5mm}{\it compute b and b\_stagger from a } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & giraffe\_outer\_boundaries\_on\_a\_mu \\ 
+~ & Language:  & c \\ 
+~ & Sync:  & grmhd\_primitives\_bi \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf AddToTmunu} 
+
+\hspace{5mm} giraffe\_conserv\_to\_prims\_ffe 
+
+\hspace{5mm}{\it applies the ffe condition b\^2{\textgreater}e\^2 and recomputes the velocities } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & giraffe\_compute\_b\_and\_bstagger\_from\_a \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf AddToTmunu} 
+
+\hspace{5mm} giraffe\_outer\_boundaries\_on\_vx\_vy\_vz 
+
+\hspace{5mm}{\it apply outflow-only, flat bcs on \{vx,vy,vz\}. outflow only == velocities pointed inward from outer boundary are set to zero. } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & conserv\_to\_prims \\ 
+~ & Language:  & c \\ 
+~ & Sync:  & grmhd\_primitives\_allbutbi \\ 
+~& ~ &grmhd\_conservatives\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTPOSTINITIAL} 
+
+\hspace{5mm} giraffe\_postpostinitial 
+
+\hspace{5mm}{\it hydrobase\_con2prim in cctk\_postpostinitial sets conserv to prim then outer boundaries (obs, which are technically disabled). the post ob syncs actually reprolongate the conservative variables, making cons and prims inconsistent. so here we redo the con2prim, avoiding the sync afterward, then copy the result to other timelevels } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & hydrobase\_con2prim \\ 
+~ & Before:  & mol\_poststep \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GiRaFFE\_PostPostInitial} 
+
+\hspace{5mm} giraffe\_initsymbound 
+
+\hspace{5mm}{\it schedule symmetries -- actually just a placeholder function to ensure prolongations / processor syncs are done before outer boundaries are updated. } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & compute\_b \\ 
+~ & Language:  & c \\ 
+~ & Sync:  & grmhd\_conservatives \\ 
+~& ~ &em\_ax\\ 
+~& ~ &em\_ay\\ 
+~& ~ &em\_az\\ 
+~& ~ &em\_psi6phi\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GiRaFFE\_PostPostInitial} 
+
+\hspace{5mm} giraffe\_compute\_b\_and\_bstagger\_from\_a 
+
+\hspace{5mm}{\it compute b and b\_stagger from a sync: grmhd\_primitives\_bi } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & postid \\ 
+~& ~ &empostid\\ 
+~& ~ &lapsepostid\\ 
+~ & Language:  & c \\ 
+~ & Sync:  & grmhd\_primitives\_bi \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GiRaFFE\_PostPostInitial} 
+
+\hspace{5mm} giraffe\_conserv\_to\_prims\_ffe 
+
+\hspace{5mm}{\it applies the ffe condition b\^2{\textgreater}e\^2 and recomputes the velocities } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & compute\_b \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GiRaFFE\_PostPostInitial} 
+
+\hspace{5mm} giraffe\_postpostinitial\_set\_symmetries\_\_copy\_timelevels 
+
+\hspace{5mm}{\it compute post-initialdata quantities } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & compute\_b \\ 
+~& ~ &p2c\\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_CalcRHS} 
+
+\hspace{5mm} giraffe\_driver\_evaluate\_ffe\_rhs 
+
+\hspace{5mm}{\it evaluate rhss of grffe equations } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & bssn\_rhs \\ 
+~& ~ &shift\_rhs\\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Boundaries} 
+
+\hspace{5mm} giraffe\_initsymbound 
+
+\hspace{5mm}{\it schedule symmetries -- actually just a placeholder function to ensure prolongations / processor syncs are done before outer boundaries are updated. } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & hydrobase\_applybcs \\ 
+~ & Before:  & giraffe\_outer\_boundaries\_on\_a\_mu \\ 
+~ & Language:  & c \\ 
+~ & Sync:  & grmhd\_conservatives \\ 
+~& ~ &em\_ax\\ 
+~& ~ &em\_ay\\ 
+~& ~ &em\_az\\ 
+~& ~ &em\_psi6phi\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Boundaries} 
+
+\hspace{5mm} giraffe\_outer\_boundaries\_on\_a\_mu 
+
+\hspace{5mm}{\it apply linear extrapolation bcs on a\_mu, so that bcs are flat on b\^i. } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & giraffe\_initsymbound \\ 
+~ & Before:  & giraffe\_compute\_b\_and\_bstagger\_from\_a \\ 
+~ & Language:  & c \\ 
+~ & Sync:  & em\_ax \\ 
+~& ~ &em\_ay\\ 
+~& ~ &em\_az\\ 
+~& ~ &em\_psi6phi\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\subsection*{Aliased Functions}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Alias Name:} ~~~~~~~ & {\bf Function Name:} \\ 
+GiRaFFE\_PostPostInitial\_Set\_Symmetries\_\_Copy\_Timelevels & mhdpostid \\ 
+GiRaFFE\_compute\_B\_and\_Bstagger\_from\_A & compute\_b \\ 
+GiRaFFE\_driver\_evaluate\_FFE\_rhs & GiRaFFE\_RHS\_eval \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

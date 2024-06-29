@@ -1,0 +1,513 @@
+% *======================================================================*
+%  Cactus Thorn template for ThornGuide documentation
+%  Author: Ian Kelley
+%  Date: Sun Jun 02, 2002
+%  $Header$
+%
+%  Thorn documentation in the latex file doc/documentation.tex
+%  will be included in ThornGuides built with the Cactus make system.
+%  The scripts employed by the make system automatically include
+%  pages about variables, parameters and scheduling parsed from the
+%  relevant thorn CCL files.
+%
+%  This template contains guidelines which help to assure that your
+%  documentation will be correctly added to ThornGuides. More
+%  information is available in the Cactus UsersGuide.
+%
+%  Guidelines:
+%   - Do not change anything before the line
+%       % START CACTUS THORNGUIDE",
+%     except for filling in the title, author, date, etc. fields.
+%        - Each of these fields should only be on ONE line.
+%        - Author names should be separated with a \\ or a comma.
+%   - You can define your own macros, but they must appear after
+%     the START CACTUS THORNGUIDE line, and must not redefine standard
+%     latex commands.
+%   - To avoid name clashes with other thorns, 'labels', 'citations',
+%     'references', and 'image' names should conform to the following
+%     convention:
+%       ARRANGEMENT_THORN_LABEL
+%     For example, an image wave.eps in the arrangement CactusWave and
+%     thorn WaveToyC should be renamed to CactusWave_WaveToyC_wave.eps
+%   - Graphics should only be included using the graphicx package.
+%     More specifically, with the "\includegraphics" command.  Do
+%     not specify any graphic file extensions in your .tex file. This
+%     will allow us to create a PDF version of the ThornGuide
+%     via pdflatex.
+%   - References should be included with the latex "\bibitem" command.
+%   - Use \begin{abstract}...\end{abstract} instead of \abstract{...}
+%   - Do not use \appendix, instead include any appendices you need as
+%     standard sections.
+%   - For the benefit of our Perl scripts, and for future extensions,
+%     please use simple latex.
+%
+% *======================================================================*
+%
+% Example of including a graphic image:
+%    \begin{figure}[ht]
+% 	\begin{center}
+%    	   \includegraphics[width=6cm]{/home/runner/work/tests/tests/arrangements/Fuka/KadathImporter/doc/MyArrangement_MyThorn_MyFigure}
+% 	\end{center}
+% 	\caption{Illustration of this and that}
+% 	\label{MyArrangement_MyThorn_MyLabel}
+%    \end{figure}
+%
+% Example of using a label:
+%   \label{MyArrangement_MyThorn_MyLabel}
+%
+% Example of a citation:
+%    \cite{MyArrangement_MyThorn_Author99}
+%
+% Example of including a reference
+%   \bibitem{MyArrangement_MyThorn_Author99}
+%   {J. Author, {\em The Title of the Book, Journal, or periodical}, 1 (1999),
+%   1--16. {\tt http://www.nowhere.com/}}
+%
+% *======================================================================*
+
+% If you are using CVS use this line to give version information
+% $Header$
+
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+% The author of the documentation
+\author{Samuel Tootle \textless tootle@itp.uni-frankfurt.de\textgreater}
+
+% The title of the document (not necessarily the name of the Thorn)
+\title{KadathImporter}
+
+% the date your document was last changed, if your document is in CVS,
+% please use:
+%    \date{$ $Date$ $}
+\date{February 19, 2023}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+% Add all definitions used in this documentation here
+%   \def\mydef etc
+\newcommand{\hk}{\texttt{HOME\_KADATH}}
+% Add an abstract for this thorn's documentation
+\begin{abstract}
+This thorn enables the use of initial data solutions computed
+using the Frankfurt University/KADATH (FUKA) initial data codes
+\end{abstract}
+
+% The following sections are suggestive only.
+% Remove them or add your own.
+
+\section{Introduction}
+Accurate time evolution of systems within general relativity require
+accurate initial data solutions at some initial time-slice.  For isolated
+objects in equilibrium, these solutions can be computed easily either analytically
+or using efficient 1-2D solvers.  Conversely, initial data for binary configurations is
+considerably more challenging to construct and, as such, has seen considerably fewer
+codes dedicated to solving this problem especially for mass asymmetric and spinning
+configurations. 
+
+Frankfurt University/KADATH (FUKA) is a collection of initial data codes 
+that are focused on providing a robust suite of solvers capable of computing precise
+initial data solutions for binary configurations including a black hole or neutron stars.  
+This is currently limited to classical general relativity and with a strict z-symmetry so that
+component spins can only be (anti-)aligned with the orbital axis. Furthermore, initial data involving
+neutron stars can be computed using either tabulated equations of state or polytropic.  Details
+of the initial data solvers can be found in the publication\cite{Papenfort2021a}.
+
+This thorn provides a minimal interface to FUKA's builtin export routines in order to
+interpolate an initial data solution generated with FUKA
+into the EinsteinToolkit.  Initial data must be generated independently by a separately compiled
+version of FUKA.  The latest development version can be found under the \textit{fuka} branch at \cite{fukacodes}.
+
+% \section{Physical System}
+
+\section{Using This Thorn}
+This thorn requires the \texttt{KadathThorn} which handles the (possibly) building and linking of the FUKA library when creating
+the EinsteinToolkit executable.  The FUKA library currently requires a compiler that supports C++17 standards and \textit{std::filesystem}.
+However, the library can be compiled separately from the EinsteinToolkit and linked by setting 
+\begin{verbatim}
+    KADATH_DIR = ${HOME_KADATH}    
+\end{verbatim}
+in the build configuration file.  Here \hk~ is a global environment variable which the user should have already set during
+the installation of FUKA.  When linking against a pre-compiled version of FUKA, the ETK can be compiled with a lower C++ standard since FUKA
+is linked via a statically compiled library.
+
+Note: Linking a previously compiled version of FUKA when building the EinsteinToolkit has been known to provide undefined behavior with
+the intel MKL library.  Specifically, imported solutions will results in garbage for all quantities (e.g. the lapse).
+FUKA works exceptionally well with MKL, but an ABI issue has been encountered on multiple occasions which has been
+tied to the order of linking scientific libraries.  In the case of intel oneapi, "-mkl" should appear at the end of the LDFLAGS. If you
+encounter and resolve such an error, please submit an issue ticket so it can be documented.
+
+\subsection{Obtaining This Thorn}
+This thorn can be obtained from \cite{fukaws}
+
+\subsection{Basic Usage}
+FUKA initial data solutions consist of two files: a configuration file (config) and a data file (dat).  In the case of neutron stars,
+the solution also needs the equation of state file that describes the table or polytropic configuration.
+
+After activating the KadathImporter thorn, one needs to set KadathImporter::filename to the config file, e.g.
+\begin{verbatim}
+    KadathImporter::filename = "<dir>/id.info"
+\end{verbatim}
+In the ficticious \textit{dir}, we must ensure the config, dat, and possible EOS files are stored in the same place.  
+Additionally, FUKA will also check for the desired EOS in
+\begin{verbatim}
+    ${HOME_KADATH}/eos
+\end{verbatim}
+However, this requires the \hk~ environment variable being set in the evolution environment.  If FUKA is built during
+the ETK build procedure, the directory that should be assigned to \hk~ is listed in the output.
+
+In addition to the filename, the initial data type must also be set such as
+\begin{verbatim}
+    KadathImporter::type = "BNS"
+\end{verbatim}
+where possible types are 
+\begin{verbatim}
+    STRING type "ID type"
+    {
+    "BBH" :: "Black hole ID"
+    "BH"  :: "Binary black hole ID"
+    "BNS" :: "Binary neutron star ID"
+    "NS"  :: "Neutron star ID"
+    "BHNS" :: "Black Hole neutron star ID"
+    } "BBH"
+\end{verbatim}
+
+\subsubsection*{Excision filling parameters}
+FUKA computes black hole solutions by excising the interior of the black hole, where
+the excision surface is defined as an apparent horizon. However, for puncture evolution
+the interior needs to be filled with smooth junk data.  To do so, the FUKA exporter
+performs 3rd to 7th order Lagrange interpolation on radially equi-spaced grid points
+outside of the excision region. The interpolated solution is then extrapolated
+to the requested grid point inside the horizon.
+
+Although the default parameters for filling the excision region have been tuned to be
+optimal, these settings can be modified by the user in the parfile:
+\begin{verbatim}
+    CCTK_INT interp_order "Interpolation order for smooth junk"
+    {
+      3 :: "Parabolic"
+      5 :: "Quartic"
+      7 :: "6th order polynomial"
+      8 :: "7th order polynomial"
+    }8
+    
+    CCTK_REAL interpolation_offset "Interpolation offset (in units of r_AH)"
+    {
+      -1:* :: "Anything goes"
+    }0.
+    
+    CCTK_REAL delta_r_rel "Relative dr spacing for the interpolation polynomial"
+    {
+      -1:* :: "Anything goes"
+    }0.3
+    
+    BOOLEAN puncture_lapse "Set a puncture lapse alp = psi^-2 inside the hole"
+    {
+    }no
+\end{verbatim}
+
+\section{In the background}
+This importer interfaces with the initial data exporters that are built into the
+FUKA library which is where all the actual ``work'' is done.  
+The source code for these can be found in
+%
+\begin{verbatim}
+    $HOME_KADATH/src/Utilities/Exporters
+\end{verbatim}
+%
+These exporters provide a simple API to allow one to easily integrate FUKA
+initial data into a new evolution code.  In this way, the KadathImporter passes
+the filename of the initial data along with vectors of points in which to interpolate
+the initial data solution on.  In return the exporter passes back a vector consisting
+of the necessary ADMBase and HydroBase quantities, specifically
+\begin{itemize}
+    \item Shift - beta$\langle x\,, y\,, z \rangle$ = 0
+    \item Physical 3-Metric - $\gamma_{ij}$
+    \item Extrinsic curvature - $K_{ij}$
+    \item Density - $\rho$
+    \item Internal energy - $\epsilon$
+    \item Contravariant eulerian fluid 3 velocity - $v^i$
+\end{itemize}
+
+Note: FUKA initial data involving neutron stars uses cold equations of state.  It has no knowledge of
+temperature or electron fraction.  These must be set by another thorn!  For an example, see the KadathPizza thorn\cite{fukaws} where
+these quantities are initialized after initial data import, but before the FreeTHC initial data converter.
+
+\subsection{Interaction With Other Thorns}
+The KadathImporter extends the ADMBase and HydroBase thorns to allow for
+setting ADMBase and HydroBase variables.
+
+To import metric quantities from an initial data solution, the following ADMBase variables need to be set to \textbf{Kadath}:
+\begin{itemize}
+    \item initial\_data
+    \item initial\_lapse
+    \item initial\_shift
+    \item initial\_dtlapse (can be set to \textbf{Kadath}, \textbf{none}, or \textbf{zero})
+    \item initial\_dtshift (can be set to \textbf{Kadath}, \textbf{none}, or \textbf{zero})
+\end{itemize}
+
+It is important to note that on import
+\begin{itemize}
+    \item The shift ($\beta$) is always set to zero such that the shift is recomputed by the evolution thorn within the evolution gauge using the extrinsic curvature.
+    \item For binary initial data: the coordinates are shifted such that the carpet coordinate (0,0,0) corresponds to the computed center of mass of the binary
+\end{itemize}
+
+In the case of initial data involving a neutron star, HydroBase::initial\_hydro must be set to \textbf{Kadath} too.
+\subsection{Examples}
+A short test for verifying the importer interface is working is available in the \textbf{test}
+directory.  Examples for a BBH and neutron star are available in the \textbf{par} directory
+
+\subsection{Support and Feedback}
+The current active developer and maintainer is
+\begin{verbatim}
+    Samuel Tootle - tootle@itp.uni-frankfurt.de
+\end{verbatim}
+
+\section{History}
+The pre-ETK inclusion KadathThorn and KadathImporter thorns were developed by L. Jens Papenfort, 
+Samuel Tootle, and Elias Most for binary black hole and binary neutron star initial data. 
+Samuel Tootle later rewrote the thorns to encapsulate all initial data available
+from FUKA, updated to meet ETK inclusion standards, and wrote the documentation.
+
+\subsection{Acknowledgements}
+The authors are grateful to the continued support by Philippe Grandclement, author of
+the KADATH spectral library, throughout the development of the FUKA codes.
+
+\begin{thebibliography}{9}
+    \bibitem{Papenfort2021a}
+    "Papenfort, L. Jens et al", \emph{New public code for initial data of unequal-mass, spinning compact-object binaries},
+        "10.1103/PhysRevD.104.024057"
+    \bibitem{fukacodes}
+    \emph{Frankfurt University/KADATH (codes)}, "{https://bitbucket.org/fukaws/fuka}"
+    \bibitem{fukaws}
+    \emph{Frankfurt University/KADATH (workspace)}, "{https://bitbucket.org/fukaws/}"
+
+\end{thebibliography}
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{interpolation\_offset}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{delta\_r\_rel} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Relative dr spacing for the interpolation polynomial}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.3 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1:*} & \multicolumn{2}{p{\paraWidth}|}{Anything goes} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{filename} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Input config file name}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering } & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{interp\_order} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Interpolation order for smooth junk}} \\
+\hline{\bf Range} & &  {\bf Default:} 8 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 3} & \multicolumn{2}{p{\paraWidth}|}{Parabolic} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 5} & \multicolumn{2}{p{\paraWidth}|}{Quartic} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 7} & \multicolumn{2}{p{\paraWidth}|}{6th order polynomial} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 8} & \multicolumn{2}{p{\paraWidth}|}{7th order polynomial} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{interpolation\_offset} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Interpolation offset (in units of r\_AH)}} \\
+\hline{\bf Range} & &  {\bf Default:} 0. \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1:*} & \multicolumn{2}{p{\paraWidth}|}{Anything goes} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{puncture\_lapse} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Set a puncture lapse alp = psi\^-2 inside the hole}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{type} & {\bf Scope:} restricted & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em ID type}} \\
+\hline{\bf Range} & &  {\bf Default:} BBH \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering BBH} & \multicolumn{2}{p{\paraWidth}|}{Black hole ID} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering BH} & \multicolumn{2}{p{\paraWidth}|}{Binary black hole ID} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering BNS} & \multicolumn{2}{p{\paraWidth}|}{Binary neutron star ID} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering NS} & \multicolumn{2}{p{\paraWidth}|}{Neutron star ID} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering BHNS} & \multicolumn{2}{p{\paraWidth}|}{Black Hole neutron star ID} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{initial\_hydro} & {\bf Scope:} shared from HYDROBASE & KEYWORD \\\hline
+\multicolumn{3}{|l|}{\bf Extends ranges:}\\ 
+\hline\multicolumn{1}{|p{\maxVarWidth}|}{\centering Kadath} & \multicolumn{2}{p{\paraWidth}|}{Kadath Initial Data} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+kadathimporter
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+grid
+
+admbase
+
+hydrobase
+\vspace{2mm}
+
+\vspace{5mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn Fuka/KadathImporter.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}NONE
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PARAMCHECK}   (conditional) 
+
+\hspace{5mm} kadathimporter\_check\_parameters 
+
+\hspace{5mm}{\it check parameters } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf ADMBase\_InitialData}   (conditional) 
+
+\hspace{5mm} kadathimporter 
+
+\hspace{5mm}{\it set up binary black hole initial data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf ADMBase\_InitialData}   (conditional) 
+
+\hspace{5mm} kadathimporter 
+
+\hspace{5mm}{\it set up black hole initial data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Initial}   (conditional) 
+
+\hspace{5mm} kadathimporter 
+
+\hspace{5mm}{\it set up binary neutron star initial data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & admbase\_postinitial \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Initial}   (conditional) 
+
+\hspace{5mm} kadathimporter 
+
+\hspace{5mm}{\it set up neutron star initial data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & admbase\_postinitial \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Initial}   (conditional) 
+
+\hspace{5mm} kadathimporter 
+
+\hspace{5mm}{\it set up black hole neutron star initial data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & admbase\_postinitial \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

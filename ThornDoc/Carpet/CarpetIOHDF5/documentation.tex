@@ -1,0 +1,1544 @@
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a 
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+% The author of the documentation
+\author{Erik Schnetter \textless schnetter@uni-tuebingen.de\textgreater\\
+        Christian D. Ott \textless cott@aei.mpg.de\textgreater\\
+        Thomas Radke \textless tradke@aei.mpg.de\textgreater}
+
+% The title of the document (not necessarily the name of the Thorn)
+\title{CarpetIOHDF5}
+
+% the date your document was last changed, if your document is in CVS, 
+% please use:
+\date{1 December 2004}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+\ifx\ThisThorn\undefined
+\newcommand{\ThisThorn}{{\it CarpetIOHDF5}}
+\else
+\renewcommand{\ThisThorn}{{\it CarpetIOHDF5}}
+\fi
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{abstract}
+Thorn \ThisThorn\ provides HDF5-based output to the {\em Carpet} mesh
+refinement driver in {\em Cactus}.
+This document explains \ThisThorn's usage and contains a specification
+of the HDF5 file format that was adapted from John Shalf's FlexIO library.
+\end{abstract}
+
+
+\tableofcontents
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}
+
+Having encountered various problems with the Carpet I/O thorn
+{\bf CarpetIOFlexIO} and the underlying FlexIO library,
+Erik Schnetter decided to write this thorn \ThisThorn\ which bypasses
+any intermediate binary I/O layer and outputs in HDF5\footnote{Hierarchical
+Data Format version 5, see {\tt http://hdf.ncsa.uiuc.edu/whatishdf5.html}
+for details} file format directly.
+
+\ThisThorn\ provides output for the {\em Carpet} Mesh Refinement driver
+within the Cactus Code. Christian D. Ott added  a file reader (analogous to
+Erik Schnetter's implementation present in {\bf CarpetIOFlexIO}) 
+as well as checkpoint/recovery functionality to \ThisThorn.
+Thomas Radke has taken over maintainence of this I/O thorn and is continuously
+working on fixing known bugs and improving the code functionality and
+efficiency.
+
+The \ThisThorn\ I/O method can output any type of CCTK grid variables
+(grid scalars, grid functions, and grid arrays of arbitrary dimension);
+data is written into separate files named {\tt "<varname>.h5"}.
+It implements both serial and full parallel I/O --
+data files can be written/read either by processor 0 only or by all processors.
+Such datafiles can be used for further postprocessing (eg. visualization with
+OpenDX or DataVault%%%
+\footnote{%%%
+         See our visualization page at
+	 \url{http://www.cactuscode.org/Visualization/}
+	 for details.
+	 }%%%
+) or fed back into Cactus via the filereader capabilities of thorn
+{\bf IOUtil}.
+
+This document aims at giving the user a first handle on how to use
+\ThisThorn. It also documents the HDF5 file layout used.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{\ThisThorn\ Parameters}
+
+Parameters to control the \ThisThorn\ I/O method are:
+
+\begin{itemize}
+  \item {\tt IOHDF5::out\_every} (steerable)\\
+        How often to do periodic \ThisThorn\ output. If this parameter is set
+        in the parameter file, it will override the setting of the shared
+        {\tt IO::out\_every} parameter. The output frequency can also be set
+        for individual variables using the {\tt out\_every} option in an option
+        string appended to the {\tt IOHDF5::out\_vars} parameter.
+
+  \item {\tt IOHDF5::out\_dt} (steerable)\\
+        output in intervals of that much coordinate time (overwrites {\tt IO::out\_dt})
+
+  \item {\tt IOHDF5::out\_criterion} (steerable)\\
+        criterion to select output intervals (overwrites {\tt IO::out\_criterion})
+
+  \item {\tt IOHDF5::out\_vars} (steerable)\\
+        The list of variables to output using the \ThisThorn\ I/O method.
+        The variables must be given by their fully qualified variable or group
+        name. The special keyword {\it all} requests \ThisThorn\ output for
+        all variables. Multiple names must be separated by whitespaces.
+
+        Each group/variable name can have an option string attached in which you
+        can specify a different output frequency for that individual variable,
+	a set of individual refinement levels to be output, the compression
+        level, or an individual output mode, e.g.
+\begin{verbatim}
+  IOHDF5::out_vars = "wavetoy::phi{ out_every = 4 refinement_levels = { 1 2 } }"
+\end{verbatim}
+        Option strings currently supported by \ThisThorn\ are: {\tt out\_every,
+        out\_unchunked}, {\tt refinement\_levels}, and {\tt compression\_level}.
+
+  \item {\tt IOHDF5::out\_dir}\\
+        The directory in which to place the \ThisThorn\ output files.
+        If the directory doesn't exist at startup it will be created.
+        If parallel output is enabled and the directory name contains the
+        substring {\tt "\%u"} it will be substituted by the processor ID.
+        By this means each processor can have its own output directory.\\
+        If this parameter is set to an empty string \ThisThorn\ output will go
+        to the standard output directory as specified in {\tt IO::out\_dir}.
+
+  \item {\tt IOHDF5::compression\_level (steerable)}\\
+        Compression level to use for writing HDF5 datasets.
+        Automatic {\tt gzip} dataset compression can be enabled by setting
+        this integer parameter to values between 1 and 9 (inclusive),
+        with increasing values requesting higher compression rates (at the cost
+        of additional runtime for outputting HDF5 data); a value of zero
+        (which is the default setting for this parameter) disables compression.
+        The output compression level can also be set
+        for individual variables using the {\tt compression\_level} option in
+        an option string appended to the {\tt IOHDF5::out\_vars} parameter.
+
+  \item {\tt IO::out\_single\_precision (steerable)}\\
+        whether to output double-precision data in single precision
+
+\end{itemize}
+
+
+\section{Serial versus Parallel Output}
+
+According to the ouptput mode parameter settings of ({\tt IO::out\_mode},
+{\tt IO::out\_unchunked},\newline{\tt IO::out\_proc\_every}) of thorn
+{\bf IOUtil}, thorn \ThisThorn\ will output distributed grid variables either
+
+\begin{itemize}
+  \item in serial from processor 0 into a single unchunked file
+\begin{verbatim}
+  IO::out_mode      = "onefile"
+  IO::out_unchunked = "yes"
+\end{verbatim}
+
+  \item in serial from processor 0 into a single chunked file
+\begin{verbatim}
+  IO::out_mode      = "onefile"
+  IO::out_unchunked = "no"
+\end{verbatim}
+
+  \item in parallel, that is, into separate chunked files (one per processor)
+        containing the individual processors' patches of the
+        distributed grid variable
+\begin{verbatim}
+  IO::out_mode      = "proc"
+\end{verbatim}
+\end{itemize}
+
+{\em Unchunked} means that an entire Cactus grid array (gathered across all
+processors) is stored in a single HDF5 dataset whereas {\em chunked} means
+that all the processor-local patches of this array are stored as separate
+HDF5 datasets (called {\it chunks}).
+Consequently, for unchunked data all interprocessor ghostzones are excluded
+from the output.  In contrast, for chunked data the interprocessor ghostzones
+\emph{are} included in the output.
+
+When visualising chunked datasets, they probably need to be recombined
+for a global view on the data. This needs to be done within the visualisation
+tool (see also below), Cactus itself does not provide its own recombiner
+utility program for \ThisThorn's output files.
+
+The default is to output distributed grid variables in parallel, each processor
+writing a file
+{\tt \textless varname\textgreater.file\_\textless processor ID\textgreater.h5}.
+The chunked/unchunked mode can also be set individually in a key/value
+option string (with the key {\tt out\_unchunked} and possible string values
+{\tt "true|false|yes|no"}) appended to a group/variable name in the
+{\tt out\_vars} parameter, eg.
+\begin{verbatim}
+  IOHDF5::out_vars = "wavetoy::phi{out_unchunked = 'true'}  grid::coordinates"
+\end{verbatim}
+will cause the variable {\tt phi} to be output into a single unchunked file
+whereas other variables will still be output into separate chunked files
+(assuming the output mode is left to its default).
+Grid scalars
+and {\tt DISTRIB = CONST} grid arrays are always output as unchunked data
+on processor 0 only.
+
+Parallel output in a parallel simulation will ensure maximum I/O
+performance. Note that changing the output mode to serial I/O might only be
+necessary if the data analysis and visualisation tools cannot deal with
+chunked output files. Cactus itself, as well as many of the tools to
+visualise Carpet HDF5 data
+(see \url{http://www.cactuscode.org/Visualization}),
+can process both chunked and unchunked data. For instance, to visualise parallel
+output datafiles with DataVault, you would just send all the individual files
+to the DV server: {\tt hdf5todv phi.file\_*.h5}. In OpenDX the {\tt
+ImportCarpetIOHDF5} module can be given any filename from the set of parallel
+chunked files; the module will determine the total number of files in the set
+automatically and read them all.
+
+
+\section{Using the flesh I/O API to produce HDF5 output}
+
+Periodic output of grid variables is usually specified via I/O parameters
+in the parameter file and then automatically triggered by the flesh scheduler
+at each iteration step after analysis. If output should also be triggered
+at a different time, one can do that from within an application thorn by
+invoking one of the {\tt CCTK\_OutputVar*()} I/O routines provided
+by the flesh I/O API (see chapter B8.2 ``IO'' in the Cactus Users Guide).
+In this case, the application thorn routine which calls {\tt CCTK\_OutputVar*()}
+must be scheduled in level mode.
+
+It should be noted here that -- due to a restriction in the naming scheme of
+objects in an HDF5 data file -- \ThisThorn\ can output a given grid variable
+with given refinement level only once per timestep. Attempts of application
+thorns to trigger the output of the same variable multiple times during an iteration
+will result in a runtime warning and have no further effect.
+If output for a variable is required also for intermediate timesteps
+this can be achieved by calling {\tt CCTK\_OutputVarAs*()} with a different
+{\tt alias} name; output for the same variable is then written into
+different HDF5 files based on the {\tt alias} argument.
+
+
+\section{Checkpointing \& Recovery and Importing Data}
+
+Thorn \ThisThorn\ can also be used to create HDF5 checkpoint files and
+to recover from such files later on. In addition it can read HDF5 datafiles
+back in using the generic filereader interface described in the thorn
+documentation of {\bf IOUtil}.
+
+Checkpoint routines are scheduled at several timebins so that you can save
+the current state of your simulation after the initial data phase,
+during evolution, or at termination. Checkpointing for thorn \ThisThorn\ 
+is enabled by setting the parameter {\tt IOHDF5::checkpoint = "yes"}.
+
+A recovery routine is registered with thorn {\bf IOUtil} in order to restart
+a new simulation from a given HDF5 checkpoint.
+The very same recovery mechanism is used to implement a filereader
+functionality to feed back data into Cactus.
+
+Checkpointing and recovery are controlled by corresponding checkpoint/recovery
+parameters of thorn {\bf IOUtil} (for a description of these parameters please
+refer to this thorn's documentation).
+
+
+\section{CarpetIOHDF5 Utility Programs}
+
+\subsection{{\tt hdf5toascii\_slicer}}
+
+This utility program extracts 1D lines and 2D slices from 3D HDF5
+datasets produced by \ThisThorn\ and outputs them in {\tt CarpetIOASCII} format
+(suitable to be further processed by gnuplot).
+
+The {\tt hdf5toascii\_slicer} program is contained in the {\tt src/utils/}
+subdirectory of thorn \ThisThorn. It is built with
+\begin{verbatim}
+  make <configuration>-utils
+\end{verbatim}
+where the executable ends up in the subdirectory {\tt exe/<configuration>/}.
+
+For details on how to use the {\tt hdf5toascii\_slicer} program,
+run it with no command-line options (or with the {\tt --help} option).
+
+{\tt hdf5toascii\_slicer} can be used on either chunked or unchunked
+data:
+\begin{itemize}
+\item	If the HDF5 data is unchunked, then {\tt hdf5toascii\_slicer}
+	will output unchunked ASCII data.
+\item	If the HDF5 data is chunked, then {\tt hdf5toascii\_slicer}
+	will output chunked ASCII data reflecting whatever subset of
+	the HDF5 files are provided.  That is, for example, the command
+	\begin{verbatim}
+	hdf5toascii_slicer my_variable.file_2.h5 my_variable.file_4.h5
+	\end{verbatim}
+	will output ASCII data only for that part of the Carpet grid
+	which lived on processors~2 and~4.  It's probably more useful
+	to use the command
+	\begin{verbatim}
+	hdf5toascii_slicer my_variable.file_*.h5
+	\end{verbatim}
+	which will output ASCII data for the entire Carpet grid.
+\end{itemize}
+
+
+\subsection{{\tt hdf5\_extract}}
+
+This utility program extracts selected datasets from any given HDF5 output file
+which may be useful when only certain parts (eg. a specific
+timestep) of large files are required (eg. for copying to some other
+location for further processing).
+
+The {\tt hdf5\_extract} program is contained in the {\tt src/utils/}
+subdirectory of thorn {\tt CactusPUGHIO/IOHDF5}. It is built with
+\begin{verbatim}
+  make <configuration>-utils
+\end{verbatim}
+where the executable ends up in the subdirectory {\tt exe/<configuration>/}.
+
+
+\section{Example Parameter File Excerpts}
+
+\subsection{Serial (unchunked) Output of Grid Variables}
+
+\begin{verbatim}
+  # how often to output and where output files should go
+  IO::out_every = 2
+  IO::out_dir   = "wavetoy-data"
+
+  # request output for wavetoy::psi at every other iteration for timelevel 0,
+  #                for wavetoy::phi every 4th iteration with timelevels 1 and 2
+  IOHDF5::out_vars = "wavetoy::phi{ out_every = 4 refinement_levels = { 1 2 } }
+                      wavetoy::psi"
+
+  # we want unchunked output
+  # (because the visualisation tool cannot deal with chunked data files)
+  IO::out_mode      = "onefile"
+  IO::out_unchunked = 1
+\end{verbatim}
+
+\subsection{Parallel (chunked) Output of Grid Variables}
+
+\begin{verbatim}
+  # how often to output
+  IO::out_every = 2
+
+  # each processor writes to its own output directory
+  IOHDF5::out_dir = "wavetoy-data-proc%u"
+
+  # request output for wavetoy::psi at every other iteration for timelevel 0,
+  #                for wavetoy::phi every 4th iteration with timelevels 1 and 2
+  IOHDF5::out_vars = "wavetoy::phi{ out_every = 4 refinement_levels = { 1 2 } }
+                      wavetoy::psi"
+
+  # we want parallel chunked output (note that this already is the default)
+  IO::out_mode = "proc"
+\end{verbatim}
+
+\subsection{Checkpointing \& Recovery}
+
+\begin{verbatim}
+  # say how often we want to checkpoint, how many checkpoints should be kept,
+  # how the checkpoints should be named, and they should be written to
+  IO::checkpoint_every = 100
+  IO::checkpoint_keep  = 2
+  IO::checkpoint_file  = "wavetoy"
+  IO::checkpoint_dir   = "wavetoy-checkpoints"
+
+  # enable checkpointing for CarpetIOHDF5
+  IOHDF5::checkpoint = "yes"
+
+  #######################################################
+
+  # recover from the latest checkpoint found
+  IO::recover_file = "wavetoy"
+  IO::recover_dir  = "wavetoy-checkpoints"
+  IO::recover      = "auto"
+\end{verbatim}
+
+\subsection{Importing Grid Variables via Filereader}
+
+\begin{verbatim}
+  # which data files to import and where to find them
+  IO::filereader_ID_files = "phi psi"
+  IO::filereader_ID_dir   = "wavetoy-data"
+
+  # what variables and which timestep to read
+  # (if this parameter is left empty, all variables and timesteps found
+  #  in the data files will be read)
+  IO::filereader_ID_vars  = "WaveToyMoL::phi{ cctk_iteration = 0 }
+                             WaveToyMoL::psi"
+\end{verbatim}
+
+
+\iffalse
+\section{CarpetIOHDF5's HDF5 file layout}
+
+The HDF5 file layout of {\bf CarpetIOHDF5} is quite simple.
+There are no groups besides the standard HDF5 root data object group:
+
+Each dataset is named according to this template:
+
+\begin{verbatim}
+  <group::varname> it=<cctk_iteration> tl=<timelevel> [ml=<mglevel>] [m=<map>]
+  [rl=<reflevel>] [c=<component>]}
+\end{verbatim}
+
+where optional parts only contribute to the name if they vary (if there is
+more than one multigrid level, map, refinement level, component respectively).
+
+Each HDF5 dataset has the following attributes associated with it:
+
+\begin{itemize}
+  \item {\tt level} : Carpet::reflevel
+  \item {\tt origin} : 1-D array of length vdim. \\
+        origin[d] = CCTK\_ORIGIN\_SPACE(d) + cctk\_lbnd[d] * delta[d]
+  \item {\tt delta} : 1-D array of length vdim. \\
+        delta[d] = CCTK\_DELTA\_SPACE(d)
+  \item {\tt time} : cctk\_time
+  \item {\tt timestep} : cctk\_iteration
+  \item {\tt iorigin} : 1-D array of length vdim. \\ iorigin[d] = (Carpet::ext.lower() / Carpet::ext.stride())[d]
+  \item {\tt name} : CCTK\_FullName(variable index)
+  \item {\tt cctk\_bbox} : 1-D array of length 2*Carpet::dim. cctk\_box
+  \item {\tt cctk\_nghostzones} : 1-D array of length Carpet::dim. cctk\_nghostzones
+  \item {\tt carpet\_mglevel} : Carpet::mglevel
+  \item {\tt carpet\_reflevel} : Carpet::reflevel
+\end{itemize}
+
+
+\subsection{Attributes needed by the file reader}
+
+The number of attributes needed by the CarpetIOHDF5 file reader is much smaller then the total
+number of attributes attached to each dataset:
+
+\begin{itemize}
+  \item {\tt name}
+  \item {\tt level}
+  \item {\tt iorigin}
+\end{itemize}
+
+\fi
+
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{use\_grid\_structure\_from\_checkpoint}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{checkpoint} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Do checkpointing with CarpetIOHDF5 ?}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{checkpoint\_every\_divisor} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Checkpoint if (iteration \% out\_every) == 0}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{Every so many iterations} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1:0} & \multicolumn{2}{p{\paraWidth}|}{Disable periodic checkpointing} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{checkpoint\_next} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Checkpoint at next iteration ?}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{compression\_level} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Compression level to use for writing HDF5 data}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:9} & \multicolumn{2}{p{\paraWidth}|}{Higher numbers compress better, a value of zero disables compression} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{minimum\_size\_for\_compression} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Only compress datasets larger than this many bytes}} \\
+\hline{\bf Range} & &  {\bf Default:} 32768 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{This should to be large enough so that compression gains outweigh the overhead} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{one\_file\_per\_group} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Write one file per group instead of per variable}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{one\_file\_per\_proc} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Write one file per process instead of per variable}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{open\_one\_input\_file\_at\_a\_time} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Open only one HDF5 file at a time when reading data from multiple chunked checkpoint/data files}} \\
+\hline{\bf Range} & &  {\bf Default:} no \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering no} & \multicolumn{2}{p{\paraWidth}|}{Open all input files first, then import data (most efficient)} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering yes} & \multicolumn{2}{p{\paraWidth}|}{Process input files one after another (reduces memory requirements)} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out0d\_criterion} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Criterion to select 0D HDF5 slice output intervals, overrides out\_every}} \\
+\hline{\bf Range} & &  {\bf Default:} default \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering default} & \multicolumn{2}{p{\paraWidth}|}{Use IO::out\_criterion} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering never} & \multicolumn{2}{p{\paraWidth}|}{Never output} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering iteration} & \multicolumn{2}{p{\paraWidth}|}{Output every so many iterations} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering divisor} & \multicolumn{2}{p{\paraWidth}|}{Output if iteration mod divisor == 0.} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering time} & \multicolumn{2}{p{\paraWidth}|}{Output every that much coordinate time} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out0d\_dir} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Name of 0D HDF5 slice output directory, overrides IO::out\_dir}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering \^\$} & \multicolumn{2}{p{\paraWidth}|}{Empty: use IO::out\_dir} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .+} & \multicolumn{2}{p{\paraWidth}|}{Not empty: directory name} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out0d\_dt} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How often to do 0D HDF5 slice output, overrides IO::out\_dt}} \\
+\hline{\bf Range} & &  {\bf Default:} -2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{In intervals of that much coordinate time} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering } & \multicolumn{2}{p{\paraWidth}|}{As often as possible} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1} & \multicolumn{2}{p{\paraWidth}|}{Disable output} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -2} & \multicolumn{2}{p{\paraWidth}|}{Default to IO::out\_dt} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out0d\_every} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How often to do 0D HDF5 slice output, overrides out\_every}} \\
+\hline{\bf Range} & &  {\bf Default:} -2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{Output every so many time steps} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1:0} & \multicolumn{2}{p{\paraWidth}|}{No output} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -2} & \multicolumn{2}{p{\paraWidth}|}{Use IO::out\_every} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out0d\_point\_x} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em x coordinate for 0D points}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out0d\_point\_xi} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em x-index (counting from 0) for 0D points}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out0d\_point\_y} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em y coordinate for 0D points}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out0d\_point\_yi} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em y-index (counting from 0) for 0D points}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out0d\_point\_z} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em z coordinate for 0D points}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out0d\_point\_zi} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em z-index (counting from 0) for 0D points}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out0d\_vars} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Variables to output in 0D HDF5 file format}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering } & \multicolumn{2}{p{\paraWidth}|}{List of group or variable names} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_criterion} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Criterion to select 1D HDF5 slice output intervals, overrides out\_every}} \\
+\hline{\bf Range} & &  {\bf Default:} default \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering default} & \multicolumn{2}{p{\paraWidth}|}{Use IO::out\_criterion} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering never} & \multicolumn{2}{p{\paraWidth}|}{Never output} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering iteration} & \multicolumn{2}{p{\paraWidth}|}{Output every so many iterations} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering divisor} & \multicolumn{2}{p{\paraWidth}|}{Output if (iteration \% out\_every) == 0.} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering time} & \multicolumn{2}{p{\paraWidth}|}{Output every that much coordinate time} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_d} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Do output along the diagonal}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_dir} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Name of 1D HDF5 slice output directory, overrides IO::out\_dir}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering \^\$} & \multicolumn{2}{p{\paraWidth}|}{Empty: use IO::out\_dir} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .+} & \multicolumn{2}{p{\paraWidth}|}{Not empty: directory name} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_dt} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How often to do 1D HDF5 slice output, overrides IO::out\_dt}} \\
+\hline{\bf Range} & &  {\bf Default:} -2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{In intervals of that much coordinate time} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering } & \multicolumn{2}{p{\paraWidth}|}{As often as possible} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1} & \multicolumn{2}{p{\paraWidth}|}{Disable output} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -2} & \multicolumn{2}{p{\paraWidth}|}{Default to IO::out\_dt} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_every} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How often to do 1D HDF5 slice output, overrides out\_every}} \\
+\hline{\bf Range} & &  {\bf Default:} -2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{Output every so many time steps} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1:0} & \multicolumn{2}{p{\paraWidth}|}{No output} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -2} & \multicolumn{2}{p{\paraWidth}|}{Use IO::out\_every} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_vars} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Variables to output in 1D HDF5 file format}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering } & \multicolumn{2}{p{\paraWidth}|}{List of group or variable names} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_x} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Do 1D HDF5 slice output in the x-direction}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_xline\_y} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em y coordinate for 1D lines in x-direction}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_xline\_yi} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em y-index (counting from 0) for 1D lines in x-direction}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_xline\_z} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em z coordinate for 1D lines in x-direction}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_xline\_zi} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em z-index (counting from 0) for 1D lines in x-direction}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_y} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Do 1D HDF5 slice output in the y-direction}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_yline\_x} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em x coordinate for 1D lines in y-direction}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_yline\_xi} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em x-index (counting from 0) for 1D lines in y-direction}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_yline\_z} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em z coordinate for 1D lines in y-direction}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_yline\_zi} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em z-index (counting from 0) for 1D lines in y-direction}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_z} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Do 1D HDF5 slice output in the z-direction}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_zline\_x} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em x coordinate for 1D lines in z-direction}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_zline\_xi} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em x-index (counting from 0) for 1D lines in z-direction}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_zline\_y} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em y coordinate for 1D lines in z-direction}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_zline\_yi} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em y-index (counting from 0) for 1D lines in z-direction}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out2d\_criterion} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Criterion to select 2D HDF5 slice output intervals, overrides out\_every}} \\
+\hline{\bf Range} & &  {\bf Default:} default \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering default} & \multicolumn{2}{p{\paraWidth}|}{Use IO::out\_criterion} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering never} & \multicolumn{2}{p{\paraWidth}|}{Never output} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering iteration} & \multicolumn{2}{p{\paraWidth}|}{Output every so many iterations} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering divisor} & \multicolumn{2}{p{\paraWidth}|}{Output if (iteration \% out\_every) == 0.} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering time} & \multicolumn{2}{p{\paraWidth}|}{Output every that much coordinate time} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out2d\_dir} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Name of 2D HDF5 slice output directory, overrides IO::out\_dir}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering \^\$} & \multicolumn{2}{p{\paraWidth}|}{Empty: use IO::out\_dir} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .+} & \multicolumn{2}{p{\paraWidth}|}{Not empty: directory name} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out2d\_dt} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How often to do 2D HDF5 slice output, overrides IO::out\_dt}} \\
+\hline{\bf Range} & &  {\bf Default:} -2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{In intervals of that much coordinate time} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering } & \multicolumn{2}{p{\paraWidth}|}{As often as possible} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1} & \multicolumn{2}{p{\paraWidth}|}{Disable output} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -2} & \multicolumn{2}{p{\paraWidth}|}{Default to IO::out\_dt} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out2d\_every} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How often to do 2D HDF5 slice output, overrides out\_every}} \\
+\hline{\bf Range} & &  {\bf Default:} -2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{Output every so many time steps} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1:0} & \multicolumn{2}{p{\paraWidth}|}{No output} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -2} & \multicolumn{2}{p{\paraWidth}|}{Use IO::out\_every} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out2d\_vars} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Variables to output in 2D HDF5 file format}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering } & \multicolumn{2}{p{\paraWidth}|}{List of group or variable names} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out2d\_xy} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Do 2D HDF5 slice output in the xy-direction}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out2d\_xyplane\_z} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em z coordinate for 2D planes in xy-direction}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out2d\_xyplane\_zi} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em z-index (counting from 0) for 2D planes in xy-direction}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out2d\_xz} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Do 2D HDF5 slice output in the xz-direction}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out2d\_xzplane\_y} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em y coordinate for 2D planes in xz-direction}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out2d\_xzplane\_yi} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em y-index (counting from 0) for 2D planes in xz-direction}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out2d\_yz} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Do 2D HDF5 slice output in the yz-direction}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out2d\_yzplane\_x} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em x coordinate for 2D planes in yz-direction}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out2d\_yzplane\_xi} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em x-index (counting from 0) for 2D planes in yz-direction}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out3d\_criterion} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Criterion to select 3D HDF5 slice output intervals, overrides out\_every}} \\
+\hline{\bf Range} & &  {\bf Default:} default \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering default} & \multicolumn{2}{p{\paraWidth}|}{Use IO::out\_criterion} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering never} & \multicolumn{2}{p{\paraWidth}|}{Never output} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering iteration} & \multicolumn{2}{p{\paraWidth}|}{Output every so many iterations} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering divisor} & \multicolumn{2}{p{\paraWidth}|}{Output if (iteration \% out\_every) == 0.} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering time} & \multicolumn{2}{p{\paraWidth}|}{Output every that much coordinate time} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out3d\_dir} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Name of 3D HDF5 slice output directory, overrides IO::out\_dir}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering \^\$} & \multicolumn{2}{p{\paraWidth}|}{Empty: use IO::out\_dir} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .+} & \multicolumn{2}{p{\paraWidth}|}{Not empty: directory name} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out3d\_dt} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How often to do 3D HDF5 slice output, overrides IO::out\_dt}} \\
+\hline{\bf Range} & &  {\bf Default:} -2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{In intervals of that much coordinate time} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering } & \multicolumn{2}{p{\paraWidth}|}{As often as possible} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1} & \multicolumn{2}{p{\paraWidth}|}{Disable output} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -2} & \multicolumn{2}{p{\paraWidth}|}{Default to IO::out\_dt} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out3d\_every} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How often to do 3D HDF5 slice output, overrides out\_every}} \\
+\hline{\bf Range} & &  {\bf Default:} -2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{Output every so many time steps} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1:0} & \multicolumn{2}{p{\paraWidth}|}{No output} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -2} & \multicolumn{2}{p{\paraWidth}|}{Use IO::out\_every} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out3d\_ghosts} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Output ghost zones (DEPRECATED)}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out3d\_outer\_ghosts} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Output outer boundary zones (assuming that there are nghostzones boundary points) (DEPRECATED)}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out3d\_vars} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Variables to output in 3D HDF5 file format}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering } & \multicolumn{2}{p{\paraWidth}|}{List of group or variable names} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_criterion} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Criterion to select CarpetIOHDF5 output intervals, overrides out\_every}} \\
+\hline{\bf Range} & &  {\bf Default:} default \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering default} & \multicolumn{2}{p{\paraWidth}|}{Use 'IO::out\_criterion'} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering never} & \multicolumn{2}{p{\paraWidth}|}{Never output} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering iteration} & \multicolumn{2}{p{\paraWidth}|}{Output every so many iterations} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering divisor} & \multicolumn{2}{p{\paraWidth}|}{Output if (iteration \% out\_every) == 0.} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering time} & \multicolumn{2}{p{\paraWidth}|}{Output every that much coordinate time} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_dir} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Name of CarpetIOHDF5 output directory, overrides 'IO::out\_dir'}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering \^\$} & \multicolumn{2}{p{\paraWidth}|}{Empty: use IO::out\_dir} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .+} & \multicolumn{2}{p{\paraWidth}|}{Not empty: directory name} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_dt} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How often to do CarpetIOHDF5 output, overrides 'IO::out\_dt'}} \\
+\hline{\bf Range} & &  {\bf Default:} -2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{In intervals of that much coordinate time} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering } & \multicolumn{2}{p{\paraWidth}|}{As often as possible} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1} & \multicolumn{2}{p{\paraWidth}|}{Disable output} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -2} & \multicolumn{2}{p{\paraWidth}|}{Default to 'IO::out\_dt'} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_every} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How often to do CarpetIOHDF5 output, overrides out\_every}} \\
+\hline{\bf Range} & &  {\bf Default:} -2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{Output every so many time steps} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1:0} & \multicolumn{2}{p{\paraWidth}|}{No output} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -2} & \multicolumn{2}{p{\paraWidth}|}{Use 'IO::out\_every'} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_extension} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em File extension to use for CarpetIOHDF5 output}} \\
+\hline{\bf Range} & &  {\bf Default:} .h5 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering } & \multicolumn{2}{p{\paraWidth}|}{File extension (including a leading dot, if desired)} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_vars} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Variables to output in CarpetIOHDF5 file format}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering } & \multicolumn{2}{p{\paraWidth}|}{List of group or variable names} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{output\_all\_timelevels} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Output all timelevels instead of only the current}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{output\_boundary\_points} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Output outer boundary points (assuming that there are nghostzones boundary points)}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{output\_buffer\_points} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Output refinement buffer points}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{output\_ghost\_points} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Output ghost points}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{output\_index} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Output an index file for each output file}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{output\_symmetry\_points} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Output symmetry points (assuming that there are nghostzones symmetry points)}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{skip\_recover\_variables} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Skip these variables while recovering}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering } & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{use\_checksums} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Use checksums for the HDF5 data}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{use\_grid\_structure\_from\_checkpoint} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Use the grid structure stored in the checkpoint file}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{use\_reflevels\_from\_checkpoint} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Use 'CarpetRegrid::refinement\_levels' from the checkpoint file rather than from the parameter file ?}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{abort\_on\_io\_errors} & {\bf Scope:} shared from IO & BOOLEAN \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{checkpoint\_dir} & {\bf Scope:} shared from IO & STRING \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{checkpoint\_every} & {\bf Scope:} shared from IO & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{checkpoint\_every\_walltime\_hours} & {\bf Scope:} shared from IO & REAL \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{checkpoint\_file} & {\bf Scope:} shared from IO & STRING \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{checkpoint\_id} & {\bf Scope:} shared from IO & BOOLEAN \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{checkpoint\_id\_file} & {\bf Scope:} shared from IO & STRING \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{checkpoint\_keep} & {\bf Scope:} shared from IO & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{checkpoint\_on\_terminate} & {\bf Scope:} shared from IO & BOOLEAN \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{filereader\_id\_dir} & {\bf Scope:} shared from IO & STRING \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{io\_out\_criterion} & {\bf Scope:} shared from IO & KEYWORD \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{io\_out\_dir} & {\bf Scope:} shared from IO & STRING \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{io\_out\_dt} & {\bf Scope:} shared from IO & REAL \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{io\_out\_every} & {\bf Scope:} shared from IO & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{io\_out\_unchunked} & {\bf Scope:} shared from IO & BOOLEAN \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_group\_separator} & {\bf Scope:} shared from IO & STRING \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_mode} & {\bf Scope:} shared from IO & KEYWORD \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_save\_parameters} & {\bf Scope:} shared from IO & KEYWORD \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_single\_precision} & {\bf Scope:} shared from IO & BOOLEAN \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_timesteps\_per\_file} & {\bf Scope:} shared from IO & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_xline\_y} & {\bf Scope:} shared from IO & REAL \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_xline\_yi} & {\bf Scope:} shared from IO & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_xline\_z} & {\bf Scope:} shared from IO & REAL \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_xline\_zi} & {\bf Scope:} shared from IO & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_xyplane\_z} & {\bf Scope:} shared from IO & REAL \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_xyplane\_zi} & {\bf Scope:} shared from IO & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_xzplane\_y} & {\bf Scope:} shared from IO & REAL \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_xzplane\_yi} & {\bf Scope:} shared from IO & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_yline\_x} & {\bf Scope:} shared from IO & REAL \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_yline\_xi} & {\bf Scope:} shared from IO & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_yline\_z} & {\bf Scope:} shared from IO & REAL \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_yline\_zi} & {\bf Scope:} shared from IO & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_yzplane\_x} & {\bf Scope:} shared from IO & REAL \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_yzplane\_xi} & {\bf Scope:} shared from IO & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_zline\_x} & {\bf Scope:} shared from IO & REAL \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_zline\_xi} & {\bf Scope:} shared from IO & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_zline\_y} & {\bf Scope:} shared from IO & REAL \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_zline\_yi} & {\bf Scope:} shared from IO & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{recover} & {\bf Scope:} shared from IO & KEYWORD \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{recover\_and\_remove} & {\bf Scope:} shared from IO & BOOLEAN \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{recover\_dir} & {\bf Scope:} shared from IO & STRING \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{recover\_file} & {\bf Scope:} shared from IO & STRING \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{strict\_io\_parameter\_check} & {\bf Scope:} shared from IO & BOOLEAN \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{verbose} & {\bf Scope:} shared from IO & KEYWORD \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+iohdf5
+\vspace{2mm}
+\subsection*{Grid Variables}
+\vspace{5mm}\subsubsection{PRIVATE GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+next\_output\_iteration & next\_output\_iteration & compact & 0 \\ 
+ &  & dimensions & 0 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & INT \\ 
+\hline 
+next\_output\_time & next\_output\_time & compact & 0 \\ 
+ &  & dimensions & 0 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+this\_iteration & this\_iteration & compact & 0 \\ 
+ &  & dimensions & 0 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & INT \\ 
+\hline 
+last\_output\_iteration\_slice & last\_output\_iteration\_slice & compact & 0 \\ 
+ &  & dimensions & 0 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & 4 \\ 
+ &  & variable type & INT \\ 
+\hline 
+last\_output\_time\_slice & last\_output\_time\_slice & compact & 0 \\ 
+ &  & dimensions & 0 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & 4 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+this\_iteration\_slice & this\_iteration\_slice & compact & 0 \\ 
+ &  & dimensions & 0 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & 4 \\ 
+ &  & variable type & INT \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+
+\noindent {\bf Adds header}: 
+
+
+
+CarpetIOHDF5.hh
+\vspace{2mm}
+
+\noindent {\bf Uses header}: 
+
+Timer.hh
+
+carpet.hh
+
+defs.hh
+
+bbox.hh
+
+vect.hh
+
+data.hh
+
+gdata.hh
+
+ggf.hh
+
+gh.hh
+
+typecase.hh
+
+typeprops.hh
+
+mpi\_string.hh
+\vspace{2mm}
+
+\noindent {\bf Provides}: 
+
+
+
+IO\_SetCheckpointGroups to 
+\vspace{2mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn Carpet/CarpetIOHDF5.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Always:}&  ~ \\ 
+ next\_output\_iteration next\_output\_time this\_iteration & ~\\ 
+ last\_output\_iteration\_slice last\_output\_time\_slice this\_iteration\_slice & ~\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_STARTUP} 
+
+\hspace{5mm} carpetiohdf5\_startup 
+
+\hspace{5mm}{\it startup routine } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ioutil\_startup \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_INITIAL} 
+
+\hspace{5mm} carpetiohdf5\_init 
+
+\hspace{5mm}{\it initialisation routine } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & carpetiohdf5::this\_iteration\_slice \\ 
+~& ~ &last\_output\_iteration\_slice\\ 
+~& ~ &last\_output\_time\_slice\\ 
+~& ~ &carpetiohdf5::this\_iteration\\ 
+~& ~ &next\_output\_iteration\\ 
+~& ~ &next\_output\_time\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POST\_RECOVER\_VARIABLES} 
+
+\hspace{5mm} carpetiohdf5\_initcheckpointingintervals 
+
+\hspace{5mm}{\it initialisation of checkpointing intervals after recovery } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_CPINITIAL} 
+
+\hspace{5mm} carpetiohdf5\_initialdatacheckpoint 
+
+\hspace{5mm}{\it initial data checkpoint routine } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & meta \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_CHECKPOINT} 
+
+\hspace{5mm} carpetiohdf5\_evolutioncheckpoint 
+
+\hspace{5mm}{\it evolution checkpoint routine } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & meta \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_TERMINATE} 
+
+\hspace{5mm} carpetiohdf5\_terminationcheckpoint 
+
+\hspace{5mm}{\it termination checkpoint routine } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & meta \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTINITIAL} 
+
+\hspace{5mm} carpetiohdf5\_closefiles 
+
+\hspace{5mm}{\it close all filereader input files } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_RECOVER\_PARAMETERS}   (conditional) 
+
+\hspace{5mm} carpetiohdf5\_recoverparameters 
+
+\hspace{5mm}{\it parameter recovery routine } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & meta \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_STARTUP}   (conditional) 
+
+\hspace{5mm} carpetiohdf5\_setnumrefinementlevels 
+
+\hspace{5mm}{\it overwrite 'carpetregrid::refinement\_levels' with the number of levels found in the checkpoint file } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & carpetiohdf5\_startup \\ 
+~ & Language:  & c \\ 
+~ & Options:  & meta \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POST\_RECOVER\_VARIABLES}   (conditional) 
+
+\hspace{5mm} carpetiohdf5\_closefiles 
+
+\hspace{5mm}{\it close all initial data checkpoint files after recovery } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & meta \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

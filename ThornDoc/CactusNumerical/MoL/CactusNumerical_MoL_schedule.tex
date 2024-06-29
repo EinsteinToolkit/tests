@@ -1,0 +1,1361 @@
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn CactusNumerical/MoL.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Always:}& {\bf Conditional:} \\ 
+ MoL\_Counters MoL\_Original\_Time &  RKAlphaCoefficients\\ 
+~ &  RKBetaCoefficients\\ 
+~ &  ErrorScalars\\ 
+~ &  ErrorScalars\\ 
+~ &  ErrorScalars\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_STARTUP}   (conditional) 
+
+\hspace{5mm} mol\_startup 
+
+\hspace{5mm}{\it startup banner } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PARAMCHECK}   (conditional) 
+
+\hspace{5mm} mol\_paramcheck 
+
+\hspace{5mm}{\it basic parameter checking } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_INITIAL}   (conditional) 
+
+\hspace{5mm} mol\_startloop 
+
+\hspace{5mm}{\it initialise the step size control } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & level \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & mol\_stepsize\_bad \\ 
+~& ~ &estimateddt\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_EVOL}   (conditional) 
+
+\hspace{5mm} mol\_evolution 
+
+\hspace{5mm}{\it a single cactus evolution step using mol } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+~ & While:  & mol::mol\_stepsize\_bad \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Evolution}   (conditional) 
+
+\hspace{5mm} mol\_startstep 
+
+\hspace{5mm}{\it mol internal setup for the evolution step } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_StartStep}   (conditional) 
+
+\hspace{5mm} mol\_setcounter 
+
+\hspace{5mm}{\it set the counter for the ode method to loop over } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & level \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & mol\_intermediate\_step \\ 
+~& ~ &mol\_slowstep\\ 
+~& ~ &mol\_slowpoststep\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_StartStep}   (conditional) 
+
+\hspace{5mm} mol\_settime 
+
+\hspace{5mm}{\it ensure the correct time and timestep are used } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & level \\ 
+~ & Reads:  & rkalphacoefficients \\ 
+~& ~ &rkbetacoefficients\\ 
+~& ~ &mol\_intermediate\_step\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & mol\_original\_time \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_StartStep}   (conditional) 
+
+\hspace{5mm} mol\_allocatescratchspace 
+
+\hspace{5mm}{\it allocate storage for scratch levels } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & level \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Evolution}   (conditional) 
+
+\hspace{5mm} mol\_prestep 
+
+\hspace{5mm}{\it physics thorns can schedule preloop setup routines in here } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_startstep \\ 
+~ & Before:  & mol\_step \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Evolution}   (conditional) 
+
+\hspace{5mm} mol\_allocatescratch 
+
+\hspace{5mm}{\it allocate sufficient space for array scratch variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_prestep \\ 
+~ & Before:  & mol\_step \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Evolution}   (conditional) 
+
+\hspace{5mm} mol\_initialcopy 
+
+\hspace{5mm}{\it ensure the data is in the correct timelevel } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_prestep \\ 
+~& ~ &mol\_allocatescratch\\ 
+~ & Before:  & mol\_step \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Evolution}   (conditional) 
+
+\hspace{5mm} mol\_updatevalidforinitialcopy 
+
+\hspace{5mm}{\it automatically update valid regions based on mol } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_initialcopy \\ 
+~ & Before:  & mol\_step \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_WRAGH}   (conditional) 
+
+\hspace{5mm} mol\_setupindexarrays 
+
+\hspace{5mm}{\it set up the mol bookkeeping index arrays } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & mol\_original\_time \\ 
+~& ~ &mol\_slowpoststep\\ 
+~& ~ &mol\_slowstep\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Evolution}   (conditional) 
+
+\hspace{5mm} mol\_step 
+
+\hspace{5mm}{\it the loop over the intermediate steps for the ode integrator } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_prestep \\ 
+~ & Type:  & group \\ 
+~ & While:  & mol::mol\_intermediate\_step \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Step}   (conditional) 
+
+\hspace{5mm} mol\_icnaverage 
+
+\hspace{5mm}{\it averages the time levels for the averaging icn method } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & mol\_calcrhs \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & mol\_intermediate\_step \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Step}   (conditional) 
+
+\hspace{5mm} mol\_initrhs 
+
+\hspace{5mm}{\it initialise the rhs functions } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & mol\_calcrhs \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Step}   (conditional) 
+
+\hspace{5mm} mol\_calcrhs 
+
+\hspace{5mm}{\it physics thorns schedule the calculation of the discrete spatial operator in here } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Step}   (conditional) 
+
+\hspace{5mm} mol\_postrhs 
+
+\hspace{5mm}{\it modify rhs functions } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_calcrhs \\ 
+~ & Before:  & mol\_nancheck \\ 
+~& ~ &mol\_add\\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Step}   (conditional) 
+
+\hspace{5mm} mol\_rhsboundaries 
+
+\hspace{5mm}{\it any 'final' modifications to the rhs functions (boundaries etc.) } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_postrhs \\ 
+~ & Before:  & mol\_nancheck \\ 
+~& ~ &mol\_add\\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Step}   (conditional) 
+
+\hspace{5mm} mol\_nancheck 
+
+\hspace{5mm}{\it check the rhs gfs for nans } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_calcrhs \\ 
+~ & Before:  & mol\_add \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & mol\_intermediate\_step \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Step}   (conditional) 
+
+\hspace{5mm} mol\_genericrkadd 
+
+\hspace{5mm}{\it updates calculated with a generic method } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_calcrhs \\ 
+~ & Before:  & mol\_poststep \\ 
+~& ~ &mol\_poststepmodify\\ 
+~ & Language:  & c \\ 
+~ & Reads:  & mol\_intermediate\_step \\ 
+~& ~ &original\_delta\_time\\ 
+~& ~ &rkalphacoefficients\\ 
+~& ~ &rkbetacoefficients\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Step}   (conditional) 
+
+\hspace{5mm} mol\_euleradd 
+
+\hspace{5mm}{\it updates calculated with the euler method } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_calcrhs \\ 
+~ & Before:  & mol\_poststep \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & mol\_intermediate\_step \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Step}   (conditional) 
+
+\hspace{5mm} mol\_rk2add 
+
+\hspace{5mm}{\it updates calculated with the efficient runge-kutta 2 method } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_calcrhs \\ 
+~ & Before:  & mol\_poststep \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & mol\_intermediate\_step \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_WRAGH}   (conditional) 
+
+\hspace{5mm} mol\_setuprkcoefficients 
+
+\hspace{5mm}{\it initialize the generic runge-kutta coefficients } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Storage:  & rkalphacoefficients \\ 
+~& ~ &rkbetacoefficients\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & rkalphacoefficients \\ 
+~& ~ &rkbetacoefficients\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Step}   (conditional) 
+
+\hspace{5mm} mol\_rk2centraladd 
+
+\hspace{5mm}{\it updates calculated with the central runge-kutta 2 method } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_calcrhs \\ 
+~ & Before:  & mol\_poststep \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & original\_delta\_time \\ 
+~& ~ &mol\_intermediate\_step\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Step}   (conditional) 
+
+\hspace{5mm} mol\_rk3add 
+
+\hspace{5mm}{\it updates calculated with the efficient runge-kutta 3 method } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_calcrhs \\ 
+~ & Before:  & mol\_poststep \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & mol\_intermediate\_step \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Step}   (conditional) 
+
+\hspace{5mm} mol\_rk4add 
+
+\hspace{5mm}{\it updates calculated with the efficient runge-kutta 4 method } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_calcrhs \\ 
+~ & Before:  & mol\_poststep \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & mol\_intermediate\_step \\ 
+~& ~ &original\_delta\_time\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Step}   (conditional) 
+
+\hspace{5mm} mol\_rk45add 
+
+\hspace{5mm}{\it updates calculated with the runge-kutta 45 method } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_calcrhs \\ 
+~ & Before:  & mol\_poststep \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & mol\_intermediate\_step \\ 
+~& ~ &original\_delta\_time\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Step}   (conditional) 
+
+\hspace{5mm} mol\_rk65add 
+
+\hspace{5mm}{\it updates calculated with the runge-kutta 65 method } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_calcrhs \\ 
+~ & Before:  & mol\_poststep \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & mol\_intermediate\_step \\ 
+~& ~ &original\_delta\_time\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Step}   (conditional) 
+
+\hspace{5mm} mol\_rk87add 
+
+\hspace{5mm}{\it updates calculated with the runge-kutta 87 method } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_calcrhs \\ 
+~ & Before:  & mol\_poststep \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & mol\_intermediate\_step \\ 
+~& ~ &original\_delta\_time\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Step}   (conditional) 
+
+\hspace{5mm} mol\_icnadd 
+
+\hspace{5mm}{\it updates calculated with the efficient icn method } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_calcrhs \\ 
+~ & Before:  & mol\_poststep \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & mol\_intermediate\_step \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Step}   (conditional) 
+
+\hspace{5mm} mol\_icnadd 
+
+\hspace{5mm}{\it updates calculated with the averaging icn method } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_calcrhs \\ 
+~ & Before:  & mol\_poststep \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & mol\_intermediate\_step \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Step}   (conditional) 
+
+\hspace{5mm} mol\_abadd 
+
+\hspace{5mm}{\it updates calculated with the adams-bashforth } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_calcrhs \\ 
+~ & Before:  & mol\_poststep \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & mol\_intermediate\_step \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Step}   (conditional) 
+
+\hspace{5mm} mol\_rk2\_mr\_2\_1\_add 
+
+\hspace{5mm}{\it updates calculated with the multirate runge-kutta 2 method } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_calcrhs \\ 
+~ & Before:  & mol\_poststep \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & mol\_intermediate\_step \\ 
+~& ~ &original\_delta\_time\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_WRAGH}   (conditional) 
+
+\hspace{5mm} mol\_setschedulestatus 
+
+\hspace{5mm}{\it set the flag so it is ok to register with mol } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_setupindexarrays \\ 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Step}   (conditional) 
+
+\hspace{5mm} mol\_rk4\_mr\_2\_1\_add 
+
+\hspace{5mm}{\it updates calculated with the multirate runge-kutta 4 method } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_calcrhs \\ 
+~ & Before:  & mol\_poststep \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & mol\_intermediate\_step \\ 
+~& ~ &original\_delta\_time\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Step}   (conditional) 
+
+\hspace{5mm} mol\_rk4\_rk2\_add 
+
+\hspace{5mm}{\it updates calculated with the multirate rk4/rk2 method } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_calcrhs \\ 
+~ & Before:  & mol\_poststep \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & mol\_intermediate\_step \\ 
+~& ~ &original\_delta\_time\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Step}   (conditional) 
+
+\hspace{5mm} mol\_updatevalidforadd 
+
+\hspace{5mm}{\it automatically update valid regions based on mol } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_add \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Step}   (conditional) 
+
+\hspace{5mm} mol\_poststep 
+
+\hspace{5mm}{\it the group for physics thorns to schedule boundary calls etc. } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_add \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTINITIAL}   (conditional) 
+
+\hspace{5mm} mol\_poststep 
+
+\hspace{5mm}{\it ensure that everything is correct after the initial data have been set up } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTREGRID}   (conditional) 
+
+\hspace{5mm} mol\_poststep 
+
+\hspace{5mm}{\it ensure that everything is correct after regridding } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTRESTRICTINITIAL}   (conditional) 
+
+\hspace{5mm} mol\_poststep 
+
+\hspace{5mm}{\it ensure that everything is correct after restriction } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTRESTRICT}   (conditional) 
+
+\hspace{5mm} mol\_poststep 
+
+\hspace{5mm}{\it ensure that everything is correct after restriction } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POST\_RECOVER\_VARIABLES}   (conditional) 
+
+\hspace{5mm} mol\_poststep 
+
+\hspace{5mm}{\it ensure that everything is correct after recovery } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Step} 
+
+\hspace{5mm} mol\_poststepmodify 
+
+\hspace{5mm}{\it the group for physics thorns to schedule enforcing constraints } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_add \\ 
+~ & Before:  & mol\_poststep \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_WRAGH}   (conditional) 
+
+\hspace{5mm} mol\_register 
+
+\hspace{5mm}{\it the group where physics thorns register variables with mol } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_setschedulestatus \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTINITIAL} 
+
+\hspace{5mm} mol\_poststepmodify 
+
+\hspace{5mm}{\it the group for physics thorns to schedule enforcing constraints } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & mol\_poststep \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTINITIAL} 
+
+\hspace{5mm} mol\_pseudoevolution 
+
+\hspace{5mm}{\it calculate pseudo-evolved quantities } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_poststep \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_EVOL} 
+
+\hspace{5mm} mol\_pseudoevolution 
+
+\hspace{5mm}{\it calculate pseudo-evolved quantities } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_evolution \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTREGRIDINITIAL} 
+
+\hspace{5mm} mol\_pseudoevolutionboundaries 
+
+\hspace{5mm}{\it apply boundary conditions to pseudo-evolved quantities } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_poststep \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTREGRID} 
+
+\hspace{5mm} mol\_pseudoevolutionboundaries 
+
+\hspace{5mm}{\it apply boundary conditions to pseudo-evolved quantities } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_poststep \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTRESTRICTINITIAL} 
+
+\hspace{5mm} mol\_pseudoevolutionboundaries 
+
+\hspace{5mm}{\it apply boundary conditions to pseudo-evolved quantities } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_poststep \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTRESTRICT} 
+
+\hspace{5mm} mol\_pseudoevolutionboundaries 
+
+\hspace{5mm}{\it apply boundary conditions to pseudo-evolved quantities } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_poststep \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Step} 
+
+\hspace{5mm} mol\_decrementcounter 
+
+\hspace{5mm}{\it alter the counter number } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_add \\ 
+~ & Before:  & mol\_poststep \\ 
+~& ~ &mol\_poststepmodify\\ 
+~ & Language:  & c \\ 
+~ & Options:  & level \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & mol\_intermediate\_step \\ 
+~& ~ &mol\_slowstep\\ 
+~& ~ &mol\_slowpoststep\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Step} 
+
+\hspace{5mm} mol\_resettime 
+
+\hspace{5mm}{\it if necessary, change the time } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_decrementcounter \\ 
+~ & Before:  & mol\_poststep \\ 
+~& ~ &mol\_poststepmodify\\ 
+~ & Language:  & c \\ 
+~ & Options:  & level \\ 
+~ & Reads:  & mol\_original\_time \\ 
+~& ~ &rkalphacoefficients\\ 
+~& ~ &rkbetacoefficients\\ 
+~& ~ &mol\_intermediate\_step\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Step} 
+
+\hspace{5mm} mol\_resetdeltatime 
+
+\hspace{5mm}{\it if necessary, change the timestep } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_poststep \\ 
+~& ~ &mol\_poststepmodify\\ 
+~ & Language:  & c \\ 
+~ & Options:  & level \\ 
+~ & Reads:  & original\_delta\_time \\ 
+~& ~ &rkalphacoefficients\\ 
+~& ~ &rkbetacoefficients\\ 
+~& ~ &mol\_intermediate\_step\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_WRAGH}   (conditional) 
+
+\hspace{5mm} mol\_reportnumbervariables 
+
+\hspace{5mm}{\it report how many of each type of variable there are } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_register \\ 
+~ & Language:  & c \\ 
+~ & Options:  & meta \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Evolution} 
+
+\hspace{5mm} mol\_restoresandr 
+
+\hspace{5mm}{\it restoring the save and restore variables to the original state } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_reduceadaptiveerror \\ 
+~& ~ &mol\_finishloop\\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Evolution} 
+
+\hspace{5mm} mol\_freescratchspace 
+
+\hspace{5mm}{\it free storage for scratch levels } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_restoresandr \\ 
+~ & Language:  & c \\ 
+~ & Options:  & level \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Evolution}   (conditional) 
+
+\hspace{5mm} mol\_initadaptiveerror 
+
+\hspace{5mm}{\it control the step size: initialize error check variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_step \\ 
+~ & Language:  & c \\ 
+~ & Options:  & level \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & error \\ 
+~& ~ &count\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Evolution}   (conditional) 
+
+\hspace{5mm} mol\_findadaptiveerror 
+
+\hspace{5mm}{\it control the step size: compute error check variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_initadaptiveerror \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & original\_delta\_time \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & error \\ 
+~& ~ &count\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Evolution}   (conditional) 
+
+\hspace{5mm} mol\_reduceadaptiveerror 
+
+\hspace{5mm}{\it control the step size: reduce error check variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_findadaptiveerror \\ 
+~ & Language:  & c \\ 
+~ & Options:  & level \\ 
+~ & Reads:  & original\_delta\_time \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & error \\ 
+~& ~ &count\\ 
+~& ~ &mol\_stepsize\_bad\\ 
+~& ~ &estimateddt\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTSTEP}   (conditional) 
+
+\hspace{5mm} mol\_setestimateddt 
+
+\hspace{5mm}{\it control the step size: set the new timestep } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & level \\ 
+~ & Reads:  & estimateddt \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Evolution}   (conditional) 
+
+\hspace{5mm} mol\_finishloop 
+
+\hspace{5mm}{\it control the step size } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_step \\ 
+~ & Language:  & c \\ 
+~ & Options:  & level \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & mol\_stepsize\_bad \\ 
+~& ~ &mol\_slowpoststep\\ 
+~& ~ &mol\_slowstep\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_TERMINATE} 
+
+\hspace{5mm} mol\_freeindexarrays 
+
+\hspace{5mm}{\it free the mol bookkeeping index arrays } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & driver\_terminate \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTINITIAL}   (conditional) 
+
+\hspace{5mm} mol\_fillalllevels 
+
+\hspace{5mm}{\it a bad routine. fills all previous timelevels with data copied from the current. } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & mol\_poststep \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTINITIAL}   (conditional) 
+
+\hspace{5mm} mol\_fillalllevels 
+
+\hspace{5mm}{\it a bad routine. fills all previous timelevels with data copied from the current. } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & mol\_poststep \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_EVOL}   (conditional) 
+
+\hspace{5mm} mol\_startloop 
+
+\hspace{5mm}{\it initialise the step size control } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & mol\_evolution \\ 
+~ & Language:  & c \\ 
+~ & Options:  & level \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & mol\_stepsize\_bad \\ 
+~& ~ &estimateddt\\ 
+\end{tabular*} 
+
+
+\subsection*{Aliased Functions}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Alias Name:} ~~~~~~~ & {\bf Function Name:} \\ 
+MoL\_ABAdd & MoL\_Add \\ 
+MoL\_EulerAdd & MoL\_Add \\ 
+MoL\_GenericRKAdd & MoL\_Add \\ 
+MoL\_ICNAdd & MoL\_Add \\ 
+MoL\_ICNAverage & MoL\_Prepare \\ 
+MoL\_RK2Add & MoL\_Add \\ 
+MoL\_RK2CentralAdd & MoL\_Add \\ 
+MoL\_RK2\_MR\_2\_1\_Add & MoL\_Add \\ 
+MoL\_RK3Add & MoL\_Add \\ 
+MoL\_RK45Add & MoL\_Add \\ 
+MoL\_RK4Add & MoL\_Add \\ 
+MoL\_RK4\_MR\_2\_1\_Add & MoL\_Add \\ 
+MoL\_RK4\_RK2\_Add & MoL\_Add \\ 
+MoL\_RK65Add & MoL\_Add \\ 
+MoL\_RK87Add & MoL\_Add \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 

@@ -1,0 +1,554 @@
+% *======================================================================*
+%  Cactus Thorn template for ThornGuide documentation
+%  Author: Ian Kelley
+%  Date: Sun Jun 02, 2002
+%  $Header$
+%
+%  Thorn documentation in the latex file doc/documentation.tex
+%  will be included in ThornGuides built with the Cactus make system.
+%  The scripts employed by the make system automatically include
+%  pages about variables, parameters and scheduling parsed from the
+%  relevant thorn CCL files.
+%
+%  This template contains guidelines which help to assure that your
+%  documentation will be correctly added to ThornGuides. More
+%  information is available in the Cactus UsersGuide.
+%
+%  Guidelines:
+%   - Do not change anything before the line
+%       % START CACTUS THORNGUIDE",
+%     except for filling in the title, author, date, etc. fields.
+%        - Each of these fields should only be on ONE line.
+%        - Author names should be separated with a \\ or a comma.
+%   - You can define your own macros, but they must appear after
+%     the START CACTUS THORNGUIDE line, and must not redefine standard
+%     latex commands.
+%   - To avoid name clashes with other thorns, 'labels', 'citations',
+%     'references', and 'image' names should conform to the following
+%     convention:
+%       ARRANGEMENT_THORN_LABEL
+%     For example, an image wave.eps in the arrangement CactusWave and
+%     thorn WaveToyC should be renamed to CactusWave_WaveToyC_wave.eps
+%   - Graphics should only be included using the graphicx package.
+%     More specifically, with the "\includegraphics" command.  Do
+%     not specify any graphic file extensions in your .tex file. This
+%     will allow us to create a PDF version of the ThornGuide
+%     via pdflatex.
+%   - References should be included with the latex "\bibitem" command.
+%   - Use \begin{abstract}...\end{abstract} instead of \abstract{...}
+%   - Do not use \appendix, instead include any appendices you need as
+%     standard sections.
+%   - For the benefit of our Perl scripts, and for future extensions,
+%     please use simple latex.
+%
+% *======================================================================*
+%
+% Example of including a graphic image:
+%    \begin{figure}[ht]
+% 	\begin{center}
+%    	   \includegraphics[width=6cm]{/home/runner/work/tests/tests/arrangements/CactusUtils/MemSpeed/doc/MyArrangement_MyThorn_MyFigure}
+% 	\end{center}
+% 	\caption{Illustration of this and that}
+% 	\label{MyArrangement_MyThorn_MyLabel}
+%    \end{figure}
+%
+% Example of using a label:
+%   \label{MyArrangement_MyThorn_MyLabel}
+%
+% Example of a citation:
+%    \cite{MyArrangement_MyThorn_Author99}
+%
+% Example of including a reference
+%   \bibitem{MyArrangement_MyThorn_Author99}
+%   {J. Author, {\em The Title of the Book, Journal, or periodical}, 1 (1999),
+%   1--16. {\tt http://www.nowhere.com/}}
+%
+% *======================================================================*
+
+% If you are using CVS use this line to give version information
+% $Header$
+
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+% The author of the documentation
+\author{Erik Schnetter \textless eschnetter@perimeterinstitute.ca\textgreater}
+
+% The title of the document (not necessarily the name of the Thorn)
+\title{MemSpeed}
+
+% the date your document was last changed, if your document is in CVS,
+\date{June 22, 2013}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+\begin{abstract}
+  Determine the speed of the CPU, as well as latencies and bandwidths
+  of caches and main memory. These provides ideal, but real-world
+  values against which the performance of other routines can be
+  compared.
+\end{abstract}
+
+\section{Measuring Maximum Speeds}
+
+This thorn measures the maximum practical speed that can be attained
+on a particular system. This speed will be somewhat lower than the
+theoretical peak performance listed in a system's hardware
+description.
+
+This thorn measures
+\begin{itemize}
+\item CPU floating-point peformance (GFlop/s),
+\item CPU integer peformance (GIop/s),
+\item Cache/memory read latency (ns),
+\item Cache/memory read bandwidth (GByte/s),
+\item Cache/memory write latency (ns),
+\item Cache/memory write bandwidth (GByte/s).
+\end{itemize}
+
+Theoretical performance values for memory access are often quoted in
+slightly different units. For example, bandwidth is often measured in
+GT/s (Giga-Transactions per second), where a transaction transfers a
+certain number of bytes, usually a cache line (e.g. 64 bytes).
+
+A detailed understanding of the results requires some knowledge of how
+CPUs, caches, and memories operate. \cite{lmbench-usenix} provides a
+good introduction to this as well as to benchmark design.
+\cite{mhz-usenix} is also a good read (by the same authors), and their
+(somewhat dated) software \emph{lmbench} is available here
+\cite{lmbench}.
+
+
+
+\section{Algorithms}
+
+We use the following algorithms to determine the maximum speeds. We
+believe these algorithms and their implementations are adequate for
+current architectures, but this may need to change in the future.
+
+Each benchmark is run $N$ times, where $N$ is automatically chosen
+such that the total run time is larger than $1$ second. (If a
+benchmark finishes too quickly, then $N$ is increased and the
+benchmark is repeated.)
+
+\subsection{CPU floating-point peformance}
+\label{sec:flop}
+
+CPUs for HPC systems are typically tuned for dot-product-like
+operations, where multiplications and additions alternate. We measure
+the floating-point peformance with the following calculation:
+\begin{verbatim}
+  for (int i=0; i<N; ++i) {
+    s := c_1 * s + c_2
+  }
+\end{verbatim}
+where $s$ is suitably initialized and $c_1$ and $c_2$ are suitably
+chosed to avoid overflow, e.g. $s=1.0$, $c_1=1.1$, $c_2=-0.1$.
+
+$s$ is a double precision variable. The loop over $i$ is explicitly
+unrolled $8$ times, is explicitly vectorized using LSUThorns/Vectors,
+and uses fma (fused multiply-add) instructions where available. This
+should ensure that the loops runs very close to the maximum possible
+speed. As usual, each (scalar) multiplication and addition is counted
+as one Flop (floating point operation).
+
+\subsection{CPU integer performance}
+
+Many modern CPUs can handle integers in two different ways, treating
+integers either as data, or as pointers and array indices. For
+example, integers may be stored in two different sets of registers
+depending on their use. We are here interested in the performance of
+pointers and array indices. Most modern CPUs cannot vectorize these
+operations (some GPUs can), and we therefore do not employ
+vectorization in this benchmark.
+
+In general, array index calculations require addition and
+multiplication. For example, accessing the element $A(i,j)$ of a
+two-dimensional array requires calculating $i + n_i \cdot j$, where
+$n_i$ is the number of elements allocated in the $i$ direction.
+
+However, general integer multiplcations are expensive, and are not
+necessary if the array is accessed in a loop, since a running index
+$p$ can instead be kept. Accessing neighbouring elements (e.g. in
+stencil calculations) require only addition and multiplication with
+small constants. In the example above, assuming that $p$ is the linear
+index corresponding to $A(i,j)$, accessing $A(i+1,j)$ requires
+calculating $p+1$, and accessing $A(i,j+2)$ requires calculating $p +
+2 \cdot n_i$. We thus base our benchmark on integer additions and
+integer multiplications with small constants.
+
+We measure the floating-point peformance with the following
+calculation:
+\begin{verbatim}
+  for (int i=0; i<N; ++i) {
+    s := b + c * s
+  }
+\end{verbatim}
+where $b$ is a constant defined at run time, and $c$ is a small
+integer constant ($c = 1 \ldots 8$) known at compile time.
+
+$s$ is an integer variable of the same size as a pointer, i.e. 64 bit
+on a 64-bit system. The loop over $i$ is explicitly unrolled $8$
+times, each time with a different value for $c$. Each addition and
+multiplication is counted as one Iop (integer operation).
+
+\subsection{Cache/memory read latency}
+
+Memory read access latency is measured by reading small amounts of
+data from random locations in memory. This random access pattern
+defeats caches, because caching does not work for random access
+patterns. To ensure that the read operations are executed
+sequentially, each read operation needs to depend on the previous. The
+idea for the algorithm below was taken from \cite{lmbench-usenix}.
+
+To implement this, we set up a large linked list where the elements
+are randomly orderd. Traversing this linked list then measures the
+memory read latency. This is done as in the following pseudo-code:
+\begin{verbatim}
+  struct L { L* next; };
+  ... set up large circular list ...
+  L* ptr = head;
+  for (int i=0; i<N; ++i) {
+    ptr = ptr->next;
+  }
+\end{verbatim}
+
+To reduce the overhead of the for loop, we explicitly unroll the loop
+100 times.
+
+\label{sec:sizes}
+We use the \emph{hwloc} library to determine the sizes of the
+available data caches, the NUMA-node-local, and the global amount of
+memory. We perform this benchmark once for each cache level, and once
+each for the local and global memory:
+\begin{itemize}
+\item for a cache, the list occupies 3/4 of the cache;
+\item for the local memory, the list occupies 1/2 of the memory;
+\item for the global memory, the list skips the local memory, and
+  occupies 1/4 of the remaining global memory.
+\end{itemize}
+
+To skip the local memory, we allocate an array of the size of the
+local memory. Assuming that the operating system prefers to allocate
+local memory, this will then ensure that all further allocations will
+then use non-local memory. We do not test this assumption.
+
+\subsection{Cache/memory read bandwidth}
+
+Memory read access bandwidth is measured by reading a large,
+contiguous amount of data from memory. This access pattern benefits
+from caches (if the amount is less than the cache size), and also
+benefits from prefetching (that may be performed either by the
+compiler or by the hardware). This presents thus an ideal case where
+memory is read as fast as possible.
+
+To ensure that data are actually read from memory, it is necessary to
+consume the data, i.e. to perform some operations on them. We assume
+that a floating-point dot-product is among the fastest operations, and
+thus use the following algorithm:
+\begin{verbatim}
+  for (int i=0; i<N; i+=2) {
+    s := m[i] * s + m[i+1]
+  }
+\end{verbatim}
+
+As in section \ref{sec:flop} above, $s$ is a double precision
+variable. $m[i]$ denotes the memory accesses. The loop over $i$ is
+explicitly unrolled $8$ times, is explicitly vectorized using
+LSUThorns/Vectors, and uses fma (fused multiply-add) instructions
+where available. This should ensure that the loops runs very close to
+the maximum possible speed.
+
+To measure the bandwidth of each cache level as well as the local and
+global memory, the same array sizes as in section \ref{sec:sizes} are
+used.
+
+\subsection{Cache/memory write latency}
+\label{sec:write-latency}
+
+The notion of a ``write latency'' does not really make sense, as write
+operations to different memory locations do not depend on each other.
+This benchmark thus rather measures the speed at which independent write
+requests can be handled. However, since writing partial cache lines
+also requires reading them, this benchmark is also influence by read
+performance.
+
+To measure the write latency, we use the following algorithm, writing
+a single byte to random locations in memory:
+\begin{verbatim}
+  char array[N];
+  char* ptr = ...;
+  for (int i=0; i<N; ++i) {
+    *ptr = 1;
+    ptr += ...;
+  }
+\end{verbatim}
+
+In the loop, the pointer is increased by a pseudo-random amount, but
+ensuring that it stays within the bound of the array.
+
+To measure the bandwidth of each cache level as well as the local and
+global memory, the same array sizes as in section \ref{sec:sizes} are
+used as starting point. For efficiency reasons, these sizes are then
+rounded down to the nearest power of two.
+
+\subsection{Cache/memory write bandwidth}
+
+Memory write access bandwidth is measured by writing a large,
+contiguous amount of data from memory, in a manner very similar to
+measuring read bandwidth. The major difference is that the written
+data do not need to be consumed by the CPU, which simplifies the
+implementation.
+
+We use \emph{memset} to write data into an array, assuming that the
+memset function is already heavily optimized.
+
+To measure the bandwidth of each cache level as well as the local and
+global memory, the same array sizes as in section \ref{sec:sizes} are
+used.
+
+
+
+\section{Caveats}
+
+This benchmark should work out of the box on all systems.
+
+The only major caveat is that it does allocate more than half of the
+system's memory for its benchmarks, and this can severely degrade
+system performance if run on an interactive system (laptop or
+workstation). If run with MPI, then only the root process will run the
+benchmark.
+
+Typical memory bandwidth numbers are in the range of multiple GByte/s.
+Given today's memory amounts of many GByte, this means that this
+benchmark will run for tens of seconds. In addition to bencharking
+memory access, the operating system also needs to allocate the memory,
+which is surprisingly slow. A typical total execution time is several
+minutes.
+
+
+
+\section{Example Results}
+
+The XSEDE system Kraken at NICS reports the following performance
+numbers (measured on June 21, 2013):
+\begin{verbatim}
+INFO (MemSpeed): Measuring CPU, cache, and memory speeds:
+  CPU floating point performance: 10.396 Gflop/sec for each PU
+  CPU integer performance: 6.23736 Giop/sec for each PU
+  Read latency:
+    D1 cache read latency: 1.15434 nsec
+    L2 cache read latency: 5.82695 nsec
+    L3 cache read latency: 29.4962 nsec
+    local memory read latency: 135.264 nsec
+    global memory read latency: 154.1 nsec
+  Read bandwidth:
+    D1 cache read bandwidth: 72.3597 GByte/sec for 1 PUs
+    L2 cache read bandwidth: 20.7431 GByte/sec for 1 PUs
+    L3 cache read bandwidth: 9.51587 GByte/sec for 6 PUs
+    local memory read bandwidth: 5.19518 GByte/sec for 6 PUs
+    global memory read bandwidth: 4.03817 GByte/sec for 12 PUs
+  Write latency:
+    D1 cache write latency: 0.24048 nsec
+    L2 cache write latency: 2.8294 nsec
+    L3 cache write latency: 9.32924 nsec
+    local memory write latency: 47.5912 nsec
+    global memory write latency: 58.1591 nsec
+  Write bandwidth:
+    D1 cache write bandwidth: 39.3172 GByte/sec for 1 PUs
+    L2 cache write bandwidth: 12.9614 GByte/sec for 1 PUs
+    L3 cache write bandwidth: 5.5553 GByte/sec for 6 PUs
+    local memory write bandwidth: 4.48227 GByte/sec for 6 PUs
+    global memory write bandwidth: 3.16998 GByte/sec for 12 PUs
+\end{verbatim}
+
+The XSEDE system Kraken at NICS also reports the following system
+configuration via thorn hwloc (reported on June 21, 2013):
+\begin{verbatim}
+INFO (hwloc): Extracting CPU/cache/memory properties:
+  There are 1 PUs per core (aka hardware SMT threads)
+  There are 1 threads per core (aka SMT threads used)
+  Cache (unknown name) has type "data" depth 1
+    size 65536 linesize 64 associativity 2 stride 32768, for 1 PUs
+  Cache (unknown name) has type "unified" depth 2
+    size 524288 linesize 64 associativity 16 stride 32768, for 1 PUs
+  Cache (unknown name) has type "unified" depth 3
+    size 6291456 linesize 64 associativity 48 stride 131072, for 6 PUs
+  Memory has type "local" depth 1
+    size 8589541376 pagesize 4096, for 6 PUs
+  Memory has type "global" depth 1
+    size 17179082752 pagesize 4096, for 12 PUs
+\end{verbatim}
+
+Kraken's CPUs identify themselves as
+\verb+6-Core AMD Opteron(tm) Processor 23 (D0)+.
+
+Let us examine and partially interpret these numbers. (While the
+particular results will be different for other systems, the general
+behaviour will often be similar.)
+
+Kraken's compute nodes run at 2.6~GHz and execute 4 Flop/cycle,
+leading to a theoretical peak performance of 10.4~GFlop/s. Our
+measured number of 10.396~GFlop/s is surprisingly close.
+
+For integer performance, we expect half of the floating point
+performance since we cannot make use of vectorization, which yields a
+factor of two on this architecture. The reported number of 6.2~GIop/s
+is somewhat larger. We assume that the compiler found some way to
+optimize the code that we did not foresee, i.e. that this benchmark is
+not optimally designed. Still, the results are close.
+
+The read latency for the D1 cache is here difficult to measure
+exactly, since it is so fast, and the cycle time and thus the natural
+uncertainty is about 0.38~ns. (We assume this could be measured
+accuratly with sufficient effort, but we do not completely trust our
+benchmark algorithm.) We thus conclude that the D1 cache has a latency
+of about 1~ns or less. A similar argument holds for the D1 read
+bandwidth -- we conclude that the true bandwidth is 72~GB/s or higher.
+
+The L2 cache has a higher read latency and a lower read bandwidth (it
+is also significantly larger than the D1 cache). We consider these
+performance numbers now to be trustworthy.
+
+The L3 cache has again a slightly slower read performance than the L2
+cache. The major difference is that the L3 cache is shared between six
+cores, so that the bandwidth will be shared if several cores access it
+simultaneously.
+
+The local memory has a slightly lower read bandwith, and a
+significantly higher read latency than the L3 cache. The global memory
+is measurably slower than the local memory, but not by a large margin.
+
+The write latencies are, as expected, lower than the read latencies
+(see section \ref{sec:write-latency}).
+
+The write bandwidths are, surprisingly, only about half as large as
+the read bandwidths. This could either be a true property of the
+system architecture, or may be caused by write-allocating cache lines.
+The latter means that, as soon as a cache line is partially written,
+the cache fills it by reading from memory or the next higher cache
+level, although this is not actually necessary as the whole cache line
+will eventually be written. This additional read from memory
+effectively halves the observed write bandwidth. In principle, the
+memset function should use appropriate write instructions to avoid
+these unnecessary reads, but this may either not be the case, or the
+hardware may not be offering such write instructions.
+
+
+
+\begin{thebibliography}{9}
+  
+\bibitem{lmbench-usenix}{Larry McVoy, Carl Staelin, \emph{lmbench:
+    Portable tools for performance analysis}, 1996, Usenix,
+  \url{http://www.bitmover.com/lmbench/lmbench-usenix.pdf}}
+  
+\bibitem{mhz-usenix}{Carl Staelin, Larry McVoy, \emph{mhz: Anatomy of
+    a micro-benchmark}, 1998, Usenix,
+  \url{http://www.bitmover.com/lmbench/mhz-usenix.pdf}}
+  
+\bibitem{lmbench}{\emph{LMbench -- Tools for Performance Analysis},
+  \url{http://www.bitmover.com/lmbench}}
+  
+\end{thebibliography}
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{skip\_largemem\_benchmarks}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{skip\_largemem\_benchmarks} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Skip benchmarks that require much memory}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{verbose} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Verbose output}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+memspeed
+\vspace{2mm}
+
+\vspace{5mm}
+
+\noindent {\bf Uses header}: 
+
+vectors.h
+\vspace{2mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn CactusUtils/MemSpeed.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}NONE
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_WRAGH} 
+
+\hspace{5mm} memspeed\_measurespeed 
+
+\hspace{5mm}{\it measure cpu, memory, cache speeds } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & meta \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

@@ -1,0 +1,1305 @@
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+\author{Erik Schnetter \textless schnetter@aei.mpg.de\textgreater \\
+Luis Lehner \textless lehner@lsu.edu\textgreater \\
+Manuel Tiglio \textless tiglio@lsu.edu\textgreater}
+\title{A Multi-Patch Wave Toy}
+
+\date{\today}
+
+\maketitle
+
+% START CACTUS THORNGUIDE
+
+% \begin{abstract}
+%
+% \end{abstract}
+
+%\section{Introduction}
+
+\section{Physical System}
+
+The massless wave equation for a scalar field $\phi$ can be written as
+$$
+\partial_\mu(\gamma^{\mu \nu}d_\nu)=0
+$$
+where $\gamma^{\mu \nu}=\sqrt{-g}g^{\mu \nu}$, and $d_{\mu}\equiv\partial_{\mu }\phi$. Using the
+expressions $\sqrt{-g} = \alpha\sqrt{h}$ and
+\begin{displaymath}
+g^{\mu\nu} = \left( \begin{array}{cc} -1/\alpha^2 & \beta^i/\alpha^2
+\\ \beta^j/\alpha^2 & \gamma^{ij} - \beta^i \beta^j/\alpha^2 \end{array} \right),
+\end{displaymath}
+where $\gamma^{ij}$ is the inverse of the three metric, the equation can be rewritten as
+\begin{eqnarray}
+\dot{\phi } &=& \Pi, \\
+\dot{\Pi} &=& \beta^i\partial_i\Pi + 
+\frac{\alpha }{\sqrt{h}}\partial_i\left(\frac{\sqrt{h}}{\alpha} \beta^i\Pi + 
+\frac{\sqrt{h}}{\alpha}H^{ij}d_j \right) + \frac{\alpha }{\sqrt{h}}d_i\partial_t
+\left(\frac{\sqrt{h}\beta ^i}{\alpha } \right) - \frac{\Pi \alpha
+}{\sqrt{h}}\partial_t \left( \frac{\sqrt{h}}{\alpha }  \right), \\
+\dot{d_i} &=& \partial_i \Pi
+\end{eqnarray}
+with $H^{ij} \equiv \alpha^2 \gamma^{ij} - \beta^i \beta^j$.
+The non-shift speed modes with respect to a boundary with normal $n_i$ are 
+$$
+v^{\pm} = \lambda \Pi + H^{ij}n_id_j
+$$
+and the shift speed modes are $d_A$, with $A$ transversal directions. 
+
+The physical energy is
+$$
+E = \frac{1}{2}\int\frac{ 1}{\alpha }\left[ \Pi^2 + H^{ij}d_i d_j \right]\sqrt{h}dx^3
+$$
+and the way the equations above have been written this energy is not increasing in 
+the stationary background case if homogeneous boundary 
+conditions are given at outer boundaries, also at the discrete level (replacing above 
+$\partial_i$ by $D_i$). 
+
+The implementation of the field equations in the code differs slightly from the above. Assuming a
+stationary background and expanding out the derivative operator, we obtain the equations in the
+final form
+\begin{eqnarray}
+\dot{\phi } &=& \Pi, \\
+\dot{\Pi} &=& \beta^i\partial_i\Pi + 
+\frac{\alpha }{\sqrt{h}}\partial_i\left(\frac{\sqrt{h}}{\alpha} \beta^i\Pi \right)
++ \frac{\alpha }{\sqrt{h}}\partial_i\left(\frac{\sqrt{h}}{\alpha}H^{ij}\right) \partial_j \phi 
++ \frac{\alpha }{\sqrt{h}} \frac{\sqrt{h}}{\alpha} H^{ij} \partial_i\partial_j \phi.
+\end{eqnarray}
+
+\section{Non-linear addition to the multi-patch wave toy}
+
+Simple addition to the wave multi-patch toy to get started on this.
+
+\subsection{Physical System}
+This is just a non-linear wave equation obtained, a very minor modification
+to the wave equation thorn adding a different initial data and a slight modification
+to the right hand side. A reference to this is in a paper by Liebling to appear
+in Phys. Rev. D (2005).
+The non-linear wave equation is written as
+$$
+\partial_u(\gamma^{\mu \nu}d_\nu)= \phi^p
+$$
+where $\gamma^{\mu \nu}=\sqrt{-g}g^{\mu \nu}$, and $d_{\mu}=\partial_{\mu }\phi$ and
+$p$ must be an odd integer $\ge 3$.
+
+The initial data coded is given by
+\begin{eqnarray}
+\phi &=& A e^{-(r_1 - R)^2/\delta^2} \\
+\Pi &=& \mu \phi_{,r} + \Omega ( y \phi_{,x} - x \phi_{,y} ) \\
+d_i = \phi_{,i}
+\end{eqnarray}
+with $\tilde r^2 = \epsilon_x x^2 + \epsilon_y y^2 + z^2$.
+
+The parameters used for this initial data are given some distinct names to
+avoid conflicts with existing ones and are as follows:
+\begin{itemize}
+\item initial-data = GaussianNonLinear (choose the above mentioned initial data)
+\item nonlinearrhs = turn on/off the right hand side for testing. a boolean variable.
+\item powerrhs = power $p$ above.
+\item epsx = $\epsilon_x$ 
+\item epsy = $\epsilon_y$
+\item ANL = $A$
+\item deltaNL = $\delta$
+\item omeNL =  $\Omega$
+\item RNL = R
+\end{itemize}
+
+Note, as the solution is not known, one must set for now the incoming fields to $0$. CPBC might
+one day be put... though who knows :-)
+
+
+
+\section{Formulations}
+
+\begin{eqnarray}
+   U & = & \left[ \begin{array}{cccc} \rho & v_x & v_y & v_z
+   \end{array} \right]^T = \left[ \begin{array}{cc} \rho & v_i
+   \end{array} \right]^T
+\\
+   \partial_t U & = & A^i \partial_i U + \cdots
+\\
+   || n_i || & \ne & 1
+\end{eqnarray}
+
+
+
+\subsection{$dt$}
+
+   Setting $\rho = \partial_t u$.
+
+   RHS:
+
+\begin{eqnarray}
+   H^{ij} & = & \alpha^2 \gamma^{ij} - \beta^i \beta^j
+\\
+   \partial_t u & = & \rho
+\\
+   \partial_t \rho & = & \beta^i \partial_i \rho +
+   \frac{\alpha}{\epsilon} \partial_i \frac{\epsilon}{\alpha} \left(
+   \beta^i \rho + H^{ij} v_j \right)
+\\
+   \partial_t v_i & = & \partial_i \rho
+\end{eqnarray}
+
+   Propagation matrix:
+
+\begin{eqnarray}
+   A^x & = & \left( \begin{array}{cccc}
+%
+   2 \beta^x & - \beta^x \beta^x + \alpha^2 \gamma^{xx} & - \beta^x
+   \beta^y + \gamma^{xy} \alpha^2 & -\beta^x \beta^z + \alpha^2
+   \gamma^{xz}
+\\
+   1 & 0 & 0 & 0
+\\
+   0 & 0 & 0 & 0
+\\
+   0 & 0 & 0 & 0
+%
+   \end{array} \right)
+\end{eqnarray}
+
+\begin{eqnarray}
+   A^n & = & \left( \begin{array}{cc}
+%
+   2 \beta^i n_i & \left( - \beta^i \beta^j + \alpha^2 \gamma^{ij}
+   \right) n_i
+\\
+   n_i & 0
+%
+   \end{array} \right)
+\end{eqnarray}
+
+   Eigensystem:
+
+%% \begin{eqnarray}
+%%    \lambda_1 = 0 &, & w_1 = \left[ \begin{array}{cccc}
+%% %
+%%    0 & - \beta^x \beta^z + \alpha^2 \gamma^{xz} & 0 & \beta^x \beta^x
+%%    - \alpha^2 \gamma^{xx}
+%% %
+%%    \end{array} \right]^T
+%% \\
+%%    \lambda_2 = 0 &, & w_2 = \left[ \begin{array}{cccc}
+%% %
+%%    0 & - \beta^x \beta^y + \alpha^2 \gamma^{xy} & \beta^x \beta^x -
+%%    \alpha^2 \gamma^{xx} & 0
+%% %
+%%    \end{array} \right]^T
+%% \\
+%%    \lambda_3 = \beta^x - \alpha \sqrt{\gamma^{xx}} &, & w_3 = \left[
+%%    \begin{array}{cccc}
+%% %
+%%    \beta^x - \alpha \sqrt{\gamma^{xx}} & 1 & 0 & 0
+%% %
+%%    \end{array} \right]^T
+%% \\
+%%    \lambda_4 = \beta^x + \alpha \sqrt{\gamma^{xx}} &, & w_4 = \left[
+%%    \begin{array}{cccc}
+%% %
+%%    \beta^x + \alpha \sqrt{\gamma^{xx}} & 1 & 0 & 0
+%% %
+%%    \end{array} \right]^T
+%% \end{eqnarray}
+%% 
+%% \begin{eqnarray}
+%%    \lambda_t = 0 &, & w_t = \left[ \begin{array}{cc}
+%% %
+%%    0 & H^{ij} n_i \left( t_j n_k - n_j t_k \right)
+%% %
+%%    \end{array} \right]^T
+%% \\
+%%    \lambda_\pm = \beta^i n_i \pm \alpha \sqrt{\gamma^{ij} n_i n_j} &,
+%%    & w_\pm = \left[ \begin{array}{cccc}
+%% %
+%%    \beta^i n_i \pm \alpha \sqrt{\gamma^{ij} n_i n_j} & n_j
+%% %
+%%    \end{array} \right]^T
+%% \end{eqnarray}
+
+\begin{eqnarray}
+   \lambda_1 = 0 &, & w_1 = \left[ \begin{array}{cccc}
+%
+   0 & 0 & 0 & 1
+%
+   \end{array} \right]^T
+\\
+   \lambda_2 = 0 &, & w_2 = \left[ \begin{array}{cccc}
+%
+   0 & 0 & 1 & 0
+%
+   \end{array} \right]^T
+\\
+   \lambda_3 = \beta^x - \alpha \sqrt{\gamma^{xx}} &, & w_3 = \left[
+   \begin{array}{cccc}
+%
+   \beta^x - \alpha \sqrt{\gamma^{xx}} &
+   \beta^x \beta^x + \alpha^2 \gamma^{xx} &
+   \beta^x \beta^y + \alpha^2 \gamma^{xy} &
+   \beta^x \beta^z + \alpha^2 \gamma^{xz}
+%
+   \end{array} \right]^T
+\\
+   \lambda_4 = \beta^x + \alpha \sqrt{\gamma^{xx}} &, & w_4 = \left[
+   \begin{array}{cccc}
+%
+   \beta^x + \alpha \sqrt{\gamma^{xx}} &
+   \beta^x \beta^x + \alpha^2 \gamma^{xx} &
+   \beta^x \beta^y + \alpha^2 \gamma^{xy} &
+   \beta^x \beta^z + \alpha^2 \gamma^{xz}
+%
+   \end{array} \right]^T
+\end{eqnarray}
+
+\begin{eqnarray}
+   \lambda_t = 0 &, & w_t = \left[ \begin{array}{cc}
+%
+   0 & t_i
+%
+   \end{array} \right]^T
+\\
+   \lambda_\pm = \beta^i n_i \pm \alpha \sqrt{\gamma^{ij} n_i n_j} &,
+   & w_\pm = \left[ \begin{array}{cccc}
+%
+   \beta^i n_i \pm \alpha \sqrt{\gamma^{ij} n_i n_j} & H^{ij} n_j
+%
+   \end{array} \right]^T
+\end{eqnarray}
+
+
+
+\subsection{$d0$}
+
+   Setting $\rho = \mathcal{L}_n u$ with $n_a = D_a t$, leading to
+   $\rho = \partial_0 u = (1/\alpha) \partial_t u - (1/\alpha) \beta^i
+   \partial_i u$.
+
+   RHS:
+
+\begin{eqnarray}
+   H^{ij} & = & \gamma^{ij}
+\\
+   \partial_t u & = & \alpha \rho + \beta^i v_i
+\\
+   \partial_t \rho & = & \beta^i \partial_i \rho +
+   \frac{1}{\epsilon} \partial_i \epsilon \alpha H^{ij} v_j +
+   \frac{\rho}{\epsilon} \partial_i \epsilon \beta^i
+\\
+   \partial_t v_i & = & \beta^j \partial_j v_i + v_j \partial_i
+   \beta^j + \partial_i \alpha \rho
+\end{eqnarray}
+
+   Propagation matrix:
+
+\begin{eqnarray}
+   A^x & = & \left( \begin{array}{cccc}
+%
+   \beta^x & \alpha \gamma^{xx} & \alpha \gamma^{xy} & \alpha
+   \gamma^{xz}
+\\
+   \alpha & \beta^x & 0 & 0
+\\
+   0 & 0 & \beta^x & 0
+\\
+   0 & 0 & 0 & \beta^x
+%
+   \end{array} \right)
+\end{eqnarray}
+
+\begin{eqnarray}
+   A^n & = & \left( \begin{array}{cc}
+%
+   \beta^i n_i & \alpha \gamma^{ij} n_i
+\\
+   \alpha n_i & \beta^k n_k \delta_{ij}
+%
+   \end{array} \right)
+\end{eqnarray}
+
+   Eigensystem:
+
+%% \begin{eqnarray}
+%%    \lambda_1 = \beta^x &, & w_1 = \left[ \begin{array}{cccc}
+%% %
+%%    0 & - \gamma^{xz} & 0 & \gamma^{xx}
+%% %
+%%    \end{array} \right]^T
+%% \\
+%%    \lambda_2 = \beta^x &, & w_2 = \left[ \begin{array}{cccc}
+%% %
+%%    0 & - \gamma^{xy} & \gamma^{xx} & 0
+%% %
+%%    \end{array} \right]^T
+%% \\
+%%    \lambda_3 = \beta^x - \alpha \sqrt{ \gamma^{xx} + \gamma^{xy} +
+%%    \gamma^{xz} } &, & w_3 = \left[ \begin{array}{cccc}
+%% %
+%%    - \sqrt{ \gamma^{xx} + \gamma^{xy} + \gamma^{xz} } & 1 & 1 & 1
+%% %
+%%    \end{array} \right]^T
+%% \\
+%%    \lambda_4 = \beta^x + \alpha \sqrt{ \gamma^{xx} + \gamma^{xy} +
+%%    \gamma^{xz} } &, & w_4 = \left[ \begin{array}{cccc}
+%% %
+%%    \sqrt{ \gamma^{xx} + \gamma^{xy} + \gamma^{xz} } & 1 & 1 & 1
+%% %
+%%    \end{array} \right]^T
+%% \end{eqnarray}
+
+\begin{eqnarray}
+   \lambda_t = \beta^i n_i &, & w_t = \left[ \begin{array}{cccc}
+%
+   0 & - \gamma^{ij} n_j n_k t^k + \gamma^{jk} n_j n_k t^i
+%
+   \end{array} \right]^T
+\\
+   \lambda_\pm = \beta^i n_i \pm \alpha \sqrt{ \gamma^{ij} n_i n_j }
+   &, & w_\pm = \left[ \begin{array}{cccc}
+%
+   \pm \sqrt{ \gamma^{ij} n_i n_j } & \gamma^{ij} n_j
+%
+   \end{array} \right]^T
+\end{eqnarray}
+
+
+
+\subsection{$dk$}
+
+   (This section very probably contains errors, say Erik on
+   2005-04-13.)
+
+   Setting $\rho = \mathcal{L}_k u$ with a ``Killing'' vector $k^a =
+   \partial_t x^a$, leading to $\rho = (1/\alpha) \partial_t u$.
+
+   RHS:
+
+\begin{eqnarray}
+   H^{ij} & = & \gamma^{ij} - \frac{ \beta^i \beta^j }{ \alpha^2 }
+\\
+   \partial_t u & = & \alpha \rho
+\\
+   \partial_t \rho & = & \frac{\beta^i}{\alpha} \partial_i \alpha \rho
+   + \frac{1}{\epsilon} \partial_i \epsilon \left( \beta^i \rho +
+   \alpha H^{ij} v_j \right)
+\\
+   \partial_t v_i & = & \partial_i \alpha \rho
+\end{eqnarray}
+
+   Propagation matrix:
+
+\begin{eqnarray}
+   A^x & = & \left( \begin{array}{cccc}
+%
+   2 \beta^x & \alpha \left( - \frac{\beta^x \beta^x}{\alpha^2} +
+   \gamma^{xx} \right) & \alpha \left( - \frac{\beta^x
+   \beta^y}{\alpha^2} + \gamma^{xy} \right) & \alpha \left( -
+   \frac{\beta^x \beta^z}{\alpha^2} + \gamma^{xz} \right)
+\\
+   \alpha & 0 & 0 & 0
+\\
+   0 & 0 & 0 & 0
+\\
+   0 & 0 & 0 & 0
+%
+   \end{array} \right)
+\end{eqnarray}
+
+   Eigensystem:
+
+\begin{eqnarray}
+   \lambda_1 = 0 &, & w_1 = \left[ \begin{array}{cccc}
+%
+   0 & - \beta^x \beta^z + \alpha^2 \gamma^{xz} & 0 & \beta^x \beta^x
+   - \alpha^2 \gamma^{xx}
+%
+   \end{array} \right]^T
+\\
+   \lambda_2 = 0 &, & w_2 = \left[ \begin{array}{cccc}
+%
+   0 & - \beta^x \beta^y + \alpha^2 \gamma^{xy} & \beta^x \beta^x -
+   \alpha^2 \gamma^{xx} & 0
+%
+   \end{array} \right]^T
+\\
+   \lambda_3 = \beta^x - \alpha \sqrt{\gamma^{xx}} &, & w_3 = \left[
+   \begin{array}{cccc}
+%
+   \beta^x - \sqrt{\gamma^{xx}} & \alpha & 0 & 0
+%
+   \end{array} \right]^T
+\\
+   \lambda_4 = \beta^x + \alpha \sqrt{\gamma^{xx}} &, & w_4 = \left[
+   \begin{array}{cccc}
+%
+   \beta^x + \sqrt{\gamma^{xx}} & \alpha & 0 & 0
+%
+   \end{array} \right]^T
+\end{eqnarray}
+
+
+
+\begin{thebibliography}{9}
+\bibitem{Calabrese:2003}
+Gioel Calabrese, Luis Lehner, Dave Neilsen, Jorge Pullin, Oscar Reula,
+Olivier Sarbach, Manuel Tiglio, \textit{Novel finite-differencing
+techniques for numerical relativity: application to black-hole
+excision,} Class.\ Quantum Grav.\ \textbf{20}, L245 (2003),
+gr-qc/0302072.
+\end{thebibliography}
+
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{compute\_second\_derivative\_from\_first\_derivative}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{amplitude} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Amplitude}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{anl} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Amplitude of the non-linear Gaussian}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bound} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Boundary condition}} \\
+\hline{\bf Range} & &  {\bf Default:} static \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{any registered boundary condition} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{compute\_second\_derivative\_from\_first\_derivative} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Take first derivative twice to compute second derivate}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{deltanl} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em sigma of the non-linear Gaussian}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{eps} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em A small number}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0e-10 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{epsx} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em eps in x-direction of the non-linear Gaussian}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{epsy} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em eps in y-direction of the non-linear Gaussian}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{initial\_data} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Type of initial data}} \\
+\hline{\bf Range} & &  {\bf Default:} plane \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering linear} & \multicolumn{2}{p{\paraWidth}|}{x and y coordinates} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering plane} & \multicolumn{2}{p{\paraWidth}|}{Plane wave} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Gaussian} & \multicolumn{2}{p{\paraWidth}|}{Gaussian wave packet} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering GaussianNonLinear} & \multicolumn{2}{p{\paraWidth}|}{Gaussian wave packet for the non-linear RHS} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering GeneralMultipole} & \multicolumn{2}{p{\paraWidth}|}{Multipole with arbitrary l and m} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering multipole} & \multicolumn{2}{p{\paraWidth}|}{L=1 initial data, Gaussian in r} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering multipole l=1, m=0} & \multicolumn{2}{p{\paraWidth}|}{L=1 m=0 initial data, Gaussian in r, u=0} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering multipole l=1, m=1} & \multicolumn{2}{p{\paraWidth}|}{L=1 m=1 initial data, Gaussian in r, u=0} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering multipole l=1, m=-1} & \multicolumn{2}{p{\paraWidth}|}{L=1 m=-1 initial data, Gaussian in r, u=0} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering multipole l=2} & \multicolumn{2}{p{\paraWidth}|}{L=2 initial data, Gaussian in r} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering multipole l=2, u=0} & \multicolumn{2}{p{\paraWidth}|}{L=2 initial data, Gaussian in r, u=0} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering multipole l=2, m=1} & \multicolumn{2}{p{\paraWidth}|}{L=2 m=1 initial data, Gaussian in r, u=0} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering multipole l=2, m=-1} & \multicolumn{2}{p{\paraWidth}|}{L=2 m=-1 initial data, Gaussian in r, u=0} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering multipole l=2, m=2} & \multicolumn{2}{p{\paraWidth}|}{L=2 m=2 initial data, Gaussian in r, u=0} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering multipole l=2, m=-2} & \multicolumn{2}{p{\paraWidth}|}{L=2 m=-2 initial data, Gaussian in r, u=0} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering multipole l=2, m=-2} & \multicolumn{2}{p{\paraWidth}|}{L=2 m=-2 initial data, Gaussian in r, u=0} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering multipole l=4, m=0} & \multicolumn{2}{p{\paraWidth}|}{L=4 m=0 initial data, Gaussian in r, u=0} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering multipole l=4, m=1} & \multicolumn{2}{p{\paraWidth}|}{L=4 m=1 initial data, Gaussian in r, u=0} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering multipole l=4, m=-1} & \multicolumn{2}{p{\paraWidth}|}{L=4 m=-1 initial data, Gaussian in r, u=0} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering multipole l=4, m=2} & \multicolumn{2}{p{\paraWidth}|}{L=4 m=-2 initial data, Gaussian in r, u=0} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering multipole l=4, m=-2} & \multicolumn{2}{p{\paraWidth}|}{L=4 m=-2 initial data, Gaussian in r, u=0} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering multipole l=4, m=3} & \multicolumn{2}{p{\paraWidth}|}{L=4 m=3 initial data, Gaussian in r, u=0} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering multipole l=4, m=-3} & \multicolumn{2}{p{\paraWidth}|}{L=4 m=-3 initial data, Gaussian in r, u=0} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering multipole l=4, m=4} & \multicolumn{2}{p{\paraWidth}|}{L=4 m=4 initial data, Gaussian in r, u=0} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering multipole l=4, m=-4} & \multicolumn{2}{p{\paraWidth}|}{L=4 m=-4 initial data, Gaussian in r, u=0} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering noise} & \multicolumn{2}{p{\paraWidth}|}{Random noise} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering debug} & \multicolumn{2}{p{\paraWidth}|}{number of current patch and grid point index} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{initial\_data\_analytic\_derivatives} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Calculate spatial derivatives of the initial data analytically?}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{lapse} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Lapse function multiplier}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{must not be zero} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{mass} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Mass M}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{metric} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Global metric}} \\
+\hline{\bf Range} & &  {\bf Default:} Minkowski \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Minkowski} & \multicolumn{2}{p{\paraWidth}|}{Minkowski} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Kerr-Schild} & \multicolumn{2}{p{\paraWidth}|}{Kerr-Schild} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Kerr} & \multicolumn{2}{p{\paraWidth}|}{Kerr Black Hole} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{multipole\_l} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em For GeneralMultipole initial data: degree of spherical harmonic function}} \\
+\hline{\bf Range} & &  {\bf Default:} 2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{A positive integer} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{multipole\_m} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em For GeneralMultipole initial data: order of spherical harmonic function}} \\
+\hline{\bf Range} & &  {\bf Default:} 2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{An integer -l{\textless}=m{\textless}=l} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{multipole\_s} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em For GeneralMultipole initial data: spin weight spherical harmonic function}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{A positive integer} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{munl} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Speed of the non-linear Gaussian}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{nonlinearrhs} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Add a non-linear term to the RHS?}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{numevolvedvars} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em The number of evolved variables in this thorn}} \\
+\hline{\bf Range} & &  {\bf Default:} 5 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 5:5} & \multicolumn{2}{p{\paraWidth}|}{five} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{omenl} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Omega of the non-linear Gaussian}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{outer\_bound} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em outer boundary}} \\
+\hline{\bf Range} & &  {\bf Default:} solution \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering zero} & \multicolumn{2}{p{\paraWidth}|}{set all characteristics to zero} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering solution} & \multicolumn{2}{p{\paraWidth}|}{use the same analytic solution as for the initial data} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering dirichlet} & \multicolumn{2}{p{\paraWidth}|}{set all fields to zero} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering radiative} & \multicolumn{2}{p{\paraWidth}|}{radiative boundary} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering none} & \multicolumn{2}{p{\paraWidth}|}{no boundary condition} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{outer\_penalty\_bound} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em outer penalty boundary}} \\
+\hline{\bf Range} & &  {\bf Default:} zero \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering zero} & \multicolumn{2}{p{\paraWidth}|}{set all characteristics to zero} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering solution} & \multicolumn{2}{p{\paraWidth}|}{use the same analytic solution as for the initial data} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{powerrhs} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Exponent in the non-linear RHS term}} \\
+\hline{\bf Range} & &  {\bf Default:} 5.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 3.0:13.0} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{radius} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Radius of the Gaussian}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{recalculate\_rhs} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Recalculate the RHSs in the ANALYSIS timebin}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rhsbound} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Boundary condition during RHS evaluation}} \\
+\hline{\bf Range} & &  {\bf Default:} none \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{any registered boundary condition} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rnl} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How fat the non-linear Gaussian is (r-R)}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{shift} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Shift vector addition}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{shift\_interpolation\_type} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Setting for the interpolating vector field b\^i (only used for the db formulation)}} \\
+\hline{\bf Range} & &  {\bf Default:} shift \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering shift} & \multicolumn{2}{p{\paraWidth}|}{Set b\^i = beta\^i (corresponds to d0 formulation)} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering zero} & \multicolumn{2}{p{\paraWidth}|}{Set b\^i = 0 (corresponds to dk formulation)} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{shift\_omega} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Rotational shift vector addition about z axis}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{space\_offset} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Space offset}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{spin} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Spin a=J/M\^2}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1:+1} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{time\_offset} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Time offset}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{wave\_number} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Wave number}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{width} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Width of the Gaussian}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{mol\_num\_evolved\_vars} & {\bf Scope:} shared from METHODOFLINES & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+llamawavetoy
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+grid
+
+coordinates
+
+globalderivative
+
+summationbyparts
+
+interpolate
+\vspace{2mm}
+\subsection*{Grid Variables}
+\vspace{5mm}\subsubsection{PRIVATE GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+scalar &  & compact & 0 \\ 
+ & u & description & The scalar of the scalar wave equation fame \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="scalar" \\ 
+ &  & timelevels & 2 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+density &  & compact & 0 \\ 
+ & rho & description & Time derivative of u \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="scalar" \\ 
+ &  & timelevels & 2 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+dx\_scalar &  & compact & 0 \\ 
+ & dx\_u & description & Spatial derivatives of u \\ 
+ & dy\_u & dimensions & 3 \\ 
+ & dz\_u & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="scalar" \\ 
+ &  & timelevels & 2 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+dxx\_scalar &  & compact & 0 \\ 
+ & dxx\_u & description & Spatial derivatives of u \\ 
+ & dyy\_u & dimensions & 3 \\ 
+ & dzz\_u & distribution & DEFAULT \\ 
+ & dxy\_u & group type & GF \\ 
+ & dxz\_u & tags & tensortypealias="scalar" \\ 
+ & dyz\_u & timelevels & 2 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+dx\_density &  & compact & 0 \\ 
+ & dx\_rho & description & Spatial derivatives of rho \\ 
+ & dy\_rho & dimensions & 3 \\ 
+ & dz\_rho & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="scalar" \\ 
+ &  & timelevels & 2 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+velocity &  & compact & 0 \\ 
+ & vx & description & Spatial derivative of u \\ 
+ & vy & dimensions & 3 \\ 
+ & vz & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="scalar" \\ 
+ &  & timelevels & 2 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~ \\ 
+\hline 
+debug &  & compact & 0 \\ 
+ & vxdebug & description & Spatial derivative of u \\ 
+ & vydebug & dimensions & 3 \\ 
+ & vzdebug & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="scalar" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+scalardot &  & compact & 0 \\ 
+ & udot & description & RHS of u \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="scalar" Prolongation="None" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+densitydot &  & compact & 0 \\ 
+ & rhodot & description & RHS of rho \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="scalar" Prolongation="None" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+velocitydot &  & compact & 0 \\ 
+ & vxdot & description & RHS ov v \\ 
+ & vydot & dimensions & 3 \\ 
+ & vzdot & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="scalar" Prolongation="None" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+constraints &  & compact & 0 \\ 
+ & wx & description & Integrability condition \\ 
+ & wy & dimensions & 3 \\ 
+ & wz & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="scalar" tensorparity=-1 Prolongation="None" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+difference\_v &  & compact & 0 \\ 
+ & diff\_vx & description & Difference between v\_i and d/dx\^i u \\ 
+ & diff\_vy & dimensions & 3 \\ 
+ & diff\_vz & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="scalar" Prolongation="None" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~ \\ 
+\hline 
+velocity\_squared &  & compact & 0 \\ 
+ & v2 & description & Velocity squared \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="scalar" Prolongation="None" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+scalarenergy &  & compact & 0 \\ 
+ & energy & description & Energy of the scalar field \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="scalar" Prolongation="None" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+errors &  & compact & 0 \\ 
+ & error & description & Error of the solution \\ 
+ & error\_rho & dimensions & 3 \\ 
+ & error\_vx & distribution & DEFAULT \\ 
+ & error\_vy & group type & GF \\ 
+ & error\_vz & tags & tensortypealias="scalar" Prolongation="None" \\ 
+ & exact & timelevels & 1 \\ 
+ & exact\_rho & variable type & REAL \\ 
+\hline 
+errorsperiodic &  & compact & 0 \\ 
+ & errorperiodic & description & Error for a solution which is known to be periodic \\ 
+ & errorperiodic\_rho & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="scalar" Prolongation="None" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+metric &  & compact & 0 \\ 
+ & gxx & description & Spatial background metric \\ 
+ & gxy & dimensions & 3 \\ 
+ & gxz & distribution & DEFAULT \\ 
+ & gyy & group type & GF \\ 
+ & gyz & tags & tensortypealias="scalar" Prolongation="None" \\ 
+ & gzz & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+inverse\_metric &  & compact & 0 \\ 
+ & guxx & description & Inverse of the spatial background metric \\ 
+ & guxy & dimensions & 3 \\ 
+ & guxz & distribution & DEFAULT \\ 
+ & guyy & group type & GF \\ 
+ & guyz & tags & tensortypealias="scalar" Prolongation="None" \\ 
+ & guzz & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~ \\ 
+\hline 
+lapse &  & compact & 0 \\ 
+ & alpha & description & Spatial background metric \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="scalar" Prolongation="None" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+shift &  & compact & 0 \\ 
+ & betax & description & Spatial background metric \\ 
+ & betay & dimensions & 3 \\ 
+ & betaz & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="scalar" Prolongation="None" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+volume\_element &  & compact & 0 \\ 
+ & epsilon & description & Volume element due to the spatial background metric \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="scalar" Prolongation="None" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+min\_spacing & min\_spacing & compact & 0 \\ 
+ &  & description & Minimum grid spacing \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="scalar" Prolongation="None" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn Llama/LlamaWaveToy.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Always:}&  ~ \\ 
+ scalar[2] density[2] velocity[2] & ~\\ 
+ dx\_scalar[2] & ~\\ 
+ dxx\_scalar[2] & ~\\ 
+ dx\_density[2] & ~\\ 
+ errors & ~\\ 
+ metric inverse\_metric lapse shift volume\_element & ~\\ 
+ scalardot densitydot velocitydot & ~\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_STARTUP} 
+
+\hspace{5mm} lwt\_startup 
+
+\hspace{5mm}{\it register banner with cactus } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & meta \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Register}   (conditional) 
+
+\hspace{5mm} lwt\_register\_mol 
+
+\hspace{5mm}{\it register variables with mol } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & meta \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_ANALYSIS}   (conditional) 
+
+\hspace{5mm} lwt\_calc\_rhs 
+
+\hspace{5mm}{\it calculate the rhs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Storage:  & scalardot \\ 
+~& ~ &densitydot\\ 
+~& ~ &velocitydot\\ 
+~ & Sync:  & scalardot \\ 
+~& ~ &densitydot\\ 
+~& ~ &velocitydot\\ 
+~ & Triggers:  & scalardot \\ 
+~& ~ &densitydot\\ 
+~& ~ &velocitydot\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_ANALYSIS} 
+
+\hspace{5mm} lwt\_calcenergy 
+
+\hspace{5mm}{\it calculate the energy of the scalar field } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Storage:  & scalarenergy \\ 
+~ & Sync:  & scalarenergy \\ 
+~ & Triggers:  & scalarenergy \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_ANALYSIS} 
+
+\hspace{5mm} lwt\_error 
+
+\hspace{5mm}{\it calculate errors of the solution } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Storage:  & errorsperiodic \\ 
+~ & Triggers:  & errors \\ 
+~& ~ &errorsperiodic\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_ANALYSIS} 
+
+\hspace{5mm} lwt\_min\_spacing 
+
+\hspace{5mm}{\it calculate the smallest grid spacing } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Storage:  & min\_spacing \\ 
+~ & Sync:  & min\_spacing \\ 
+~ & Triggers:  & min\_spacing \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_INITIAL} 
+
+\hspace{5mm} lwt\_init\_metric 
+
+\hspace{5mm}{\it initialise the metric } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_INITIAL} 
+
+\hspace{5mm} lwt\_calc\_inverse\_metric 
+
+\hspace{5mm}{\it transform the metric } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & lwt\_init\_metric \\ 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_INITIAL} 
+
+\hspace{5mm} lwt\_init 
+
+\hspace{5mm}{\it initialise the system } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & lwt\_init\_metric \\ 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_CalcRHS} 
+
+\hspace{5mm} lwt\_calc\_rhs 
+
+\hspace{5mm}{\it calculate the rhs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_PostStep} 
+
+\hspace{5mm} lwt\_outerboundary 
+
+\hspace{5mm}{\it apply outer boundaries } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_RHSBoundaries} 
+
+\hspace{5mm} lwt\_rhs\_outerboundary 
+
+\hspace{5mm}{\it apply mol rhs outer boundaries (eg. radiative boundary condition) } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_PostStep} 
+
+\hspace{5mm} lwt\_boundaries 
+
+\hspace{5mm}{\it select the boundary condition } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & lwt\_outerbound \\ 
+~ & Language:  & fortran \\ 
+~ & Options:  & level \\ 
+~ & Sync:  & scalar \\ 
+~& ~ &density\\ 
+~& ~ &velocity\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_PostStep} 
+
+\hspace{5mm} applybcs 
+
+\hspace{5mm}{\it apply boundary conditions } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & lwt\_boundaries \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\subsection*{Aliased Functions}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Alias Name:} ~~~~~~~ & {\bf Function Name:} \\ 
+ApplyBCs & LWT\_ApplyBCs \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}
