@@ -1,5 +1,5 @@
 var stat, conclusion, actionlink;
-stat = "unknown";
+stat = "unset";
 try {
     var workflowFile = new XMLHttpRequest();
     workflowFile.open("GET", "https://api.github.com/repos/EinsteinToolkit/tests/actions/workflows/main.yml/runs", false);
@@ -8,18 +8,14 @@ try {
     var jsonResponse = JSON.parse(workflowFile.responseText);
     count = jsonResponse["total_count"];
     if (count > 0) {
-        var run_number = 0;
+        var run_number;
         for(var i = 0 ; i < jsonResponse["workflow_runs"].length ; i++) {
             latestRun = jsonResponse["workflow_runs"][i];
             stat = latestRun.status; // completed, requested, in_progress
             console.log(i, " stat ", stat);
-            if (stat == "completed" || stat == "in_progress") {
+            if ((stat == "completed" && run_number === undefined) ||
+                 stat == "in_progress" || stat == "pending") {
                 run_number = i;
-                console.log("run number: "+i);
-                break;
-            } else if (stat == "pending") {
-                run_number = i;
-                console.log("run number: "+i);
             }
         }
         latestRun = jsonResponse["workflow_runs"][run_number];
@@ -38,13 +34,15 @@ if (stat == "completed") {
         badgeToDisplay = "failing-status.svg";
     } else if (conclusion == "success") {
         badgeToDisplay = "passing-status.svg";
+    } else if (conclusion == "cancelled") {
+        badgeToDisplay = "pending-status.svg"; // cancelled b/c higher priority is queued
     } else {
-        badgeToDisplay = "unknown";
+        badgeToDisplay = "unknown_conclusion:" + conclusion;
     }
 } else if (stat == "in_progress" || stat == "pending") {
     badgeToDisplay = "pending-status.svg";
 } else {
-    badgeToDisplay = "unknown";
+    badgeToDisplay = "unknown_stat:" + stat;
 }
 
 try {
