@@ -26,7 +26,7 @@ jobs:
     steps:
       # Below the runner checks-out multiple branches side by side, under different paths
       # Check-out master and its submodules under $GITHUB_WORKSPACE/master, as its files are needed to run tests
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           persist-credentials: false
          # 0 indicates all history for all branches and tags (see https://github.com/actions/checkout)
@@ -35,14 +35,14 @@ jobs:
           submodules: recursive
 #           single-branch: true
       # Check-out scripts branch under $GITHUB_WORKSPACE/scripts to access scripts to run
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           persist-credentials: false
           fetch-depth: 1
           ref: scripts
           path: scripts
       # Check-out gh-pages branch under $GITHUB_WORKSPACE/gh-pages, for pushing test report output to
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           persist-credentials: false
           fetch-depth: 1
@@ -58,13 +58,14 @@ jobs:
       - name: Install pre-requisite libraries
         run:  |
           sudo apt update
-          $(sudo -l sudo) su -c 'apt-get install --fix-missing -y pkg-config subversion gcc git numactl libgit2-dev=1.1.0+dfsg.1-4.1build1 libgsl-dev libpapi-dev python-is-python3 libhwloc-dev libudev-dev make libopenmpi-dev libhdf5-openmpi-dev libfftw3-dev libssl-dev liblapack-dev g++ curl gfortran patch pkg-config libhdf5-dev libjpeg-turbo?-dev'
-      
-      - name: Set up Python 3.x
-        uses: actions/setup-python@v4
+          $(sudo -l sudo) su -c 'apt-get install --fix-missing -y pkg-config subversion gcc git numactl libgit2-dev=1.1.0+dfsg.1-4.1ubuntu0.1  libgsl-dev libpapi-dev python-is-python3 libhwloc-dev libudev-dev make libopenmpi-dev libhdf5-openmpi-dev libfftw3-dev libssl-dev liblapack-dev g++ curl gfortran patch pkg-config libhdf5-dev libjpeg-turbo?-dev'
+
+      # freeze Python to known good version. Failures with 3.12 in bokeh (https://bugzilla.redhat.com/show_bug.cgi?id=2019057)
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
         with:
           # Semantic version range syntax or exact version of a Python version
-          python-version: '3.x' 
+          python-version: '3.10' 
           
       # Install required libraries for parsing scripts
       - name: Install dependencies
@@ -74,6 +75,8 @@ jobs:
               # jinja2 >= 3.1 removes jinja2.Markup, causing failures:
               # https://github.com/bokeh/bokeh/pull/11174
               pip install jinja2==3.0.3
+              # newer version cause issues due to numpy.bool being removed
+              pip install 'numpy<=1.23.1'
               pip install bokeh==2.0.1
               pip install matplotlib
               pip install requests
