@@ -14,7 +14,9 @@ git add --all
 # with an error message
 for m in $(git diff --cached --name-only) ; do  (
   cd $m
-  git fetch --unshallow
+  if git-rev-parse --is-shallow-repository ; then
+    git fetch --unshallow
+  fi
 ) done
 
 if ! git diff --cached --exit-code --quiet ; then
