@@ -1,0 +1,1604 @@
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a 
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+\title{GRHayLHD}
+\author{Samuel Cupp \\ Leonardo Rosa Werneck \\ Terrence Pierre Jacques \\ Zachariah Etienne}
+\date{$ $Date$ $}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+% Add all definitions used in this documentation here
+\newcommand{\grhayl}{\texttt{GRHayL}}
+\newcommand{\glib}{\texttt{GRHayLib}}
+\newcommand{\ghd}{\texttt{GRHayLHD}}
+\newcommand{\igm}{\texttt{IllinoisGRMHD}}
+\newcommand{\hydrobase}{\texttt{HydroBase}}
+
+\begin{abstract}
+Provides a general relativistic hydrodynamic (GRHD) evolution code
+using \grhayl via the \glib thorn. This is a trimmed-down version
+of the \igm thorn where magnetic fields are set to zero.
+\end{abstract}
+
+\section{Introduction}
+
+This thorn provides a GRHD evolution code built on
+the General Relativistic Hydrodynamics Library (\grhayl),
+which is included in the Einstein Toolkit via the \glib{}
+thorn. The core library inherits or adapts code from the
+original \igm{} thorn into a modular, infrastructure-agnostic
+library. While the \igm{} thorn can be set to have
+zero magnetic fields, they will still be evolved. This
+is much slower than not evolving them, and \ghd{} provides an
+implementation for evolving systems without magnetic
+fields.
+
+This thorn provides support for hybrid and tabulated EOS, both
+with and without entropy. The core functions all come from \glib,
+ensuring that any improvements or updates to the library can
+be easily adopted by the thorn. The conservative-to-primitive
+solver is selected at runtime, allowing for users to take
+advantage of any Con2Prim methods provided by \grhayl.
+
+\section{Parameters}
+
+Most of the behavior of this thorn is controlled by \glib,
+the thorn that provides \grhayl{} functionality
+within the Einstein Toolkit. However, there are several
+parameters in the thorn which control diagnostic or debugging
+features. Most are self-explanatory, but some parameters deserve
+a more detailed explanation.
+
+First, many analysis or diagnostic thorns use \hydrobase{} variables.
+By default, \ghd{} never copies the data back from \ghd{} variables
+to \hydrobase{} variables, which would prevent the usage of these
+thorns. The \textbf{Convert\_to\_HydroBase\_every} parameter
+sets how often to copy back this data. Naturally, copying more
+frequently will slow down the simulation, so this should be set
+on the same frequency as the analysis or IO thorn that is using
+the \hydrobase{} variable. We reduced the amount of data copying in \ghd{}
+by using the \hydrobase{} variables directly, which removes the need
+to copy them back and removes extra grid functions from memory.
+We still use distinct velocity variables because we use a different
+velocity than is defined in \hydrobase.
+
+Next, there are several parameters for debugging or other testing.
+The perturbing parameters give users the ability to affect either
+the initial data or evolution data at runtime without slowing down
+standard simulations. The \textbf{perturb\_initial\_data} parameter
+controls whether the initial data from \hydrobase{} is perturbed, and
+the \textbf{perturb\_every\_con2prim} parameter controls whether
+the conservative variables are perturbed before every con2prim call.
+The magnitude of these perturbations is set by \textbf{random\_pert}.
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{convert\_to\_hydrobase\_every}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{convert\_to\_hydrobase\_every} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How often to convert GRHayLHD primitive variables to HydroBase (Valencia formulation) primitive variables? Needed for some ET-based diagnostics. NOT needed for pure GRHayLHD runs.}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{zero (disable) or positive (every N iterations)} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{matter\_bc} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Chosen Matter boundary condition}} \\
+\hline{\bf Range} & &  {\bf Default:} outflow \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering copy} & \multicolumn{2}{p{\paraWidth}|}{Copy BCs} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering outflow} & \multicolumn{2}{p{\paraWidth}|}{Copy BCs with additional outflow BC for velocities} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering frozen} & \multicolumn{2}{p{\paraWidth}|}{Frozen boundaries} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{perturb\_every\_con2prim} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Random perturbation applied every time con2prim runs}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{perturb\_initial\_data} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Random perturbation to initial data}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{random\_pert} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Magnitude of random perturbations}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Anything goes.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{random\_seed} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Random seed for random, generally roundoff-level perturbation on initial data. Seeds srand(), and rand() is used for the RNG.}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:99999999} & \multicolumn{2}{p{\paraWidth}|}{Anything unsigned goes.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{symmetry} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Currently only no symmetry supported, though work has begun in adding equatorial-symmetry support.}} \\
+\hline{\bf Range} & &  {\bf Default:} none \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering none} & \multicolumn{2}{p{\paraWidth}|}{no symmetry, full 3d domain} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{update\_tmunu} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Update Tmunu, for RHS of Einstein's equations?}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{verbose} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Determines how much evolution information is output}} \\
+\hline{\bf Range} & &  {\bf Default:} yes \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering no} & \multicolumn{2}{p{\paraWidth}|}{Complete silence} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering yes} & \multicolumn{2}{p{\paraWidth}|}{"Outputs information about conservative-to-prim 
+itive fixes, failures, etc."} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{eos\_type} & {\bf Scope:} shared from GRHAYLIB & KEYWORD \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{evolve\_entropy} & {\bf Scope:} shared from GRHAYLIB & BOOLEAN \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+grhaylhd
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+admbase
+
+tmunubase
+
+hydrobase
+
+grhaylib
+\vspace{2mm}
+\subsection*{Grid Variables}
+\vspace{5mm}\subsubsection{PRIVATE GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+grmhd\_velocities &  & compact & 0 \\ 
+ & vx & description & Components of primitive three velocity v\^i. Note that v\^i is defined in terms of 4-velocity as: v\^i = u\^i/u\^0. Note that this definition differs from the Valencia formalism. \\ 
+ & vy & dimensions & 3 \\ 
+ & vz & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & InterpNumTimelevels=1 prolongation="none" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+u0 & u0 & compact & 0 \\ 
+ &  & description & 4-velocity component u\^0 \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & InterpNumTimelevels=1 prolongation="none" checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+grmhd\_conservatives &  & compact & 0 \\ 
+ & rho\_star & description & Evolved hydrodynamic variables \\ 
+ & tau & dimensions & 3 \\ 
+ & Stildex & distribution & DEFAULT \\ 
+ & Stildey & group type & GF \\ 
+ & Stildez & tags & prolongation="ENO" \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+ent\_star & ent\_star & compact & 0 \\ 
+ &  & description & Evolved entropy variable \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & prolongation="ENO" \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+ye\_star & Ye\_star & compact & 0 \\ 
+ &  & description & Evolved electron fraction variable \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & prolongation="ENO" \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+grmhd\_conservatives\_rhs &  & compact & 0 \\ 
+ & rho\_star\_rhs & description & Right-hand side for grmhd\_conservatives variables \\ 
+ & tau\_rhs & dimensions & 3 \\ 
+ & Stildex\_rhs & distribution & DEFAULT \\ 
+ & Stildey\_rhs & group type & GF \\ 
+ & Stildez\_rhs & tags & prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~ \\ 
+\hline 
+ent\_star\_rhs & ent\_star\_rhs & compact & 0 \\ 
+ &  & description & Right-hand side for ent\_star \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+ye\_star\_rhs & Ye\_star\_rhs & compact & 0 \\ 
+ &  & description & Right-hand side for Ye\_star \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+grmhd\_flux\_temps &  & compact & 0 \\ 
+ & rho\_star\_flux & description & Flux variables for computing RHSs \\ 
+ & tau\_flux & dimensions & 3 \\ 
+ & Stildex\_flux & distribution & DEFAULT \\ 
+ & Stildey\_flux & group type & GF \\ 
+ & Stildez\_flux & tags & prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+ent\_star\_flux & ent\_star\_flux & compact & 0 \\ 
+ &  & description & Flux variable for ent\_star \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+ye\_star\_flux & Ye\_star\_flux & compact & 0 \\ 
+ &  & description & Flux variable for Ye\_star \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+failure\_checker & failure\_checker & compact & 0 \\ 
+ &  & description & Gridfunction to track conservative-to-primitives solver fixes. Beware that this gridfunction is overwritten at each RK substep. \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & prolongation="none" Checkpoint="no" InterpNumTimelevels=1 \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+
+\noindent {\bf Uses header}: 
+
+Symmetry.h
+
+GRHayLib.h
+\vspace{2mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn GRHayLET/GRHayLHD.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Always:}& {\bf Conditional:} \\ 
+ grmhd\_conservatives[3] grmhd\_velocities &  Ye\_star[3] Ye\_star\_rhs Ye\_star\_flux\\ 
+ u0 grmhd\_conservatives\_rhs &  ent\_star[3] ent\_star\_rhs ent\_star\_flux\\ 
+ grmhd\_flux\_temps failure\_checker & ~\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf MoL\_Register}   (conditional) 
+
+\hspace{5mm} grhaylhd\_registervars 
+
+\hspace{5mm}{\it register evolved, rhs variables in grhaylhd for mol } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & meta \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_BASEGRID}   (conditional) 
+
+\hspace{5mm} grhaylhd\_initsymbound 
+
+\hspace{5mm}{\it schedule symmetries } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_Con2Prim}   (conditional) 
+
+\hspace{5mm} grhaylhd\_perturb\_conservatives 
+
+\hspace{5mm}{\it perturb conservatives before con2prim } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & grhaylhd\_sync\_conservatives \\ 
+~ & Before:  & grhaylhd\_conservs\_to\_prims \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_Con2Prim}   (conditional) 
+
+\hspace{5mm} grhaylhd\_conservs\_to\_prims 
+
+\hspace{5mm}{\it compute primitive variables from conservatives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & grhaylhd\_sync\_conservatives \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_Con2Prim}   (conditional) 
+
+\hspace{5mm} grhaylhd\_outer\_boundaries 
+
+\hspace{5mm}{\it apply selected boundary conditions to the primitive variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & grhaylhd\_conservs\_to\_prims \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf AddToTmunu}   (conditional) 
+
+\hspace{5mm} grhaylhd\_compute\_tmunu 
+
+\hspace{5mm}{\it compute stress-energy tensor } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::eps\\ 
+~& ~ &grmhd\_velocities\\ 
+~& ~ &u0\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & tmunubase::stress\_energy\_scalar(everywhere) \\ 
+~& ~ &tmunubase::stress\_energy\_vector(everywhere)\\ 
+~& ~ &tmunubase::stress\_energy\_tensor(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_CalcRHS}   (conditional) 
+
+\hspace{5mm} grhaylhd\_rhs 
+
+\hspace{5mm}{\it evaluate rhss grhd equations } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_RHS}   (conditional) 
+
+\hspace{5mm} grhaylhd\_evaluate\_sources\_rhs 
+
+\hspace{5mm}{\it evaluate source terms in grhd rhss } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_RHS}   (conditional) 
+
+\hspace{5mm} grhaylhd\_evaluate\_fluxes\_rhs 
+
+\hspace{5mm}{\it evaluate flux terms in grhd rhss } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & grhaylhd\_evaluate\_sources\_rhs \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_RHS}   (conditional) 
+
+\hspace{5mm} convert\_grhaylhd\_to\_hydrobase 
+
+\hspace{5mm}{\it convert needed hydrobase variables for nrpyleakage } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & grhaylhd\_evaluate\_fluxes\_rhs \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::lapse \\ 
+~& ~ &admbase::shift\\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & hydrobase::vel(everywhere) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_ANALYSIS}   (conditional) 
+
+\hspace{5mm} convert\_grhaylhd\_to\_hydrobase 
+
+\hspace{5mm}{\it convert grhaylhd-native variables to hydrobase } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ml\_bssn\_evolcalcgroup \\ 
+~ & Before:  & compute\_bi\_b2\_poyn\_fluxet \\ 
+~& ~ &convert\_to\_mhd\_3velocity\\ 
+~& ~ &particle\_traceret\\ 
+~& ~ &volumeintegralgroup\\ 
+~ & Language:  & c \\ 
+~ & Options:  & global-early \\ 
+~& ~ &loop-local\\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & hydrobase::vel(everywhere) \\ 
+~& ~ &hydrobase::w\_lorentz(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_prims\_to\_conservs}   (conditional) 
+
+\hspace{5mm} grhaylhd\_hybrid\_entropy\_prims\_to\_conservs 
+
+\hspace{5mm}{\it entropy+hybrid version of grhaylhd\_prims\_to\_conservs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::eps\\ 
+~& ~ &hydrobase::entropy\\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Sync:  & grmhd\_conservatives \\ 
+~& ~ &ent\_star\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & u0(everywhere) \\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &grmhd\_conservatives(everywhere)\\ 
+~& ~ &ent\_star(everywhere)\\ 
+~& ~ &hydrobase::rho(everywhere)\\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+~& ~ &hydrobase::entropy(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Prim2ConInitial}   (conditional) 
+
+\hspace{5mm} grhaylhd\_prim2con2prim 
+
+\hspace{5mm}{\it convert hydrobase initial data to grhaylhd variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_conservs\_to\_prims}   (conditional) 
+
+\hspace{5mm} grhaylhd\_hybrid\_entropy\_conservs\_to\_prims 
+
+\hspace{5mm}{\it entropy+hybrid version of grhaylhd\_conservs\_to\_prims } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & grid::coordinates \\ 
+~& ~ &admbase::metric\\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &grmhd\_conservatives\\ 
+~& ~ &ent\_star\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives(everywhere) \\ 
+~& ~ &ent\_star(everywhere)\\ 
+~& ~ &failure\_checker(everywhere)\\ 
+~& ~ &u0(everywhere)\\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &hydrobase::rho(everywhere)\\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+~& ~ &hydrobase::entropy(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_outer\_boundaries}   (conditional) 
+
+\hspace{5mm} grhaylhd\_hybrid\_entropy\_outer\_boundaries 
+
+\hspace{5mm}{\it entropy+hybrid version of grhaylhd\_outer\_boundaries } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::entropy\\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Sync:  & grmhd\_velocities \\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::eps\\ 
+~& ~ &hydrobase::entropy\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & u0(everywhere) \\ 
+~& ~ &grmhd\_conservatives(everywhere)\\ 
+~& ~ &ent\_star(everywhere)\\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &hydrobase::rho(everywhere)\\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+~& ~ &hydrobase::entropy(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_evaluate\_sources\_rhs}   (conditional) 
+
+\hspace{5mm} grhaylhd\_hybrid\_entropy\_evaluate\_sources\_rhs 
+
+\hspace{5mm}{\it entropy+hybrid version of grhaylhd\_evaluate\_sources\_rhs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &admbase::curv\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::entropy\\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives\_rhs \\ 
+~& ~ &ent\_star\_rhs\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_evaluate\_fluxes\_rhs}   (conditional) 
+
+\hspace{5mm} grhaylhd\_hybrid\_entropy\_evaluate\_fluxes\_rhs 
+
+\hspace{5mm}{\it entropy+hybrid version of grhaylhd\_evaluate\_fluxes\_rhs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::entropy\\ 
+~& ~ &grmhd\_velocities\\ 
+~& ~ &grmhd\_conservatives\_rhs(interior)\\ 
+~& ~ &ent\_star\_rhs(interior)\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_flux\_temps \\ 
+~& ~ &grmhd\_conservatives\_rhs\\ 
+~& ~ &ent\_star\_flux\\ 
+~& ~ &ent\_star\_rhs\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_perturb\_primitives}   (conditional) 
+
+\hspace{5mm} grhaylhd\_hybrid\_entropy\_perturb\_primitives 
+
+\hspace{5mm}{\it entropy+hybrid version of grhaylhd\_perturb\_primitives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & hydrobase::rho \\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::eps\\ 
+~& ~ &hydrobase::entropy\\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & hydrobase::rho(everywhere) \\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+~& ~ &hydrobase::entropy\\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_perturb\_conservatives}   (conditional) 
+
+\hspace{5mm} grhaylhd\_hybrid\_entropy\_perturb\_conservatives 
+
+\hspace{5mm}{\it entropy+hybrid version of grhaylhd\_perturb\_conservatives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & grmhd\_conservatives \\ 
+~& ~ &ent\_star\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives(everywhere) \\ 
+~& ~ &ent\_star(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_prims\_to\_conservs}   (conditional) 
+
+\hspace{5mm} grhaylhd\_hybrid\_prims\_to\_conservs 
+
+\hspace{5mm}{\it hybrid version of grhaylhd\_prims\_to\_conservs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::eps\\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Sync:  & grmhd\_conservatives \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & u0(everywhere) \\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &grmhd\_conservatives(everywhere)\\ 
+~& ~ &hydrobase::rho(everywhere)\\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_conservs\_to\_prims}   (conditional) 
+
+\hspace{5mm} grhaylhd\_hybrid\_conservs\_to\_prims 
+
+\hspace{5mm}{\it hybrid version of grhaylhd\_conservs\_to\_prims } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & grid::coordinates \\ 
+~& ~ &admbase::metric\\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &grmhd\_conservatives\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives(everywhere) \\ 
+~& ~ &failure\_checker(everywhere)\\ 
+~& ~ &u0(everywhere)\\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &hydrobase::rho(everywhere)\\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_outer\_boundaries}   (conditional) 
+
+\hspace{5mm} grhaylhd\_hybrid\_outer\_boundaries 
+
+\hspace{5mm}{\it hybrid version of grhaylhd\_outer\_boundaries } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Sync:  & grmhd\_velocities \\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::eps\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & u0(everywhere) \\ 
+~& ~ &grmhd\_conservatives(everywhere)\\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &hydrobase::rho(everywhere)\\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_evaluate\_sources\_rhs}   (conditional) 
+
+\hspace{5mm} grhaylhd\_hybrid\_evaluate\_sources\_rhs 
+
+\hspace{5mm}{\it hybrid version of grhaylhd\_evaluate\_sources\_rhs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &admbase::curv\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives\_rhs \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_Prim2Con2Prim}   (conditional) 
+
+\hspace{5mm} convert\_hydrobase\_to\_grhaylhd 
+
+\hspace{5mm}{\it convert hydrobase initial data to grhaylhd variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::lapse \\ 
+~& ~ &admbase::shift\\ 
+~& ~ &hydrobase::vel\\ 
+~ & Sync:  & grmhd\_velocities \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_velocities(everywhere) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_evaluate\_fluxes\_rhs}   (conditional) 
+
+\hspace{5mm} grhaylhd\_hybrid\_evaluate\_fluxes\_rhs 
+
+\hspace{5mm}{\it hybrid version of grhaylhd\_evaluate\_fluxes\_rhs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &grmhd\_velocities\\ 
+~& ~ &grmhd\_conservatives\_rhs(interior)\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_flux\_temps \\ 
+~& ~ &grmhd\_conservatives\_rhs\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_perturb\_primitives}   (conditional) 
+
+\hspace{5mm} grhaylhd\_hybrid\_perturb\_primitives 
+
+\hspace{5mm}{\it hybrid version of grhaylhd\_perturb\_primitives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & hydrobase::rho \\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::eps\\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & hydrobase::rho(everywhere) \\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_perturb\_conservatives}   (conditional) 
+
+\hspace{5mm} grhaylhd\_hybrid\_perturb\_conservatives 
+
+\hspace{5mm}{\it hybrid version of grhaylhd\_perturb\_conservatives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & grmhd\_conservatives \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives(everywhere) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_prims\_to\_conservs}   (conditional) 
+
+\hspace{5mm} grhaylhd\_tabulated\_entropy\_prims\_to\_conservs 
+
+\hspace{5mm}{\it entropy+tabulated version of grhaylhd\_prims\_to\_conservs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::eps\\ 
+~& ~ &hydrobase::entropy\\ 
+~& ~ &hydrobase::y\_e\\ 
+~& ~ &hydrobase::temperature\\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Sync:  & grmhd\_conservatives \\ 
+~& ~ &ent\_star\\ 
+~& ~ &ye\_star\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & u0(everywhere) \\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &grmhd\_conservatives(everywhere)\\ 
+~& ~ &ent\_star(everywhere)\\ 
+~& ~ &ye\_star(everywhere)\\ 
+~& ~ &hydrobase::rho(everywhere)\\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+~& ~ &hydrobase::entropy(everywhere)\\ 
+~& ~ &hydrobase::y\_e(everywhere)\\ 
+~& ~ &hydrobase::temperature(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_conservs\_to\_prims}   (conditional) 
+
+\hspace{5mm} grhaylhd\_tabulated\_entropy\_conservs\_to\_prims 
+
+\hspace{5mm}{\it entropy+tabulated version of grhaylhd\_conservs\_to\_prims } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & grid::coordinates \\ 
+~& ~ &admbase::metric\\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &grmhd\_conservatives\\ 
+~& ~ &ent\_star\\ 
+~& ~ &ye\_star\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives(everywhere) \\ 
+~& ~ &ent\_star(everywhere)\\ 
+~& ~ &ye\_star(everywhere)\\ 
+~& ~ &u0(everywhere)\\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &failure\_checker(everywhere)\\ 
+~& ~ &hydrobase::rho(everywhere)\\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+~& ~ &hydrobase::entropy(everywhere)\\ 
+~& ~ &hydrobase::y\_e(everywhere)\\ 
+~& ~ &hydrobase::temperature(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_outer\_boundaries}   (conditional) 
+
+\hspace{5mm} grhaylhd\_tabulated\_entropy\_outer\_boundaries 
+
+\hspace{5mm}{\it entropy+tabulated version of grhaylhd\_outer\_boundaries } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::entropy\\ 
+~& ~ &hydrobase::y\_e\\ 
+~& ~ &hydrobase::temperature\\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Sync:  & grmhd\_velocities \\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::eps\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::entropy\\ 
+~& ~ &hydrobase::y\_e\\ 
+~& ~ &hydrobase::temperature\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & u0(everywhere) \\ 
+~& ~ &grmhd\_conservatives(everywhere)\\ 
+~& ~ &ent\_star(everywhere)\\ 
+~& ~ &ye\_star(everywhere)\\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &hydrobase::rho(everywhere)\\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+~& ~ &hydrobase::entropy(everywhere)\\ 
+~& ~ &hydrobase::y\_e(everywhere)\\ 
+~& ~ &hydrobase::temperature(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_evaluate\_sources\_rhs}   (conditional) 
+
+\hspace{5mm} grhaylhd\_tabulated\_entropy\_evaluate\_sources\_rhs 
+
+\hspace{5mm}{\it entropy+tabulated version of grhaylhd\_evaluate\_sources\_rhs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &admbase::curv\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::entropy\\ 
+~& ~ &hydrobase::y\_e\\ 
+~& ~ &hydrobase::temperature\\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives\_rhs \\ 
+~& ~ &ent\_star\_rhs\\ 
+~& ~ &ye\_star\_rhs\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_evaluate\_fluxes\_rhs}   (conditional) 
+
+\hspace{5mm} grhaylhd\_tabulated\_entropy\_evaluate\_fluxes\_rhs 
+
+\hspace{5mm}{\it entropy+tabulated version of grhaylhd\_evaluate\_fluxes\_rhs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::entropy\\ 
+~& ~ &hydrobase::y\_e\\ 
+~& ~ &hydrobase::temperature\\ 
+~& ~ &grmhd\_velocities\\ 
+~& ~ &grmhd\_conservatives\_rhs(interior)\\ 
+~& ~ &ent\_star\_rhs(interior)\\ 
+~& ~ &ye\_star\_rhs(interior)\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_flux\_temps \\ 
+~& ~ &ent\_star\_flux\\ 
+~& ~ &ye\_star\_flux\\ 
+~& ~ &grmhd\_conservatives\_rhs\\ 
+~& ~ &ent\_star\_rhs\\ 
+~& ~ &ye\_star\_rhs\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_perturb\_primitives}   (conditional) 
+
+\hspace{5mm} grhaylhd\_tabulated\_entropy\_perturb\_primitives 
+
+\hspace{5mm}{\it entropy+tabulated version of grhaylhd\_perturb\_primitives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & hydrobase::rho \\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::eps\\ 
+~& ~ &hydrobase::entropy\\ 
+~& ~ &hydrobase::y\_e\\ 
+~& ~ &hydrobase::temperature\\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & hydrobase::rho(everywhere) \\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+~& ~ &hydrobase::entropy\\ 
+~& ~ &hydrobase::y\_e(everywhere)\\ 
+~& ~ &hydrobase::temperature(everywhere)\\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_perturb\_conservatives}   (conditional) 
+
+\hspace{5mm} grhaylhd\_tabulated\_entropy\_perturb\_conservatives 
+
+\hspace{5mm}{\it entropy+tabulated version of grhaylhd\_perturb\_conservatives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & grmhd\_conservatives \\ 
+~& ~ &ent\_star\\ 
+~& ~ &ye\_star\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives(everywhere) \\ 
+~& ~ &ent\_star(everywhere)\\ 
+~& ~ &ye\_star(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_Prim2Con2Prim}   (conditional) 
+
+\hspace{5mm} grhaylhd\_perturb\_primitives 
+
+\hspace{5mm}{\it perturb initial primitive data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & convert\_hydrobase\_to\_grhaylhd \\ 
+~ & Before:  & grhaylhd\_prims\_to\_conservs \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_prims\_to\_conservs}   (conditional) 
+
+\hspace{5mm} grhaylhd\_tabulated\_prims\_to\_conservs 
+
+\hspace{5mm}{\it tabulated version of grhaylhd\_prims\_to\_conservs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::eps\\ 
+~& ~ &hydrobase::y\_e\\ 
+~& ~ &hydrobase::temperature\\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Sync:  & grmhd\_conservatives \\ 
+~& ~ &ye\_star\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & u0(everywhere) \\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &grmhd\_conservatives(everywhere)\\ 
+~& ~ &ye\_star(everywhere)\\ 
+~& ~ &hydrobase::rho(everywhere)\\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+~& ~ &hydrobase::y\_e(everywhere)\\ 
+~& ~ &hydrobase::temperature(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_conservs\_to\_prims}   (conditional) 
+
+\hspace{5mm} grhaylhd\_tabulated\_conservs\_to\_prims 
+
+\hspace{5mm}{\it tabulated version of grhaylhd\_conservs\_to\_prims } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & grid::coordinates \\ 
+~& ~ &admbase::metric\\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &grmhd\_conservatives\\ 
+~& ~ &ye\_star\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives(everywhere) \\ 
+~& ~ &ye\_star(everywhere)\\ 
+~& ~ &u0(everywhere)\\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &failure\_checker(everywhere)\\ 
+~& ~ &hydrobase::rho(everywhere)\\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+~& ~ &hydrobase::y\_e(everywhere)\\ 
+~& ~ &hydrobase::temperature(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_outer\_boundaries}   (conditional) 
+
+\hspace{5mm} grhaylhd\_tabulated\_outer\_boundaries 
+
+\hspace{5mm}{\it tabulated version of grhaylhd\_outer\_boundaries } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::y\_e\\ 
+~& ~ &hydrobase::temperature\\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Sync:  & grmhd\_velocities \\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::eps\\ 
+~& ~ &hydrobase::y\_e\\ 
+~& ~ &hydrobase::temperature\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & u0(everywhere) \\ 
+~& ~ &grmhd\_conservatives(everywhere)\\ 
+~& ~ &ye\_star(everywhere)\\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &hydrobase::rho(everywhere)\\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+~& ~ &hydrobase::y\_e(everywhere)\\ 
+~& ~ &hydrobase::temperature(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_evaluate\_sources\_rhs}   (conditional) 
+
+\hspace{5mm} grhaylhd\_tabulated\_evaluate\_sources\_rhs 
+
+\hspace{5mm}{\it tabulated version of grhaylhd\_evaluate\_sources\_rhs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &admbase::curv\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::y\_e\\ 
+~& ~ &hydrobase::temperature\\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives\_rhs \\ 
+~& ~ &ye\_star\_rhs\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_evaluate\_fluxes\_rhs}   (conditional) 
+
+\hspace{5mm} grhaylhd\_tabulated\_evaluate\_fluxes\_rhs 
+
+\hspace{5mm}{\it tabulated version of grhaylhd\_evaluate\_fluxes\_rhs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::y\_e\\ 
+~& ~ &hydrobase::temperature\\ 
+~& ~ &grmhd\_velocities\\ 
+~& ~ &grmhd\_conservatives\_rhs(interior)\\ 
+~& ~ &ye\_star\_rhs(interior)\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_flux\_temps \\ 
+~& ~ &grmhd\_conservatives\_rhs\\ 
+~& ~ &ye\_star\_flux\\ 
+~& ~ &ye\_star\_rhs\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_perturb\_primitives}   (conditional) 
+
+\hspace{5mm} grhaylhd\_tabulated\_perturb\_primitives 
+
+\hspace{5mm}{\it tabulated version of grhaylhd\_perturb\_primitives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & hydrobase::rho \\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::eps\\ 
+~& ~ &hydrobase::y\_e\\ 
+~& ~ &hydrobase::temperature\\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_velocities(everywhere) \\ 
+~& ~ &hydrobase::rho(everywhere)\\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+~& ~ &hydrobase::y\_e(everywhere)\\ 
+~& ~ &hydrobase::temperature(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_perturb\_conservatives}   (conditional) 
+
+\hspace{5mm} grhaylhd\_tabulated\_perturb\_conservatives 
+
+\hspace{5mm}{\it tabulated version of grhaylhd\_perturb\_conservatives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & grmhd\_conservatives \\ 
+~& ~ &ye\_star\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives(everywhere) \\ 
+~& ~ &ye\_star(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_Prim2Con2Prim}   (conditional) 
+
+\hspace{5mm} grhaylhd\_prims\_to\_conservs 
+
+\hspace{5mm}{\it compute conservative variables from primitives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & convert\_hydrobase\_to\_grhaylhd \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_Prim2Con2Prim}   (conditional) 
+
+\hspace{5mm} grhaylhd\_conservs\_to\_prims 
+
+\hspace{5mm}{\it compute primitive variables from conservatives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & grhaylhd\_prims\_to\_conservs \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_Prim2Con2Prim}   (conditional) 
+
+\hspace{5mm} convert\_grhaylhd\_to\_hydrobase 
+
+\hspace{5mm}{\it convert grhaylhd-native variables to hydrobase } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & grhaylhd\_conservs\_to\_prims \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & hydrobase::vel(everywhere) \\ 
+~& ~ &hydrobase::w\_lorentz(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Con2Prim}   (conditional) 
+
+\hspace{5mm} grhaylhd\_con2prim 
+
+\hspace{5mm}{\it compute primitive variables from conservatives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHD\_Con2Prim}   (conditional) 
+
+\hspace{5mm} grhaylhd\_empty\_function 
+
+\hspace{5mm}{\it sync conservative variable ghost zones for c2p routine } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Sync:  & grmhd\_conservatives \\ 
+~& ~ &ye\_star\\ 
+~& ~ &ent\_star\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\subsection*{Aliased Functions}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Alias Name:} ~~~~~~~ & {\bf Function Name:} \\ 
+GRHayLHD\_empty\_function & GRHayLHD\_sync\_conservatives \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}
