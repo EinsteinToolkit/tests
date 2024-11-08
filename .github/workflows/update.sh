@@ -14,7 +14,7 @@ git add --all
 # with an error message
 for m in $(git diff --cached --name-only) ; do  (
   cd $m
-  if git-rev-parse --is-shallow-repository ; then
+  if git rev-parse --is-shallow-repository ; then
     git fetch --unshallow
   fi
 ) done
