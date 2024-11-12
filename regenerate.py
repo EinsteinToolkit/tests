@@ -52,9 +52,10 @@ else:
     last = None
 
 def main():
-    for i in range(get_version()-1, -1, -1):
+    print("Number of versions", get_version(gh_pages))
+    for i in range(get_version(gh_pages)-1, -1, -1):
         # Ascending order from build 1 to the latest
-        count = get_version()-i
+        count = get_version(gh_pages)-i
         # Sets the curr_version, curr and last record files
         set_curr_version(count)
         write_to_csv(curr)
@@ -83,8 +84,8 @@ def gen_commits():
     '''
 
     # TODO: turn into convenience function
-    curr_commit_id = Oid(hex=get_commit_id(curr_ver))
-    last_commit_id = Oid(hex=get_commit_id(curr_ver-1))
+    curr_commit_id = Oid(hex=get_commit_id(curr_ver, gh_pages))
+    last_commit_id = Oid(hex=get_commit_id(curr_ver-1, gh_pages))
     commits = []
     for commit in repo.walk(curr_commit_id, GIT_SORT_TOPOLOGICAL):
         if(commit.id == last_commit_id):
@@ -127,6 +128,7 @@ def gen_diffs(readfile):
 
     for result in test_comparison.keys():
         # For each test make a header with the description of why that test is being shown(failed, newly added, newly failing)
+        style=result.replace(" ", "-")
         output+=f'''<tr><th colspan="5">'''+result+"</th></tr>\n"
 
         # If no such test exists add empty row
@@ -151,14 +153,15 @@ def gen_diffs(readfile):
             diffl2=f"{baseurl}/tree/gh-pages/records/version_{ver}/sim_{ver}_2/{thorn}/{test_name}.diffs"
 
             # Check if these files are available if not display not avaible on the table 
+            output+=f" <tr class='{style}'>"
             if(os.path.isfile("./"+logl1[logl1.find("records"):])):
-                output+=f"  <tr><td>{test}</td><td><a href='{logl1}' target='_blank'>log</a></td>"
+                output+=f"<td>{test}</td><td><a href='{logl1}' target='_blank'>log</a></td>"
             else:
-                output+=f" <tr><td>{test}</td><td>Not Available</td>"
+                output+=f"<td>{test}</td><td>Not Available</td>"
             if(os.path.isfile("./"+logl2[logl2.find("records"):])):
-                output+=f"  <td><a href='{logl2}' target='_blank'>log</a></td>"
+                output+=f"<td><a href='{logl2}' target='_blank'>log</a></td>"
             else:
-                output+=f" <td>Not Available</td>"
+                output+=f"<td>Not Available</td>"
             if(os.path.isfile("./"+diffl1[diffl1.find("records"):])):
                 output+=f"<td><a href='{diffl1}' target='_blank'>diff</a></td>"
             else:
@@ -173,10 +176,11 @@ def gen_diffs(readfile):
                 first_failure =  get_first_failure(test)
                 # No report found with first failure
                 if (first_failure) == -1:
-                    output+=f"<td>Not Available</td>\n"  
+                    output+=f"<td>Not Available</td>"
                 else :
                     first_failure_link=f'build_{first_failure}.html'
-                    output+=f"<td><a href='{first_failure_link}' target='_blank'>report</a></td></tr>\n"
+                    output+=f"<td><a href='{first_failure_link}' target='_blank'>report</a></td>"
+            output+="</tr>\n"
     
     output+="</table>"
     return output
@@ -381,7 +385,7 @@ def create_sidebar():
     '''
 
     # For every version, create link and symbol in sidebar
-    for i in range(get_version(), 0, -1):
+    for i in range(get_version(gh_pages), 0, -1):
         # The build file will be displayed in new tab
         template +='<a href="build_' + str(i) + '.html" target="results_iframe"> Build #' + str(i) + '</a>'
         # Check whether the build passed or not by calling parser
@@ -427,6 +431,15 @@ def create_test_results(readfile):
                     <title>Results of Tests</title>
                     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
                     <style>
+                    tr.Failed-Tests {{
+                        background: orange;
+                    }}
+                    tr.Newly-Passing-Tests {{
+                        background: green;
+                    }}
+                    tr.Newly-Failing-Tests {{
+                        background: red;
+                    }}
                     .bk-root .bk {{
                         margin: 0 auto !important;
                     }}
@@ -477,7 +490,7 @@ def create_test_results(readfile):
                 '''
         
     # Writes test results to new build_x.html file to be displayed in iframe
-    results_file = copy_build(curr_ver, template)
+    results_file = copy_build(curr_ver, template, gh_pages)
     return results_file
 
 
@@ -560,7 +573,7 @@ def summary_to_html(readfile,writefile):
         </body>
     </html>
         '''
-        shutil.copy("version.js", f"{gh_pages}/docs")
+        shutil.copy("badge.js", f"{gh_pages}/docs")
         fp.write(template)
 
 def write_to_csv(readfile):

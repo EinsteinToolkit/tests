@@ -94,6 +94,7 @@ def gen_diffs(readfile):
     # For each test get the thorn name and the current version
     for result in test_comparison.keys():
     # For each test make a header with the description of why that test is being shown(failed, newly added, newly failing)
+        style=result.replace(" ", "-")
         output+=f'''<tr><th colspan="5">'''+result+"</th></tr>\n"
 
         # If no such test exists add empty row
@@ -118,14 +119,15 @@ def gen_diffs(readfile):
             diffl2=f"{baseurl}/blob/gh-pages/records/version_{ver}/sim_{ver}_2/{thorn}/{test_name}.diffs"
 
             # Check if these files are available if not display not avaible on the table 
+            output+=f" <tr class='{style}'>"
             if(os.path.isfile(gh_pages + "/"+logl1[logl1.find("records"):])):
-                output+=f"  <tr><td>{test}</td><td><a href='{logl1}' target='_blank'>log</a></td>"
+                output+=f"<td>{test}</td><td><a href='{logl1}' target='_blank'>log</a></td>"
             else:
-                output+=f" <tr><td>{test}</td><td>Not Available</td>"
+                output+=f"<td>{test}</td><td>Not Available</td>"
             if(os.path.isfile(gh_pages + "/"+logl2[logl2.find("records"):])):
-                output+=f"  <td><a href='{logl2}' target='_blank'>log</a></td>"
+                output+=f"<td><a href='{logl2}' target='_blank'>log</a></td>"
             else:
-                output+=f" <td>Not Available</td>"
+                output+=f"<td>Not Available</td>"
             if(os.path.isfile(gh_pages + "/"+diffl1[diffl1.find("records"):])):
                 output+=f"<td><a href='{diffl1}' target='_blank'>diff</a></td>"
             else:
@@ -140,12 +142,13 @@ def gen_diffs(readfile):
                 first_failure =  get_first_failure(test)
                 # No report found with first failure
                 if (first_failure) == -1:
-                    output+=f"<td>Not Available</td></tr>\n"  
+                    output+=f"<td>Not Available</td>"
                 else :
                     first_failure_link=f'build_{first_failure}.html'
-                    output+=f"<td><a href='{first_failure_link}' target='_blank'>report</a></td></tr>\n"
+                    output+=f"<td><a href='{first_failure_link}' target='_blank'>report</a></td>"
             else:
-                output+= f"<td></td></tr>"
+                output+= f"<td></td>"
+            output+="</tr>\n"
     
     output+="</table>"
     return output
@@ -394,6 +397,15 @@ def create_test_results(readfile):
                     <title>Results of Tests</title>
                     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
                     <style>
+                    tr.Failed-Tests {{
+                        background: orange;
+                    }}
+                    tr.Newly-Passing-Tests {{
+                        background: green;
+                    }}
+                    tr.Newly-Failing-Tests {{
+                        background: red;
+                    }}
                     .bk-root .bk {{
                         margin: 0 auto !important;
                     }}
