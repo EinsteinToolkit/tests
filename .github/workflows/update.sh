@@ -14,7 +14,7 @@ git add --all
 # with an error message
 for m in $(git diff --cached --name-only) ; do  (
   cd $m
-  if git rev-parse --is-shallow-repository ; then
+  if `git rev-parse --is-shallow-repository` ; then
     git fetch --unshallow
   fi
 ) done
@@ -22,11 +22,17 @@ for m in $(git diff --cached --name-only) ; do  (
 if ! git diff --cached --exit-code --quiet ; then
   git config user.email "maintainters@einsteintoolkit.org"
   git config user.name "GitHub updater"
-  git commit -q -F - <<EOF
-updated submodules
-
-$(git diff --cached --submodule=log)
-EOF
+  (
+  echo "updated submodules"
+  for m in $(git diff --cached --name-only) ; do (
+    AB=($(git diff --cached $m | gawk '/Subproject commit/{print $3}'))
+    A=${AB[0]}
+    B=${AB[1]}
+    echo ""
+    echo "Submodule $m $A..$B":
+    cd $m
+    git log --pretty='format:> %s' $A..$B
+  ) done) | git commit -q -F -
 
   git push
 fi
