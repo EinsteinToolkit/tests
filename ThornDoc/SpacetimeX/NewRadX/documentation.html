@@ -1,0 +1,433 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>NewRadX</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">NewRadX</h2>
+ <div class="author" ><span 
+class="cmr-12">Cheng-Hsin Cheng, Jake Doherty, Michail Chabanov, Alexandru Dima </span></div>
+<br />
+<div class="date" ><span 
+class="cmr-12">April 17 2024</span></div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 106--><p class="noindent" ><span 
+class="cmr-9">This thorn implements radiative boundary conditions for</span> <span 
+class="cmtt-9">CarpetX</span><span 
+class="cmr-9">. The original implementation was</span>
+     <span 
+class="cmr-9">introduced in the</span> <span 
+class="cmtt-9">Carpet</span><span 
+class="cmr-9">-based</span> <span 
+class="cmtt-9">NewRad</span> <span 
+class="cmr-9">thorn in the</span> <span 
+class="cmtt-9">EinsteinEvolve</span><span 
+class="cmr-9"> </span><span class="cite"><span 
+class="cmr-9">[</span><a 
+href="#XSpacetimeX_NewRadX_EinsteinEvolve"><span 
+class="cmr-9">1</span></a><span 
+class="cmr-9">]</span></span> <span 
+class="cmr-9">arrangement.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Introduction</h3>
+<!--l. 116--><p class="noindent" >This thorn provides routines to implement radiative boundary conditions as described in section VI of <span class="cite">[<a 
+href="#XSpacetimeX_NewRadX_Alcubierre:2002kk">2</a>]</span>: \begin {equation}  f = f_0 + u(r - v t)/r\mbox {,} \label {eqn:SpacetimeX_NewRadX_bc}  \end {equation}<a 
+ id="x1-1001r1"></a> in its
+differential form \begin {equation}  \partial _t f + v \partial _r f - v\,(f - f_0) = 0\mbox {,} \label {eqn:SpacetimeX_NewRadX_diff_bc}  \end {equation}<a 
+ id="x1-1002r2"></a> where \(v\) is the asymptotic propagation speed of the field \(f\) and \(f_0\) is its asymptotic
+value.
+</p><!--l. 130--><p class="noindent" >
+</p>
+                                                                                       
+                                                                                       
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a>Physical System</h3>
+<!--l. 132--><p class="noindent" >Quoting <span class="cite">[<a 
+href="#XSpacetimeX_NewRadX_Alcubierre:2002kk">2</a>]</span>:
+</p><!--l. 134--><p class="noindent" >At the outer boundary we use a radiation (Sommerfeld) boundary condition. We start from the
+assumption that near the boundary all fields behave as spherical waves, namely we impose the
+condition \begin {equation}  f = f_0 + u(r-vt)/r . \label {eq:radiation}  \end {equation}<a 
+ id="x1-2001r3"></a> Where \(f_0\) is the asymptotic value of a given dynamical variable (typically 1 for the lapse
+and diagonal metric components, and zero for everything else), and \(v\) is some wave speed. If our
+boundary is sufficiently far away one can safely assume that the speed of light is 1, so \(v=1\) for most fields.
+However, the gauge variables can easily propagate with a different speed implying a different value of
+\(v\).
+</p><!--l. 149--><p class="noindent" >In practice, we do not use the boundary condition (<a 
+href="#x1-2001r3">3<!--tex4ht:ref: eq:radiation --></a>) as it stands, but rather we use it in differential form: \begin {equation}  \partial _t f + v \partial _r f - v \, (f - f_0)/r = 0 .  \end {equation}<a 
+ id="x1-2002r4"></a>
+Since our code is written in Cartesian coordinates, we transform the last condition to \begin {equation}  \frac {x_i}{r} \, \partial _t f + v \partial _i f + \frac {v x_i}{r^2} \, \left ( f - f_0 \right ) = 0 .  \end {equation}<a 
+ id="x1-2003r5"></a> We finite difference this
+condition consistently to second order in both space and time and apply it to all dynamic variables (with
+possible different values of \(f_0\) and \(v\)) at all boundaries.
+</p><!--l. 164--><p class="noindent" >There is a final subtlety in our boundary treatment. Wave propagation is not the only reason why fields evolve
+near a boundary. Simple infall of the coordinate observers will cause some small evolution as well, and such
+evolution is poorly modeled by a propagating wave. This is particularly important at early times, when the
+radiative boundary condition introduces a bad transient effect. In order to minimize the error at
+our boundaries introduced by such non-wavelike evolution, we allow for boundary behavior of the
+form: \begin {equation}  f = f_0 + u(r-vt)/r + h(t)/r^n , \label {eq:radpower}  \end {equation}<a 
+ id="x1-2004r6"></a> with \(h\) a function of \(t\) alone and \(n\) some unknown power. This leads to the differential equation
+</p><div class="eqnarray">\begin {eqnarray}  \partial _t f + v \partial _r f - \frac {v}{r} \, (f - f_0) &amp;=&amp; \frac {v h(t)}{r^{n+1}} \left ( 1 - n v \right ) + \frac {h'(t)}{r^n} \nonumber \\ &amp;\simeq &amp; \frac {h'(t)}{r^n} \qquad \mathrm {for\ large\ } r ,  \end {eqnarray}</div>
+<!--l. 185--><p class="noindent" >or in Cartesian coordinates \begin {equation}  \frac {x_i}{r} \, \partial _t f + v \partial _i f + \frac {v x_i}{r^2} \, \left ( f - f_0 \right ) \simeq \frac {x_i h'(t)}{r^{n+1}} . \label {eqn:SpacetimeX_NewRadX_num_bc}  \end {equation}<a 
+ id="x1-2005r7"></a>
+</p><!--l. 192--><p class="noindent" >This expression still contains the unknown function \(h'(t)\). Having chosen a value of \(n\), one can evaluate the above
+expression one point away from the boundary to solve for \(h'(t)\), and then use this value at the boundary itself.
+Empirically, we have found that taking \(n=3\) almost completely eliminates the bad transient caused by the radiative
+boundary condition on its own.
+</p><!--l. 199--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-30003"></a>Numerical Implementation</h3>
+<!--l. 200--><p class="noindent" >The thorn implements the boundary condition  (<a 
+href="#x1-2005r7">7<!--tex4ht:ref: eqn:SpacetimeX_NewRadX_num_bc --></a>) for the evolution. The original <span 
+class="cmtt-10">Carpet</span>-based version of
+<span 
+class="cmtt-10">NewRad</span> provides an additional routine <span 
+class="cmtt-10">ExtrapolateGammas</span>, which can be used to extrapolate a grid function
+from the interior to the outer boundaries at \(t=0\). Originally, this was used in the BSSN evolution thorn <span 
+class="cmtt-10">ML</span><span 
+class="cmtt-10">_BSSN</span> on
+the contracted Christoffel symbols \(g^{jk} \Gamma ^i_{jk}\) (<span 
+class="cmtt-10">Xt1</span>…<span 
+class="cmtt-10">Xt3</span> in the code). This extrapolation routine is not yet ported over to
+the current version of <span 
+class="cmtt-10">NewRadX</span>.
+</p><!--l. 224--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">3.1   </span> <a 
+ id="x1-40003.1"></a>Radiative boundary condition</h4>
+                                                                                       
+                                                                                       
+<!--l. 225--><p class="noindent" >The derivatives \(\partial _i f\) appearing in (<a 
+href="#x1-2005r7">7<!--tex4ht:ref: eqn:SpacetimeX_NewRadX_num_bc --></a>) are approximated as 2<sup class="textsuperscript"><span 
+class="cmr-9">nd</span></sup> order accurate finite difference expressions using
+centred expressions \begin {equation}  f'(x) \approx \frac {f(x-\Delta x) - f(x+\Delta x)}{2\Delta x}  \end {equation}<a 
+ id="x1-4001r8"></a> and one sided expressions \begin {equation}  f'(x) \approx \pm \frac {3 f(x) - 4 f(x\mp \Delta x) + f(x\mp 2\Delta x)}{2\Delta x}\mbox {,}  \end {equation}<a 
+ id="x1-4002r9"></a> for boundaries around the \(\pm \) coordinate direction.
+</p><!--l. 241--><p class="noindent" >Finally we try to extrapolate for the part of the boundary that does not behave as a pure wave (i.e. Coulomb
+type terms caused by infall of the coordinate lines).
+</p><!--l. 245--><p class="noindent" >This we do by comparing the source term <span 
+class="cmtt-10">nghostzones</span> grid points away from the boundary (which we already
+have), to what we would have obtained if we had used the boundary condition there. The difference gives
+us an idea of the missing part and we extrapolate that to the boundary assuming a power-law
+decay.
+</p><!--l. 252--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-50004"></a>Using This Thorn</h3>
+<!--l. 253--><p class="noindent" >The thorn provides the routine <span 
+class="cmtt-10">NewRadX</span><span 
+class="cmtt-10">_Apply</span>, which should be scheduled in the <span 
+class="cmtt-10">ODESolvers</span><span 
+class="cmtt-10">_RHS</span> bin to apply
+radiative boundary conditions on evolved variables. To use it in an evolution thorn, it can either be
+called inside the RHS evaluation routine, or scheduled in a separate function right after the RHS
+routine.
+</p><!--l. 259--><p class="noindent" >The call signature is:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-1">
+void NewRadX_Apply                               \
+        (const cGH *restrict const cctkGH,       \
+         const Loop::GF3D2&#x003C;const CCTK_REAL&#x003E; var, \
+         Loop::GF3D2&#x003C;CCTK_REAL&#x003E; rhs,             \
+         CCTK_REAL var0,                         \
+         CCTK_REAL v0,                           \
+         CCTK_REAL radpower)
+</pre>
+<!--l. 268--><p class="nopar" > where <span 
+class="cmtt-10">var0</span> corresponds to \(f_0\), <span 
+class="cmtt-10">v0</span> is \(v\) and <span 
+class="cmtt-10">radpower</span> is the assumed decay exponent \(n\).
+</p><!--l. 272--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">4.1   </span> <a 
+ id="x1-60004.1"></a>Obtaining This Thorn</h4>
+<!--l. 273--><p class="noindent" >The thorn is part of the <span 
+class="cmtt-10">SpacetimeX</span> arrangement available on GitHub.
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-2">
+git clone git@github.com:lwJi/SpacetimeX.git
+</pre>
+<!--l. 277--><p class="nopar" >
+</p><!--l. 279--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">4.2   </span> <a 
+ id="x1-70004.2"></a>Basic Usage</h4>
+<!--l. 280--><p class="noindent" >For an overview of the implementation and usage of this thorn, please see <span class="cite">[<a 
+href="#XSpacetimeX_NewRadX_intro_presentation">3</a>]</span> for a presentation by Alexandru
+Dima and Cheng-Hsin Cheng during the weekly <span 
+class="cmtt-10">CarpetX</span> developer meetings.
+</p><!--l. 286--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">4.3   </span> <a 
+ id="x1-80004.3"></a>Special Behaviour</h4>
+<!--l. 287--><p class="noindent" >In contrast with the <span 
+class="cmtt-10">Carpet</span>-version of <span 
+class="cmtt-10">NewRad</span>, which updates the RHS variables on the physical outer boundary
+of the simulation domain, <span 
+class="cmtt-10">NewRadX</span> updates them on the so-called “outermost interior points”. These points are
+defined as the interior points which are located <span 
+class="cmtt-10">nghostzones</span> or fewer grid points from the outer boundary.
+Therefore, the boundary conditions are effectively applied on a set of points that are labelled as “interior” in
+<span 
+class="cmtt-10">CarpetX</span>. It is necessary to introduce this change because imposing a wave-like time evolution on
+the <span 
+class="cmtt-10">CarpetX</span> “proper” boundary points is incompatible with the synchronization conducted by
+AMReX.
+</p><!--l. 299--><p class="noindent" >Currently, this thorn only supports single-patch, Cartesian grids provided by <span 
+class="cmtt-10">CarpetX</span>, but not multi-patch
+coordinate systems.
+</p><!--l. 303--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">4.4   </span> <a 
+ id="x1-90004.4"></a>Interaction With Other Thorns</h4>
+<!--l. 304--><p class="noindent" >This thorn requires thorn <span 
+class="cmtt-10">Loop</span> which is part of <span 
+class="cmtt-10">CarpetX</span>.
+                                                                                       
+                                                                                       
+</p><!--l. 307--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">4.5   </span> <a 
+ id="x1-100004.5"></a>Examples</h4>
+<!--l. 308--><p class="noindent" >The simplest example is likely to inspect the source code for <span 
+class="cmtt-10">TestNewRadX</span>, which is a thorn from
+<span 
+class="cmtt-10">SpacetimeX</span> that tests the boundary condition on the evolution of a scalar pulse on flat background.
+Here the boundary conditions are applied in the RHS calculation routine <span 
+class="cmtt-10">TestNewRadX</span><span 
+class="cmtt-10">_RHS</span>, where
+<span 
+class="cmtt-10">NewRadX</span><span 
+class="cmtt-10">_Apply</span> is called after the main loop that updates the RHS of the state variables in the
+interior.
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-3">
+&#x003C;configuration.ccl&#x003E;
+REQUIRES Loop NewRadX
+</pre>
+<!--l. 318--><p class="nopar" >
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-4">
+&#x003C;interface.ccl&#x003E;
+USES INCLUDE HEADER: newradx.hxx
+</pre>
+<!--l. 323--><p class="nopar" >
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-5">
+&#x003C;schedule.ccl&#x003E;
+SCHEDULE TestNewRadX_RHS IN ODESolvers_RHS
+{
+  LANG: C
+  READS: state(everywhere)
+  WRITES: rhs(interior)
+  SYNC: rhs
+} &#x0022;Calculate scalar wave RHS&#x0022;
+</pre>
+<!--l. 334--><p class="nopar" >
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-6">
+&#x003C;test_newradx.cxx&#x003E;
+#include &#x003C;newradx.hxx&#x003E;
+
+extern &#x0022;C&#x0022; void TestNewRadX_RHS(CCTK_ARGUMENTS) {
+  DECLARE_CCTK_ARGUMENTSX_TestNewRadX_RHS;
+  DECLARE_CCTK_PARAMETERS;
+
+  /* First loop over the interior to update RHS of the state variables */
+  grid.loop_int_device&#x003C;0, 0, 0&#x003E;(grid.nghostzones,
+                                [=] CCTK_DEVICE(const Loop::PointDesc &#x0026;p)
+                                    CCTK_ATTRIBUTE_ALWAYS_INLINE {
+                                      uu_rhs(p.I) = vv(p.I);
+                                      vv_rhs(p.I) = Laplacian_4thorder(uu, p);
+                                    });
+
+  /* After RHS grid functions are updated, apply boundary conditions */
+  if (test_use_newradx) {
+    NewRadX::NewRadX_Apply(cctkGH, uu, uu_rhs, 0, 1, n_falloff);
+    NewRadX::NewRadX_Apply(cctkGH, vv, vv_rhs, 0, 1, n_falloff + 1);
+  }
+
+}
+</pre>
+<!--l. 359--><p class="nopar" >
+</p><!--l. 362--><p class="noindent" >Other examples of <span 
+class="cmtt-10">CarpetX</span> evolution thorns that use <span 
+class="cmtt-10">NewRadX</span> include <span 
+class="cmtt-10">CanudaX</span><span 
+class="cmtt-10">_BSSNMoL</span><span class="cite">[<a 
+href="#XSpacetimeX_NewRadX_CanudaX_BSSNMoL">4</a>]</span> and
+<span 
+class="cmtt-10">Z4c</span><span class="cite">[<a 
+href="#XSpacetimeX_NewRadX_Z4c">5</a>]</span>.
+</p><!--l. 367--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">4.6   </span> <a 
+ id="x1-110004.6"></a>Support and Feedback</h4>
+<!--l. 368--><p class="noindent" >Please use the Einstein Toolkit mailing list <a 
+href="users@einsteintoolkit.org" class="url" ><span 
+class="cmtt-10">users@einsteintoolkit.org</span></a> to report issues and ask for
+help.
+</p><!--l. 371--><p class="noindent" >
+</p>
+                                                                                       
+                                                                                       
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-120005"></a>History</h3>
+<!--l. 373--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">5.1   </span> <a 
+ id="x1-130005.1"></a>Thorn Source Code</h4>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 375--><p class="noindent" >Initial version of method likely by Miguel Alcubierre;
+     </p></li>
+     <li class="itemize">
+     <!--l. 376--><p class="noindent" ><span 
+class="cmtt-10">Carpet</span> version of code by Erik Schnetter;
+     </p></li>
+     <li class="itemize">
+     <!--l. 377--><p class="noindent" ><span 
+class="cmtt-10">CarpetX</span> version of code by Cheng-Hsin Cheng, Jake Doherty, Michail Chabanov, Alexandru Dima.</p></li></ul>
+<!--l. 381--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">5.2   </span> <a 
+ id="x1-140005.2"></a>Thorn Documentation</h4>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 383--><p class="noindent" >Initial version by Roland Haas using text by Miguel, Erik.
+     </p></li>
+     <li class="itemize">
+     <!--l. 384--><p class="noindent" >Current version by Alexandru Dima and Cheng-Hsin Cheng.</p></li></ul>
+<!--l. 387--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">5.3   </span> <a 
+ id="x1-150005.3"></a>Acknowledgements</h4>
+                                                                                       
+                                                                                       
+<!--l. 388--><p class="noindent" >This documentation is based on the original one for the <span 
+class="cmtt-10">Carpet</span> version of <span 
+class="cmtt-10">NewRad</span>, which copies text from
+comments in the source code as well as the paper <span class="cite">[<a 
+href="#XSpacetimeX_NewRadX_Alcubierre:2002kk">2</a>]</span>.
+</p><!--l. 392--><p class="noindent" >
+</p>
+<h3 class="likesectionHead"><a 
+ id="x1-16000"></a>References</h3>
+<!--l. 392--><p class="noindent" >
+   </p><div class="thebibliography">
+   <p class="bibitem" ><span class="biblabel">
+ [1]<span class="bibsp">   </span></span><a 
+ id="XSpacetimeX_NewRadX_EinsteinEvolve"></a>“EinsteinEvolve“, <a 
+href="https://bitbucket.org/einsteintoolkit/einsteinevolve" class="url" ><span 
+class="cmtt-10">https://bitbucket.org/einsteintoolkit/einsteinevolve</span></a>.
+   </p>
+   <p class="bibitem" ><span class="biblabel">
+ [2]<span class="bibsp">   </span></span><a 
+ id="XSpacetimeX_NewRadX_Alcubierre:2002kk"></a>M. Alcubierre, B. Bruegmann, P. Diener, M. Koppitz, D. Pollney, E. Seidel and R. Takahashi,
+   “Gauge conditions for long term numerical black hole evolutions without excision,” Phys. Rev. D
+   <span 
+class="cmbx-10">67</span>, 084023 (2003) doi:10.1103/PhysRevD.67.084023 [gr-qc/0206072].
+   </p>
+   <p class="bibitem" ><span class="biblabel">
+ [3]<span class="bibsp">   </span></span><a 
+ id="XSpacetimeX_NewRadX_intro_presentation"></a>“NewRadX Intro“, <a 
+href="https://github.com/eschnett/CarpetX/wiki/NewRadX-Intro" class="url" ><span 
+class="cmtt-10">https://github.com/eschnett/CarpetX/wiki/NewRadX-Intro</span></a>.
+   </p>
+   <p class="bibitem" ><span class="biblabel">
+ [4]<span class="bibsp">   </span></span><a 
+ id="XSpacetimeX_NewRadX_CanudaX_BSSNMoL"></a>“CanudaX_Lean“, <a 
+href="https://bitbucket.org/canuda/canudax_lean" class="url" ><span 
+class="cmtt-10">https://bitbucket.org/canuda/canudax_lean</span></a>.
+   </p>
+   <p class="bibitem" ><span class="biblabel">
+ [5]<span class="bibsp">   </span></span><a 
+ id="XSpacetimeX_NewRadX_Z4c"></a>“Z4c”, <a 
+href="https://github.com/lwJi/SpacetimeX/tree/main/Z4c" class="url" ><span 
+class="cmtt-10">https://github.com/lwJi/SpacetimeX/tree/main/Z4c</span></a>.
+</p>
+   </div>
+<!--l. 420--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">6   </span> <a 
+ id="x1-170006"></a>Parameters</h3>
+                                                                                       
+                                                                                       
+<!--l. 426--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">7   </span> <a 
+ id="x1-180007"></a>Interfaces</h3>
+<!--l. 431--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-19000"></a>General</h4>
+<!--l. 433--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 435--><p class="noindent" >newradx
+</p><!--l. 440--><p class="noindent" ><span 
+class="cmbx-10">Adds header</span>:
+</p><!--l. 444--><p class="noindent" >newradx.hxx
+</p><!--l. 447--><p class="noindent" ><span 
+class="cmbx-10">Uses header</span>:
+</p><!--l. 449--><p class="noindent" >loop_device.hxx
+</p><!--l. 452--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">8   </span> <a 
+ id="x1-200008"></a>Schedule</h3>
+<!--l. 458--><p class="noindent" >This section lists all the variables which are assigned storage by thorn SpacetimeX/NewRadX. Storage can
+either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 461--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-21000"></a>Storage</h4>
+<!--l. 461--><p class="noindent" >NONE
+</p>
+ 
+</body></html> 
+
+                                                                                       
+
+
