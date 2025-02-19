@@ -1,0 +1,1135 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>TOVola</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">TOVola</h2>
+ <div class="author" ><span 
+class="cmr-12">David Boyer </span><span 
+class="cmmi-12">&#x003C;</span><span 
+class="cmr-12">dboyer@uidaho.edu </span><span 
+class="cmmi-12">&#x003E;</span></div>
+<br />
+<div class="date" ><span 
+class="cmr-12">October 10, 2024</span></div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 106--><p class="noindent" ><span 
+class="cmtt-9">TOVola </span><span 
+class="cmr-9">is  a  thorn  for  the  Einstien  Toolkit  that  solves  the  Tolman-Oppenheimer-Volkov  (TOV)</span>
+     <span 
+class="cmr-9">equations for spherically symmetric static stars using an adaptive ODE method (RK45 or DP78)</span>
+     <span 
+class="cmr-9">using GSL’s ODE solver. This TOV solver is compatible with three types of Equations of State (EOS):</span>
+     <span 
+class="cmr-9">Simple Polytrope, Piecewise Polytrope, and Tabulated EOS. Examples of using each EOS is included</span>
+     <span 
+class="cmr-9">in the </span><span 
+class="cmtt-9">par </span><span 
+class="cmr-9">directory. Raw data is solved for, normalized, and set onto the ET grid, and constraint</span>
+     <span 
+class="cmr-9">tested via the </span><span 
+class="cmtt-9">Baikal </span><span 
+class="cmr-9">thorn.</span><span class="cite"><span 
+class="cmr-9">[</span><a 
+href="#XTOVola_TOVola_Baikal"><span 
+class="cmr-9">1</span></a><span 
+class="cmr-9">]</span></span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Introduction</h3>
+<!--l. 114--><p class="noindent" ><span 
+class="cmtt-10">TOVola </span>is a thorn developed to handle the TOV equations using multiple different types of EOS and use
+adaptive methods to solve the system of ODEs. It is specifically developed to solve the TOV equations and
+adjust and interpolate the TOV data to the ET grid.
+</p><!--l. 116--><p class="noindent" ><span 
+class="cmtt-10">TOVola </span>features multiple EOS compatibility, for Simple and Piecewise Polytropes, as well as Tabulated EOS.
+EOS parameters are stored by the <span 
+class="cmtt-10">GRHayL </span>library, <span 
+class="cmtt-10">GRHayLib </span><span class="cite">[<a 
+href="#XTOVola_TOVola_GRHayL">2</a>]</span>, so make sure you specify for it either your
+                                                                                       
+                                                                                       
+polytropic parameters or your specific table path in your parfile.
+</p><!--l. 118--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a>TOV Equations and Equations of State</h3>
+<!--l. 120--><p class="noindent" >Note that this section will not be a derivation of the equations. If more information is desired, see the original
+TOV papers <span class="cite">[<a 
+href="#XTOVola_TOVola_Tolman">3</a>, <a 
+href="#XTOVola_TOVola_OppVol">4</a>]</span>.
+</p><!--l. 122--><p class="noindent" >The TOV equations are the equations of hydrostatic equilibrium for relativistic stars that are spherically
+symmetric and static. They are as follows:
+</p>
+<div class="eqnarray">\begin {eqnarray}  \frac {dP}{dr} &amp; = &amp; -(\rho _e+P)\frac {(\frac {2m}{r}+8\pi r^2P)}{2r(1-\frac {2m}{r})} \\ \frac {d\nu }{dr} &amp; = &amp; \frac {(\frac {2m}{r}+8\pi r^2P)}{r(1-\frac {2m}{r})} \\ \frac {dm}{dr} &amp; = &amp; 4\pi r^2 \rho _e \\ \frac {d\bar {r}}{dr} &amp; = &amp; \frac {\bar {r}}{r\sqrt {1-\frac {2m}{r}}}  \end {eqnarray}</div>
+<!--l. 131--><p class="noindent" >where we adopt geometerized units (G=c=1). We followed the form used in <span 
+class="cmtt-10">nrpytutorial</span>.<span class="cite">[<a 
+href="#XTOVola_TOVola_NRpy">5</a>]</span>
+</p><!--l. 133--><p class="noindent" >I will note that I will be differentiating between total energy density and baryon matter density as \(\rho _e\) and \(\rho _b\),
+respectively. \(P\) is the system’s pressure, \(m\) is mass, \(r\) is Schwarzchild radius, \(\nu \) is an associated metric function tied to
+the lapse, and \(\bar {r}\) is the isotropic radius.
+</p><!--l. 135--><p class="noindent" >One must also declare an EOS the relates \(P\) and \(\rho _b\): </p><div class="eqnarray">\begin {eqnarray}  P &amp; = &amp; P(\rho _b)  \end {eqnarray}</div>
+<!--l. 139--><p class="noindent" ><span 
+class="cmtt-10">TOVola </span>has compatibility with three different types of EOS: Simple Polytrope, Piecewise Polytrope, and
+Tabulated EOS:
+</p>
+<div class="eqnarray">\begin {eqnarray}  P &amp; = &amp; K\rho _b^{\Gamma } \\ P &amp; = &amp; K_i\rho _b^{\Gamma _i} \\ P &amp; = &amp; P_{table}(\rho _b)  \end {eqnarray}</div>
+<!--l. 147--><p class="noindent" >Furthermore, \(\rho _e\) and \(\rho _b\) are related by the following equation: </p><div class="eqnarray">\begin {eqnarray}  \rho _e &amp; = &amp; \rho _b(1+\epsilon )  \end {eqnarray}</div>
+<!--l. 151--><p class="noindent" >where \(\epsilon \) is the internal energy density.
+</p><!--l. 153--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-30003"></a>Solving the ODE System</h3>
+<!--l. 155--><p class="noindent" >The ODE solver that <span 
+class="cmtt-10">TOVola </span>uses is the <span 
+class="cmtt-10">GSL </span>ODE solver. It can solve any ODE system it is given, as long as it
+is broken into a set of 1st-order ODEs (exactly what the TOV equations are in the first place).
+It can handle a variety of ODE methods, as well as adaptive and non-adaptive methods. <span 
+class="cmtt-10">TOVola</span>
+only enables the adaptive RK4(5) method (ARKF) and the adaptive DP7(8) method (ADP8). If
+there is demand, I can enable more methods, but these are the ones that I felt were of the most
+use.
+</p><!--l. 157--><p class="noindent" >The integration starts by calculating the initial pressure of the system from a given central baryon density, \(\rho _c\).
+                                                                                       
+                                                                                       
+Then, using <span 
+class="cmtt-10">GSL</span>, it steps through the integration. The integration will continue until the termination condition is
+hit, which was chosen to be the surface of the star. It saves the solution for each step, reallocating memory for
+the stored solution if the solution gets sufficiently large.
+</p><!--l. 159--><p class="noindent" >Afterwards, the raw \(\bar {r}\) is normalized and conformal factors and lapses are calculated for further use in the toolkit.
+<span 
+class="cmtt-10">TOVola </span>then uses an interpolator heavily inspired from the <span 
+class="cmtt-10">nrpytutorial</span><span class="cite">[<a 
+href="#XTOVola_TOVola_NRpy">5</a>]</span> library to interpolate the adjusted
+data to the ET grid. From there, the grid functions are saved and, if needed, time levels are populated by
+copying the data over (as the TOVs are static).
+</p><!--l. 161--><p class="noindent" >The example parfiles give an example of what you can do with that data from there. In the example parfiles, the
+initial data is stored with <span 
+class="cmtt-10">Hydrobase </span>and <span 
+class="cmtt-10">ADMbase</span>, and the <span 
+class="cmtt-10">Baikal </span>thorn calculates the constraint violation of
+the initial data. Gallery examples are also currently in the works that use the thorn <span 
+class="cmtt-10">GRHydro </span>to evolve the initial
+data that was calculated by <span 
+class="cmtt-10">TOVola</span>. In <span class="cite">[<a 
+href="#XTOVola_TOVola_GRHayL">2</a>]</span>, initial data from <span 
+class="cmtt-10">TOVola </span>is being used for the evolutions of TOV
+data. Once TOVola creates the initial data, it is up to the user to then decide what they want to use that initial
+data for.
+</p><!--l. 163--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-40004"></a>Using TOVola</h3>
+<!--l. 165--><p class="noindent" >In this section, I will explain the general use of this thorn.
+</p><!--l. 167--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">4.1   </span> <a 
+ id="x1-50004.1"></a>Basic Usage</h4>
+<!--l. 169--><p class="noindent" >For finding TOV solutions using <span 
+class="cmtt-10">TOVola</span>, one only needs to set up variables in a parfile. Since most of the EOS
+information is stored by <span 
+class="cmtt-10">GRHayL</span>, most of the <span 
+class="cmtt-10">TOVola </span>parameters are related to the error tolerances for GSL, with
+the exception of the beta equilibrium temperature <span 
+class="cmtt-10">Tin </span>and the choice of EOS type <span 
+class="cmtt-10">TOVola</span><span 
+class="cmtt-10">_EOS</span><span 
+class="cmtt-10">_type</span>. To see
+examples of how to build a TOV parfile, just look at the examples in the <span 
+class="cmtt-10">par </span>directory and follow
+suit.
+</p><!--l. 171--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">4.2   </span> <a 
+ id="x1-60004.2"></a>Compatible Equations of State</h4>
+<!--l. 173--><p class="noindent" >As mentioned earlier, <span 
+class="cmtt-10">TOVola </span>has 3 types of EOS that are compatible: Simple Polytrope, Piecewise Polytrope,
+and Tabulated EOS.
+</p><!--l. 175--><p class="noindent" >As <span 
+class="cmtt-10">GRHayL</span><span class="cite">[<a 
+href="#XTOVola_TOVola_GRHayL">2</a>]</span> holds the information on the EOS, you must set its parameters in the parfile as well.
+Depending on the EOS you are using, you will set different parameters (\(K\) and \(Gamma\) for polytropes, or a
+                                                                                       
+                                                                                       
+beta_equilibrium_temperature for Tabulated). For more details, please refer to the example parfiles in the <span 
+class="cmtt-10">par</span>
+directory. They act as templates of how your parfile should look.
+</p><!--l. 177--><p class="noindent" >
+</p>
+<h5 class="subsubsectionHead"><span class="titlemark">4.2.1   </span> <a 
+ id="x1-70004.2.1"></a>Using a Simple Polytrope</h5>
+<!--l. 179--><p class="noindent" >Aside from telling both <span 
+class="cmtt-10">TOVola </span>and <span 
+class="cmtt-10">GRHayLib </span>which EOS type you are using, <span 
+class="cmtt-10">GRHayLib </span>also needs to know the
+polytropic parameters:
+</p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 182--><p class="noindent" ><span 
+class="cmtt-10">GRHayLib::Gamma</span><span 
+class="cmtt-10">_th</span>
+     </p></li>
+     <li class="itemize">
+     <!--l. 183--><p class="noindent" ><span 
+class="cmtt-10">GRHayLib::Gamma</span><span 
+class="cmtt-10">_ppoly</span><span 
+class="cmtt-10">_in[0]</span>
+     </p></li>
+     <li class="itemize">
+     <!--l. 184--><p class="noindent" ><span 
+class="cmtt-10">GRHayLib::k</span><span 
+class="cmtt-10">_ppoly0</span></p></li></ul>
+<!--l. 187--><p class="noindent" >
+</p>
+<h5 class="subsubsectionHead"><span class="titlemark">4.2.2   </span> <a 
+ id="x1-80004.2.2"></a>Using a Piecewise Polytrope</h5>
+<!--l. 189--><p class="noindent" >Piecewise Polytrope is practically identical in setting up as the simple polytrope, however, you need
+to tell <span 
+class="cmtt-10">GRHayLib </span>the polytropic parameters of each region, as well as how many regions you are
+using:
+</p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 192--><p class="noindent" ><span 
+class="cmtt-10">GRHayLib::neos</span>
+     </p></li>
+     <li class="itemize">
+     <!--l. 193--><p class="noindent" ><span 
+class="cmtt-10">GRHayLib::Gamma</span><span 
+class="cmtt-10">_th</span>
+                                                                                       
+                                                                                       
+     </p></li>
+     <li class="itemize">
+     <!--l. 194--><p class="noindent" ><span 
+class="cmtt-10">GRHayLib::Gamma</span><span 
+class="cmtt-10">_ppoly</span><span 
+class="cmtt-10">_in[i] </span>for each region
+     </p></li>
+     <li class="itemize">
+     <!--l. 195--><p class="noindent" ><span 
+class="cmtt-10">GRHayLib::rho</span><span 
+class="cmtt-10">_ppoly</span><span 
+class="cmtt-10">_in[i] </span>for each region boundary
+     </p></li>
+     <li class="itemize">
+     <!--l. 196--><p class="noindent" ><span 
+class="cmtt-10">GRHayLib::k</span><span 
+class="cmtt-10">_ppoly0</span></p></li></ul>
+<!--l. 199--><p class="noindent" >
+</p>
+<h5 class="subsubsectionHead"><span class="titlemark">4.2.3   </span> <a 
+ id="x1-90004.2.3"></a>Using a Tabulated EOS</h5>
+<!--l. 201--><p class="noindent" >Setting up a Tabulated EOS is going to be rather different than the last two EOS types. <span 
+class="cmtt-10">GRHayLib </span>needs to
+know a completely different set of variables than the polytropes. Instead of the polytropic parameters, you need
+to give <span 
+class="cmtt-10">GRHayLib </span>information that will help it slice the table you are using. Furthermore, you will need to
+activate the <span 
+class="cmtt-10">GRHayLID </span>thorn to impose a beta equilibrium temperature. This will allow for proper table
+slicing:
+</p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 204--><p class="noindent" ><span 
+class="cmtt-10">TOVola::TOVola</span><span 
+class="cmtt-10">_Tin</span>, beta equilibrium temperature, to take the table slice we want
+     </p></li>
+     <li class="itemize">
+     <!--l. 205--><p class="noindent" ><span 
+class="cmtt-10">GRHayLib::EOS</span><span 
+class="cmtt-10">_tablepath</span>, where your table is located.
+     </p></li>
+     <li class="itemize">
+     <!--l. 206--><p class="noindent" ><span 
+class="cmtt-10">GRHayLib::Y</span><span 
+class="cmtt-10">_e</span><span 
+class="cmtt-10">_atm</span>
+     </p></li>
+     <li class="itemize">
+     <!--l. 207--><p class="noindent" ><span 
+class="cmtt-10">GRHayLib::Y</span><span 
+class="cmtt-10">_e</span><span 
+class="cmtt-10">_min</span>
+     </p></li>
+     <li class="itemize">
+     <!--l. 208--><p class="noindent" ><span 
+class="cmtt-10">GRHayLib::Y</span><span 
+class="cmtt-10">_e</span><span 
+class="cmtt-10">_max</span>
+     </p></li>
+     <li class="itemize">
+     <!--l. 209--><p class="noindent" ><span 
+class="cmtt-10">GRHayLib::T</span><span 
+class="cmtt-10">_atm</span>
+                                                                                       
+                                                                                       
+     </p></li>
+     <li class="itemize">
+     <!--l. 210--><p class="noindent" ><span 
+class="cmtt-10">GRHayLib::T</span><span 
+class="cmtt-10">_min</span>
+     </p></li>
+     <li class="itemize">
+     <!--l. 211--><p class="noindent" ><span 
+class="cmtt-10">GRHayLib::T</span><span 
+class="cmtt-10">_max</span>
+     </p></li>
+     <li class="itemize">
+     <!--l. 212--><p class="noindent" ><span 
+class="cmtt-10">GRHayLID::impose</span><span 
+class="cmtt-10">_beta</span><span 
+class="cmtt-10">_equilibrium = yes</span>
+     </p></li>
+     <li class="itemize">
+     <!--l. 213--><p class="noindent" ><span 
+class="cmtt-10">GRHayLID::beq</span><span 
+class="cmtt-10">_temperature</span></p></li></ul>
+<!--l. 216--><p class="noindent" >Please note: <span 
+class="cmtt-10">TOVola </span>does NOT provide the EOS table. You must provide your own table to be able to use the
+Tabulated feature. HDF5 EOS tables are readily available at ”stellarcollapse.org”.
+</p><!--l. 218--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">4.3   </span> <a 
+ id="x1-100004.3"></a>Examples</h4>
+<!--l. 220--><p class="noindent" >Example parfiles can be found in the thorn’s <span 
+class="cmtt-10">par </span>directory. There is one for each type of EOS:
+</p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 223--><p class="noindent" ><span 
+class="cmtt-10">Simple.par</span>  </p>
+         <ul class="itemize2">
+         <li class="itemize">
+         <!--l. 225--><p class="noindent" >A Simple Polytrope example, with \(K=1.0\) and \(\Gamma =2.0\)</p></li></ul>
+     </li>
+     <li class="itemize">
+     <!--l. 227--><p class="noindent" ><span 
+class="cmtt-10">Piecewise.par</span>  </p>
+         <ul class="itemize2">
+         <li class="itemize">
+         <!--l. 229--><p class="noindent" >A Piecewise Polytrope example, using the Piecewise parameters for \(K_i\) and \(\Gamma _i\) of Read et. al for
+         the SLy EOS.<span class="cite">[<a 
+href="#XTOVola_TOVola_Read">6</a>]</span> 7 Regions are used in this example.</p></li></ul>
+     </li>
+     <li class="itemize">
+     <!--l. 231--><p class="noindent" ><span 
+class="cmtt-10">Tabulated.par</span>  </p>
+                                                                                       
+                                                                                       
+         <ul class="itemize2">
+         <li class="itemize">
+         <!--l. 233--><p class="noindent" >An Example of using a Tabulated EOS. One must replace the <span 
+class="cmtt-10">GRHayLib::EOS</span><span 
+class="cmtt-10">_tablepath  </span>in
+         the parfile to the location of you EOS table. We used an SLy4 table for this specific example.</p></li></ul>
+     </li></ul>
+<!--l. 237--><p class="noindent" ><span 
+class="cmtt-10">Baikal </span>was used to test each EOS type and example for any Hamiltonian or momentum constraint violation, so
+these example parfiles still include constraint violation calculations.
+</p><!--l. 239--><p class="noindent" >Gallery examples are also being created that evolve the initial data with <span 
+class="cmtt-10">GRHydro </span>and will be included in the
+example parfiles once they are acceptable.
+</p><!--l. 241--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-110005"></a>Acknowledgements</h3>
+<!--l. 243--><p class="noindent" >I acknowledge the use of <span 
+class="cmtt-10">nrpytutorial</span><span class="cite">[<a 
+href="#XTOVola_TOVola_NRpy">5</a>]</span> to generate a base interpolator to put the TOV data on the grid, of
+which I edited from there. I acknowledge the use of the <span 
+class="cmtt-10">GRHayL </span>thorn, which was used to store and use EOS
+specific data in the solution to the TOVs.
+</p><!--l. 245--><p class="noindent" >
+</p>
+<h3 class="likesectionHead"><a 
+ id="x1-12000"></a>References</h3>
+<!--l. 245--><p class="noindent" >
+   </p><div class="thebibliography">
+   <p class="bibitem" ><span class="biblabel">
+ [1]<span class="bibsp">   </span></span><a 
+ id="XTOVola_TOVola_Baikal"></a>Z. Etienne. Document in the nrpytutorial github repo: https://nbviewer.jupyter.org/github/zachetienne/nrpytutorial/blob/master/Tutorial-ETK_thorn-BaikalETK.ipynb
+   </p>
+   <p class="bibitem" ><span class="biblabel">
+ [2]<span class="bibsp">   </span></span><a 
+ id="XTOVola_TOVola_GRHayL"></a>S. Cupp, L. Werneck, T. Pierre Jacques, Z. Etienne. Paper In Prep (6/24). Thorn found in the
+   GRHayL directory of the toolkit
+   </p>
+   <p class="bibitem" ><span class="biblabel">
+ [3]<span class="bibsp">   </span></span><a 
+ id="XTOVola_TOVola_Tolman"></a>R. C. Tolman, Phys. Rev. <span 
+class="cmbx-10">55</span>, 364 (1939).
+   </p>
+   <p class="bibitem" ><span class="biblabel">
+ [4]<span class="bibsp">   </span></span><a 
+ id="XTOVola_TOVola_OppVol"></a>J. R. Oppenheimer and G. Volkoff, Physical Review <span 
+class="cmbx-10">55</span>, 374 (1939).
+                                                                                       
+                                                                                       
+   </p>
+   <p class="bibitem" ><span class="biblabel">
+ [5]<span class="bibsp">   </span></span><a 
+ id="XTOVola_TOVola_NRpy"></a>Z. Etienne. Github repository: https://github.com/zachetienne/nrpytutorial
+   </p>
+   <p class="bibitem" ><span class="biblabel">
+ [6]<span class="bibsp">   </span></span><a 
+ id="XTOVola_TOVola_Read"></a>J. Read, B. Lackey, B. Owen, and J. Friedman, Phys. Rev. D <span 
+class="cmbx-10">79</span>, 124032 (2008).</p></div>
+<!--l. 271--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">6   </span> <a 
+ id="x1-130006"></a>Parameters</h3>
+<!--l. 290--><p class="noindent" ></p> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /></colgroup><colgroup id="TBL-2-2g"><col 
+id="TBL-2-2" /><col 
+id="TBL-2-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:normal; text-align:left;" id="TBL-2-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tovola_absolute_max_step</div>      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-1-3"  
+class="td01">                                     REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-2-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Biggest possible step size.</span></div>                                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range               </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-3-3"  
+class="td01">                               <span 
+class="cmbx-10">Default: </span>1.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-4-"><td  style="white-space:normal; text-align:left;" id="TBL-2-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">(0.0:*</div>                                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-2-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Must be positive</div>                                                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-5-1"  
+class="td11">                           </td></tr></table>
+<!--l. 297--><p class="noindent" ></p> <table id="TBL-3" class="tabular" 
+ 
+><colgroup id="TBL-3-1g"><col 
+id="TBL-3-1" /></colgroup><colgroup id="TBL-3-2g"><col 
+id="TBL-3-2" /><col 
+id="TBL-3-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-1-"><td  style="white-space:normal; text-align:left;" id="TBL-3-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tovola_absolute_min_step</div>       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-1-3"  
+class="td01">                                     REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-3-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Smallest possible step size</span></div>                                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range               </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-3-3"  
+class="td01">                            <span 
+class="cmbx-10">Default: </span>1.0e-20  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-4-"><td  style="white-space:normal; text-align:left;" id="TBL-3-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">(0.0:*</div>                                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-3-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Must be positive</div>                                                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-5-1"  
+class="td11">                           </td></tr></table>
+<!--l. 304--><p class="noindent" ></p> <table id="TBL-4" class="tabular" 
+ 
+><colgroup id="TBL-4-1g"><col 
+id="TBL-4-1" /></colgroup><colgroup id="TBL-4-2g"><col 
+id="TBL-4-2" /><col 
+id="TBL-4-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-1-"><td  style="white-space:normal; text-align:left;" id="TBL-4-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tovola_central_baryon_density</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-1-3"  
+class="td01">                                     REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-4-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">What’s the initial baryon density? (Used to calculate initial pressure).</span></div>                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range               </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-3-3"  
+class="td01">                             <span 
+class="cmbx-10">Default: </span>0.125  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-4-"><td  style="white-space:normal; text-align:left;" id="TBL-4-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">(0.0:*</div>                                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Must be Positive</div>                                                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-5-1"  
+class="td11">                           </td></tr></table>
+<!--l. 311--><p class="noindent" ></p> <table id="TBL-5" class="tabular" 
+ 
+><colgroup id="TBL-5-1g"><col 
+id="TBL-5-1" /></colgroup><colgroup id="TBL-5-2g"><col 
+id="TBL-5-2" /><col 
+id="TBL-5-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-1-"><td  style="white-space:normal; text-align:left;" id="TBL-5-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tovola_eos_type</div>                    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-1-3"  
+class="td01">                               KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-5-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">What EOS type are you using?</span></div>                                                                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range               </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-3-3"  
+class="td01">                            <span 
+class="cmbx-10">Default: </span>Simple  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-4-"><td  style="white-space:normal; text-align:left;" id="TBL-5-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Simple</div>                                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-5-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Simple Polytrope</div>                                                                    
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-5-"><td  style="white-space:normal; text-align:left;" id="TBL-5-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Piecewise</div>                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-5-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Piecewise Polytrope</div>                                                                
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-6-"><td  style="white-space:normal; text-align:left;" id="TBL-5-6-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Tabulated</div>                            </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-5-6-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Tabulated EOS</div>                                                                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-7-1"  
+class="td11">                           </td></tr></table>
+<!--l. 318--><p class="noindent" ></p> <table id="TBL-6" class="tabular" 
+ 
+><colgroup id="TBL-6-1g"><col 
+id="TBL-6-1" /></colgroup><colgroup id="TBL-6-2g"><col 
+id="TBL-6-2" /><col 
+id="TBL-6-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-1-"><td  style="white-space:normal; text-align:left;" id="TBL-6-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tovola_error_limit</div>                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-1-3"  
+class="td01">                                     REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-6-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Limiting factor of the error. Determines GSL’s Tolerance.</span></div>                                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range               </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-3-3"  
+class="td01">                             <span 
+class="cmbx-10">Default: </span>1.0e-8  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-4-"><td  style="white-space:normal; text-align:left;" id="TBL-6-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">(0.0:*</div>                                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-6-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Must be Positive</div>                                                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-5-1"  
+class="td11">                           </td></tr></table>
+<!--l. 325--><p class="noindent" ></p> <table id="TBL-7" class="tabular" 
+ 
+><colgroup id="TBL-7-1g"><col 
+id="TBL-7-1" /></colgroup><colgroup id="TBL-7-2g"><col 
+id="TBL-7-2" /><col 
+id="TBL-7-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-1-"><td  style="white-space:normal; text-align:left;" id="TBL-7-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tovola_initial_ode_step_size</div>    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-1-3"  
+class="td01">                                     REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-7-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Initial Step Size</span></div>                                                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range               </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-3-3"  
+class="td01">                            <span 
+class="cmbx-10">Default: </span>1.0e-20  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-4-"><td  style="white-space:normal; text-align:left;" id="TBL-7-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">(0.0:*</div>                                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-7-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Must be Positive</div>                                                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-5-1"  
+class="td11">                           </td></tr></table>
+<!--l. 332--><p class="noindent" ></p> <table id="TBL-8" class="tabular" 
+ 
+><colgroup id="TBL-8-1g"><col 
+id="TBL-8-1" /></colgroup><colgroup id="TBL-8-2g"><col 
+id="TBL-8-2" /><col 
+id="TBL-8-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-1-"><td  style="white-space:normal; text-align:left;" id="TBL-8-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tovola_interpolation_stencil</div>    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-1-3"  
+class="td01">                                      INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-8-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Stencil Size for Interpollator to Grid</span></div>                                                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range               </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-3-3"  
+class="td01">                                <span 
+class="cmbx-10">Default: </span>11  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-4-"><td  style="white-space:normal; text-align:left;" id="TBL-8-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1:*</div>                                      </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-8-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Minimum stencil of 1</div>                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-5-1"  
+class="td11">                           </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 339--><p class="noindent" ></p> <table id="TBL-9" class="tabular" 
+ 
+><colgroup id="TBL-9-1g"><col 
+id="TBL-9-1" /></colgroup><colgroup id="TBL-9-2g"><col 
+id="TBL-9-2" /><col 
+id="TBL-9-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-1-"><td  style="white-space:normal; text-align:left;" id="TBL-9-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tovola_max_interpolation_stencil</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-1-3"  
+class="td01">                                      INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-9-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Maximum Interpollator stencil</span></div>                                                                         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range               </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-3-3"  
+class="td01">                                <span 
+class="cmbx-10">Default: </span>13  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-4-"><td  style="white-space:normal; text-align:left;" id="TBL-9-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1:*</div>                                      </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-9-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Minimum stencil of 1</div>                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-5-1"  
+class="td11">                           </td></tr></table>
+<!--l. 346--><p class="noindent" ></p> <table id="TBL-10" class="tabular" 
+ 
+><colgroup id="TBL-10-1g"><col 
+id="TBL-10-1" /></colgroup><colgroup id="TBL-10-2g"><col 
+id="TBL-10-2" /><col 
+id="TBL-10-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-1-"><td  style="white-space:normal; text-align:left;" id="TBL-10-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tovola_ode_method</div>               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-1-3"  
+class="td01">                               KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-10-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">What type of ODE method are we using (More Methods can be added if there is</span>
+  <span 
+class="cmti-10">demand)</span></div>                                                                                                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range               </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-3-3"  
+class="td01">                            <span 
+class="cmbx-10">Default: </span>ARKF  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-4-"><td  style="white-space:normal; text-align:left;" id="TBL-10-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">ARKF</div>                                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-10-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">”Adaptive Runge-Kutta-Fehlberg (RK4(5))”</div>                                
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-5-"><td  style="white-space:normal; text-align:left;" id="TBL-10-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">ADP8</div>                                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-10-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Adaptive Dormand-Prince Eigth Order (DP7(8))</div>                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-6-1"  
+class="td11">                           </td></tr></table>
+<!--l. 354--><p class="noindent" ></p> <table id="TBL-11" class="tabular" 
+ 
+><colgroup id="TBL-11-1g"><col 
+id="TBL-11-1" /></colgroup><colgroup id="TBL-11-2g"><col 
+id="TBL-11-2" /><col 
+id="TBL-11-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-1-"><td  style="white-space:normal; text-align:left;" id="TBL-11-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tovola_size</div>                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-1-3"  
+class="td01">                                      INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-11-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Maximum number of steps</span></div>                                                                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range               </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-3-3"  
+class="td01">                          <span 
+class="cmbx-10">Default: </span>10000000  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-4-"><td  style="white-space:normal; text-align:left;" id="TBL-11-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1:*</div>                                      </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-11-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Minimum of 1 step</div>                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-5-1"  
+class="td11">                           </td></tr></table>
+<!--l. 361--><p class="noindent" ></p> <table id="TBL-12" class="tabular" 
+ 
+><colgroup id="TBL-12-1g"><col 
+id="TBL-12-1" /></colgroup><colgroup id="TBL-12-2g"><col 
+id="TBL-12-2" /><col 
+id="TBL-12-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-1-"><td  style="white-space:normal; text-align:left;" id="TBL-12-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tovola_tin</div>                           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-1-3"  
+class="td01">                                     REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-12-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Beta Equilibrium Temperature</span></div>                                                                         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range               </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-3-3"  
+class="td01">                             <span 
+class="cmbx-10">Default: </span>1.0e-2  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-4-"><td  style="white-space:normal; text-align:left;" id="TBL-12-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">(0.0:*</div>                                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-12-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Must be Positive</div>                                                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-5-1"  
+class="td11">                           </td></tr></table>
+<!--l. 368--><p class="noindent" ></p> <table id="TBL-13" class="tabular" 
+ 
+><colgroup id="TBL-13-1g"><col 
+id="TBL-13-1" /></colgroup><colgroup id="TBL-13-2g"><col 
+id="TBL-13-2" /><col 
+id="TBL-13-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-1-"><td  style="white-space:normal; text-align:left;" id="TBL-13-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tovola_tov_populate_timelevels</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-1-3"  
+class="td01">                                      INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-13-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Populate that amount of timelevels</span></div>                                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range               </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-4-"><td  style="white-space:normal; text-align:left;" id="TBL-13-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1:3</div>                                      </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-13-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1 (default) to 3</div>                                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-5-1"  
+class="td11">                           </td></tr></table>
+<!--l. 375--><p class="noindent" ></p> <table id="TBL-14" class="tabular" 
+ 
+><colgroup id="TBL-14-1g"><col 
+id="TBL-14-1" /></colgroup><colgroup id="TBL-14-2g"><col 
+id="TBL-14-2" /><col 
+id="TBL-14-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-1-"><td  style="white-space:normal; text-align:left;" id="TBL-14-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">initial_hydro</div>                        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from HYDROBASE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-1-3"  
+class="td01">              KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-2-"><td colspan="3" style="white-space:nowrap; text-align:left;" id="TBL-14-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:nowrap; text-align:left;"><span 
+class="cmbx-10">Extends ranges:</span></div>                                                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-3-"><td  style="white-space:normal; text-align:left;" id="TBL-14-3-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">TOVola</div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-14-3-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">TOV star initial hydrobase variables</div>                                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-4-1"  
+class="td11">                           </td></tr></table>
+<!--l. 384--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">7   </span> <a 
+ id="x1-140007"></a>Interfaces</h3>
+<!--l. 389--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-15000"></a>General</h4>
+<!--l. 391--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 393--><p class="noindent" >tovola
+</p><!--l. 396--><p class="noindent" ><span 
+class="cmbx-10">Inherits</span>:
+</p><!--l. 398--><p class="noindent" >grhaylib
+</p><!--l. 400--><p class="noindent" >admbase
+</p><!--l. 402--><p class="noindent" >hydrobase
+</p><!--l. 404--><p class="noindent" >grid
+                                                                                       
+                                                                                       
+</p><!--l. 409--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">8   </span> <a 
+ id="x1-160008"></a>Schedule</h3>
+<!--l. 415--><p class="noindent" >This section lists all the variables which are assigned storage by thorn GRHayLET/TOVola. Storage can
+either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 418--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-17000"></a>Storage</h4>
+<!--l. 418--><p class="noindent" >NONE
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-18000"></a>Scheduled Functions</h4>
+<!--l. 422--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_PARAMCHECK</span>
+</p><!--l. 424--><p class="noindent" >      tovola_parameter_checker
+</p><!--l. 426--><p class="noindent" >     <span 
+class="cmti-10">check if interpollation stencil does not exceed maximum value, and eos type is used appropriately.</span>
+</p><!--l. 429--><p class="noindent" > 
+</p><!--l. 431--><p class="noindent" ></p> <table id="TBL-15" class="tabular" 
+ 
+><colgroup id="TBL-15-1g"><col 
+id="TBL-15-1" /><col 
+id="TBL-15-2" /><col 
+id="TBL-15-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-15-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-2-3"  
+class="td11"> global     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-3-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 440--><p class="noindent" ><span 
+class="cmbx-10">HydroBase</span><span 
+class="cmbx-10">_Initial </span>(conditional)
+</p><!--l. 442--><p class="noindent" >      tovola_tov_grid
+</p><!--l. 444--><p class="noindent" >     <span 
+class="cmti-10">group for the tov initial data</span>
+</p><!--l. 447--><p class="noindent" > 
+</p><!--l. 449--><p class="noindent" ></p> <table id="TBL-16" class="tabular" 
+ 
+><colgroup id="TBL-16-1g"><col 
+id="TBL-16-1" /><col 
+id="TBL-16-2" /><col 
+id="TBL-16-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-16-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-1-2"  
+class="td11"> Sync:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-1-3"  
+class="td11"> admbase::metric  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-2-2"  
+class="td11">          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-2-3"  
+class="td11"> admbase::curv    </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-3-1"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-3-2"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-3-3"  
+class="td11"> admbase::lapse</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-4-2"  
+class="td11">          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-4-3"  
+class="td11"> admbase::shift    </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-5-1"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-5-2"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-5-3"  
+class="td11"> rho</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-6-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-6-2"  
+class="td11">          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-6-3"  
+class="td11"> press                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-7-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-7-2"  
+class="td11">          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-7-3"  
+class="td11"> eps                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-8-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-8-2"  
+class="td11">          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-8-3"  
+class="td11"> vel                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-9-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-9-2"  
+class="td11">          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-9-3"  
+class="td11"> w_lorentz          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-10-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-10-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-10-2"  
+class="td11"> Type:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-10-3"  
+class="td11"> group                </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-11-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-11-1"  
+class="td11">    </td></tr></table>
+<!--l. 465--><p class="noindent" ><span 
+class="cmbx-10">TOVola</span><span 
+class="cmbx-10">_TOV</span><span 
+class="cmbx-10">_Grid </span>(conditional)
+</p><!--l. 467--><p class="noindent" >      tovola_solve_and_interp
+</p><!--l. 469--><p class="noindent" >     <span 
+class="cmti-10">performs/drives the tov initial data solution algorithm. calls the integration function for the raw data,</span>
+<span 
+class="cmti-10">normalizes the data to make it more usable, and interpolates to the et grid.</span>
+</p><!--l. 472--><p class="noindent" > 
+                                                                                       
+                                                                                       
+</p><!--l. 474--><p class="noindent" ></p> <table id="TBL-17" class="tabular" 
+ 
+><colgroup id="TBL-17-1g"><col 
+id="TBL-17-1" /><col 
+id="TBL-17-2" /><col 
+id="TBL-17-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-17-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-1-3"  
+class="td11"> c                                                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-2-2"  
+class="td11"> Reads:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-2-3"  
+class="td11"> grid::coordinates                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-3-3"  
+class="td11"> function                                          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-4-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-4-3"  
+class="td11"> admbase::curv(everywhere)                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-5-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-5-3"  
+class="td11"> admbase::shift(everywhere)                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-6-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-6-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-6-3"  
+class="td11"> admbase::alp(everywhere)                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-7-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-7-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-7-3"  
+class="td11"> admbase::metric_p_p(everywhere)        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-8-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-8-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-8-3"  
+class="td11"> admbase::metric_p(everywhere)           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-9-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-9-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-9-3"  
+class="td11"> admbase::metric(everywhere)               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-10-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-10-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-10-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-10-3"  
+class="td11"> hydrobase::rho_p_p(everywhere)          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-11-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-11-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-11-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-11-3"  
+class="td11"> hydrobase::rho_p(everywhere)             </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-12-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-12-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-12-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-12-3"  
+class="td11"> hydrobase::rho(everywhere)                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-13-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-13-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-13-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-13-3"  
+class="td11"> hydrobase::press_p_p(everywhere)        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-14-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-14-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-14-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-14-3"  
+class="td11"> hydrobase::press_p(everywhere)           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-15-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-15-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-15-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-15-3"  
+class="td11"> hydrobase::press(everywhere)              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-16-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-16-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-16-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-16-3"  
+class="td11"> hydrobase::eps_p_p(everywhere)          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-17-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-17-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-17-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-17-3"  
+class="td11"> hydrobase::eps_p(everywhere)              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-18-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-18-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-18-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-18-3"  
+class="td11"> hydrobase::eps(everywhere)                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-19-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-19-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-19-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-19-3"  
+class="td11"> hydrobase::vel_p_p(everywhere)           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-20-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-20-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-20-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-20-3"  
+class="td11"> hydrobase::vel_p(everywhere)              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-21-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-21-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-21-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-21-3"  
+class="td11"> hydrobase::vel(everywhere)                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-22-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-22-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-22-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-22-3"  
+class="td11"> hydrobase::w_lorentz_p_p(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-23-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-23-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-23-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-23-3"  
+class="td11"> hydrobase::w_lorentz_p(everywhere)     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-24-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-24-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-24-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-24-3"  
+class="td11"> hydrobase::w_lorentz(everywhere)        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-25-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-25-1"  
+class="td11">    </td></tr></table>
+ 
+</body></html> 
+
+                                                                                       
+
+
