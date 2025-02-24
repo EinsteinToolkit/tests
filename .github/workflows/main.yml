@@ -22,6 +22,8 @@ jobs:
   build:
     # The type of runner that the job will run on
     runs-on: ubuntu-22.04
+    outputs:
+      tests_failed: ${{ env.TESTS_FAILED }}
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Below the runner checks-out multiple branches side by side, under different paths
@@ -33,7 +35,7 @@ jobs:
           fetch-depth: 0
           path: master
           submodules: recursive
-#           single-branch: true
+          # single-branch: true
       # Check-out scripts branch under $GITHUB_WORKSPACE/scripts to access scripts to run
       - uses: actions/checkout@v4
         with:
@@ -92,8 +94,19 @@ jobs:
           chmod +x build-and-test.sh
           ./build-and-test.sh --master $GITHUB_WORKSPACE/master --ghpages $GITHUB_WORKSPACE/gh-pages
           python3 logpage.py --master $GITHUB_WORKSPACE/master --ghpages $GITHUB_WORKSPACE/gh-pages
+
+  publish_site:
+    needs: build
+    if: always()
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          ref: gh-pages
+          path: gh-pages
           
-      # Push the files from gh-pages that need to be preserved for future use
       - name: Add index.html and previous logs from gh-pages
         run: |
           cd gh-pages
@@ -101,6 +114,7 @@ jobs:
           git add docs
           git add records
           git add test_nums.csv
+          
       - name: Commit files from gh-pages
         run: |
           cd gh-pages
@@ -114,8 +128,7 @@ jobs:
           directory: gh-pages
           github_token: ${{ secrets.GITHUB_TOKEN }}
           branch: "gh-pages"
-          
-      # If a test failed the workflow exit with a failing status
+
       - name: Clean up
-        if: ${{env.TESTS_FAILED == 'True'}}
+        if: needs.build.outputs.tests_failed == 'True' 
         run: exit 1
