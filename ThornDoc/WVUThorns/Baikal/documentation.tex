@@ -1,0 +1,1051 @@
+% *======================================================================*
+%  Cactus Thorn template for ThornGuide documentation
+%  Author: Ian Kelley
+%  Date: Sun Jun 02, 2002
+%  $Header$
+%
+%  Thorn documentation in the latex file doc/documentation.tex
+%  will be included in ThornGuides built with the Cactus make system.
+%  The scripts employed by the make system automatically include
+%  pages about variables, parameters and scheduling parsed from the
+%  relevant thorn CCL files.
+%
+%  This template contains guidelines which help to assure that your
+%  documentation will be correctly added to ThornGuides. More
+%  information is available in the Cactus UsersGuide.
+%
+%  Guidelines:
+%   - Do not change anything before the line
+%       % START CACTUS THORNGUIDE",
+%     except for filling in the title, author, date, etc. fields.
+%        - Each of these fields should only be on ONE line.
+%        - Author names should be separated with a \\ or a comma.
+%   - You can define your own macros, but they must appear after
+%     the START CACTUS THORNGUIDE line, and must not redefine standard
+%     latex commands.
+%   - To avoid name clashes with other thorns, 'labels', 'citations',
+%     'references', and 'image' names should conform to the following
+%     convention:
+%       ARRANGEMENT_THORN_LABEL
+%     For example, an image wave.eps in the arrangement CactusWave and
+%     thorn WaveToyC should be renamed to CactusWave_WaveToyC_wave.eps
+%   - Graphics should only be included using the graphicx package.
+%     More specifically, with the "\includegraphics" command.  Do
+%     not specify any graphic file extensions in your .tex file. This
+%     will allow us to create a PDF version of the ThornGuide
+%     via pdflatex.
+%   - References should be included with the latex "\bibitem" command.
+%   - Use \begin{abstract}...\end{abstract} instead of \abstract{...}
+%   - Do not use \appendix, instead include any appendices you need as
+%     standard sections.
+%   - For the benefit of our Perl scripts, and for future extensions,
+%     please use simple latex.
+%
+% *======================================================================*
+%
+% Example of including a graphic image:
+%    \begin{figure}[ht]
+% 	\begin{center}
+%    	   \includegraphics[width=6cm]{/home/runner/work/tests/tests/arrangements/WVUThorns/Baikal/doc/MyArrangement_MyThorn_MyFigure}
+% 	\end{center}
+% 	\caption{Illustration of this and that}
+% 	\label{MyArrangement_MyThorn_MyLabel}
+%    \end{figure}
+%
+% Example of using a label:
+%   \label{MyArrangement_MyThorn_MyLabel}
+%
+% Example of a citation:
+%    \cite{MyArrangement_MyThorn_Author99}
+%
+% Example of including a reference
+%   \bibitem{MyArrangement_MyThorn_Author99}
+%   {J. Author, {\em The Title of the Book, Journal, or periodical}, 1 (1999),
+%   1--16. {\tt http://www.nowhere.com/}}
+%
+% *======================================================================*
+
+% If you are using CVS use this line to give version information
+% $Header$
+
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+% The author of the documentation
+\author{Zachariah B.~Etienne \textless zachetie *at* gmail *dot* com\textgreater}
+
+% The title of the document (not necessarily the name of the Thorn)
+\title{\texttt{Baikal}: An Einstein Toolkit thorn for solving Einstein's
+  equations in the BSSN formalism, in Cartesian coordinates}
+
+% the date your document was last changed, if your document is in CVS,
+% please use:
+%    \date{$ $Date$ $}
+\date{May 18, 2020}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+% Add all definitions used in this documentation here
+%   \def\mydef etc
+\newcommand{\beq}{\begin{equation}}
+\newcommand{\eeq}{\end{equation}}
+\newcommand{\beqn}{\begin{eqnarray}}
+\newcommand{\eeqn}{\end{eqnarray}}
+\newcommand{\half} {{1\over 2}}
+\newcommand{\sgam} {\sqrt{\gamma}}
+\newcommand{\tB}{\tilde{B}}
+\newcommand{\tS}{\tilde{S}}
+\newcommand{\tF}{\tilde{F}}
+\newcommand{\tf}{\tilde{f}}
+\newcommand{\tT}{\tilde{T}}
+\newcommand{\sg}{\sqrt{\gamma}\,}
+\newcommand{\ve}[1]{\mbox{\boldmath $#1$}}
+
+\newcommand{\GiR}{{\texttt{GiRaFFE}}}
+\newcommand{\IGM}{{\texttt{IllinoisGRMHD}}}
+
+\linespread{1.0}
+
+\newenvironment{packed_itemize}{
+\begin{itemize}
+  \setlength{\itemsep}{0.0pt}
+  \setlength{\parskip}{0.0pt}
+  \setlength{\parsep}{ 0.0pt}
+}{\end{itemize}}
+
+\newenvironment{packed_enumerate}{
+\begin{enumerate}
+  \setlength{\itemsep}{0.0pt}
+  \setlength{\parskip}{0.0pt}
+  \setlength{\parsep}{ 0.0pt}
+}{\end{enumerate}}
+
+% Add an abstract for this thorn's documentation
+\begin{abstract}
+\texttt{Baikal} solves Einstein's equations of general
+relativity in the BSSN formalism. Given that the complications and
+super-short-lengthscale variations usually associated with the
+stress-energy tensor $T^{\mu\nu}$ in strongly curved spacetimes, this
+thorn implements finite-difference derivatives up to and including 4th
+order, but no higher. All codes
+within this thorn were generated using the Python-based NRPy+
+infrastructure, which may be found at \url{http://nrpyplus.net/} (alt
+link: \url{https://github.com/zachetienne/nrpytutorial}).
+\end{abstract}
+
+Both \texttt{Baikal} and its sister thorn \texttt{BaikalVacuum} are
+fully documented in Jupyter notebooks within NRPy+, and
+the latest documentation for \texttt{BaikalETK} (the name of the
+combined \texttt{Baikal} / \texttt{BaikalVacuum} project) may be found
+in the \texttt{Tutorial-ETK\_thorn-BaikalETK.ipynb} Jupyter notebook here:
+
+\url{https://github.com/zachetienne/nrpytutorial}
+
+Also the NRPy+ Jupyter documentation can be navigated via the
+following link:
+
+\url{https://nbviewer.jupyter.org/github/zachetienne/nrpytutorial/blob/master/Tutorial-ETK_thorn-BaikalETK.ipynb}
+
+\section{Planned features}
+
+\begin{itemize}
+\item Currently \texttt{Baikal} / \texttt{BaikalVacuum} do not officially
+support numerical grids containing symmetry assumptions, but
+appropriate symmetries should be registered. Users are encouraged to
+proceed with caution when using symmetries. Future work will include adding
+official support for symmetries.
+\item \texttt{Baikal} / \texttt{BaikalVacuum} do not yet support an
+  extensive variety of gauge conditions, instead defaulting to the
+  tried-and-true standard moving puncture gauge conditions ($1+\log$
+  lapse combined with the ``Gamma''-driving shift [though note that
+    \texttt{Baikal} / \texttt{BaikalVacuum} refer to the  ``Gamma''
+    variable as the ``Lambda'' variable]). Additional gauge condition
+  options will eventually be added.
+\item \texttt{Baikal} / \texttt{BaikalVacuum} do not support
+  \texttt{Llama}-based multiblock (e.g., cubed sphere) grids, and
+  adding this support is currently not a high priority.
+\end{itemize}
+
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{dtlapse\_evolution\_method}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{diss\_strength} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em (see NRPy+ for parameter definition)}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{All values accepted. NRPy+ does not restrict the allowed ranges of parameters yet.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{eta} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em (see NRPy+ for parameter definition)}} \\
+\hline{\bf Range} & &  {\bf Default:} 2.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{All values accepted. NRPy+ does not restrict the allowed ranges of parameters yet.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{fd\_order} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em (see NRPy+ for parameter definition)}} \\
+\hline{\bf Range} & &  {\bf Default:} 4 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{All values accepted. NRPy+ does not restrict the allowed ranges of parameters yet.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{lapse\_floor} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em (see NRPy+ for parameter definition)}} \\
+\hline{\bf Range} & &  {\bf Default:} 1e-15 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{All values accepted. NRPy+ does not restrict the allowed ranges of parameters yet.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{pi} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em (see NRPy+ for parameter definition)}} \\
+\hline{\bf Range} & &  {\bf Default:} 3.14159265358979323846264338327950288 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{All values accepted. NRPy+ does not restrict the allowed ranges of parameters yet.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{dtlapse\_evolution\_method} & {\bf Scope:} shared from ADMBASE & KEYWORD \\\hline
+\multicolumn{3}{|l|}{\bf Extends ranges:}\\ 
+\hline\multicolumn{1}{|p{\maxVarWidth}|}{\centering Baikal} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{dtshift\_evolution\_method} & {\bf Scope:} shared from ADMBASE & KEYWORD \\\hline
+\multicolumn{3}{|l|}{\bf Extends ranges:}\\ 
+\hline\multicolumn{1}{|p{\maxVarWidth}|}{\centering Baikal} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{evolution\_method} & {\bf Scope:} shared from ADMBASE & KEYWORD \\\hline
+\multicolumn{3}{|l|}{\bf Extends ranges:}\\ 
+\hline\multicolumn{1}{|p{\maxVarWidth}|}{\centering Baikal} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{lapse\_evolution\_method} & {\bf Scope:} shared from ADMBASE & KEYWORD \\\hline
+\multicolumn{3}{|l|}{\bf Extends ranges:}\\ 
+\hline\multicolumn{1}{|p{\maxVarWidth}|}{\centering Baikal} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{shift\_evolution\_method} & {\bf Scope:} shared from ADMBASE & KEYWORD \\\hline
+\multicolumn{3}{|l|}{\bf Extends ranges:}\\ 
+\hline\multicolumn{1}{|p{\maxVarWidth}|}{\centering Baikal} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+baikal
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+admbase
+
+boundary
+
+grid
+
+tmunubase
+\vspace{2mm}
+\subsection*{Grid Variables}
+\vspace{5mm}\subsubsection{PUBLIC GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+evol\_variables &  & compact & 0 \\ 
+ & aDD00GF & description & Evolved gridfunctions. \\ 
+ & aDD01GF & dimensions & 3 \\ 
+ & aDD02GF & distribution & DEFAULT \\ 
+ & aDD11GF & group type & GF \\ 
+ & aDD12GF & timelevels & 3 \\ 
+ & aDD22GF & variable type & REAL \\ 
+\hline 
+evol\_variables\_rhs &  & compact & 0 \\ 
+ & aDD00\_rhsGF & description & Right-hand-side gridfunctions. \\ 
+ & aDD01\_rhsGF & dimensions & 3 \\ 
+ & aDD02\_rhsGF & distribution & DEFAULT \\ 
+ & aDD11\_rhsGF & group type & GF \\ 
+ & aDD12\_rhsGF & tags & InterpNumTimelevels=1 prolongation="none" checkpoint="no" \\ 
+ & aDD22\_rhsGF & timelevels & 1 \\ 
+ & alpha\_rhsGF & variable type & REAL \\ 
+\hline 
+auxevol\_variables &  & compact & 0 \\ 
+ & RbarDD00GF & description & Auxiliary gridfunctions needed for evaluating the RHSs. \\ 
+ & RbarDD01GF & dimensions & 3 \\ 
+ & RbarDD02GF & distribution & DEFAULT \\ 
+ & RbarDD11GF & group type & GF \\ 
+ & RbarDD12GF & tags & InterpNumTimelevels=1 prolongation="none" checkpoint="no" \\ 
+ & RbarDD22GF & timelevels & 1 \\ 
+ & T4UU00GF & variable type & REAL \\ 
+\hline 
+aux\_variables &  & compact & 0 \\ 
+ & HGF & description & Auxiliary gridfunctions for e.g. \\ 
+& ~ & description &  diagnostics. \\ 
+ & MSQUAREDGF & dimensions & 3 \\ 
+ & MU0GF & distribution & DEFAULT \\ 
+ & MU1GF & group type & GF \\ 
+ & MU2GF & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+
+\noindent {\bf Uses header}: 
+
+Symmetry.h
+
+Boundary.h
+
+Slicing.h
+\vspace{2mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn WVUThorns/Baikal.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Always:}&  ~ \\ 
+ evol\_variables[3] & ~\\ 
+ evol\_variables\_rhs[1] & ~\\ 
+ auxevol\_variables[1] & ~\\ 
+ aux\_variables[3] & ~\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_STARTUP} 
+
+\hspace{5mm} baikal\_registerslicing 
+
+\hspace{5mm}{\it register 3+1 slicing condition } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & meta \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf Driver\_BoundarySelect}   (conditional) 
+
+\hspace{5mm} baikal\_specify\_driver\_boundaryconditions 
+
+\hspace{5mm}{\it register boundary conditions in presync bin driver\_boundaryselect. } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & meta \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_CalcRHS}   (conditional) 
+
+\hspace{5mm} baikal\_rhs\_eval\_order\_2 
+
+\hspace{5mm}{\it evaluate bssn rhss, at finite-differencing order 2 } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & baikal\_ricci \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & evol\_variables(everywhere) \\ 
+~& ~ &auxevol\_variables(interior)\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & evol\_variables\_rhs(interior) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_CalcRHS}   (conditional) 
+
+\hspace{5mm} baikal\_rhs\_eval\_order\_4 
+
+\hspace{5mm}{\it evaluate bssn rhss, at finite-differencing order 4 } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & baikal\_ricci \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & evol\_variables(everywhere) \\ 
+~& ~ &auxevol\_variables(interior)\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & evol\_variables\_rhs(interior) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_CalcRHS}   (conditional) 
+
+\hspace{5mm} baikal\_specify\_newrad\_boundaryconditions\_parameters 
+
+\hspace{5mm}{\it newrad boundary conditions, scheduled right after rhs eval. } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & baikal\_rhs \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & evol\_variables(everywhere) \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & evol\_variables\_rhs(boundary) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_PostStep}   (conditional) 
+
+\hspace{5mm} baikal\_bssn\_to\_adm 
+
+\hspace{5mm}{\it perform bssn-to-adm conversion. useful for diagnostics. } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & baikal\_evol\_applybcs \\ 
+~ & Before:  & admbase\_setadmvars \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & add00gf \\ 
+~& ~ &add01gf\\ 
+~& ~ &add02gf\\ 
+~& ~ &add11gf\\ 
+~& ~ &add12gf\\ 
+~& ~ &add22gf\\ 
+~& ~ &hdd00gf\\ 
+~& ~ &hdd01gf\\ 
+~& ~ &hdd02gf\\ 
+~& ~ &hdd11gf\\ 
+~& ~ &hdd12gf\\ 
+~& ~ &hdd22gf\\ 
+~& ~ &vetu0gf\\ 
+~& ~ &vetu1gf\\ 
+~& ~ &vetu2gf\\ 
+~& ~ &betu0gf\\ 
+~& ~ &betu1gf\\ 
+~& ~ &betu2gf\\ 
+~& ~ &cfgf\\ 
+~& ~ &trkgf\\ 
+~& ~ &alphagf\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & admbase::metric(everywhere) \\ 
+~& ~ &admbase::shift(everywhere)\\ 
+~& ~ &admbase::curv(everywhere)\\ 
+~& ~ &admbase::dtshift(everywhere)\\ 
+~& ~ &admbase::lapse(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_PostStep}   (conditional) 
+
+\hspace{5mm} baikal\_enforce\_detgammahat\_constraint 
+
+\hspace{5mm}{\it enforce detgammabar = detgammahat (= 1 in cartesian) } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & hdd00gf \\ 
+~& ~ &hdd01gf\\ 
+~& ~ &hdd02gf\\ 
+~& ~ &hdd11gf\\ 
+~& ~ &hdd12gf\\ 
+~& ~ &hdd22gf\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & hdd00gf(everywhere) \\ 
+~& ~ &hdd01gf(everywhere)\\ 
+~& ~ &hdd02gf(everywhere)\\ 
+~& ~ &hdd11gf(everywhere)\\ 
+~& ~ &hdd12gf(everywhere)\\ 
+~& ~ &hdd22gf(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_PostStep}   (conditional) 
+
+\hspace{5mm} baikal\_floor\_the\_lapse 
+
+\hspace{5mm}{\it set lapse = max(lapse\_floor, lapse) } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & baikal\_enforce\_detgammahat\_constraint \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & alphagf(everywhere) \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & alphagf(everywhere) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_PostStep}   (conditional) 
+
+\hspace{5mm} baikal\_specify\_evol\_boundaryconditions 
+
+\hspace{5mm}{\it register boundary conditions and perform amr+interprocessor synchronization } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & level \\ 
+~ & Sync:  & evol\_variables \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_PostStep}   (conditional) 
+
+\hspace{5mm} applybcs 
+
+\hspace{5mm}{\it apply registered boundary conditions } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & baikal\_specify\_evol\_boundaryconditions \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_PseudoEvolution}   (conditional) 
+
+\hspace{5mm} baikal\_bssn\_constraints\_order\_2 
+
+\hspace{5mm}{\it compute bssn (hamiltonian and momentum) constraints, at finite-differencing order 2 } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & add00gf \\ 
+~& ~ &add01gf\\ 
+~& ~ &add02gf\\ 
+~& ~ &add11gf\\ 
+~& ~ &add12gf\\ 
+~& ~ &add22gf\\ 
+~& ~ &hdd00gf\\ 
+~& ~ &hdd01gf\\ 
+~& ~ &hdd02gf\\ 
+~& ~ &hdd11gf\\ 
+~& ~ &hdd12gf\\ 
+~& ~ &hdd22gf\\ 
+~& ~ &trkgf\\ 
+~& ~ &cfgf\\ 
+~& ~ &lambdau0gf\\ 
+~& ~ &lambdau1gf\\ 
+~& ~ &lambdau2gf\\ 
+~& ~ &alphagf\\ 
+~& ~ &vetu0gf\\ 
+~& ~ &vetu1gf\\ 
+~& ~ &vetu2gf\\ 
+~& ~ &t4uu00gf\\ 
+~& ~ &t4uu01gf\\ 
+~& ~ &t4uu02gf\\ 
+~& ~ &t4uu03gf\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & aux\_variables \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_PseudoEvolution}   (conditional) 
+
+\hspace{5mm} baikal\_bssn\_constraints\_order\_4 
+
+\hspace{5mm}{\it compute bssn (hamiltonian and momentum) constraints, at finite-differencing order 4 } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & add00gf \\ 
+~& ~ &add01gf\\ 
+~& ~ &add02gf\\ 
+~& ~ &add11gf\\ 
+~& ~ &add12gf\\ 
+~& ~ &add22gf\\ 
+~& ~ &hdd00gf\\ 
+~& ~ &hdd01gf\\ 
+~& ~ &hdd02gf\\ 
+~& ~ &hdd11gf\\ 
+~& ~ &hdd12gf\\ 
+~& ~ &hdd22gf\\ 
+~& ~ &trkgf\\ 
+~& ~ &cfgf\\ 
+~& ~ &lambdau0gf\\ 
+~& ~ &lambdau1gf\\ 
+~& ~ &lambdau2gf\\ 
+~& ~ &alphagf\\ 
+~& ~ &vetu0gf\\ 
+~& ~ &vetu1gf\\ 
+~& ~ &vetu2gf\\ 
+~& ~ &t4uu00gf\\ 
+~& ~ &t4uu01gf\\ 
+~& ~ &t4uu02gf\\ 
+~& ~ &t4uu03gf\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & aux\_variables \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_BASEGRID} 
+
+\hspace{5mm} baikal\_symmetry\_registration\_oldcartgrid3d 
+
+\hspace{5mm}{\it register symmetries, the cartgrid3d way. } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_PseudoEvolution} 
+
+\hspace{5mm} baikal\_bssn\_to\_adm 
+
+\hspace{5mm}{\it perform bssn-to-adm conversion in mol\_pseudoevolution. needed for proper hydrobase integration. } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & baikal\_aux\_applybcs \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & add00gf \\ 
+~& ~ &add01gf\\ 
+~& ~ &add02gf\\ 
+~& ~ &add11gf\\ 
+~& ~ &add12gf\\ 
+~& ~ &add22gf\\ 
+~& ~ &hdd00gf\\ 
+~& ~ &hdd01gf\\ 
+~& ~ &hdd02gf\\ 
+~& ~ &hdd11gf\\ 
+~& ~ &hdd12gf\\ 
+~& ~ &hdd22gf\\ 
+~& ~ &vetu0gf\\ 
+~& ~ &vetu1gf\\ 
+~& ~ &vetu2gf\\ 
+~& ~ &betu0gf\\ 
+~& ~ &betu1gf\\ 
+~& ~ &betu2gf\\ 
+~& ~ &cfgf\\ 
+~& ~ &trkgf\\ 
+~& ~ &alphagf\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & admbase::metric(everywhere) \\ 
+~& ~ &admbase::shift(everywhere)\\ 
+~& ~ &admbase::curv(everywhere)\\ 
+~& ~ &admbase::dtshift(everywhere)\\ 
+~& ~ &admbase::lapse(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_PseudoEvolution} 
+
+\hspace{5mm} baikal\_t4dd\_to\_t4uu 
+
+\hspace{5mm}{\it compute t4uu from t4dd (provided in et?? from tmunubase), needed for bssn constraints } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & baikal\_bssn\_constraints \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & tmunubase::stress\_energy\_scalar \\ 
+~& ~ &tmunubase::stress\_energy\_vector\\ 
+~& ~ &tmunubase::stress\_energy\_tensor\\ 
+~& ~ &hdd00gf\\ 
+~& ~ &hdd01gf\\ 
+~& ~ &hdd02gf\\ 
+~& ~ &hdd11gf\\ 
+~& ~ &hdd12gf\\ 
+~& ~ &hdd22gf\\ 
+~& ~ &alphagf\\ 
+~& ~ &cfgf\\ 
+~& ~ &vetu0gf\\ 
+~& ~ &vetu1gf\\ 
+~& ~ &vetu2gf\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & t4uu00gf(everywhere) \\ 
+~& ~ &t4uu01gf(everywhere)\\ 
+~& ~ &t4uu02gf(everywhere)\\ 
+~& ~ &t4uu03gf(everywhere)\\ 
+~& ~ &t4uu11gf(everywhere)\\ 
+~& ~ &t4uu12gf(everywhere)\\ 
+~& ~ &t4uu13gf(everywhere)\\ 
+~& ~ &t4uu22gf(everywhere)\\ 
+~& ~ &t4uu23gf(everywhere)\\ 
+~& ~ &t4uu33gf(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_PseudoEvolution} 
+
+\hspace{5mm} baikal\_specify\_aux\_boundaryconditions 
+
+\hspace{5mm}{\it register boundary conditions and perform amr+interprocessor synchronization } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & baikal\_bssn\_constraints \\ 
+~ & Language:  & c \\ 
+~ & Options:  & level \\ 
+~ & Sync:  & aux\_variables \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_PseudoEvolution} 
+
+\hspace{5mm} applybcs 
+
+\hspace{5mm}{\it apply registered boundary conditions } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & baikal\_specify\_aux\_boundaryconditions \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_BASEGRID} 
+
+\hspace{5mm} baikal\_zero\_rhss 
+
+\hspace{5mm}{\it idea from lean: set all rhs functions to zero to prevent spurious nans } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & symmetry\_registration \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & evol\_variables\_rhs(everywhere) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_INITIAL}   (conditional) 
+
+\hspace{5mm} baikal\_adm\_to\_bssn\_order\_2 
+
+\hspace{5mm}{\it convert initial data into bssn variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & admbase\_postinitial \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::shift\\ 
+~& ~ &admbase::curv\\ 
+~& ~ &admbase::dtshift\\ 
+~& ~ &admbase::lapse\\ 
+~ & Sync:  & evol\_variables \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & evol\_variables \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_INITIAL}   (conditional) 
+
+\hspace{5mm} baikal\_adm\_to\_bssn\_order\_4 
+
+\hspace{5mm}{\it convert initial data into bssn variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & admbase\_postinitial \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::shift\\ 
+~& ~ &admbase::curv\\ 
+~& ~ &admbase::dtshift\\ 
+~& ~ &admbase::lapse\\ 
+~ & Sync:  & evol\_variables \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & evol\_variables \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Register}   (conditional) 
+
+\hspace{5mm} baikal\_mol\_registration 
+
+\hspace{5mm}{\it register variables for mol } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & meta \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_CalcRHS}   (conditional) 
+
+\hspace{5mm} baikal\_ricci\_eval\_order\_2 
+
+\hspace{5mm}{\it compute ricci tensor, needed for bssn rhss, at finite-differencing order 2 } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & baikal\_rhs \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & hdd00gf \\ 
+~& ~ &hdd01gf\\ 
+~& ~ &hdd02gf\\ 
+~& ~ &hdd11gf\\ 
+~& ~ &hdd12gf\\ 
+~& ~ &hdd22gf\\ 
+~& ~ &lambdau0gf\\ 
+~& ~ &lambdau1gf\\ 
+~& ~ &lambdau2gf\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & rbardd00gf \\ 
+~& ~ &rbardd01gf\\ 
+~& ~ &rbardd02gf\\ 
+~& ~ &rbardd11gf\\ 
+~& ~ &rbardd12gf\\ 
+~& ~ &rbardd22gf\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_CalcRHS}   (conditional) 
+
+\hspace{5mm} baikal\_ricci\_eval\_order\_4 
+
+\hspace{5mm}{\it compute ricci tensor, needed for bssn rhss, at finite-differencing order 4 } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & baikal\_rhs \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & hdd00gf \\ 
+~& ~ &hdd01gf\\ 
+~& ~ &hdd02gf\\ 
+~& ~ &hdd11gf\\ 
+~& ~ &hdd12gf\\ 
+~& ~ &hdd22gf\\ 
+~& ~ &lambdau0gf\\ 
+~& ~ &lambdau1gf\\ 
+~& ~ &lambdau2gf\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & rbardd00gf \\ 
+~& ~ &rbardd01gf\\ 
+~& ~ &rbardd02gf\\ 
+~& ~ &rbardd11gf\\ 
+~& ~ &rbardd12gf\\ 
+~& ~ &rbardd22gf\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_CalcRHS}   (conditional) 
+
+\hspace{5mm} baikal\_t4dd\_to\_t4uu 
+
+\hspace{5mm}{\it compute t4uu from t4dd (provided in et?? from tmunubase), needed for bssn rhss } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & baikal\_rhs \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & tmunubase::stress\_energy\_scalar \\ 
+~& ~ &tmunubase::stress\_energy\_vector\\ 
+~& ~ &tmunubase::stress\_energy\_tensor\\ 
+~& ~ &hdd00gf\\ 
+~& ~ &hdd01gf\\ 
+~& ~ &hdd02gf\\ 
+~& ~ &hdd11gf\\ 
+~& ~ &hdd12gf\\ 
+~& ~ &hdd22gf\\ 
+~& ~ &alphagf\\ 
+~& ~ &cfgf\\ 
+~& ~ &vetu0gf\\ 
+~& ~ &vetu1gf\\ 
+~& ~ &vetu2gf\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & t4uu00gf(everywhere) \\ 
+~& ~ &t4uu01gf(everywhere)\\ 
+~& ~ &t4uu02gf(everywhere)\\ 
+~& ~ &t4uu03gf(everywhere)\\ 
+~& ~ &t4uu11gf(everywhere)\\ 
+~& ~ &t4uu12gf(everywhere)\\ 
+~& ~ &t4uu13gf(everywhere)\\ 
+~& ~ &t4uu22gf(everywhere)\\ 
+~& ~ &t4uu23gf(everywhere)\\ 
+~& ~ &t4uu33gf(everywhere)\\ 
+\end{tabular*} 
+
+
+\subsection*{Aliased Functions}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Alias Name:} ~~~~~~~ & {\bf Function Name:} \\ 
+ApplyBCs & Baikal\_aux\_ApplyBCs \\ 
+Baikal\_BSSN\_constraints\_order\_2 & Baikal\_BSSN\_constraints \\ 
+Baikal\_BSSN\_constraints\_order\_4 & Baikal\_BSSN\_constraints \\ 
+Baikal\_Ricci\_eval\_order\_2 & Baikal\_Ricci \\ 
+Baikal\_Ricci\_eval\_order\_4 & Baikal\_Ricci \\ 
+Baikal\_Symmetry\_registration\_oldCartGrid3D & Symmetry\_registration \\ 
+Baikal\_rhs\_eval\_order\_2 & Baikal\_RHS \\ 
+Baikal\_rhs\_eval\_order\_4 & Baikal\_RHS \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}
