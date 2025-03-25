@@ -1,0 +1,981 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>Time</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">Time</h2>
+ <div class="author" ><span 
+class="cmr-12">Gabrielle Allen</span></div>
+<br />
+<div class="date" >\( \)<span 
+class="cmr-12">Date</span>\( \)</div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 21--><p class="noindent" ><span 
+class="cmr-9">Calculates the timestep used for an evolution</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Purpose</h3>
+<!--l. 26--><p class="noindent" >This thorn provides routines for calculating the timestep for an evolution based on the spatial Cartesian grid
+spacing and a wave speed.
+</p><!--l. 30--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a>Description</h3>
+                                                                                       
+                                                                                       
+<!--l. 32--><p class="noindent" >Thorn <span 
+class="cmtt-10">Time </span>uses one of four methods to decide on the timestep to be used for the simulation. The method is
+chosen using the keyword parameter <span 
+class="cmtt-10">time::timestep</span><span 
+class="cmtt-10">_method</span>.
+</p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 38--><p class="noindent" > <span 
+class="cmtt-10">time::timestep</span><span 
+class="cmtt-10">_method = &#x0022;given&#x0022;</span>
+     </p><!--l. 40--><p class="noindent" >The timestep is fixed to the value of the parameter <span 
+class="cmtt-10">time::timestep</span>.
+     </p></li>
+     <li class="itemize">
+     <!--l. 43--><p class="noindent" > <span 
+class="cmtt-10">time::timestep</span><span 
+class="cmtt-10">_method = &#x0022;courant</span><span 
+class="cmtt-10">_static&#x0022;</span>
+     </p><!--l. 45--><p class="noindent" >This is the default method, which calculates the timestep once at the start of the simulation, based
+     on a simple courant type condition using the spatial gridsizes and the parameter <span 
+class="cmtt-10">time::dtfac</span>.
+                                              \[ \Delta t = \mbox {\tt dtfac} * \mbox {min}(\Delta x^i) \]
+      Note that it is up to the user to custom <span 
+class="cmtt-10">dtfac </span>to take into account the dimension of the space
+     being used, and the wave speed.
+     </p></li>
+     <li class="itemize">
+     <!--l. 55--><p class="noindent" > <span 
+class="cmtt-10">time::timestep</span><span 
+class="cmtt-10">_method = &#x0022;courant</span><span 
+class="cmtt-10">_speed&#x0022;</span>
+     </p><!--l. 57--><p class="noindent" >This choice implements a dynamic courant type condition, the timestep being set before each
+     iteration using the spatial dimension of the grid, the spatial grid sizes, the parameter <span 
+class="cmtt-10">courant</span><span 
+class="cmtt-10">_fac</span>
+     and the grid variable <span 
+class="cmtt-10">courant</span><span 
+class="cmtt-10">_wave</span><span 
+class="cmtt-10">_speed</span>. The algorithm used is
+                                              \[ \Delta t = \mbox {\tt courant\_fac} * \mbox {min}(\Delta x^i)/\mbox {\tt courant\_wave\_speed}/\sqrt {\mbox dim} \]
+      For this algorithm to be successful, the variable <span 
+class="cmtt-10">courant</span><span 
+class="cmtt-10">_wave</span><span 
+class="cmtt-10">_speed </span>must have been set by
+                                                                                       
+                                                                                       
+     some thorn to the maximum propagation speed on the grid <span 
+class="cmti-10">before </span>this thorn sets the timestep,
+     that is <span 
+class="cmtt-10">AT POSTSTEP BEFORE Time</span><span 
+class="cmtt-10">_Courant </span>(or earlier in the evolution loop). [Note: The name
+     <span 
+class="cmtt-10">courant</span><span 
+class="cmtt-10">_wave</span><span 
+class="cmtt-10">_speed </span>was poorly chosen here, the required speed is the maximum propagation speed
+     on the grid which may be larger than the maximum wave speed (for example with a shock wave
+     in hydrodynamics, also it is possible to have propagation without waves as with a pure advection
+     equation).
+     </p></li>
+     <li class="itemize">
+     <!--l. 74--><p class="noindent" > <span 
+class="cmtt-10">time::timestep</span><span 
+class="cmtt-10">_method = &#x0022;courant</span><span 
+class="cmtt-10">_time&#x0022;</span>
+     </p><!--l. 76--><p class="noindent" >This choice is similar to the method <span 
+class="cmtt-10">courant</span><span 
+class="cmtt-10">_speed </span>above, in implementing a dynamic timestep.
+     However the timestep is chosen using
+                                              \[ \Delta t = \mbox {\tt courant\_fac} * \mbox {\tt courant\_min\_time}/\sqrt {\mbox dim} \]
+      where the grid variable <span 
+class="cmtt-10">courant</span><span 
+class="cmtt-10">_min</span><span 
+class="cmtt-10">_time </span>must be set by some thorn to the minimum time
+     for a wave to cross a gridzone <span 
+class="cmti-10">before </span>this thorn sets the timestep, that is <span 
+class="cmtt-10">AT POSTSTEP BEFORE</span>
+     <span 
+class="cmtt-10">Time</span><span 
+class="cmtt-10">_Courant </span>(or earlier in the evolution loop).
+</p>
+     </li></ul>
+<!--l. 89--><p class="noindent" >In all cases, Thorn <span 
+class="cmtt-10">Time </span>sets the Cactus variable <span 
+class="cmtt-10">cctk</span><span 
+class="cmtt-10">_delta</span><span 
+class="cmtt-10">_time </span>which is passed as part of the macro
+<span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_ARGUMENTS </span>to thorns called by the scheduler.
+</p><!--l. 93--><p class="noindent" >Note that for hyperbolic problems, the Courant condition gives a minimum requirement for stability, namely
+that the numerical domain of dependency must encompass the physical domain of dependency,
+or
+                                           \[ \Delta t \le \mbox {min}(\Delta x^i)/\mbox {wave speed}/\sqrt {\mbox dim} \]
+                                                                                       
+                                                                                       
+</p><!--l. 100--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-30003"></a>Examples</h3>
+<!--l. 102--><p class="noindent" ><span 
+class="cmbx-10">Fixed Value Timestep</span>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-1">
+time::timestep_method = &#x0022;given&#x0022;
+time::timestep        = 0.1
+</pre>
+<!--l. 109--><p class="nopar" >
+</p><!--l. 113--><p class="noindent" ><span 
+class="cmbx-10">Calculate Static Timestep Based on Grid Spacings</span>
+</p><!--l. 116--><p class="noindent" >The following parameters set the timestep to be 0.25
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-2">
+grid::dx    = 0.5
+grid::dy    = 1.0
+grid::dz    = 1.0
+time::timestep_method = &#x0022;courant_static&#x0022;
+time::dtfac = 0.5
+</pre>
+<!--l. 126--><p class="nopar" >
+</p><!--l. 134--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-40004"></a>Parameters</h3>
+<!--l. 153--><p class="noindent" ></p> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /></colgroup><colgroup id="TBL-2-2g"><col 
+id="TBL-2-2" /><col 
+id="TBL-2-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:normal; text-align:left;" id="TBL-2-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">courant_fac</div>         </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-1-3"  
+class="td01">                                               REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-2-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">The courant timestep condition dt = courant</span><span 
+class="cmti-10">_fac*max(delta</span><span 
+class="cmti-10">_space)/speed/sqrt(dim)</span></div>         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-1"  
+class="td11">      <span 
+class="cmbx-10">Range        </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-3-3"  
+class="td01">                                         <span 
+class="cmbx-10">Default: </span>0.9  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-4-"><td  style="white-space:normal; text-align:left;" id="TBL-2-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-2-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">For positive timestep</div>                                                                               
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-5-"><td  style="white-space:normal; text-align:left;" id="TBL-2-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:0</div>                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-2-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">For negative timestep</div>                                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-6-1"  
+class="td11">                 </td></tr></table>
+<!--l. 160--><p class="noindent" ></p> <table id="TBL-3" class="tabular" 
+ 
+><colgroup id="TBL-3-1g"><col 
+id="TBL-3-1" /></colgroup><colgroup id="TBL-3-2g"><col 
+id="TBL-3-2" /><col 
+id="TBL-3-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-1-"><td  style="white-space:normal; text-align:left;" id="TBL-3-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">dtfac</div>                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-1-3"  
+class="td01">                                               REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-3-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">The standard timestep condition dt = dtfac*max(delta</span><span 
+class="cmti-10">_space)</span></div>                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-3-1"  
+class="td11">      <span 
+class="cmbx-10">Range        </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-3-3"  
+class="td01">                                         <span 
+class="cmbx-10">Default: </span>0.5  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-4-"><td  style="white-space:normal; text-align:left;" id="TBL-3-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-3-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">For positive timestep</div>                                                                               
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-5-"><td  style="white-space:normal; text-align:left;" id="TBL-3-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:0</div>                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-3-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">For negative timestep</div>                                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-6-1"  
+class="td11">                 </td></tr></table>
+<!--l. 167--><p class="noindent" ></p> <table id="TBL-4" class="tabular" 
+ 
+><colgroup id="TBL-4-1g"><col 
+id="TBL-4-1" /></colgroup><colgroup id="TBL-4-2g"><col 
+id="TBL-4-2" /><col 
+id="TBL-4-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-1-"><td  style="white-space:normal; text-align:left;" id="TBL-4-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">timestep</div>             </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-1-3"  
+class="td01">                                               REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-4-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Absolute value for timestep</span></div>                                                                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-3-1"  
+class="td11">      <span 
+class="cmbx-10">Range        </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-3-3"  
+class="td01">                                         <span 
+class="cmbx-10">Default: </span>0.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-4-"><td  style="white-space:normal; text-align:left;" id="TBL-4-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Could be anything</div>                                                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-5-1"  
+class="td11">                 </td></tr></table>
+<!--l. 174--><p class="noindent" ></p> <table id="TBL-5" class="tabular" 
+ 
+><colgroup id="TBL-5-1g"><col 
+id="TBL-5-1" /></colgroup><colgroup id="TBL-5-2g"><col 
+id="TBL-5-2" /><col 
+id="TBL-5-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-1-"><td  style="white-space:normal; text-align:left;" id="TBL-5-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">timestep_outevery</div></td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-1-3"  
+class="td01">                                                 INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-5-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">How often to output courant timestep</span></div>                                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-3-1"  
+class="td11">      <span 
+class="cmbx-10">Range        </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-3-3"  
+class="td01">                                           <span 
+class="cmbx-10">Default: </span>1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-4-"><td  style="white-space:normal; text-align:left;" id="TBL-5-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1:*</div>                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-5-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Zero means no output</div>                                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-5-1"  
+class="td11">                 </td></tr></table>
+<!--l. 181--><p class="noindent" ></p> <table id="TBL-6" class="tabular" 
+ 
+><colgroup id="TBL-6-1g"><col 
+id="TBL-6-1" /></colgroup><colgroup id="TBL-6-2g"><col 
+id="TBL-6-2" /><col 
+id="TBL-6-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-1-"><td  style="white-space:normal; text-align:left;" id="TBL-6-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">verbose</div>              </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-1-3"  
+class="td01">                                      BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-6-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Give selective information about timestep setting</span></div>                                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-3-1"  
+class="td11">                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-3-3"  
+class="td01">                                     <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-4-1"  
+class="td11">                 </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 188--><p class="noindent" ></p> <table id="TBL-7" class="tabular" 
+ 
+><colgroup id="TBL-7-1g"><col 
+id="TBL-7-1" /></colgroup><colgroup id="TBL-7-2g"><col 
+id="TBL-7-2" /><col 
+id="TBL-7-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-1-"><td  style="white-space:normal; text-align:left;" id="TBL-7-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">timestep_method</div>  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-1-3"  
+class="td01">                                        KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-7-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Method for calculating timestep</span></div>                                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-3-1"  
+class="td11">      <span 
+class="cmbx-10">Range        </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-3-3"  
+class="td01">                              <span 
+class="cmbx-10">Default: </span>courant_static  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-4-"><td  style="white-space:normal; text-align:left;" id="TBL-7-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">given</div>                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-7-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Use given timestep</div>                                                                                  
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-5-"><td  style="white-space:normal; text-align:left;" id="TBL-7-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">courant_static</div>      </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-7-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Courant condition at BASEGRID (using dtfac)</div>                                             
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-6-"><td  style="white-space:normal; text-align:left;" id="TBL-7-6-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">courant_speed</div>      </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-7-6-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Courant condition at POSTSTEP (using wavespeed and courant_fac)</div>               
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-7-"><td  style="white-space:normal; text-align:left;" id="TBL-7-7-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">courant_time</div>        </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-7-7-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Courant condition at POSTSTEP (using min time and courant_fac)</div>                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-8-1"  
+class="td11">                 </td></tr></table>
+<!--l. 195--><p class="noindent" ></p> <table id="TBL-8" class="tabular" 
+ 
+><colgroup id="TBL-8-1g"><col 
+id="TBL-8-1" /></colgroup><colgroup id="TBL-8-2g"><col 
+id="TBL-8-2" /><col 
+id="TBL-8-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-1-"><td  style="white-space:normal; text-align:left;" id="TBL-8-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">timestep_outonly</div>  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-1-3"  
+class="td01">                                    BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-8-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Don’t set a dynamic timestep, just output what it would be</span></div>                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-3-1"  
+class="td11">                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-3-3"  
+class="td01">                                   <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-4-1"  
+class="td11">                 </td></tr></table>
+<!--l. 202--><p class="noindent" ></p> <table id="TBL-9" class="tabular" 
+ 
+><colgroup id="TBL-9-1g"><col 
+id="TBL-9-1" /></colgroup><colgroup id="TBL-9-2g"><col 
+id="TBL-9-2" /><col 
+id="TBL-9-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-1-"><td  style="white-space:normal; text-align:left;" id="TBL-9-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">cctk_final_time</div>    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from CACTUS</td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-1-3"  
+class="td01">REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-2-1"  
+class="td11">                 </td></tr></table>
+<!--l. 207--><p class="noindent" ></p> <table id="TBL-10" class="tabular" 
+ 
+><colgroup id="TBL-10-1g"><col 
+id="TBL-10-1" /></colgroup><colgroup id="TBL-10-2g"><col 
+id="TBL-10-2" /><col 
+id="TBL-10-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-1-"><td  style="white-space:normal; text-align:left;" id="TBL-10-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">terminate</div>            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from CACTUS</td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-1-3"  
+class="td01">KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-2-1"  
+class="td11">                 </td></tr></table>
+<!--l. 214--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-50005"></a>Interfaces</h3>
+<!--l. 219--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-6000"></a>General</h4>
+<!--l. 221--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 223--><p class="noindent" >time
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-7000"></a>Grid Variables</h4>
+<!--l. 226--><p class="noindent" >
+</p>
+<h5 class="subsubsectionHead"><span class="titlemark">5.0.1   </span> <a 
+ id="x1-80005.0.1"></a>PRIVATE GROUPS</h5>
+<!--l. 230--><p class="noindent" ></p> <table id="TBL-11" class="tabular" 
+ 
+><colgroup id="TBL-11-1g"><col 
+id="TBL-11-1" /></colgroup><colgroup id="TBL-11-2g"><col 
+id="TBL-11-2" /></colgroup><colgroup id="TBL-11-3g"><col 
+id="TBL-11-3" /><col 
+id="TBL-11-4" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-1-1"  
+class="td11">   <span 
+class="cmbx-10">Group Names </span>   </td><td  style="white-space:nowrap; text-align:center;" id="TBL-11-1-2"  
+class="td10">   <span 
+class="cmbx-10">Variable Names </span> </td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-1-3"  
+class="td01">    <span 
+class="cmbx-10">Details </span>   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-1-4"  
+class="td11">                                 </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-2-1"  
+class="td11">    couranttemps       </td><td  style="white-space:nowrap; text-align:center;" id="TBL-11-2-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-2-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-2-4"  
+class="td11"> 0                                </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-3-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-11-3-2"  
+class="td10">      courant_dt       </td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-3-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-3-4"  
+class="td11"> Variable just for output  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-4-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-11-4-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-4-3"  
+class="td01">   dimensions  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-4-4"  
+class="td11"> 0                                </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-5-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-11-5-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-5-3"  
+class="td01">  distribution  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-5-4"  
+class="td11"> CONSTANT                </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-6-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-11-6-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-6-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-6-4"  
+class="td11"> SCALAR                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-7-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-11-7-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-7-3"  
+class="td01">    timelevels  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-7-4"  
+class="td11"> 1                                </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-8-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-11-8-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-8-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-8-4"  
+class="td11"> REAL                         </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-9-1"  
+class="td11">                    </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 244--><p class="noindent" >
+</p>
+<h5 class="subsubsectionHead"><span class="titlemark">5.0.2   </span> <a 
+ id="x1-90005.0.2"></a>PUBLIC GROUPS</h5>
+<!--l. 248--><p class="noindent" ></p> <table id="TBL-12" class="tabular" 
+ 
+><colgroup id="TBL-12-1g"><col 
+id="TBL-12-1" /></colgroup><colgroup id="TBL-12-2g"><col 
+id="TBL-12-2" /></colgroup><colgroup id="TBL-12-3g"><col 
+id="TBL-12-3" /><col 
+id="TBL-12-4" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-1-1"  
+class="td11">   <span 
+class="cmbx-10">Group Names </span>   </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-1-2"  
+class="td10">   <span 
+class="cmbx-10">Variable Names </span> </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-1-3"  
+class="td01">    <span 
+class="cmbx-10">Details </span>   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-1-4"  
+class="td11">                                                </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-2-1"  
+class="td11">      speedvars         </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-2-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-2-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-2-4"  
+class="td11"> 0                                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-3-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-3-2"  
+class="td10">  courant_wave_speed </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-3-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-3-4"  
+class="td11"> Speed to use for Courant condition  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-4-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-4-2"  
+class="td10">   courant_min_time   </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-4-3"  
+class="td01">   dimensions  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-4-4"  
+class="td11"> 0                                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-5-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-5-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-5-3"  
+class="td01">  distribution  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-5-4"  
+class="td11"> CONSTANT                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-6-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-6-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-6-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-6-4"  
+class="td11"> SCALAR                                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-7-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-7-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-7-3"  
+class="td01">    timelevels  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-7-4"  
+class="td11"> 1                                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-8-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-8-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-8-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-8-4"  
+class="td11"> REAL                                        </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-9-1"  
+class="td11">                    </td></tr></table>
+<!--l. 265--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">6   </span> <a 
+ id="x1-100006"></a>Schedule</h3>
+<!--l. 271--><p class="noindent" >This section lists all the variables which are assigned storage by thorn CactusBase/Time. Storage can
+either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 274--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-11000"></a>Storage</h4>
+<!--l. 276--><p class="noindent" > 
+</p><!--l. 278--><p class="noindent" ></p> <table id="TBL-13" class="tabular" 
+ 
+><colgroup id="TBL-13-1g"><col 
+id="TBL-13-1" /><col 
+id="TBL-13-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-13-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-13-1-1"  
+class="td11"> <span 
+class="cmbx-10">Always:                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-1-2"  
+class="td11">    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-13-2-1"  
+class="td11"> speedvars couranttemps  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-2-2"  
+class="td11">    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-13-3-1"  
+class="td11">                                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-3-2"  
+class="td11">    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-13-4-1"  
+class="td11">                      </td></tr></table>
+<!--l. 286--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-12000"></a>Scheduled Functions</h4>
+<!--l. 289--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_BASEGRID</span>
+</p><!--l. 291--><p class="noindent" >      time_initialise
+</p><!--l. 293--><p class="noindent" >     <span 
+class="cmti-10">initialise time variables</span>
+</p><!--l. 296--><p class="noindent" > 
+</p><!--l. 298--><p class="noindent" ></p> <table id="TBL-14" class="tabular" 
+ 
+><colgroup id="TBL-14-1g"><col 
+id="TBL-14-1" /><col 
+id="TBL-14-2" /><col 
+id="TBL-14-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-14-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-1-2"  
+class="td11"> Before:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-1-3"  
+class="td11"> time_simple                         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-2-3"  
+class="td11"> c                                       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-3-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-3-3"  
+class="td11"> global                                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-4-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-4-3"  
+class="td11"> function                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-5-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-5-3"  
+class="td11"> time::speedvars                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-6-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-6-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-6-3"  
+class="td11"> time::courant_dt(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-7-1"  
+class="td11">    </td></tr></table>
+<!--l. 310--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_BASEGRID </span>(conditional)
+</p><!--l. 312--><p class="noindent" >      time_simple
+</p><!--l. 314--><p class="noindent" >     <span 
+class="cmti-10">set timestep based on courant condition (courant</span><span 
+class="cmti-10">_static)</span>
+</p><!--l. 317--><p class="noindent" > 
+                                                                                       
+                                                                                       
+</p><!--l. 319--><p class="noindent" ></p> <table id="TBL-15" class="tabular" 
+ 
+><colgroup id="TBL-15-1g"><col 
+id="TBL-15-1" /><col 
+id="TBL-15-2" /><col 
+id="TBL-15-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-15-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-1-3"  
+class="td11"> spatialspacings  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-2-3"  
+class="td11"> c                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-3-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-3-3"  
+class="td11"> singlemap        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-4-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-4-3"  
+class="td11"> function           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-5-1"  
+class="td11">    </td></tr></table>
+<!--l. 329--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_BASEGRID </span>(conditional)
+</p><!--l. 331--><p class="noindent" >      time_courant
+</p><!--l. 333--><p class="noindent" >     <span 
+class="cmti-10">set timestep based on courant condition (courant</span><span 
+class="cmti-10">_speed)</span>
+</p><!--l. 336--><p class="noindent" > 
+</p><!--l. 338--><p class="noindent" ></p> <table id="TBL-16" class="tabular" 
+ 
+><colgroup id="TBL-16-1g"><col 
+id="TBL-16-1" /><col 
+id="TBL-16-2" /><col 
+id="TBL-16-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-16-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-1-3"  
+class="td11"> spatialspacings                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-2-3"  
+class="td11"> c                                       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-3-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-3-3"  
+class="td11"> singlemap                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-4-2"  
+class="td11"> Reads:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-4-3"  
+class="td11"> time::speedvars                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-5-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-5-3"  
+class="td11"> function                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-6-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-6-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-6-3"  
+class="td11"> time::courant_dt(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-7-1"  
+class="td11">    </td></tr></table>
+<!--l. 350--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_POSTSTEP </span>(conditional)
+</p><!--l. 352--><p class="noindent" >      time_courant
+</p><!--l. 354--><p class="noindent" >     <span 
+class="cmti-10">reset timestep each iteration</span>
+</p><!--l. 357--><p class="noindent" > 
+</p><!--l. 359--><p class="noindent" ></p> <table id="TBL-17" class="tabular" 
+ 
+><colgroup id="TBL-17-1g"><col 
+id="TBL-17-1" /><col 
+id="TBL-17-2" /><col 
+id="TBL-17-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-17-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-1-3"  
+class="td11"> spatialspacings                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-2-3"  
+class="td11"> c                                       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-3-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-3-3"  
+class="td11"> singlemap                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-4-2"  
+class="td11"> Reads:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-4-3"  
+class="td11"> time::speedvars                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-5-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-5-3"  
+class="td11"> function                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-6-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-6-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-6-3"  
+class="td11"> time::courant_dt(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-7-1"  
+class="td11">    </td></tr></table>
+<!--l. 371--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_BASEGRID </span>(conditional)
+</p><!--l. 373--><p class="noindent" >      time_simple
+</p><!--l. 375--><p class="noindent" >     <span 
+class="cmti-10">set timestep based on courant condition (courant</span><span 
+class="cmti-10">_time)</span>
+</p><!--l. 378--><p class="noindent" > 
+</p><!--l. 380--><p class="noindent" ></p> <table id="TBL-18" class="tabular" 
+ 
+><colgroup id="TBL-18-1g"><col 
+id="TBL-18-1" /><col 
+id="TBL-18-2" /><col 
+id="TBL-18-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-18-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-1-3"  
+class="td11"> spatialspacings  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-2-3"  
+class="td11"> c                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-3-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-3-3"  
+class="td11"> singlemap        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-4-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-4-3"  
+class="td11"> function           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-5-1"  
+class="td11">    </td></tr></table>
+<!--l. 390--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_POSTSTEP </span>(conditional)
+</p><!--l. 392--><p class="noindent" >      time_courant
+</p><!--l. 394--><p class="noindent" >     <span 
+class="cmti-10">reset timestep each iteration</span>
+</p><!--l. 397--><p class="noindent" > 
+</p><!--l. 399--><p class="noindent" ></p> <table id="TBL-19" class="tabular" 
+ 
+><colgroup id="TBL-19-1g"><col 
+id="TBL-19-1" /><col 
+id="TBL-19-2" /><col 
+id="TBL-19-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-19-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-1-3"  
+class="td11"> spatialspacings                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-2-3"  
+class="td11"> c                                       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-3-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-3-3"  
+class="td11"> singlemap                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-4-2"  
+class="td11"> Reads:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-4-3"  
+class="td11"> time::speedvars                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-5-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-5-3"  
+class="td11"> function                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-6-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-6-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-6-3"  
+class="td11"> time::courant_dt(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-7-1"  
+class="td11">    </td></tr></table>
+<!--l. 411--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_BASEGRID </span>(conditional)
+</p><!--l. 413--><p class="noindent" >      time_given
+</p><!--l. 415--><p class="noindent" >     <span 
+class="cmti-10">set fixed timestep</span>
+</p><!--l. 418--><p class="noindent" > 
+</p><!--l. 420--><p class="noindent" ></p> <table id="TBL-20" class="tabular" 
+ 
+><colgroup id="TBL-20-1g"><col 
+id="TBL-20-1" /><col 
+id="TBL-20-2" /><col 
+id="TBL-20-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-20-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-1-3"  
+class="td11"> spatialspacings  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-2-3"  
+class="td11"> c                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-3-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-3-3"  
+class="td11"> singlemap        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-4-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-4-3"  
+class="td11"> function           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-5-1"  
+class="td11">    </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 428--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-13000"></a>Aliased Functions</h4>
+<!--l. 430--><p class="noindent" > 
+</p><!--l. 432--><p class="noindent" ></p> <table id="TBL-21" class="tabular" 
+ 
+><colgroup id="TBL-21-1g"><col 
+id="TBL-21-1" /><col 
+id="TBL-21-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-21-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-21-1-1"  
+class="td11"> <span 
+class="cmbx-10">Alias Name: </span>         </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-1-2"  
+class="td11"> <span 
+class="cmbx-10">Function Name:  </span></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-21-2-1"  
+class="td11"> Time_Courant </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-2-2"  
+class="td11"> TemporalSpacings</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-21-3-1"  
+class="td11"> Time_Given                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-3-2"  
+class="td11"> TemporalSpacings  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-21-4-1"  
+class="td11"> Time_Simple                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-4-2"  
+class="td11"> TemporalSpacings  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-5-"><td  style="white-space:nowrap; text-align:left;" id="TBL-21-5-1"  
+class="td11">                      </td></tr></table>
+ 
+</body></html> 
+
+                                                                                       
+
+
