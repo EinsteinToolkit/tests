@@ -1,0 +1,571 @@
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+\title{IOHDF5}
+\author{Thomas Radke}
+\date{$ $Date$ $}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+\ifx\ThisThorn\undefined
+\newcommand{\ThisThorn}{{\it IOHDF5}}
+\else
+\renewcommand{\ThisThorn}{{\it IOHDF5}}
+\fi
+
+\begin{abstract}
+Thorn \ThisThorn\ provides an I/O method to output variables in HDF5 file format.
+It also implements checkpointing/recovery functionality using HDF5.
+\end{abstract}
+%
+%
+\section{Purpose}
+%
+Thorn \ThisThorn\ uses the standard I/O library HDF5\footnote{Hierarchical Data
+Format version 5, see {\tt http://hdf.ncsa.uiuc.edu/whatishdf5.html} for details}
+to output any type of CCTK grid variables (grid scalars, grid functions, and
+grid arrays of arbitrary dimension) in the HDF5 file format.\\
+
+Output is done by invoking the \ThisThorn\ I/O method which thorn \ThisThorn
+registers with the flesh's I/O interface at startup.\\
+
+Data is written into files named {\tt "<varname>.h5"}.
+Such datafiles can be used for further postprocessing (eg. visualization)
+or fed back into Cactus via the filereader capabilities of thorn {\bf IOUtil}.
+
+
+\section{\ThisThorn\ Parameters}
+
+Parameters to control the \ThisThorn\ I/O method are:
+\begin{itemize}
+  \item {\tt IOHDF5::out\_every} (steerable)\\
+        How often to do periodic \ThisThorn\ output. If this parameter is set
+        in the parameter file, it will override the setting of the shared
+        {\tt IO::out\_every} parameter. The output frequency can also be set
+        for individual variables using the {\tt out\_every} option in an option
+        string appended to the {\tt IOHDF5::out\_vars} parameter.
+  \item {\tt IOHDF5::out\_vars} (steerable)\\
+        The list of variables to output using the \ThisThorn\ I/O method.
+        The variables must be given by their fully qualified variable or group
+        name. The special keyword {\it all} requests \ThisThorn\ output for
+        all variables. Multiple names must be separated by whitespaces.\\
+        An option string can be appended in curly braces to a group/variable
+        name. Supported options are {\tt out\_every} (to set the output
+        frequency for individual variables) and hyperslab options (see section
+        \ref{IOHDF5_output_hyperslabs} for details).
+  \item {\tt IOHDF5::out\_dir}\\
+        The directory in which to place the \ThisThorn\ output files.
+        If the directory doesn't exist at startup it will be created.\\
+        If this parameter is set to an empty string \ThisThorn\ output will go
+        to the standard output directory as specified in {\tt IO::out\_dir}.
+\end{itemize}
+
+
+\section{Serial versus Parallel Output}
+
+According to the ouptput mode parameter settings ({\tt IO::out\_mode},
+{\tt IO::out\_unchunked},\newline{\tt IO::out\_proc\_every}) of thorn {\bf IOUtil}, thorn
+\ThisThorn\ will output distributed data either
+\begin{itemize}
+  \item in serial into a single unchunked file
+\begin{verbatim}
+  IO::out_mode      = "onefile"
+  IO::out_unchunked = "yes"
+\end{verbatim}
+  \item in parallel, that is, into separate files containing chunks of the
+        individual processors' patches of the distributed array
+\begin{verbatim}
+  IO::out_mode      = "proc|np"
+\end{verbatim}
+\end{itemize}
+The default is to output data in parallel, in order to get maximum I/O
+performance. If needed, you can recombine the resulting chunked datafiles
+into a single unchunked file using the recombiner utility program.
+See section \ref{IOHDF5_utility_programs} for information how to build the
+recombiner program.
+
+
+\section{Output of Hyperslab Data}
+\label{IOHDF5_output_hyperslabs}
+
+By default, thorn \ThisThorn\ outputs multidimensional Cactus variables with
+their full contents resulting in maximum data output. This can be changed for
+individual variables by specifying a hyperslab as a subset of the data within
+the N-dimensional volume. Such a subset (called a {\it hyperslab}) is generally
+defined as an orthogonal region into the multidimensional dataset, with an
+origin (lower left corner of the hyperslab), direction vectors (defining the
+number of hyperslab dimensions and spanning the hyperslab within the
+N-dimensional grid), an extent (the length of the hyperslab in each of its
+dimensions), and an optional downsampling factor.
+
+Hyperslab parameters can be set for individual variables using an option string
+appended to the variables' full names in the {\tt IOHDF5::out\_vars} parameter.
+
+Here is an example which outputs two 3D grid functions {\tt Grid::r} and {\tt
+Wavetoy::phi}. While the first is output with their full contents at every
+5th iteration (overriding the {\tt IOHDF5::out\_every} parameter for this
+variable), a two-dimensional hyperslab is defined for the second grid function.
+This hyperslab defines a subvolume to output, starting with a 5 grid points
+offset into the grid, spanning in the yz-plane, with an extent of 10 and 20
+grid points in y- and z-direction respectively. For this hyperslab, only every
+other grid point will be output.
+
+\begin{verbatim}
+  IOHDF5::out_every = 1
+  IOHDF5::out_vars  = "Grid::x{ out_every = 5 }
+                       Wavetoy::phi{ origin     = {4 4 4}
+                                     direction  = {0 1 0
+                                                   0 0 1}
+                                     extent     = {10 20}
+                                     downsample = {2 2}   }"
+\end{verbatim}
+
+The hyperslab parameters which can be set in an option string are:
+\begin{itemize}
+  \item{\tt origin[N]}\\
+    This specifies the origin of the hyperslab. It must be given as an array
+    of integer values with $N$ elements. Each value specifies the offset in
+    grid points in this dimension into the N-dimensional volume of the grid
+    variable.\\
+    If the origin for a hyperslab is not given, if will default to 0.
+  \item{\tt direction[N][M]}\\
+    The direction vectors specify both the directions in which the hyperslab
+    should be spanned (each vector defines one direction of the hyperslab)
+    and its dimensionality ($=$ the total number of dimension vectors).
+    The direction vectors must be given as a concatenated array of integer
+    values. The direction vectors must not be a linear combination of each other
+    or null vectors.\\
+    If the direction vectors for a hyperslab are not given, the hyperslab
+    dimensions will default to $N$, and its directions are parallel to the
+    underlying grid.
+  \item{\tt extent[M]}\\
+    This specifies the extent of the hyperslab in each of its dimensions as
+    a number of grid points. It must be given as an array of integer values
+    with $M$ elements ($M$ being the number of hyperslab dimensions).\\
+    If the extent for a hyperslab is not given, it will default to the grid
+    variable's extent. Note that if the origin is set to
+    a non-zero value, you should also set the hyperslab extent otherwise
+    the default extent would possibly exceed the variable's grid extent.
+  \item{\tt downsample[M]}\\
+    To select only every so many grid points from the hyperslab you can set
+    the downsample option. It must be given as an array of integer values
+    with $M$ elements ($M$ being the number of hyperslab dimensions).\\
+    If the downsample option is not given, it will default to the settings
+    of the general downsampling parameters {\tt IO::out\_downsample\_[xyz]} as
+    defined by thorn {\bf IOUtil}.
+\end{itemize}
+
+
+\section{\ThisThorn\ Output Restrictions}
+
+Due to the naming scheme used to build unique names for HDF5 datasets
+(see \ref{IOHDF5_import_data}, the \ThisThorn\ I/O method currently has the
+restriction that it can output a given variable (with a specific timelevel) --
+or a hyperslab of it -- only once per iteration.
+
+As a workaround, you should request output in such a case by using the
+flesh's I/O API {\tt CCTK\_\-OutputVarAs\-ByMethod()} routine with a different
+alias name for each output. Note that this will create multiple output files
+for the same variable then.
+
+\section{Checkpointing \& Recovery}
+
+Thorn \ThisThorn\ can also be used for creating HDF5 checkpoint files and
+recovering from such files later on.
+
+Checkpoint routines are scheduled at several timebins so that you can save
+the current state of your simulation after the initial data phase,
+during evolution, or at termination. Checkpointing for thorn \ThisThorn\
+is enabled by setting the parameter {\tt IOHDF5::checkpoint = "yes"}.
+
+A recovery routine is registered with thorn {\bf IOUtil} in order to restart
+a new simulation from a given HDF5 checkpoint.
+The very same recovery mechanism is used to implement a filereader
+functionality to feed back data into Cactus.
+
+Checkpointing and recovery are controlled by corresponding checkpoint/recovery
+parameters of thorn {\bf IOUtil} (for a description of these parameters please
+refer to this thorn's documentation).  The parameter {\tt
+  IO::checkpoint\_every\_walltime\_hours} is not (yet) supported.
+
+
+\section{Importing External Data Into Cactus With \ThisThorn}
+\label{IOHDF5_import_data}
+
+In order to import external data into Cactus (eg. to initialize some variable)
+you first need to convert this data into an HDF5 datafile which then can be
+processed by the registered recovery routine of thorn \ThisThorn.
+
+The following description explains the HDF5 file layout of an unchunked
+datafile which thorn \ThisThorn\ expects in order to restore Cactus variables
+from it properly. There is also a well-documented example C program provided
+({\tt IOHDF5/doc/CreateIOHDF5datafile.c}) which illustrates how to create
+a datafile with \ThisThorn\ file layout. This working example can be used as a
+template for building your own data converter program.\\
+
+\begin{enumerate}
+  \item Actual data is stored as multidimensional datasets in an HDF5 file.
+        There is no nested grouping structure, every dataset is located
+        in the root group.\\
+        A dataset's name must match the following naming pattern which
+        guarantees to generate unique names:
+\begin{verbatim}
+  "<full variable name> timelevel <timelevel> at iteration <iteration>"
+\end{verbatim}
+        \ThisThorn's recovery routine parses a dataset's name according to this
+        pattern to determine the Cactus variable to restore, along with its
+        timelevel. The iteration number is just informative and not needed here.
+
+  \item The type of your data as well as its dimensions are already
+        inherited by a dataset itself as metainformation. But this is not
+        enough for \ThisThorn\ to safely match it against a specific Cactus variable.
+        For that reason, the variable's groupname, its grouptype, and the
+        total number of timelevels must be attached to every dataset
+        as attribute information.
+
+  \item Finally, the recovery routine needs to know how the datafile to
+        recover from was created:
+        \begin{itemize}
+          \item Does the file contain chunked or unchunked data ?
+          \item How many processors were used to produce the data ?
+          \item How many I/O processors were used to write the data ?
+          \item What Cactus version is this datafile compatible with ?
+        \end{itemize}
+        Such information is put into as attributes into a group named
+        {\tt "Global Attributes"}. Since we assume unchunked data here
+        the processor information isn't relevant --- unchunked data can
+        be fed back into a Cactus simulation running on an arbitrary
+        number of processors.\\
+        The Cactus version ID must be present to indicate that grid variables
+        with multiple timelevels should be recovered following the new
+        timelevel scheme (as introduced in Cactus beta 10).
+\end{enumerate}
+
+The example C program goes through all of these steps and creates a datafile
+{\tt x.h5} in \ThisThorn\ file layout which contains a single dataset named
+{\tt "grid::x timelevel 0 at iteration 0"}, with groupname
+{\tt "grid::coordinates"}, grouptype {\tt CCTK\_GF} (thus identifying the
+variable as a grid function), and the total number of timelevels set to 1.
+
+The global attributes are set to
+{\tt "unchunked" $=$ "yes", nprocs $=$ 1,} and {\tt ioproc\_every $=$ 1}.\\
+
+Once you've built and ran the program you can easily verify if it worked
+properly with
+\begin{verbatim}
+  h5dump x.h5
+\end{verbatim}
+which lists all objects in the datafile along with their values.
+It will also dump the contents of the 3D dataset. Since it only contains zeros
+it would probably not make much sense to feed this datafile into Cactus for
+initializing your x coordinate grid function :-)
+%
+%
+\section{Building A Cactus Configuration with \ThisThorn}
+%
+The Cactus distribution does not contain the HDF5 header files and library which
+is used by thorn \ThisThorn. You have to include the thorn HDF5 (located
+in the Cactus ExternalLibraries arrangement). This thorn will either build
+its own HDF5 library, or use an installed version in some cases.
+
+Thorn \ThisThorn\ inherits from {\it IOUtil} and {\it IOHDF5Util}
+so you need to include these thorns in your thorn list to build a configuration
+with \ThisThorn.
+%
+%
+\section{Utility Programs provided by \ThisThorn}
+%
+\label{IOHDF5_utility_programs}
+
+Thorn \ThisThorn\ provides the following utility programs:
+%
+\begin{itemize}
+  \item {\tt hdf5\_recombiner}\\
+    Recombines chunked HDF5 datafile(s) into a single unchunked HDF5 datafile.
+    By applying the {\tt -single\_precision} command line option,
+    double precision floating-point datasets can be converted into single
+    precision during the recombination.
+  \item {\tt hdf5\_convert\_from\_ieeeio}\\
+    Converts a datafile created by thorn {\bf IOFlexIO} into an HDF5 datafile. Your thornlist must include this thorn
+    in its thornlist in order to build the FlexIO-to-HDF5 utility program.
+  \item {\tt hdf5\_convert\_from\_sdf}\\
+    Converts a datafile created by thorn {\bf CactusIO/IOSDF} or other Cactus-external programs into an HDF5 datafile. Your thornlist must include this thorn
+    in its thornlist in order to build the SDF-to-HDF5 utility program.
+\end{itemize}
+%
+All utility programs are located in the {\tt src/util/} subdirectory of thorn
+\ThisThorn. To build the utilities just do a
+
+\begin{verbatim}
+  make <configuration>-utils
+\end{verbatim}
+
+in the Cactus toplevel directory. The executables will then be placed in the
+{\tt exe/<configuration>/} subdirectory.
+
+All utility programs are self-explaining -- just call them without arguments
+to get a short usage info.
+If any of these utility programs is called without arguments it will print
+a usage message.
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{strict\_io\_parameter\_check}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{checkpoint} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Do checkpointing with HDF5}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{checkpoint\_next} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Checkpoint at next iteration}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_dir} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Output directory for IOHDF5 files, overrides IO::out\_dir}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .+} & \multicolumn{2}{p{\paraWidth}|}{A valid directory name} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering \^\$} & \multicolumn{2}{p{\paraWidth}|}{An empty string to choose the default from IO::out\_dir} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_every} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How often to do IOHDF5 output, overrides IO::out\_every}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{Every so many iterations} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:} & \multicolumn{2}{p{\paraWidth}|}{Disable IOHDF5 output} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1:} & \multicolumn{2}{p{\paraWidth}|}{Default to IO::out\_every} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_vars} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Variables to output in HDF5 file format}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .+} & \multicolumn{2}{p{\paraWidth}|}{Space-separated list of fully qualified variable/group names} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering \^\$} & \multicolumn{2}{p{\paraWidth}|}{An empty string to output nothing} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{checkpoint\_every} & {\bf Scope:} shared from IO & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{checkpoint\_id} & {\bf Scope:} shared from IO & BOOLEAN \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{checkpoint\_keep} & {\bf Scope:} shared from IO & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{checkpoint\_on\_terminate} & {\bf Scope:} shared from IO & BOOLEAN \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{io\_out\_dir} & {\bf Scope:} shared from IO & STRING \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{io\_out\_every} & {\bf Scope:} shared from IO & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_mode} & {\bf Scope:} shared from IO & KEYWORD \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_save\_parameters} & {\bf Scope:} shared from IO & KEYWORD \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_timesteps\_per\_file} & {\bf Scope:} shared from IO & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{print\_timing\_info} & {\bf Scope:} shared from IO & BOOLEAN \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{recover} & {\bf Scope:} shared from IO & KEYWORD \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{recover\_and\_remove} & {\bf Scope:} shared from IO & BOOLEAN \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{recover\_file} & {\bf Scope:} shared from IO & STRING \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{strict\_io\_parameter\_check} & {\bf Scope:} shared from IO & BOOLEAN \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{verbose} & {\bf Scope:} shared from IO & KEYWORD \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+iohdf5
+\vspace{2mm}
+
+\vspace{5mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn CactusPUGHIO/IOHDF5.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}NONE
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_STARTUP} 
+
+\hspace{5mm} iohdf5\_startup 
+
+\hspace{5mm}{\it iohdf5 startup routine } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & iohdf5util\_startup \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_CPINITIAL} 
+
+\hspace{5mm} iohdf5\_initialdatacheckpoint 
+
+\hspace{5mm}{\it initial data checkpoint routine } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_CHECKPOINT} 
+
+\hspace{5mm} iohdf5\_evolutioncheckpoint 
+
+\hspace{5mm}{\it evolution data checkpoint routine } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_TERMINATE} 
+
+\hspace{5mm} iohdf5\_terminationcheckpoint 
+
+\hspace{5mm}{\it termination checkpoint routine } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & iohdf5util\_terminate \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_RECOVER\_PARAMETERS}   (conditional) 
+
+\hspace{5mm} iohdf5\_recoverparameters 
+
+\hspace{5mm}{\it parameter recovery routine } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}
