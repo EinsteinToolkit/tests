@@ -1,0 +1,1087 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>Using Cartoon2D</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">Using Cartoon2D</h2>
+ <div class="author" ><span 
+class="cmr-12">Denis Pollney</span></div>
+<br />
+<div class="date" >\( \)<span 
+class="cmr-12">Date</span>\( \)</div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 32--><p class="noindent" ><span 
+class="cmr-9">The </span><span 
+class="cmtt-9">Cartoon2D </span><span 
+class="cmr-9">thorn allows fully 3D codes to be used to model axisymmetric systems, by considering</span>
+     <span 
+class="cmr-9">a 3D evolution which is only one plane thick and applying a rotational tensor transformation to</span>
+     <span 
+class="cmr-9">the flat faces of the plane as a boundary condition. This allows 3D codes to be tested efficiently</span>
+     <span 
+class="cmr-9">on 2D problems, as well as providing a means of carrying out axisymmetric evolutions in cartesian</span>
+     <span 
+class="cmr-9">coordinates without problems at the axis.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Background</h3>
+<!--l. 43--><p class="noindent" >The <span 
+class="cmtt-10">Cartoon2D </span>thorn is the implementation of an idea first presented in <span class="cite">[<a 
+href="#XAlcubierre-etal-2001">1</a>]</span>. The principle is to use a
+3-dimensional Cartesian \((x,y,z)\) coordinate grid which covers the \(y=0\) plane, but is only one finite difference molecule in
+width in the \(y\)-direction. The field variables in the \(y=0\) plane can be updated using standard 3D \((x,y,z)\) coordinate finite
+differencing, with off-plane derivatives calculated by performing appropriate rotations of field variables using the
+axisymmetic assumption. This technique has the advantage of removing a number of the axis problems normally
+associated with axisymmetric codes.
+                                                                                       
+                                                                                       
+</p><!--l. 54--><p class="noindent" >The ‘cartoon’ method was first implemented in Cactus3 by Steve Brandt and Bernd Brügmann, and was
+translated to Cactus4 by Sai Iyer. Details of the method can be found in <span class="cite">[<a 
+href="#XAlcubierre-etal-2001">1</a>]</span>. This document provides a practical
+guide to using the thorn as it is currently implemented.
+</p><!--l. 60--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a>Basic usage</h3>
+<!--l. 62--><p class="noindent" >Only a small number of parameters need to be set to use <span 
+class="cmtt-10">Cartoon2D</span>.
+</p><!--l. 65--><p class="noindent" >
+     </p><dl class="description"><dt class="description">
+<span 
+class="cmtt-10">cartoon</span><span 
+class="cmtt-10">_active</span> </dt><dd 
+class="description">
+     <!--l. 67--><p class="noindent" >A flag which determines whether or not the cartoon boundary condition should be applied. This
+     should be set to “yes” to use <span 
+class="cmtt-10">Cartoon2D</span>, otherwise the evolution will be assumed to be standard
+     3D.
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">order</span> </dt><dd 
+class="description">
+     <!--l. 72--><p class="noindent" >Determines the order of interpolations to be carried out. This will determine the number of ghost
+     zones that you need to specify in the \(y\)-direction.
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">allow</span><span 
+class="cmtt-10">_grid</span><span 
+class="cmtt-10">_resize</span> </dt><dd 
+class="description">
+     <!--l. 76--><p class="noindent" >When this flag is set to “yes”, <span 
+class="cmtt-10">Cartoon2D </span>is allowed to modify the grid sizes specified in the
+     parameter file so that a cartoon-compatible grid is used. See below.
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">verbose</span> </dt><dd 
+class="description">
+     <!--l. 81--><p class="noindent" >Causes <span 
+class="cmtt-10">Cartoon2D </span>to print a lot of messages.
+</p>
+     </dd></dl>
+<!--l. 91--><p class="noindent" >For example, the following is a section of a parameter file which sets up a cartoon-style grid in bitant
+mode.
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-1">
+
+activethorns                            = &#x0022;cartoon2d cartgrid3d pugh&#x0022;
+
+cartoon2d::cartoon_active               = &#x0022;yes&#x0022;
+cartoon2d::order                        = 3
+cartoon2d::allow_grid_resize            = &#x0022;yes&#x0022;
+
+grid::type                              = &#x0022;byspacing&#x0022;
+grid::domain                            = &#x0022;bitant&#x0022;
+grid::bitant_plane                      = &#x0022;xy&#x0022;
+grid::dxyz                              = 0.2
+
+driver::global_nx                       = 16
+driver::global_ny                       = 3
+driver::global_nz                       = 16
+
+driver::ghost_size_x                    = 2
+driver::ghost_size_y                    = 1
+driver::ghost_size_z                    = 2
+
+driver::processor_topology              = &#x0022;manual&#x0022;
+driver::processor_topology_3d_x         = 1
+driver::processor_topology_3d_y         = 1
+driver::processor_topology_3d_z         = 2
+
+grid::avoid_originy                     = &#x0022;no&#x0022;
+
+</pre>
+<!--l. 121--><p class="nopar" > The following features are worth noting: </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 125--><p class="noindent" >The <span 
+class="cmtt-10">order </span>parameter specifies that 3rd order interpolation is to be used. This requires that only one
+     ghost zone is required in the y direction (<span 
+class="cmtt-10">ghost</span><span 
+class="cmtt-10">_size</span><span 
+class="cmtt-10">_y</span>). If 4th order interpolation was specified,
+     then two ghost zones would be required.
+     </p></li>
+     <li class="itemize">
+     <!--l. 131--><p class="noindent" >The <span 
+class="cmtt-10">allow</span><span 
+class="cmtt-10">_grid</span><span 
+class="cmtt-10">_resize </span>flag has been set, allowing <span 
+class="cmtt-10">Cartoon2D </span>to modify the grid appropriately
+     so that, for instance, it only extends a given number of ghost zones beyond the \(z\)-axis.
+     </p></li>
+     <li class="itemize">
+     <!--l. 136--><p class="noindent" >The bitant plane should always be “<span 
+class="cmtt-10">xy</span>”, which means that only the positive \(z\)-axis is evolved and a
+     reflection boundary is imposed along \(z=0\).
+                                                                                       
+                                                                                       
+     </p></li>
+     <li class="itemize">
+     <!--l. 140--><p class="noindent" >Though not necessary, it is often helpful to specify the processor topology explicitly to ensure that
+     that only one processor is allocated to the \(y\) direction, and that the processors in the \(x\) and \(z\) directions
+     reflect the relative lengths of these axes (though in this example it doesn’t matter which of these
+     axes gets two processors).
+     </p></li>
+     <li class="itemize">
+     <!--l. 147--><p class="noindent" >The <span 
+class="cmtt-10">avoid</span><span 
+class="cmtt-10">_originy </span>parameter needs to be turned off so that the cartoon plane corresponds to \(y=0\).
+</p>
+     </li></ul>
+<!--l. 151--><p class="noindent" >Also, it is important to keep in mind that other thorns may also require their own parameters to be set in order
+to interact appropriately with <span 
+class="cmtt-10">Cartoon2D</span>. For instance, see Section <a 
+href="#x1-40004">4<!--tex4ht:ref: sec:interaction --></a>. Examples of working parameter files can
+be found in the <span 
+class="cmtt-10">Cartoon2D/test/ </span>directory.
+</p>
+<hr class="figure" /><div class="figure" 
+>
+                                                                                       
+                                                                                       
+<a 
+ id="x1-20011"></a>
+                                                                                       
+                                                                                       
+<!--l. 159--><p class="noindent" ><span class="rotatebox" style="transform: rotate(-0deg);"><img 
+src="cartoon_plane.png" alt="PIC"  
+width="398" /></span>
+<br /> </p><div class="caption" 
+><span class="id">Figure 1: </span><span  
+class="content">The cartoon plane layout. The symmetry axis is the \(z\)-axis, with grid functions defined on the \(y=0\)
+plane, in this example with two ghost zones.</span></div><!--tex4ht:label?: x1-20011 -->
+                                                                                       
+                                                                                       
+</div><hr class="endfigure" />
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-30003"></a>Automatic grid re-sizing</h3>
+<!--l. 168--><p class="noindent" >The <span 
+class="cmtt-10">Cartoon2D </span>thorn has some non-standard requirements of the grid which is normally set up by the <span 
+class="cmtt-10">grid</span>
+implementation (for instance, by <span 
+class="cmtt-10">CartGrid3D</span>). In particular,
+</p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 174--><p class="noindent" >the grid in the \(y\) direction should be exactly one plane in width, plus twice the number of \(y\) ghost
+     zones.
+     </p></li>
+     <li class="itemize">
+     <!--l. 177--><p class="noindent" >the grid in the \(x\) direction only needs to extend to the \(z\)-axis, plus a few extra hang-overs. The number
+     of extra points is determined by the number of \(y\) ghost zone points.
+</p>
+     </li></ul>
+<!--l. 183--><p class="noindent" >These requirements (in particular the second) can not be met if the grid is specified <span 
+class="cmtt-10">byspacing </span>(ie. by giving a \(dx\)
+value), since in this case the grid is set up assuming that the axes should be centred in each grid
+direction.
+</p><!--l. 188--><p class="noindent" >One way to get around this is to specify the grid <span 
+class="cmtt-10">byrange</span>, giving minimum and maximum coordinate values for
+each axis so that the \((dx,dy,dz)\) values are determined by dividing the range by the number of grid points. However, using
+this method it can be quite complicated to ensure that the grid spacing is even in each direction and that an
+appropriate number of ghost points extend past the \(z\) axis.
+</p><!--l. 195--><p class="noindent" >A simple hack to get around this complication is to specify the grid <span 
+class="cmtt-10">byspacing</span>, but to set the
+<span 
+class="cmtt-10">allow</span><span 
+class="cmtt-10">_grid</span><span 
+class="cmtt-10">_resize </span>parameter. In this case, the \((dx,dy,dz)\) values can be set in the parameter file, and the grid ranges will
+be calculated based on the above criteria. Note that this involves modifying the “standard” behaviour of the
+<span 
+class="cmtt-10">CartGrid3D </span>thorn (to place the \(z\)-axis along one edge of the grid). This is accomplished by internally resetting the
+grid type to <span 
+class="cmtt-10">byrange</span>, and then specifying ranges which are compatible with the cartoon conditions and with the
+appropriate number of grid points and ghost zones. Note that this involves a reset of otherwise non-steerable
+parameters, and so must be scheduled at <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_RECOVER</span><span 
+class="cmtt-10">_PARAMETERS </span>and before the grid is set
+up.
+</p><!--l. 209--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-40004"></a>Interaction with other thorns</h3>
+<!--l. 212--><p class="noindent" >Some thorns will need to know that a cartoon grid is being used in order to function properly. In
+                                                                                       
+                                                                                       
+principle, they should use the <span 
+class="cmtt-10">cartoon</span><span 
+class="cmtt-10">_active </span>parameter to check whether a cartoon grid is in
+use.
+</p><!--l. 217--><p class="noindent" >In practice, however, to avoid dependencies on <span 
+class="cmtt-10">Cartoon2D</span>, it is often the case that the source code for such
+thorns make use of <span 
+class="cmtt-10">#ifdef </span>statements to check whether <span 
+class="cmtt-10">Cartoon2D </span>has been compiled in. Then, to check
+whether a cartoon grid is active, other thorn-specific parameters need to be set. For instance, if the <span 
+class="cmtt-10">ADM</span><span 
+class="cmtt-10">_BSSN</span>
+thorn is being used for evolution, then the parameter
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-2">
+  adm_bssn::cartoon = &#x0022;yes&#x0022;
+</pre>
+<!--l. 226--><p class="nopar" > must be set. Similarly, the <span 
+class="cmtt-10">ADM </span>evolution system requires <span 
+class="cmtt-10">adm::cartoon </span>to be set. The <span 
+class="cmtt-10">AHFinder </span>thorn requires
+that the parameter
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-3">
+  ahfinder::ahf_cartoon = &#x0022;yes&#x0022;
+</pre>
+<!--l. 232--><p class="nopar" > be set in order to use a cartoon grid.
+</p><!--l. 239--><p class="noindent" ><span 
+class="cmti-10">Note that many thorns will require cartoon-specific modifications in order to be used with the </span><span 
+class="cmitt-10">Cartoon2D </span><span 
+class="cmti-10">thorn. It</span>
+<span 
+class="cmti-10">should not be assumed that a given thorn will work with </span><span 
+class="cmitt-10">Cartoon2D </span><span 
+class="cmti-10">unless it is specifically mentioned in the</span>
+<span 
+class="cmti-10">documentation or source code.</span>
+</p><!--l. 241--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-50005"></a>Source code</h3>
+<!--l. 243--><p class="noindent" >The interface to the <span 
+class="cmtt-10">Cartoon2D </span>thorn is through the routines contained in the <span 
+class="cmtt-10">Cartoon2DBC.c</span>
+source file. These routines can be used by other thorns (eg. evolution thorns) to apply cartoon
+boundary conditions to grid functions whenever it is appropriate to do so. The three interface functions
+are:
+</p><!--l. 249--><p class="noindent" >
+     </p><dl class="description"><dt class="description">
+<span 
+class="cmtt-10">BndCartoon2DGN(cGH *GH, int tensortype, const char* group)</span> </dt><dd 
+class="description">
+     <!--l. 252--><p class="noindent" >This function applies the cartoon boundary condition to the grid functions in the group specified by the
+     <span 
+class="cmti-10">group </span>parameter. The <span 
+class="cmti-10">tensortype </span>argument parameter should be one of
+         </p><dl class="description"><dt class="description">
+     <span 
+class="cmtt-10">TENSORTYPE</span><span 
+class="cmtt-10">_SCALAR</span> </dt><dd 
+class="description">
+         <!--l. 257--><p class="noindent" >a scalar;
+         </p></dd><dt class="description">
+     <span 
+class="cmtt-10">TENSORTYPE</span><span 
+class="cmtt-10">_U</span> </dt><dd 
+class="description">
+         <!--l. 258--><p class="noindent" >a vector (single, upper index);
+         </p></dd><dt class="description">
+     <span 
+class="cmtt-10">TENSORTYPE</span><span 
+class="cmtt-10">_DDSYM</span> </dt><dd 
+class="description">
+         <!--l. 259--><p class="noindent" >a symmetric tensor with two lower indices.</p></dd></dl>
+     </dd><dt class="description">
+<span 
+class="cmtt-10">BndCartoon2DVN(cGH *GH, int tensortype, const char *impvarname)</span> </dt><dd 
+class="description">
+     <!--l. 264--><p class="noindent" >This function is like <span 
+class="cmtt-10">BndCartoon2DGN()</span>, but operates on individual grid functions rather than
+     groups.
+                                                                                       
+                                                                                       
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">BndCartoon2DVI(cGH *GH, int tensortype, int vi)</span> </dt><dd 
+class="description">
+     <!--l. 268--><p class="noindent" >This function is like <span 
+class="cmtt-10">BndCartoon2DGN()</span>, but operates takes a grid function index to indicate the grid
+     function to which the condition should be applied.
+</p>
+     </dd></dl>
+<!--l. 275--><p class="noindent" >A corresponding Fortran wrapper for each of these functions is also included.
+</p><!--l. 278--><p class="noindent" >Interpolation operators are defined in the file <span 
+class="cmtt-10">interpolate.c</span>.
+</p><!--l. 281--><p class="noindent" >The file <span 
+class="cmtt-10">SetSym.c </span>contains routines which re-label the flat faces of the cartoon grid as <span 
+class="cmtt-10">CARTOON</span><span 
+class="cmtt-10">_NOSYM</span>
+boundaries. This prevents any other boundary condition (eg. physical or symmetry conditions) from being
+applied to these faces, as they are determined by the <span 
+class="cmtt-10">Cartoon2D </span>thorn. These routines need to be scheduled
+before the first time boundary conditions are applied to any grid function.
+</p><!--l. 289--><p class="noindent" >The file <span 
+class="cmtt-10">SetGrid.c </span>contains the code to reset the grid dimensions in a cartoon-friendly way (see Section <a 
+href="#x1-30003">3<!--tex4ht:ref: sec:regrid --></a>) if the
+<span 
+class="cmtt-10">byspacing </span>grid type is used. In this case, appropriate coordinate grid ranges are calculated so that the \((dx,dy,dz)\) values
+are preserved, and the parameters specifying the grid are reset. These are non-steerable, and so the routine must
+be run during the <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_RECOVER</span><span 
+class="cmtt-10">_PARAMETERS </span>time bin in order to work. (This time bin is run even when
+checkpoint recovery is not being used.)
+</p><!--l. 298--><p class="noindent" >
+</p>
+<h3 class="likesectionHead"><a 
+ id="x1-6000"></a>References</h3>
+<!--l. 298--><p class="noindent" >
+   </p><div class="thebibliography">
+   <p class="bibitem" ><span class="biblabel">
+ [1]<span class="bibsp">   </span></span><a 
+ id="XAlcubierre-etal-2001"></a>Miguel Alcubierre, Steven Brandt, Bernd Brügmann, Daniel Holz, Edward Seidel, Ryoji Takahashi,
+   Jonathan Thornburg (2001) <span 
+class="cmti-10">Symmetry without symmetry: Numerical simulation of Axisymmetric</span>
+   <span 
+class="cmti-10">Systems using Cartesian Grids</span>, Int. J. Mod. Phys. D, <span 
+class="cmbx-10">10</span>, 273–289, (gr-qc/9908012).</p></div>
+<!--l. 312--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">6   </span> <a 
+ id="x1-70006"></a>Parameters</h3>
+<!--l. 331--><p class="noindent" ></p> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /></colgroup><colgroup id="TBL-2-2g"><col 
+id="TBL-2-2" /><col 
+id="TBL-2-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:normal; text-align:left;" id="TBL-2-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">allow_grid_resize</div>     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-1-3"  
+class="td01">                                    BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-2-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Allow grid to be resized in a cartoon-compatible way</span></div>                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-1"  
+class="td11">                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-3-3"  
+class="td01">                                   <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-4-1"  
+class="td11">                   </td></tr></table>
+<!--l. 338--><p class="noindent" ></p> <table id="TBL-3" class="tabular" 
+ 
+><colgroup id="TBL-3-1g"><col 
+id="TBL-3-1" /></colgroup><colgroup id="TBL-3-2g"><col 
+id="TBL-3-2" /><col 
+id="TBL-3-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-1-"><td  style="white-space:normal; text-align:left;" id="TBL-3-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">cartoon_active</div>        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-1-3"  
+class="td01">                                    BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-3-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Activate cartoon boundary condition</span></div>                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-3-1"  
+class="td11">                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-3-3"  
+class="td01">                                   <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-4-1"  
+class="td11">                   </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 345--><p class="noindent" ></p> <table id="TBL-4" class="tabular" 
+ 
+><colgroup id="TBL-4-1g"><col 
+id="TBL-4-1" /></colgroup><colgroup id="TBL-4-2g"><col 
+id="TBL-4-2" /><col 
+id="TBL-4-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-1-"><td  style="white-space:normal; text-align:left;" id="TBL-4-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">eno_order</div>              </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-1-3"  
+class="td01">                                               INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-4-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">The interpolation order applied to the ENO interpolator</span></div>                                         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-3-1"  
+class="td11">       <span 
+class="cmbx-10">Range         </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-3-3"  
+class="td01">                                         <span 
+class="cmbx-10">Default: </span>4  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-4-"><td  style="white-space:normal; text-align:left;" id="TBL-4-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1:5</div>                        </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">From linear to fifth order.</div>                                                                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-5-1"  
+class="td11">                   </td></tr></table>
+<!--l. 352--><p class="noindent" ></p> <table id="TBL-5" class="tabular" 
+ 
+><colgroup id="TBL-5-1g"><col 
+id="TBL-5-1" /></colgroup><colgroup id="TBL-5-2g"><col 
+id="TBL-5-2" /><col 
+id="TBL-5-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-1-"><td  style="white-space:normal; text-align:left;" id="TBL-5-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">new_excision</div>          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-1-3"  
+class="td01">                                    BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-5-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Are we doing excision based on the new style mask?</span></div>                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-3-1"  
+class="td11">                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-3-3"  
+class="td01">                                   <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-4-1"  
+class="td11">                   </td></tr></table>
+<!--l. 359--><p class="noindent" ></p> <table id="TBL-6" class="tabular" 
+ 
+><colgroup id="TBL-6-1g"><col 
+id="TBL-6-1" /></colgroup><colgroup id="TBL-6-2g"><col 
+id="TBL-6-2" /><col 
+id="TBL-6-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-1-"><td  style="white-space:normal; text-align:left;" id="TBL-6-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">new_mask_excised_name</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-1-3"  
+class="td01">                                           STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-6-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">The name of the descriptor that says the point is excised for the new mask</span></div>                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-3-1"  
+class="td11">       <span 
+class="cmbx-10">Range         </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-3-3"  
+class="td01">                                    <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-4-"><td  style="white-space:normal; text-align:left;" id="TBL-6-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.*</div>                          </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-6-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Could be anything</div>                                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-5-1"  
+class="td11">                   </td></tr></table>
+<!--l. 366--><p class="noindent" ></p> <table id="TBL-7" class="tabular" 
+ 
+><colgroup id="TBL-7-1g"><col 
+id="TBL-7-1" /></colgroup><colgroup id="TBL-7-2g"><col 
+id="TBL-7-2" /><col 
+id="TBL-7-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-1-"><td  style="white-space:normal; text-align:left;" id="TBL-7-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">new_mask_field_name</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-1-3"  
+class="td01">                                           STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-7-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">The name of the field that describes excision for the new mask</span></div>                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-3-1"  
+class="td11">       <span 
+class="cmbx-10">Range         </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-3-3"  
+class="td01">                                    <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-4-"><td  style="white-space:normal; text-align:left;" id="TBL-7-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.*</div>                          </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-7-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Could be anything</div>                                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-5-1"  
+class="td11">                   </td></tr></table>
+<!--l. 373--><p class="noindent" ></p> <table id="TBL-8" class="tabular" 
+ 
+><colgroup id="TBL-8-1g"><col 
+id="TBL-8-1" /></colgroup><colgroup id="TBL-8-2g"><col 
+id="TBL-8-2" /><col 
+id="TBL-8-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-1-"><td  style="white-space:normal; text-align:left;" id="TBL-8-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">new_style_excision_var</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-1-3"  
+class="td01">                                           STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-8-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">The variable to be checked for new style excision</span></div>                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-3-1"  
+class="td11">       <span 
+class="cmbx-10">Range         </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-3-3"  
+class="td01">                                    <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-4-"><td  style="white-space:normal; text-align:left;" id="TBL-8-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.*</div>                          </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-8-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">”Expected to be <span 
+class="cmsy-10">∖</span>’Spacemask::space_m ask<span 
+class="cmsy-10">∖</span>’”</div>                                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-5-1"  
+class="td11">                   </td></tr></table>
+<!--l. 381--><p class="noindent" ></p> <table id="TBL-9" class="tabular" 
+ 
+><colgroup id="TBL-9-1g"><col 
+id="TBL-9-1" /></colgroup><colgroup id="TBL-9-2g"><col 
+id="TBL-9-2" /><col 
+id="TBL-9-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-1-"><td  style="white-space:normal; text-align:left;" id="TBL-9-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">old_excision</div>           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-1-3"  
+class="td01">                                    BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-9-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Are we doing excision based on the old style mask?</span></div>                                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-3-1"  
+class="td11">                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-3-3"  
+class="td01">                                   <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-4-1"  
+class="td11">                   </td></tr></table>
+<!--l. 388--><p class="noindent" ></p> <table id="TBL-10" class="tabular" 
+ 
+><colgroup id="TBL-10-1g"><col 
+id="TBL-10-1" /></colgroup><colgroup id="TBL-10-2g"><col 
+id="TBL-10-2" /><col 
+id="TBL-10-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-1-"><td  style="white-space:normal; text-align:left;" id="TBL-10-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">old_style_excision_var</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-1-3"  
+class="td01">                                           STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-10-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">The variable to be checked for old style excision</span></div>                                                    
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-3-1"  
+class="td11">       <span 
+class="cmbx-10">Range         </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-3-3"  
+class="td01">                                    <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-4-"><td  style="white-space:normal; text-align:left;" id="TBL-10-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.*</div>                          </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-10-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">”Expected to be <span 
+class="cmsy-10">∖</span>’Spacemask::emask<span 
+class="cmsy-10">∖</span>’ ”</div>                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-5-1"  
+class="td11">                   </td></tr></table>
+<!--l. 396--><p class="noindent" ></p> <table id="TBL-11" class="tabular" 
+ 
+><colgroup id="TBL-11-1g"><col 
+id="TBL-11-1" /></colgroup><colgroup id="TBL-11-2g"><col 
+id="TBL-11-2" /><col 
+id="TBL-11-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-1-"><td  style="white-space:normal; text-align:left;" id="TBL-11-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">order</div>                    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-1-3"  
+class="td01">                                               INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-11-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Cartoon’s interpolation order</span></div>                                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-3-1"  
+class="td11">       <span 
+class="cmbx-10">Range         </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-3-3"  
+class="td01">                                         <span 
+class="cmbx-10">Default: </span>4  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-4-"><td  style="white-space:normal; text-align:left;" id="TBL-11-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1:5</div>                        </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-11-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">From linear to fifth order.</div>                                                                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-5-1"  
+class="td11">                   </td></tr></table>
+<!--l. 403--><p class="noindent" ></p> <table id="TBL-12" class="tabular" 
+ 
+><colgroup id="TBL-12-1g"><col 
+id="TBL-12-1" /></colgroup><colgroup id="TBL-12-2g"><col 
+id="TBL-12-2" /><col 
+id="TBL-12-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-1-"><td  style="white-space:normal; text-align:left;" id="TBL-12-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">stencil</div>                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-1-3"  
+class="td01">                                    BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-12-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Use custom 2D stencil if available</span></div>                                                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-3-1"  
+class="td11">                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-3-3"  
+class="td01">                                  <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-4-1"  
+class="td11">                   </td></tr></table>
+<!--l. 410--><p class="noindent" ></p> <table id="TBL-13" class="tabular" 
+ 
+><colgroup id="TBL-13-1g"><col 
+id="TBL-13-1" /></colgroup><colgroup id="TBL-13-2g"><col 
+id="TBL-13-2" /><col 
+id="TBL-13-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-1-"><td  style="white-space:normal; text-align:left;" id="TBL-13-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">verbose</div>                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-1-3"  
+class="td01">                                    BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-13-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Verbose information</span></div>                                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-3-1"  
+class="td11">                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-3-3"  
+class="td01">                                   <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-4-1"  
+class="td11">                   </td></tr></table>
+<!--l. 419--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">7   </span> <a 
+ id="x1-80007"></a>Interfaces</h3>
+                                                                                       
+                                                                                       
+<!--l. 424--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-9000"></a>General</h4>
+<!--l. 426--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 428--><p class="noindent" >cartoon2d
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-10000"></a>Grid Variables</h4>
+<!--l. 431--><p class="noindent" >
+</p>
+<h5 class="subsubsectionHead"><span class="titlemark">7.0.1   </span> <a 
+ id="x1-110007.0.1"></a>PRIVATE GROUPS</h5>
+<!--l. 435--><p class="noindent" ></p> <table id="TBL-14" class="tabular" 
+ 
+><colgroup id="TBL-14-1g"><col 
+id="TBL-14-1" /></colgroup><colgroup id="TBL-14-2g"><col 
+id="TBL-14-2" /></colgroup><colgroup id="TBL-14-3g"><col 
+id="TBL-14-3" /><col 
+id="TBL-14-4" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-1-1"  
+class="td11">   <span 
+class="cmbx-10">Group Names </span>   </td><td  style="white-space:nowrap; text-align:center;" id="TBL-14-1-2"  
+class="td10">    <span 
+class="cmbx-10">Variable Names </span>  </td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-1-3"  
+class="td01">    <span 
+class="cmbx-10">Details </span>   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-1-4"  
+class="td11">                                                                        </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-2-1"  
+class="td11">  excision_variables    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-14-2-2"  
+class="td10">                     </td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-2-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-2-4"  
+class="td11"> 0                                                                      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-3-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-14-3-2"  
+class="td10">     excision_active      </td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-3-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-3-4"  
+class="td11"> Internal variables to store information about excision  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-4-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-14-4-2"  
+class="td10">      old_mask_vi        </td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-4-3"  
+class="td01">   dimensions  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-4-4"  
+class="td11"> 0                                                                      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-5-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-14-5-2"  
+class="td10">      new_mask_vi       </td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-5-3"  
+class="td01">  distribution  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-5-4"  
+class="td11"> CONSTANT                                                       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-6-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-14-6-2"  
+class="td10">    new_excision_field    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-6-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-6-4"  
+class="td11"> SCALAR                                                           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-7-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-14-7-2"  
+class="td10"> new_excision_descriptor</td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-7-3"  
+class="td01">    timelevels  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-7-4"  
+class="td11"> 1                                                                      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-8-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-14-8-2"  
+class="td10">                     </td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-8-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-8-4"  
+class="td11"> INT                                                                  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-9-1"  
+class="td11">                    </td></tr></table>
+<!--l. 452--><p class="noindent" ><span 
+class="cmbx-10">Adds header</span>:
+</p><!--l. 456--><p class="noindent" >Cartoon2D_tensors.h
+</p><!--l. 458--><p class="noindent" >Cartoon2D.h
+</p><!--l. 461--><p class="noindent" ><span 
+class="cmbx-10">Uses header</span>:
+</p><!--l. 463--><p class="noindent" >SpaceMask.h
+</p><!--l. 466--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">8   </span> <a 
+ id="x1-120008"></a>Schedule</h3>
+<!--l. 472--><p class="noindent" >This section lists all the variables which are assigned storage by thorn CactusNumerical/Cartoon2D. Storage can
+either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 475--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-13000"></a>Storage</h4>
+<!--l. 477--><p class="noindent" > 
+                                                                                       
+                                                                                       
+</p><!--l. 479--><p class="noindent" ></p> <table id="TBL-15" class="tabular" 
+ 
+><colgroup id="TBL-15-1g"><col 
+id="TBL-15-1" /><col 
+id="TBL-15-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-15-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-15-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-1-2"  
+class="td11"> <span 
+class="cmbx-10">Conditional:      </span></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-15-2-1"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-2-2"  
+class="td11"> excision_variables</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-15-3-1"  
+class="td11">     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-3-2"  
+class="td11">                          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-15-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 486--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-14000"></a>Scheduled Functions</h4>
+<!--l. 489--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_PARAMCHECK </span>(conditional)
+</p><!--l. 491--><p class="noindent" >      cartoon2d_checktensortypes
+</p><!--l. 493--><p class="noindent" >     <span 
+class="cmti-10">check tensor type definitions for consistency</span>
+</p><!--l. 496--><p class="noindent" > 
+</p><!--l. 498--><p class="noindent" ></p> <table id="TBL-16" class="tabular" 
+ 
+><colgroup id="TBL-16-1g"><col 
+id="TBL-16-1" /><col 
+id="TBL-16-2" /><col 
+id="TBL-16-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-16-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-2-3"  
+class="td11"> meta      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-3-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 507--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_BASEGRID </span>(conditional)
+</p><!--l. 509--><p class="noindent" >      cartoon2d_initexcisionvars
+</p><!--l. 511--><p class="noindent" >     <span 
+class="cmti-10">initialize the excision variables</span>
+</p><!--l. 514--><p class="noindent" > 
+</p><!--l. 516--><p class="noindent" ></p> <table id="TBL-17" class="tabular" 
+ 
+><colgroup id="TBL-17-1g"><col 
+id="TBL-17-1" /><col 
+id="TBL-17-2" /><col 
+id="TBL-17-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-17-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-2-3"  
+class="td11"> global     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-3-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 525--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_RECOVER</span><span 
+class="cmbx-10">_PARAMETERS </span>(conditional)
+</p><!--l. 527--><p class="noindent" >      cartoon2d_setgrid
+</p><!--l. 529--><p class="noindent" >     <span 
+class="cmti-10">adjust grid sizes</span>
+</p><!--l. 532--><p class="noindent" > 
+</p><!--l. 534--><p class="noindent" ></p> <table id="TBL-18" class="tabular" 
+ 
+><colgroup id="TBL-18-1g"><col 
+id="TBL-18-1" /><col 
+id="TBL-18-2" /><col 
+id="TBL-18-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-18-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 542--><p class="noindent" ><span 
+class="cmbx-10">SymmetryRegister </span>(conditional)
+</p><!--l. 544--><p class="noindent" >      cartoon2d_registersymmetries
+</p><!--l. 546--><p class="noindent" >     <span 
+class="cmti-10">register symmetry boundaries</span>
+</p><!--l. 549--><p class="noindent" > 
+</p><!--l. 551--><p class="noindent" ></p> <table id="TBL-19" class="tabular" 
+ 
+><colgroup id="TBL-19-1g"><col 
+id="TBL-19-1" /><col 
+id="TBL-19-2" /><col 
+id="TBL-19-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-19-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-2-3"  
+class="td11"> global     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-3-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 560--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_PARAMCHECK </span>(conditional)
+</p><!--l. 562--><p class="noindent" >      cartoon2d_checkparameters
+</p><!--l. 564--><p class="noindent" >     <span 
+class="cmti-10">check cartoon2d parameters</span>
+</p><!--l. 567--><p class="noindent" > 
+</p><!--l. 569--><p class="noindent" ></p> <table id="TBL-20" class="tabular" 
+ 
+><colgroup id="TBL-20-1g"><col 
+id="TBL-20-1" /><col 
+id="TBL-20-2" /><col 
+id="TBL-20-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-20-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-2-3"  
+class="td11"> meta      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-3-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 578--><p class="noindent" ><span 
+class="cmbx-10">BoundaryConditions </span>(conditional)
+</p><!--l. 580--><p class="noindent" >      cartoon_applyboundaries
+</p><!--l. 582--><p class="noindent" >     <span 
+class="cmti-10">apply cartoon boundary conditions</span>
+</p><!--l. 585--><p class="noindent" > 
+</p><!--l. 587--><p class="noindent" ></p> <table id="TBL-21" class="tabular" 
+ 
+><colgroup id="TBL-21-1g"><col 
+id="TBL-21-1" /><col 
+id="TBL-21-2" /><col 
+id="TBL-21-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-21-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-1-3"  
+class="td11"> boundary_applyphysicalbcs  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-2-3"  
+class="td11"> c                                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-3-3"  
+class="td11"> function                           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-4-1"  
+class="td11">    </td></tr></table>
+                                                                                       
+                                                                                       
+ 
+</body></html> 
+
+                                                                                       
+
+
