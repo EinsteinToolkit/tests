@@ -1,0 +1,1534 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>ReadInterpolate</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">ReadInterpolate</h2>
+ <div class="author" ><span 
+class="cmr-12">Roland Haas </span><span 
+class="cmmi-12">&#x003C;</span><span 
+class="cmr-12">rhaas@illinois.edu</span><span 
+class="cmmi-12">&#x003E;</span></div>
+<br />
+<div class="date" ><span 
+class="cmr-12">August 17 2020</span></div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 104--><p class="noindent" ><span 
+class="cmr-9">A FileReader like thorn that uses</span> <span 
+class="cmtt-9">InterpolateLocalUniform</span> <span 
+class="cmr-9">to interpolate the data read in onto the</span>
+     <span 
+class="cmr-9">new grid.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Introduction</h3>
+<!--l. 112--><p class="noindent" ><span 
+class="cmtt-10">IOUtil</span> <span class="cite">[<a 
+href="#XEinsteinInitialData_ReadInterpolate_IOUtil">1</a>]</span> defines a file reading interface via the <span 
+class="cmtt-10">IO</span> parameters <span 
+class="cmtt-10">filereader</span><span 
+class="cmtt-10">_ID</span><span 
+class="cmtt-10">_dir</span>, <span 
+class="cmtt-10">filereader</span><span 
+class="cmtt-10">_ID</span><span 
+class="cmtt-10">_files</span>,
+<span 
+class="cmtt-10">filereader</span><span 
+class="cmtt-10">_ID</span><span 
+class="cmtt-10">_vars</span> parameters. <span 
+class="cmtt-10">IOUtil</span> uses the checkpoint recovery routines to read grid variable data from
+disk. This requires that the grid resolution used to write the files agrees with the resolution using when reading
+in data and that, for each refinement level, the to be read in region is fully contained in the corresponding
+refinement level in the source files.
+</p><!--l. 121--><p class="noindent" ><span 
+class="cmtt-10">ReadInterpolate</span> relaxes this restriction by allowing arbitrary changes in resolution and grid structure in
+between source files and simulation. It uses <span 
+class="cmtt-10">Cactus</span> local interpolation operators <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpLocalUniform</span> to
+interpolate data using the highest resolution source data available for each target grid point.
+                                                                                       
+                                                                                       
+</p><!--l. 127--><p class="noindent" >It provides parameters <span 
+class="cmtt-10">files</span> and <span 
+class="cmtt-10">only</span><span 
+class="cmtt-10">_these</span><span 
+class="cmtt-10">_datasets</span> that mirror <span 
+class="cmtt-10">IOUtil</span>’s parameters to select files and
+datasets in <span 
+class="cmtt-10">IO::filereader</span><span 
+class="cmtt-10">_ID</span><span 
+class="cmtt-10">_dir</span>.
+</p><!--l. 131--><p class="noindent" >Auxiliary parameters are provided to fine tune what is read and to control the interpolator.
+</p><!--l. 134--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a>Physical System</h3>
+<!--l. 135--><p class="noindent" ><span 
+class="cmtt-10">ReadInterpolate</span> takes input data \(\psi \) on a grid patch described by its origin \(\vec O\), grid spacing \(\Delta \vec x\) and shape \(\vec N\). Data
+is interpolated to the coordinates of the simulation grid \(\vec x\) using <span 
+class="cmtt-10">Cactus</span>’ interpolation operators:
+\(\psi (\vec x) = L(\psi , \vec x; \vec O, \Delta \vec x, \vec N)\).
+</p><!--l. 141--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-30003"></a>Numerical Implementation</h3>
+<!--l. 142--><p class="noindent" >For a target point \(\vec x\) multiple datasets in the source files may contain this physical coordinate. When this happens
+the following selection algorithm applies:
+</p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 147--><p class="noindent" >unless the candidate datasets overlaps the outer boundary of the current grid, require that there are
+     at least <span 
+class="cmtt-10">cctk</span><span 
+class="cmtt-10">_nghostzones</span> or <span 
+class="cmtt-10">interpolator</span><span 
+class="cmtt-10">_half</span><span 
+class="cmtt-10">_width</span> extra points for use by the interpolator.
+     This may involve using an off-centered interpolation stencil for points near the outer boundary.
+     Then
+     </p></li>
+     <li class="itemize">
+     <!--l. 152--><p class="noindent" >if reading in data from time level 0, pick the largest refinement level dataset that contains the
+     point, otherwise pick the refinement level that matches the refinement level of the target point.
+     This assumes that the files were written at a timestep when all refinement level align in time and
+     that the timestep in the data files and simulation are identical. Setting</p></li></ul>
+<!--l. 159--><p class="noindent" >Once a source data set has been selected its data and the target coordinate triplet are passed to
+<span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpLocalUniform</span> for interpolation.
+                                                                                       
+                                                                                       
+</p><!--l. 162--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-40004"></a>Using This Thorn</h3>
+<!--l. 163--><p class="noindent" >This thorn is intended as an initial data thorn, scheduling itself in the <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_INITIAL</span> time bin of
+<span 
+class="cmtt-10">Cactus</span>.
+</p><!--l. 166--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">4.1   </span> <a 
+ id="x1-50004.1"></a>Obtaining This Thorn</h4>
+<!--l. 167--><p class="noindent" >This thorn is part of the Einstein Toolkit in the <span 
+class="cmtt-10">EinsteinInitialData </span>repository.
+</p><!--l. 170--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">4.2   </span> <a 
+ id="x1-60004.2"></a>Basic Usage</h4>
+<!--l. 171--><p class="noindent" >To use this thorn, set <span 
+class="cmtt-10">IO::filereader</span><span 
+class="cmtt-10">_ID</span><span 
+class="cmtt-10">_dir</span> to the directory containing the data files, set <span 
+class="cmtt-10">ReadInterpolate</span>’s
+<span 
+class="cmtt-10">files</span> to the base names of the file to read and <span 
+class="cmtt-10">only</span><span 
+class="cmtt-10">_these</span><span 
+class="cmtt-10">_datasets</span> to a comma separated list of regular
+expressions to match the datasets to read. To obtain the list of data sets present in the file the <span 
+class="cmtt-10">h5ls</span> tool, which
+is part of <span 
+class="cmtt-10">HDF5</span>, can be used. The parameter <span 
+class="cmtt-10">max</span><span 
+class="cmtt-10">_number</span><span 
+class="cmtt-10">_of</span><span 
+class="cmtt-10">_read</span><span 
+class="cmtt-10">_variables</span> must be set to the expected
+number of grid variables to be read.
+</p><!--l. 180--><p class="noindent" >If desired read in data can be moved to a different position on the grid using <span 
+class="cmtt-10">shift</span><span 
+class="cmtt-10">_read</span><span 
+class="cmtt-10">_datasets</span><span 
+class="cmtt-10">_by[3]</span>
+which relocates the origin of the coordinates in the read in data to the given coordinate triplet.
+</p><!--l. 184--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">4.3   </span> <a 
+ id="x1-70004.3"></a>Special Behavior</h4>
+<!--l. 185--><p class="noindent" ><span 
+class="cmtt-10">ReadInterpolate</span> attempts to avoid one sided interpolation as much as possible, yet tried to allow reading in
+data at the outer boundaries of the grid. A heuristic is used to allow one sided derivatives there. This requires
+changing <span 
+class="cmtt-10">interpolator</span><span 
+class="cmtt-10">_pars</span> to allow off centered interpolation stencils.
+</p><!--l. 191--><p class="noindent" >A number of parameters are provided to select which datasets to read:
+</p><!--l. 193--><p class="noindent" >
+     </p><dl class="description"><dt class="description">
+<span 
+class="cmtt-10">minimum</span><span 
+class="cmtt-10">_reflevel</span> </dt><dd 
+class="description">
+                                                                                       
+                                                                                       
+     <!--l. 194--><p class="noindent" >ignore any datasets with refinement level less than this,
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">maximum</span><span 
+class="cmtt-10">_reflevel</span> </dt><dd 
+class="description">
+     <!--l. 196--><p class="noindent" >ignore any datasets with refinement level higher than this,</p></dd></dl>
+<!--l. 200--><p class="noindent" >Some <span 
+class="cmtt-10">Carpet</span> version contain a bug and do not set <span 
+class="cmtt-10">origin</span> correctly for cell centered grids (it is off by half a grid
+point, i.e. it does not take the staggering into account). This option fixes this issue by offsetting all datasets that
+should be offset. Setting <span 
+class="cmtt-10">fix</span><span 
+class="cmtt-10">_cell</span><span 
+class="cmtt-10">_centered</span><span 
+class="cmtt-10">_origins</span> adds an offset to correct for this. This is <span 
+class="cmti-10">incorrect </span>for
+files where Carpet already used the correct <span 
+class="cmtt-10">origin</span>. This parameter only affects cell centered input
+data.
+</p>
+<!--l. 208--><p class="noindent" ><span class="paragraphHead"><a 
+ id="x1-8000"></a><span 
+class="cmbx-10">Interpolation parameters</span></span>
+<span 
+class="cmtt-10">ReadInterpolate</span> uses <span 
+class="cmtt-10">interpolator</span><span 
+class="cmtt-10">_name</span> as the local interpolator to interpolate read in data to simulation
+grid points. It passes <span 
+class="cmtt-10">interpolator</span><span 
+class="cmtt-10">_vars</span> to the interpolator. The default values select <span 
+class="cmtt-10">AEILocalInterp</span>’s
+<span 
+class="cmtt-10">Hermite </span>interpolator and forbid off centered interpolation stencils or extrapolation.
+</p><!--l. 215--><p class="noindent" ><span 
+class="cmtt-10">ReadInterpolate</span> uses <span 
+class="cmtt-10">epsilon</span> as a fuzziness parameter when determining if a point is contained in a read in
+dataset. This may require changes for very large grids.
+</p><!--l. 219--><p class="noindent" >When deciding if a read in dataset is large enough to allow for interpolation without off centered stencils
+<span 
+class="cmtt-10">ReadInterpolate</span> requires knowledge about the stencil width of the chosen interpolation operator. This can be
+explicitly specified as <span 
+class="cmtt-10">interpolator</span><span 
+class="cmtt-10">_half</span><span 
+class="cmtt-10">_width</span> or alternatively assumed to be <span 
+class="cmtt-10">cctk</span><span 
+class="cmtt-10">_nghostzones</span> if this
+parameter is set to <span 
+class="cmtt-10">-1</span>, which is the default.
+</p><!--l. 226--><p class="noindent" >This makes sure that the interpolator does not off center the interpolation stencil if there are insufficient points
+to interpolate, which can happen if there are insufficient ghost-zones for the interpolation method used, and can
+lead to processor-number dependent results.
+</p><!--l. 231--><p class="noindent" ><span 
+class="cmtt-10">ReadInterpolate</span> is no aware of any symmetry conditions used in either the simulation used to produce the
+data files the current simulation. Thus it will interpolated into symmetry points in the same manner as for outer
+boundary points. In these situations the parameter <span 
+class="cmtt-10">enforce</span><span 
+class="cmtt-10">_symmetries</span><span 
+class="cmtt-10">_after</span><span 
+class="cmtt-10">_reading</span> to apply symmetry
+boundary conditions after having read in all data. This does <span 
+class="cmti-10">not </span>enable <span 
+class="cmtt-10">ReadInterpolate</span> to read in data
+produced on, for example, an octant grid and provide data on a full grid.
+</p><!--l. 240--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">4.4   </span> <a 
+ id="x1-90004.4"></a>Interaction With Other Thorns</h4>
+<!--l. 241--><p class="noindent" ><span 
+class="cmtt-10">ReadInterpolate</span> assumes that data files were written by <span 
+class="cmtt-10">CarpetIOHDF5</span> and may not work with files written by
+<span 
+class="cmtt-10">PUGH</span>’s <span 
+class="cmtt-10">IOHDF5</span>.
+</p><!--l. 245--><p class="noindent" >This thorn is intended as an initial data thorn, however since it is generic it does not extend <span 
+class="cmtt-10">ADMBase</span>’s or
+<span 
+class="cmtt-10">HydroBase</span>’s <span 
+class="cmtt-10">initial</span><span 
+class="cmtt-10">_XXX</span> parameters.
+                                                                                       
+                                                                                       
+</p><!--l. 249--><p class="noindent" ><span 
+class="cmtt-10">ReadInterpolate</span> can be used to read data <span 
+class="cmti-10">into </span>curvilinear grids set up by <span 
+class="cmtt-10">Llama</span> but cannot read data <span 
+class="cmti-10">from</span>
+curvilinear grids.
+</p><!--l. 252--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">4.5   </span> <a 
+ id="x1-100004.5"></a>Examples</h4>
+<!--l. 253--><p class="noindent" >The test suite file <span 
+class="cmtt-10">admhydro.par </span>shows how to use <span 
+class="cmtt-10">ReadInterpolate</span> to read in metric and fluid
+variables:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-1">
+ActiveThorns = &#x0022;ReadInterpolate&#x0022;
+
+
+# ReadInterpolate ignore these but they are required to allocate storage
+ADMBase::initial_data    = &#x0022;Cartesian Minkowski&#x0022;
+ADMBase::initial_lapse   = &#x0022;one&#x0022;
+ADMBase::initial_shift   = &#x0022;zero&#x0022;
+ADMBase::initial_dtlapse = &#x0022;zero&#x0022;
+ADMBase::initial_dtshift = &#x0022;zero&#x0022;
+HydroBase::initial_hydro = &#x0022;zero&#x0022;
+
+IO::filereader_ID_dir = &#x0022;tov_write&#x0022;
+ReadInterpolate::files = &#x0022;alp rho&#x0022;
+ReadInterpolate::max_number_of_read_variables = 2
+ReadInterpolate::shift_read_datasets_by[0] = +3.14
+ReadInterpolate::shift_read_datasets_by[1] = -42
+ReadInterpolate::shift_read_datasets_by[2] = -6
+</pre>
+<!--l. 274--><p class="nopar" >
+</p><!--l. 276--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">4.6   </span> <a 
+ id="x1-110004.6"></a>Support and Feedback</h4>
+<!--l. 277--><p class="noindent" >Please use the Einstein Toolkit ticket system to report issues.
+</p><!--l. 279--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-120005"></a>History</h3>
+<!--l. 280--><p class="noindent" >This thorn was originally inspired by <span 
+class="cmtt-10">SpEC</span>’s <span class="cite">[<a 
+href="#XEinsteinInitialData_ReadInterpolate_SpEC">2</a>]</span> <span 
+class="cmtt-10">ReadTensorsFromDiskWithMap</span> item and developed to read in
+single neutron star data produced by <span 
+class="cmtt-10">THC</span> <span class="cite">[<a 
+href="#XEinsteinInitialData_ReadInterpolate_THC">3</a>]</span> into <span 
+class="cmtt-10">GRHydro</span> <span class="cite">[<a 
+href="#XEinsteinInitialData_ReadInterpolate_GRHydro">4</a>]</span>. It has been found useful to in combination with
+<span 
+class="cmtt-10">CT</span><span 
+class="cmtt-10">_MultiLevel</span> since then.
+                                                                                       
+                                                                                       
+</p><!--l. 288--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">5.1   </span> <a 
+ id="x1-130005.1"></a>Acknowledgments</h4>
+<!--l. 289--><p class="noindent" >David Radice and Philipp Mösta provided bug reports and comments during the time this thorn was
+developed.
+</p><!--l. 292--><p class="noindent" >
+</p>
+<h3 class="likesectionHead"><a 
+ id="x1-14000"></a>References</h3>
+<!--l. 292--><p class="noindent" >
+   </p><div class="thebibliography">
+   <p class="bibitem" ><span class="biblabel">
+ [1]<span class="bibsp">   </span></span><a 
+ id="XEinsteinInitialData_ReadInterpolate_IOUtil"></a><span class="obeylines-h"><code class="verb">https://bitbucket.org/cactuscode/cactusbase/src/master/IOUtil/</code></span>
+   </p>
+   <p class="bibitem" ><span class="biblabel">
+ [2]<span class="bibsp">   </span></span><a 
+ id="XEinsteinInitialData_ReadInterpolate_SpEC"></a>Spectral Einstein Code, <span class="obeylines-h"><code class="verb">https://www.black-holes.org/code/SpEC.html</code></span>
+   </p>
+   <p class="bibitem" ><span class="biblabel">
+ [3]<span class="bibsp">   </span></span><a 
+ id="XEinsteinInitialData_ReadInterpolate_THC"></a>WhiskyTHC:       The       General-Relativistic       Templated       Hydrodynamics       Code,
+   <span class="obeylines-h"><code class="verb">http://personal.psu.edu/dur566/whiskythc.html</code></span>
+   </p>
+   <p class="bibitem" ><span class="biblabel">
+ [4]<span class="bibsp">   </span></span><a 
+ id="XEinsteinInitialData_ReadInterpolate_GRHydro"></a>GRHydro   is   an   evolution   code   for   a   general-purpose   3D   relativistic   hydrodynamics,
+   <span class="obeylines-h"><code class="verb">https://bitbucket.org/einsteintoolkit/einsteinevolve/src/master/GRHydro/</code></span>
+</p>
+   </div>
+<!--l. 314--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">6   </span> <a 
+ id="x1-150006"></a>Parameters</h3>
+<!--l. 333--><p class="noindent" ></p> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /></colgroup><colgroup id="TBL-2-2g"><col 
+id="TBL-2-2" /><col 
+id="TBL-2-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:normal; text-align:left;" id="TBL-2-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">enforce_symmetries_after_reading</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-1-3"  
+class="td01">                           BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-2-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">apply symmetry boundary conditions after reading data</span></div>                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-1"  
+class="td11">                            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-3-3"  
+class="td01">                          <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-4-1"  
+class="td11">                            </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 340--><p class="noindent" ></p> <table id="TBL-3" class="tabular" 
+ 
+><colgroup id="TBL-3-1g"><col 
+id="TBL-3-1" /></colgroup><colgroup id="TBL-3-2g"><col 
+id="TBL-3-2" /><col 
+id="TBL-3-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-1-"><td  style="white-space:normal; text-align:left;" id="TBL-3-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">epsilon</div>                                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-1-3"  
+class="td01">                                    REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-3-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Tolerance when deciding if a grid point lies within an overlap region</span></div>                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range               </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-3-3"  
+class="td01">                            <span 
+class="cmbx-10">Default: </span>1e-12  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-4-"><td  style="white-space:normal; text-align:left;" id="TBL-3-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>
+                                            </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-3-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">any  positive  number,  should  be  similar  to  AEILocalInterp’s
+  tolerance</div>                                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-5-1"  
+class="td11">                            </td></tr></table>
+<!--l. 347--><p class="noindent" ></p> <table id="TBL-4" class="tabular" 
+ 
+><colgroup id="TBL-4-1g"><col 
+id="TBL-4-1" /></colgroup><colgroup id="TBL-4-2g"><col 
+id="TBL-4-2" /><col 
+id="TBL-4-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-1-"><td  style="white-space:normal; text-align:left;" id="TBL-4-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">files</div>                                     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-1-3"  
+class="td01">                                  STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-4-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">List of basenames of files to read in as initial data (e.g. omit the .file</span><span 
+class="cmti-10">_XXX.h5 part)</span></div>         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range               </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-3-3"  
+class="td01">                           <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-4-"><td  style="white-space:normal; text-align:left;" id="TBL-4-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.+</div>                                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Space-separated list of initial data filenames</div>                                
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-5-"><td  style="white-space:normal; text-align:left;" id="TBL-4-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><img 
+src="documentation0x.png" alt="ˆ$  "  class="circ"  /></div>                                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">An empty string for not recovering initial data</div>                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-6-1"  
+class="td11">                            </td></tr></table>
+<!--l. 354--><p class="noindent" ></p> <table id="TBL-5" class="tabular" 
+ 
+><colgroup id="TBL-5-1g"><col 
+id="TBL-5-1" /></colgroup><colgroup id="TBL-5-2g"><col 
+id="TBL-5-2" /><col 
+id="TBL-5-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-1-"><td  style="white-space:normal; text-align:left;" id="TBL-5-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">fix_cell_centered_origins</div>          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-1-3"  
+class="td01">                           BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-5-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">offset rl</span><span 
+class="cmmi-10">&#x003E;</span><span 
+class="cmti-10">1 cell centered input data by half a grid step to fix broken HDF5 files</span></div>       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-3-1"  
+class="td11">                            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-3-3"  
+class="td01">                          <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-4-1"  
+class="td11">                            </td></tr></table>
+<!--l. 361--><p class="noindent" ></p> <table id="TBL-6" class="tabular" 
+ 
+><colgroup id="TBL-6-1g"><col 
+id="TBL-6-1" /></colgroup><colgroup id="TBL-6-2g"><col 
+id="TBL-6-2" /><col 
+id="TBL-6-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-1-"><td  style="white-space:normal; text-align:left;" id="TBL-6-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">interpolator_half_width</div>           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-1-3"  
+class="td01">                                      INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-6-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">maximum number of points to one side of the interpolated location the interpolator</span>
+  <span 
+class="cmti-10">uses</span></div>                                                                                                                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range               </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-3-3"  
+class="td01">                               <span 
+class="cmbx-10">Default: </span>-1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-4-"><td  style="white-space:normal; text-align:left;" id="TBL-6-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1:*</div>
+                                            </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-6-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">this  is  similar  to  cctk_nghostzones,  1  for  linear  and  constant
+  interpolation</div>                                                                         
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-5-"><td  style="white-space:normal; text-align:left;" id="TBL-6-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">2:*</div>                                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-6-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">2nd for second order and 3rd interpolation</div>                                  
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-6-"><td  style="white-space:normal; text-align:left;" id="TBL-6-6-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1</div>                                        </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-6-6-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">use cctk_nghostzones</div>                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-7-1"  
+class="td11">                            </td></tr></table>
+<!--l. 368--><p class="noindent" ></p> <table id="TBL-7" class="tabular" 
+ 
+><colgroup id="TBL-7-1g"><col 
+id="TBL-7-1" /></colgroup><colgroup id="TBL-7-2g"><col 
+id="TBL-7-2" /><col 
+id="TBL-7-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-1-"><td  style="white-space:normal; text-align:left;" id="TBL-7-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">interpolator_name</div>                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-1-3"  
+class="td01">                                  STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-7-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Which interpolator should I use</span></div>                                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range               </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-3-3"  
+class="td01">     <span 
+class="cmbx-10">Default: </span>Hermite polynomial interpolation  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-4-"><td  style="white-space:normal; text-align:left;" id="TBL-7-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.+</div>                                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-7-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Any nonempty string</div>                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-5-1"  
+class="td11">                            </td></tr></table>
+<!--l. 375--><p class="noindent" ></p> <table id="TBL-8" class="tabular" 
+ 
+><colgroup id="TBL-8-1g"><col 
+id="TBL-8-1" /></colgroup><colgroup id="TBL-8-2g"><col 
+id="TBL-8-2" /><col 
+id="TBL-8-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-1-"><td  style="white-space:normal; text-align:left;" id="TBL-8-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">interpolator_pars</div>                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-1-3"  
+class="td01">                                                                                                                               STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-8-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Parameters for the interpolator</span></div>                                                                                                                                                                                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range               </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-3-3"  
+class="td01"><span 
+class="cmbx-10">Default: </span>order=3 boundary_off_centering_tolerance=<span 
+class="cmsy-10">{</span>1e12 1e12 1e12 1e12 1e12 1e12<span 
+class="cmsy-10">} </span>boundary_extrapolation_tolerance=<span 
+class="cmsy-10">{</span>1e-12 1e-12 1e-12 1e-12 1e-12 1e-12<span 
+class="cmsy-10">} </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-4-"><td  style="white-space:normal; text-align:left;" id="TBL-8-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.*</div>                                        </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-8-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">”Any string that Util_TableSetFromStr ing() will take”</div>                                                                                                                                                                    
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-5-1"  
+class="td11">                            </td></tr></table>
+<!--l. 383--><p class="noindent" ></p> <table id="TBL-9" class="tabular" 
+ 
+><colgroup id="TBL-9-1g"><col 
+id="TBL-9-1" /></colgroup><colgroup id="TBL-9-2g"><col 
+id="TBL-9-2" /><col 
+id="TBL-9-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-1-"><td  style="white-space:normal; text-align:left;" id="TBL-9-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">max_number_of_read_variables</div></td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-1-3"  
+class="td01">                                      INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-9-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">how many variables will be read in?</span></div>                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range               </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-3-3"  
+class="td01">                                <span 
+class="cmbx-10">Default: </span>1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-4-"><td  style="white-space:normal; text-align:left;" id="TBL-9-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1:*</div>                                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-9-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">any positive number</div>                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-5-1"  
+class="td11">                            </td></tr></table>
+<!--l. 390--><p class="noindent" ></p> <table id="TBL-10" class="tabular" 
+ 
+><colgroup id="TBL-10-1g"><col 
+id="TBL-10-1" /></colgroup><colgroup id="TBL-10-2g"><col 
+id="TBL-10-2" /><col 
+id="TBL-10-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-1-"><td  style="white-space:normal; text-align:left;" id="TBL-10-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">maximum_reflevel</div>                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-1-3"  
+class="td01">                                      INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-10-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">ignore any datasets with refinement level higher than this</span></div>                                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range               </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-3-3"  
+class="td01">                             <span 
+class="cmbx-10">Default: </span>1000  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-4-"><td  style="white-space:normal; text-align:left;" id="TBL-10-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-10-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">maximum refinement level to keep</div>                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-5-1"  
+class="td11">                            </td></tr></table>
+<!--l. 397--><p class="noindent" ></p> <table id="TBL-11" class="tabular" 
+ 
+><colgroup id="TBL-11-1g"><col 
+id="TBL-11-1" /></colgroup><colgroup id="TBL-11-2g"><col 
+id="TBL-11-2" /><col 
+id="TBL-11-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-1-"><td  style="white-space:normal; text-align:left;" id="TBL-11-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">minimum_reflevel</div>                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-1-3"  
+class="td01">                                      INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-11-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">ignore any datasets with refinement level less than this</span></div>                                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range               </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-3-3"  
+class="td01">                           <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-4-"><td  style="white-space:normal; text-align:left;" id="TBL-11-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-11-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">minimum refinement level to keep</div>                                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-5-1"  
+class="td11">                            </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 404--><p class="noindent" ></p> <table id="TBL-12" class="tabular" 
+ 
+><colgroup id="TBL-12-1g"><col 
+id="TBL-12-1" /></colgroup><colgroup id="TBL-12-2g"><col 
+id="TBL-12-2" /><col 
+id="TBL-12-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-1-"><td  style="white-space:normal; text-align:left;" id="TBL-12-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">only_these_datasets</div>               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-1-3"  
+class="td01">                                  STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-12-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">comma separated list of dataset regular expression patterns to consider for reading</span></div>         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range               </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-3-3"  
+class="td01">                           <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-4-"><td  style="white-space:normal; text-align:left;" id="TBL-12-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.+</div>                                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-12-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">any valid Cactus regular expression</div>                                           
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-5-"><td  style="white-space:normal; text-align:left;" id="TBL-12-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">see [1] below</div>                          </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-12-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">refinement level 6, all metric</div>                                                    
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-6-"><td  style="white-space:normal; text-align:left;" id="TBL-12-6-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">:g[xyz][xyz],:rho</div>                      </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-12-6-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">metric and rho everywhere</div>                                                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-7-1"  
+class="td11">                            </td></tr></table>
+<!--l. 411--><p class="noindent" ><span 
+class="cmbx-10">[1]</span>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-2">
+ADMBASE[:][:]g[xyz][xyz].*rl=6
+</pre>
+<!--l. 411--><p class="nopar" ></p> <table id="TBL-13" class="tabular" 
+ 
+><colgroup id="TBL-13-1g"><col 
+id="TBL-13-1" /></colgroup><colgroup id="TBL-13-2g"><col 
+id="TBL-13-2" /><col 
+id="TBL-13-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-1-"><td  style="white-space:normal; text-align:left;" id="TBL-13-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">shift_read_datasets_by</div>            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-1-3"  
+class="td01">                                    REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-13-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">add to all read in coordinates</span></div>                                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range               </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-3-3"  
+class="td01">                              <span 
+class="cmbx-10">Default: </span>0.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-4-"><td  style="white-space:normal; text-align:left;" id="TBL-13-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-13-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">what used to be origin in datasets appear here</div>                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-5-1"  
+class="td11">                            </td></tr></table>
+<!--l. 418--><p class="noindent" ></p> <table id="TBL-14" class="tabular" 
+ 
+><colgroup id="TBL-14-1g"><col 
+id="TBL-14-1" /></colgroup><colgroup id="TBL-14-2g"><col 
+id="TBL-14-2" /><col 
+id="TBL-14-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-1-"><td  style="white-space:normal; text-align:left;" id="TBL-14-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">test</div>                                     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-1-3"  
+class="td01">                               KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-14-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">control how test data is used</span></div>                                                                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range               </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-3-3"  
+class="td01">                               <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-4-"><td  style="white-space:normal; text-align:left;" id="TBL-14-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">no</div>                                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-14-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">do not use test data</div>                                                               
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-5-"><td  style="white-space:normal; text-align:left;" id="TBL-14-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">generate</div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-14-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">generate test data</div>                                                                  
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-6-"><td  style="white-space:normal; text-align:left;" id="TBL-14-6-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">compare</div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-14-6-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">compare read data to test data</div>                                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-7-1"  
+class="td11">                            </td></tr></table>
+<!--l. 425--><p class="noindent" ></p> <table id="TBL-15" class="tabular" 
+ 
+><colgroup id="TBL-15-1g"><col 
+id="TBL-15-1" /></colgroup><colgroup id="TBL-15-2g"><col 
+id="TBL-15-2" /><col 
+id="TBL-15-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-1-"><td  style="white-space:normal; text-align:left;" id="TBL-15-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">verbosity</div>                              </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-15-1-3"  
+class="td01">                                      INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-15-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">how much diagnostic output to produce</span></div>                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range               </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-15-3-3"  
+class="td01">                                <span 
+class="cmbx-10">Default: </span>1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-4-"><td  style="white-space:normal; text-align:left;" id="TBL-15-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:0</div>                                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-15-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">only errors</div>                                                                           
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-5-"><td  style="white-space:normal; text-align:left;" id="TBL-15-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1:1</div>                                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-15-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">warn about suspicous states</div>                                                     
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-6-"><td  style="white-space:normal; text-align:left;" id="TBL-15-6-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">2:*</div>
+                                            </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-15-6-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">more and more detailed debug output (values up to 10 are defined.
+  10 is very verbose.)</div>                                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-7-1"  
+class="td11">                            </td></tr></table>
+<!--l. 432--><p class="noindent" ></p> <table id="TBL-16" class="tabular" 
+ 
+><colgroup id="TBL-16-1g"><col 
+id="TBL-16-1" /></colgroup><colgroup id="TBL-16-2g"><col 
+id="TBL-16-2" /><col 
+id="TBL-16-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-1-"><td  style="white-space:normal; text-align:left;" id="TBL-16-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">filereader_id_dir</div>                    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from IO</td><td  style="white-space:nowrap; text-align:right;" id="TBL-16-1-3"  
+class="td01">STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-2-1"  
+class="td11">                            </td></tr></table>
+<!--l. 439--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">7   </span> <a 
+ id="x1-160007"></a>Interfaces</h3>
+<!--l. 444--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-17000"></a>General</h4>
+<!--l. 446--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 448--><p class="noindent" >readinterpolate
+</p><!--l. 451--><p class="noindent" ><span 
+class="cmbx-10">Inherits</span>:
+</p><!--l. 453--><p class="noindent" >grid
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-18000"></a>Grid Variables</h4>
+                                                                                       
+                                                                                       
+<!--l. 456--><p class="noindent" >
+</p>
+<h5 class="subsubsectionHead"><span class="titlemark">7.0.1   </span> <a 
+ id="x1-190007.0.1"></a>PRIVATE GROUPS</h5>
+<!--l. 460--><p class="noindent" ></p> <table id="TBL-17" class="tabular" 
+ 
+><colgroup id="TBL-17-1g"><col 
+id="TBL-17-1" /></colgroup><colgroup id="TBL-17-2g"><col 
+id="TBL-17-2" /></colgroup><colgroup id="TBL-17-3g"><col 
+id="TBL-17-3" /><col 
+id="TBL-17-4" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-1-1"  
+class="td11">   <span 
+class="cmbx-10">Group Names </span>   </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-1-2"  
+class="td10">   <span 
+class="cmbx-10">Variable Names </span> </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-1-3"  
+class="td01">    <span 
+class="cmbx-10">Details </span>   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-1-4"  
+class="td11">                                                                                             </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-2-1"  
+class="td11">     reflevelseen        </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-2-2"  
+class="td10">      reflevelseen       </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-2-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-2-4"  
+class="td11"> 0                                                                                           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-3-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-3-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-3-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-3-4"  
+class="td11"> highest refinement level in source data that overlaps this point so far  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-4-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-4-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-4-3"  
+class="td01">   dimensions  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-4-4"  
+class="td11"> 3                                                                                           </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-5-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-5-2"  
+class="td10"> </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-5-3"  
+class="td01"> distribution </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-5-4"  
+class="td11"> DEFAULT </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-6-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-6-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-6-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-6-4"  
+class="td11"> GF                                                                                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-7-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-7-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-7-3"  
+class="td01">         tags  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-7-4"  
+class="td11"> Checkpoint=”no” Prolongation=”none”                                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-8-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-8-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-8-3"  
+class="td01">    timelevels  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-8-4"  
+class="td11"> 1                                                                                           </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-9-1"  
+class="td11">
+                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-9-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-9-3"  
+class="td01"> vararray_size  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-9-4"  
+class="td11"> max_number_of_read_variables                                                   </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-10-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-10-1"  
+class="td11">
+                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-10-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-10-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-10-4"  
+class="td11"> INT                                                                                       </td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-11-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-11-1"  
+class="td11">
+    interpthispoint      </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-11-2"  
+class="td10">    interpthispoint     </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-11-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-11-4"  
+class="td11"> 0                                                                                           </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-12-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-12-1"  
+class="td11">
+                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-12-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-12-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-12-4"  
+class="td11"> fill this point this time around                                                    </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-13-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-13-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-13-2"  
+class="td10"> </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-13-3"  
+class="td01"> dimensions </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-13-4"  
+class="td11"> 3 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-14-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-14-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-14-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-14-3"  
+class="td01">  distribution  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-14-4"  
+class="td11"> DEFAULT                                                                              </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-15-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-15-1"  
+class="td11">
+                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-15-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-15-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-15-4"  
+class="td11"> GF                                                                                        </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-16-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-16-1"  
+class="td11">
+                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-16-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-16-3"  
+class="td01">         tags  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-16-4"  
+class="td11"> Checkpoint=”no” Prolongation=”none”                                        </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-17-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-17-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-17-2"  
+class="td10"> </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-17-3"  
+class="td01"> timelevels </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-17-4"  
+class="td11"> 1 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-18-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-18-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-18-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-18-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-18-4"  
+class="td11"> INT                                                                                       </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-19-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-19-1"  
+class="td11">    interp_coords       </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-19-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-19-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-19-4"  
+class="td11"> 0                                                                                           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-20-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-20-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-20-2"  
+class="td10">       interp_x         </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-20-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-20-4"  
+class="td11"> coordinate arrays for the interpolator                                           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-21-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-21-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-21-2"  
+class="td10">       interp_y         </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-21-3"  
+class="td01">   dimensions  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-21-4"  
+class="td11"> 3                                                                                           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-22-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-22-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-22-2"  
+class="td10">       interp_z         </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-22-3"  
+class="td01">  distribution  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-22-4"  
+class="td11"> DEFAULT                                                                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-23-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-23-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-23-2"  
+class="td10">      interp_data       </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-23-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-23-4"  
+class="td11"> GF                                                                                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-24-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-24-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-24-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-24-3"  
+class="td01">         tags  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-24-4"  
+class="td11"> Checkpoint=”no” Prolongation=”none”                                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-25-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-25-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-25-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-25-3"  
+class="td01">    timelevels  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-25-4"  
+class="td11"> 1                                                                                           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-26-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-26-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-26-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-26-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-26-4"  
+class="td11"> REAL                                                                                    </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-27-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-27-1"  
+class="td11">     test_values        </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-27-2"  
+class="td10">      test_values       </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-27-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-27-4"  
+class="td11"> 0                                                                                           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-28-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-28-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-28-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-28-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-28-4"  
+class="td11"> store values for test                                                                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-29-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-29-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-29-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-29-3"  
+class="td01">   dimensions  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-29-4"  
+class="td11"> 3                                                                                           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-30-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-30-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-30-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-30-3"  
+class="td01">  distribution  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-30-4"  
+class="td11"> DEFAULT                                                                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-31-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-31-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-31-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-31-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-31-4"  
+class="td11"> GF                                                                                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-32-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-32-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-32-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-32-3"  
+class="td01">         tags  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-32-4"  
+class="td11"> Checkpoint=”yes” ProlongationOperator=”none”                           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-33-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-33-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-33-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-33-3"  
+class="td01">    timelevels  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-33-4"  
+class="td11"> 3                                                                                           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-34-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-34-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-34-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-34-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-34-4"  
+class="td11"> REAL                                                                                    </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-35-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-35-1"  
+class="td11">     test_results        </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-35-2"  
+class="td10">      test_results       </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-35-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-35-4"  
+class="td11"> 0                                                                                           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-36-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-36-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-36-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-36-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-36-4"  
+class="td11"> difference values for test                                                             </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-37-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-37-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-37-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-37-3"  
+class="td01">   dimensions  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-37-4"  
+class="td11"> 3                                                                                           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-38-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-38-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-38-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-38-3"  
+class="td01">  distribution  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-38-4"  
+class="td11"> DEFAULT                                                                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-39-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-39-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-39-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-39-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-39-4"  
+class="td11"> GF                                                                                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-40-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-40-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-40-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-40-3"  
+class="td01">         tags  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-40-4"  
+class="td11"> Checkpoint=”no” ProlongationOperator=”none”                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-41-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-41-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-41-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-41-3"  
+class="td01">    timelevels  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-41-4"  
+class="td11"> 1                                                                                           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-42-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-42-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-17-42-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-42-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-42-4"  
+class="td11"> REAL                                                                                    </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-43-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-43-1"  
+class="td11">                    </td></tr></table>
+<!--l. 515--><p class="noindent" ><span 
+class="cmbx-10">Uses header</span>:
+</p><!--l. 517--><p class="noindent" >carpet.hh
+</p><!--l. 520--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">8   </span> <a 
+ id="x1-200008"></a>Schedule</h3>
+<!--l. 526--><p class="noindent" >This section lists all the variables which are assigned storage by thorn EinsteinInitialData/ReadInterpolate.
+Storage can either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+                                                                                       
+                                                                                       
+</p><!--l. 529--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-21000"></a>Storage</h4>
+<!--l. 531--><p class="noindent" > 
+</p><!--l. 533--><p class="noindent" ></p> <table id="TBL-18" class="tabular" 
+ 
+><colgroup id="TBL-18-1g"><col 
+id="TBL-18-1" /><col 
+id="TBL-18-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-18-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-18-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-1-2"  
+class="td11"> <span 
+class="cmbx-10">Conditional:               </span></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-18-2-1"  
+class="td
+11">     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-2-2"  
+class="td11"> test_values[3] test_results  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-18-3-1"  
+class="td11">     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-3-2"  
+class="td11">                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-18-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 540--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-22000"></a>Scheduled Functions</h4>
+<!--l. 543--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_PARAMCHECK </span>(conditional)
+</p><!--l. 545--><p class="noindent" >      readinterpolate_paramcheck
+</p><!--l. 547--><p class="noindent" >     <span 
+class="cmti-10">sanity check given parameters</span>
+</p><!--l. 550--><p class="noindent" > 
+</p><!--l. 552--><p class="noindent" ></p> <table id="TBL-19" class="tabular" 
+ 
+><colgroup id="TBL-19-1g"><col 
+id="TBL-19-1" /><col 
+id="TBL-19-2" /><col 
+id="TBL-19-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-19-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-2-3"  
+class="td11"> global     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-3-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 561--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_INITIAL </span>(conditional)
+</p><!--l. 563--><p class="noindent" >      readinterpolate_readdata
+</p><!--l. 565--><p class="noindent" >     <span 
+class="cmti-10">read in datasets from disk</span>
+</p><!--l. 568--><p class="noindent" > 
+</p><!--l. 570--><p class="noindent" ></p> <table id="TBL-20" class="tabular" 
+ 
+><colgroup id="TBL-20-1g"><col 
+id="TBL-20-1" /><col 
+id="TBL-20-2" /><col 
+id="TBL-20-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-20-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-1-2"  
+class="td11"> After:   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-1-3"  
+class="td11"> admbase_initialdata          </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-2-1"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-2-2"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-2-3"  
+class="td11"> hydrobase_initial</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-3-2"  
+class="td11"> Before:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-3-3"  
+class="td11"> admbase_postinitial          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-4-2"  
+class="td11">           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-4-3"  
+class="td11"> hydrobase_prim2coninitial  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-5-2"  
+class="td11"> Type:   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-5-3"  
+class="td11"> group                             </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-6-1"  
+class="td11">    </td></tr></table>
+<!--l. 581--><p class="noindent" ><span 
+class="cmbx-10">ReadInterpolate</span><span 
+class="cmbx-10">_ReadData </span>(conditional)
+</p><!--l. 583--><p class="noindent" >      readinterpolate_read
+</p><!--l. 585--><p class="noindent" >     <span 
+class="cmti-10">read in datasets</span>
+</p><!--l. 588--><p class="noindent" > 
+</p><!--l. 590--><p class="noindent" ></p> <table id="TBL-21" class="tabular" 
+ 
+><colgroup id="TBL-21-1g"><col 
+id="TBL-21-1" /><col 
+id="TBL-21-2" /><col 
+id="TBL-21-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-21-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-1-3"  
+class="td11"> c                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-2-3"  
+class="td11"> level               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-3-2"  
+class="td11"> Storage:     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-3-3"  
+class="td11"> reflevelseen       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-4-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-4-3"  
+class="td11"> interpthispoint  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-5-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-5-3"  
+class="td11"> interp_coords   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-6-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-6-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-6-3"  
+class="td11"> function          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-7-1"  
+class="td11">    </td></tr></table>
+<!--l. 602--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_POSTPOSTINITIAL </span>(conditional)
+</p><!--l. 604--><p class="noindent" >      readinterpolate_freecache
+</p><!--l. 606--><p class="noindent" >     <span 
+class="cmti-10">free memory used for dataset caches</span>
+</p><!--l. 609--><p class="noindent" > 
+</p><!--l. 611--><p class="noindent" ></p> <table id="TBL-22" class="tabular" 
+ 
+><colgroup id="TBL-22-1g"><col 
+id="TBL-22-1" /><col 
+id="TBL-22-2" /><col 
+id="TBL-22-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-22-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-2-3"  
+class="td11"> global     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-3-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 620--><p class="noindent" ><span 
+class="cmbx-10">ReadInterpolate</span><span 
+class="cmbx-10">_ReadData </span>(conditional)
+</p><!--l. 622--><p class="noindent" >      readinterpolate_enforcesymmetry
+</p><!--l. 624--><p class="noindent" >     <span 
+class="cmti-10">enforce symmeries if desired</span>
+</p><!--l. 627--><p class="noindent" > 
+                                                                                       
+                                                                                       
+</p><!--l. 629--><p class="noindent" ></p> <table id="TBL-23" class="tabular" 
+ 
+><colgroup id="TBL-23-1g"><col 
+id="TBL-23-1" /><col 
+id="TBL-23-2" /><col 
+id="TBL-23-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-23-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-1-3"  
+class="td11"> readinterpolate_read  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-2-3"  
+class="td11"> c                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-3-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-3-3"  
+class="td11"> level                       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-4-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-4-3"  
+class="td11"> function                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-5-1"  
+class="td11">    </td></tr></table>
+<!--l. 639--><p class="noindent" ><span 
+class="cmbx-10">ReadInterpolate</span><span 
+class="cmbx-10">_ReadData </span>(conditional)
+</p><!--l. 641--><p class="noindent" >      applybcs
+</p><!--l. 643--><p class="noindent" >     <span 
+class="cmti-10">apply symmetry conditions to read in variables</span>
+</p><!--l. 646--><p class="noindent" > 
+</p><!--l. 648--><p class="noindent" ></p> <table id="TBL-24" class="tabular" 
+ 
+><colgroup id="TBL-24-1g"><col 
+id="TBL-24-1" /><col 
+id="TBL-24-2" /><col 
+id="TBL-24-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-24-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-1-2"  
+class="td11"> After:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-1-3"  
+class="td11"> readinterpolate_enforcesymmetry  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-2-2"  
+class="td11"> Type:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-2-3"  
+class="td11"> group                                      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 656--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_INITIAL </span>(conditional)
+</p><!--l. 658--><p class="noindent" >      readinterpolate_generatetestdata
+</p><!--l. 660--><p class="noindent" >     <span 
+class="cmti-10">generate polynomial test data</span>
+</p><!--l. 663--><p class="noindent" > 
+</p><!--l. 665--><p class="noindent" ></p> <table id="TBL-25" class="tabular" 
+ 
+><colgroup id="TBL-25-1g"><col 
+id="TBL-25-1" /><col 
+id="TBL-25-2" /><col 
+id="TBL-25-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-25-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 673--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_POSTPOSTINITIAL </span>(conditional)
+</p><!--l. 675--><p class="noindent" >      readinterpolate_comparetestdata
+</p><!--l. 677--><p class="noindent" >     <span 
+class="cmti-10">compare to polynomial test data</span>
+</p><!--l. 680--><p class="noindent" > 
+</p><!--l. 682--><p class="noindent" ></p> <table id="TBL-26" class="tabular" 
+ 
+><colgroup id="TBL-26-1g"><col 
+id="TBL-26-1" /><col 
+id="TBL-26-2" /><col 
+id="TBL-26-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-26-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 688--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-23000"></a>Aliased Functions</h4>
+<!--l. 690--><p class="noindent" > 
+</p><!--l. 692--><p class="noindent" ></p> <table id="TBL-27" class="tabular" 
+ 
+><colgroup id="TBL-27-1g"><col 
+id="TBL-27-1" /><col 
+id="TBL-27-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-27-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-27-1-1"  
+class="td11"> <span 
+class="cmbx-10">Alias Name: </span>         </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-1-2"  
+class="td11"> <span 
+class="cmbx-10">Function Name:            </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-27-2-1"  
+class="td11"> ApplyBCs                    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-2-2"  
+class="td11"> ReadInterpolate_ApplyBCs  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-27-3-1"  
+class="td11">                      </td></tr></table>
+ 
+</body></html> 
+
+                                                                                       
+
+
