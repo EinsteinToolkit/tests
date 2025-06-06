@@ -1,0 +1,478 @@
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn SpacetimeX/Z4c.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Always:}&  ~ \\ 
+ chi & ~\\ 
+ gamma\_tilde & ~\\ 
+ MtC & ~\\ 
+ allC & ~\\ 
+ chi\_rhs & ~\\ 
+ gamma\_tilde\_rhs & ~\\ 
+ K\_hat\_rhs & ~\\ 
+ A\_tilde\_rhs & ~\\ 
+ Gam\_tilde\_rhs & ~\\ 
+ Theta\_rhs & ~\\ 
+ alphaG\_rhs & ~\\ 
+ betaG\_rhs & ~\\ 
+ K\_hat & ~\\ 
+ A\_tilde & ~\\ 
+ Gam\_tilde & ~\\ 
+ Theta & ~\\ 
+ alphaG & ~\\ 
+ betaG & ~\\ 
+ ZtC & ~\\ 
+ HC & ~\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_INITIAL} 
+
+\hspace{5mm} z4c\_initialgroup 
+
+\hspace{5mm}{\it convert adm to z4c variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & admbasex\_postinitial \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_INITIAL}   (conditional) 
+
+\hspace{5mm} z4c\_poststepgroup 
+
+\hspace{5mm}{\it post-process z4c variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & z4c\_initialgroup \\ 
+~ & Before:  & admbasex\_setadmvars \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf Z4c\_InitialGroup} 
+
+\hspace{5mm} z4c\_initial1 
+
+\hspace{5mm}{\it convert adm to z4c variables, part 1 } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbasex::metric(interior) \\ 
+~& ~ &admbasex::curv(interior)\\ 
+~& ~ &admbasex::lapse(interior)\\ 
+~& ~ &admbasex::shift(interior)\\ 
+~ & Sync:  & gamma\_tilde \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & chi(interior) \\ 
+~& ~ &gamma\_tilde(interior)\\ 
+~& ~ &k\_hat(interior)\\ 
+~& ~ &a\_tilde(interior)\\ 
+~& ~ &theta(interior)\\ 
+~& ~ &alphag(interior)\\ 
+~& ~ &betag(interior)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf Z4c\_InitialGroup} 
+
+\hspace{5mm} z4c\_initial2 
+
+\hspace{5mm}{\it convert adm to z4c variables, part 2 } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & z4c\_initial1 \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & gamma\_tilde(everywhere) \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & gam\_tilde(interior) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf Z4c\_PostStepGroup} 
+
+\hspace{5mm} z4c\_enforce 
+
+\hspace{5mm}{\it enforce algebraic z4c constraints } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & chi(interior) \\ 
+~& ~ &gamma\_tilde(interior)\\ 
+~& ~ &a\_tilde(interior)\\ 
+~& ~ &alphag(interior)\\ 
+~ & Sync:  & chi \\ 
+~& ~ &gamma\_tilde\\ 
+~& ~ &k\_hat\\ 
+~& ~ &a\_tilde\\ 
+~& ~ &gam\_tilde\\ 
+~& ~ &theta\\ 
+~& ~ &alphag\\ 
+~& ~ &betag\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & chi(interior) \\ 
+~& ~ &gamma\_tilde(interior)\\ 
+~& ~ &a\_tilde(interior)\\ 
+~& ~ &alphag(interior)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf Z4c\_PostStepGroup}   (conditional) 
+
+\hspace{5mm} z4c\_adm 
+
+\hspace{5mm}{\it convert z4c to adm variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & z4c\_enforce \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & chi(everywhere) \\ 
+~& ~ &gamma\_tilde(everywhere)\\ 
+~& ~ &k\_hat(everywhere)\\ 
+~& ~ &a\_tilde(everywhere)\\ 
+~& ~ &gam\_tilde(everywhere)\\ 
+~& ~ &theta(everywhere)\\ 
+~& ~ &alphag(everywhere)\\ 
+~& ~ &betag(everywhere)\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & admbasex::metric(everywhere) \\ 
+~& ~ &admbasex::curv(everywhere)\\ 
+~& ~ &admbasex::lapse(everywhere)\\ 
+~& ~ &admbasex::dtlapse(everywhere)\\ 
+~& ~ &admbasex::shift(everywhere)\\ 
+~& ~ &admbasex::dtshift(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf Z4c\_PostStepGroup2}   (conditional) 
+
+\hspace{5mm} z4c\_adm2 
+
+\hspace{5mm}{\it calculate second time derivatives of adm variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & chi(everywhere) \\ 
+~& ~ &gamma\_tilde(everywhere)\\ 
+~& ~ &k\_hat(everywhere)\\ 
+~& ~ &a\_tilde(everywhere)\\ 
+~& ~ &gam\_tilde(everywhere)\\ 
+~& ~ &theta(everywhere)\\ 
+~& ~ &alphag(everywhere)\\ 
+~& ~ &betag(everywhere)\\ 
+~& ~ &tmunubasex::ettt(interior)\\ 
+~& ~ &tmunubasex::etti(interior)\\ 
+~& ~ &tmunubasex::etij(interior)\\ 
+~ & Sync:  & admbasex::dtcurv \\ 
+~& ~ &admbasex::dt2lapse\\ 
+~& ~ &admbasex::dt2shift\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & admbasex::dtcurv(interior) \\ 
+~& ~ &admbasex::dt2lapse(interior)\\ 
+~& ~ &admbasex::dt2shift(interior)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf Z4c\_AnalysisGroup}   (conditional) 
+
+\hspace{5mm} z4c\_constraints 
+
+\hspace{5mm}{\it calculate z4c constraints } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & chi(everywhere) \\ 
+~& ~ &gamma\_tilde(everywhere)\\ 
+~& ~ &k\_hat(everywhere)\\ 
+~& ~ &a\_tilde(everywhere)\\ 
+~& ~ &gam\_tilde(everywhere)\\ 
+~& ~ &theta(everywhere)\\ 
+~& ~ &alphag(everywhere)\\ 
+~& ~ &betag(everywhere)\\ 
+~& ~ &tmunubasex::ettt(interior)\\ 
+~& ~ &tmunubasex::etti(interior)\\ 
+~& ~ &tmunubasex::etij(interior)\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & ztc(interior) \\ 
+~& ~ &hc(interior)\\ 
+~& ~ &mtc(interior)\\ 
+~& ~ &allc(interior)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf Z4c\_RHSGroup}   (conditional) 
+
+\hspace{5mm} z4c\_rhs 
+
+\hspace{5mm}{\it calculate z4c rhs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & chi(everywhere) \\ 
+~& ~ &gamma\_tilde(everywhere)\\ 
+~& ~ &k\_hat(everywhere)\\ 
+~& ~ &a\_tilde(everywhere)\\ 
+~& ~ &gam\_tilde(everywhere)\\ 
+~& ~ &theta(everywhere)\\ 
+~& ~ &alphag(everywhere)\\ 
+~& ~ &betag(everywhere)\\ 
+~& ~ &tmunubasex::ettt(interior)\\ 
+~& ~ &tmunubasex::etti(interior)\\ 
+~& ~ &tmunubasex::etij(interior)\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & chi\_rhs(interior) \\ 
+~& ~ &gamma\_tilde\_rhs(interior)\\ 
+~& ~ &k\_hat\_rhs(interior)\\ 
+~& ~ &a\_tilde\_rhs(interior)\\ 
+~& ~ &gam\_tilde\_rhs(interior)\\ 
+~& ~ &theta\_rhs(interior)\\ 
+~& ~ &alphag\_rhs(interior)\\ 
+~& ~ &betag\_rhs(interior)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf Z4c\_RHSGroup}   (conditional) 
+
+\hspace{5mm} z4c\_apply\_newradx\_boundary\_conditions 
+
+\hspace{5mm}{\it apply radiative boundary conditions to z4c rhs variables using newradx } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & z4c\_rhs \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & chi(everywhere) \\ 
+~& ~ &gamma\_tilde(everywhere)\\ 
+~& ~ &k\_hat(everywhere)\\ 
+~& ~ &a\_tilde(everywhere)\\ 
+~& ~ &gam\_tilde(everywhere)\\ 
+~& ~ &theta(everywhere)\\ 
+~& ~ &alphag(everywhere)\\ 
+~& ~ &betag(everywhere)\\ 
+~& ~ &chi\_rhs(interior)\\ 
+~& ~ &gamma\_tilde\_rhs(interior)\\ 
+~& ~ &k\_hat\_rhs(interior)\\ 
+~& ~ &a\_tilde\_rhs(interior)\\ 
+~& ~ &gam\_tilde\_rhs(interior)\\ 
+~& ~ &theta\_rhs(interior)\\ 
+~& ~ &alphag\_rhs(interior)\\ 
+~& ~ &betag\_rhs(interior)\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & chi\_rhs(interior) \\ 
+~& ~ &gamma\_tilde\_rhs(interior)\\ 
+~& ~ &k\_hat\_rhs(interior)\\ 
+~& ~ &a\_tilde\_rhs(interior)\\ 
+~& ~ &gam\_tilde\_rhs(interior)\\ 
+~& ~ &theta\_rhs(interior)\\ 
+~& ~ &alphag\_rhs(interior)\\ 
+~& ~ &betag\_rhs(interior)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_INITIAL} 
+
+\hspace{5mm} z4c\_poststepgroup2 
+
+\hspace{5mm}{\it post-process z4c variables, part 2 } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & tmunubasex\_settmunuvars \\ 
+~& ~ &z4c\_poststepgroup\\ 
+~ & Before:  & admbasex\_setadmrhs \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTREGRID} 
+
+\hspace{5mm} z4c\_poststepgroup 
+
+\hspace{5mm}{\it post-process z4c variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & admbasex\_setadmvars \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTREGRID} 
+
+\hspace{5mm} z4c\_poststepgroup2 
+
+\hspace{5mm}{\it post-process z4c variables, part 2 } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & tmunubasex\_settmunuvars \\ 
+~& ~ &z4c\_poststepgroup\\ 
+~ & Before:  & admbasex\_setadmrhs \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_ANALYSIS} 
+
+\hspace{5mm} z4c\_analysisgroup 
+
+\hspace{5mm}{\it analyse z4c variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf ODESolvers\_PostStep} 
+
+\hspace{5mm} z4c\_poststepgroup 
+
+\hspace{5mm}{\it post-process z4c variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & admbasex\_setadmvars \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf ODESolvers\_PostStep} 
+
+\hspace{5mm} z4c\_poststepgroup2 
+
+\hspace{5mm}{\it post-process z4c variables, part 2 } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & tmunubasex\_settmunuvars \\ 
+~& ~ &z4c\_poststepgroup\\ 
+~ & Before:  & admbasex\_setadmrhs \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf ODESolvers\_RHS} 
+
+\hspace{5mm} z4c\_rhsgroup 
+
+\hspace{5mm}{\it calculate z4c rhs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_WRAGH} 
+
+\hspace{5mm} z4c\_test 
+
+\hspace{5mm}{\it self-test } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & meta \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 

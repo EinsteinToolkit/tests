@@ -1,0 +1,660 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>Accelerator</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">Accelerator</h2>
+ <div class="author" ><span 
+class="cmr-12">Erik Schnetter </span><span 
+class="cmmi-12">&#x003C;</span><span 
+class="cmr-12">eschnetter@perimeterinstitute.ca</span><span 
+class="cmmi-12">&#x003E;</span></div>
+<br />
+<div class="date" ><span 
+class="cmr-12">May 17, 2012</span></div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 102--><p class="noindent" ><span 
+class="cmr-9">Many accelerators and GPU architectures separate device memory from host memory. While device</span>
+     <span 
+class="cmr-9">memory may be directly accessible from the host and vice versa, this may include a significant</span>
+     <span 
+class="cmr-9">performance penalty. Such architectures require transferring data between host and device, depending</span>
+     <span 
+class="cmr-9">on which routines execute where, and depending on which data these routines read and write.</span>
+     </p><!--l. 109--><p class="indent" >   <span 
+class="cmr-9">Thorn </span><span 
+class="cmtt-9">Accelerator </span><span 
+class="cmr-9">keeps track of which data are valid where (host or device), and schedules the</span>
+     <span 
+class="cmr-9">necessary data transfers.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Overview</h3>
+<!--l. 117--><p class="noindent" >This thorn keeps track of which grid variables are valid where (host or device). Grid variables can be valid either
+nowhere (e.g. in the beginning), only on the host or only on the device (e.g. if the variable was set by a routine
+executing there), or both on host and device (e.g. if the variable was set on the device and then copied to the
+host).
+</p><!--l. 124--><p class="noindent" >This thorn also examines the schedule to determine which data are required where, and initiates he necessary
+                                                                                       
+                                                                                       
+copy operations.
+</p><!--l. 129--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a>Details</h3>
+<!--l. 131--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.1   </span> <a 
+ id="x1-30002.1"></a>Scheduled Routines</h4>
+<!--l. 133--><p class="noindent" >
+</p>
+<h5 class="subsubsectionHead"><span class="titlemark">2.1.1   </span> <a 
+ id="x1-40002.1.1"></a>Preparation</h5>
+<!--l. 135--><p class="noindent" >Just before a scheduled routine executes, this thorn examines the schedule to determine where the routine
+executes: a routine tagged <span 
+class="cmtt-10">Device=1 </span>executed on a device, a routine without tag or tagged <span 
+class="cmtt-10">Device=0 </span>executed
+on the host.
+</p><!--l. 140--><p class="noindent" >The schedule <span 
+class="cmtt-10">READS </span>declarations for this routine in the <span 
+class="cmtt-10">schedule.ccl </span>file (see users’ guide). These declarations
+specify which grid variables will be read by this routine.
+</p><!--l. 144--><p class="noindent" ><span 
+class="cmtt-10">Accelerator </span>then ensures that these grid variables have valid data where the routine executes
+(host or device). If necessary, data are copied. <span 
+class="cmtt-10">Accelerator </span>does not perform the necessary copy
+operations itself; these are performed by lower-level accelerator-architecture aware thorns such as
+e.g. <span 
+class="cmtt-10">OpenCLRunTime</span>.
+</p><!--l. 151--><p class="noindent" >The parameter <span 
+class="cmtt-10">only</span><span 
+class="cmtt-10">_reads</span><span 
+class="cmtt-10">_current</span><span 
+class="cmtt-10">_timelevel </span>can be used to indicate that all routines only ever read the
+current timelevel. This may e.g. true for thorns using <span 
+class="cmtt-10">MoL </span>for time integration.
+</p><!--l. 155--><p class="noindent" >
+</p>
+<h5 class="subsubsectionHead"><span class="titlemark">2.1.2   </span> <a 
+ id="x1-50002.1.2"></a>Bookkeeping</h5>
+<!--l. 157--><p class="noindent" >Just after a scheduled routine has finished, this thorn examines the <span 
+class="cmtt-10">WRITES </span>declarations for that routine, and
+marks these grid variables as valid on the device and invalid on the host if the routine executed on the device,
+and vice versa.
+</p><!--l. 162--><p class="noindent" >The parameter <span 
+class="cmtt-10">only</span><span 
+class="cmtt-10">_writes</span><span 
+class="cmtt-10">_current</span><span 
+class="cmtt-10">_timelevel </span>can be used to indicate that all routines only ever write the
+                                                                                       
+                                                                                       
+current timelevel. This may e.g. true for thorns using <span 
+class="cmtt-10">MoL </span>for time integration. However, this may not be true
+for routines setting up initial data, if these routines set up multiple timelevels.
+</p><!--l. 170--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.2   </span> <a 
+ id="x1-60002.2"></a>Synchronisation</h4>
+<!--l. 172--><p class="noindent" >Synchronisation is always performed on the host.
+</p><!--l. 174--><p class="noindent" >Before synchronising, this thorn ensures that all data that are sent to neighbouring processors during
+synchonisation are valid on the host, by copying these to the host if necessary. Only the data actually necessary
+for synchronisation are copied.
+</p><!--l. 179--><p class="noindent" >After synchronising, this thorn copies ghost zone values from the host to the device, for those grid variable for
+which the device already has otherwise valid data.
+</p><!--l. 185--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.3   </span> <a 
+ id="x1-70002.3"></a>I/O</h4>
+<!--l. 187--><p class="noindent" >I/O is always performed on the host.
+</p><!--l. 189--><p class="noindent" >Before performing I/O, this thorn copies data from the device to the host. Since I/O routines do
+not (yet?) declare which variables they access, this thorn has to copy back <span 
+class="cmti-10">all </span>variables to the
+host.
+</p><!--l. 193--><p class="noindent" >This may be expensive, and the parameters <span 
+class="cmtt-10">copy</span><span 
+class="cmtt-10">_back</span><span 
+class="cmtt-10">_every</span>, <span 
+class="cmtt-10">copy</span><span 
+class="cmtt-10">_back</span><span 
+class="cmtt-10">_vars</span>, and <span 
+class="cmtt-10">copy</span><span 
+class="cmtt-10">_back</span><span 
+class="cmtt-10">_all</span><span 
+class="cmtt-10">_timelevels</span>
+can be used to copy only certain data to the host. It is up to the user to ensure that these settings are consistent
+with the I/O settings that select which variables are output when.
+</p><!--l. 201--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.4   </span> <a 
+ id="x1-80002.4"></a>Timelevel Cycling</h4>
+<!--l. 203--><p class="noindent" >When the driver cycles time levels on the host, this thorn cycles time levels on the device as well, and then
+marks the new current timelevel as invalid on both host and device.
+</p><!--l. 209--><p class="noindent" >
+                                                                                       
+                                                                                       
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-90003"></a>Implementation Details</h3>
+<!--l. 211--><p class="noindent" ><span 
+class="cmtt-10">Accelerator </span>expects to be called by the driver on certain occasions. It provides a set of aliased
+functions for this that the driver should call. Other infrastructure thorns may also need to call these
+routines.
+</p><!--l. 216--><p class="noindent" >
+     </p><dl class="description"><dt class="description">
+<span 
+class="cmtt-10">Accelerator</span><span 
+class="cmtt-10">_Cycle</span> </dt><dd 
+class="description">
+     <!--l. 217--><p class="noindent" >Cycle timelevels of all grid variables
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">Accelerator</span><span 
+class="cmtt-10">_CopyFromPast</span> </dt><dd 
+class="description">
+     <!--l. 219--><p class="noindent" >Copy the past timelevel of some grid variables to the current timelevel (used by <span 
+class="cmtt-10">MoL </span>at the beginning
+     of each integration step)
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">Accelerator</span><span 
+class="cmtt-10">_PreSync</span> </dt><dd 
+class="description">
+     <!--l. 222--><p class="noindent" >Must be called just before synchronising
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">Accelerator</span><span 
+class="cmtt-10">_PostSync</span> </dt><dd 
+class="description">
+     <!--l. 224--><p class="noindent" >Must be called just after synchronising
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">Accelerator</span><span 
+class="cmtt-10">_PreCallFunction</span> </dt><dd 
+class="description">
+     <!--l. 226--><p class="noindent" >Must be called just before calling a scheduled routine
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">Accelerator</span><span 
+class="cmtt-10">_PostCallFunction</span> </dt><dd 
+class="description">
+     <!--l. 228--><p class="noindent" >Must be called just after calling a scheduled routine
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">Accelerator</span><span 
+class="cmtt-10">_NotifyDataModified</span> </dt><dd 
+class="description">
+     <!--l. 230--><p class="noindent" >Tell <span 
+class="cmtt-10">Accelerator </span>that certain grid functions were modified, and are thus valid somwhere and invalid
+     elsewhere
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">Accelerator</span><span 
+class="cmtt-10">_RequireInvalidData</span> </dt><dd 
+class="description">
+     <!--l. 233--><p class="noindent" >Tell <span 
+class="cmtt-10">Accelerator </span>that certain grid functions will be accessed write-only somewhere
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">Accelerator</span><span 
+class="cmtt-10">_RequireValidData</span> </dt><dd 
+class="description">
+     <!--l. 236--><p class="noindent" >Ask <span 
+class="cmtt-10">Accelerator </span>to ensure that certain grid functions are valid somewhere (by copying data if
+     necessary)</p></dd></dl>
+<!--l. 241--><p class="noindent" ><span 
+class="cmtt-10">Accelerator </span>expects another thorn to provide the actual device-specific copy operations, e.g. for an OpenCL or
+CUDA device. These functions must be provided:
+</p><!--l. 245--><p class="noindent" >
+                                                                                       
+                                                                                       
+     </p><dl class="description"><dt class="description">
+<span 
+class="cmtt-10">Device</span><span 
+class="cmtt-10">_CreateVariables</span> </dt><dd 
+class="description">
+     <!--l. 246--><p class="noindent" >Create (i.e. begin to track) a set of variables/timelevels. This routine will be called exactly once
+     before a variable/timelevel combination is mentioned to the device.
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">Device</span><span 
+class="cmtt-10">_CopyCycle</span> </dt><dd 
+class="description">
+     <!--l. 250--><p class="noindent" >Cycle all timelevels on the device. (This routine should not block.)
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">Device</span><span 
+class="cmtt-10">_CopyFromPast</span> </dt><dd 
+class="description">
+     <!--l. 252--><p class="noindent" >Copy past to current time level on the device. (This routine should not block.)
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">Device</span><span 
+class="cmtt-10">_CopyToDevice</span> </dt><dd 
+class="description">
+     <!--l. 254--><p class="noindent" >Copy data from the host to the device. The return argument indicates whether the data have been
+     copied or moved (i.e. are now invalid on the host). (This routine should not block.)
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">Device</span><span 
+class="cmtt-10">_CopyToHost</span> </dt><dd 
+class="description">
+     <!--l. 258--><p class="noindent" >Copy data from the device back to the host. The return argument indicates whether the data have
+     been copied or moved. (This routine should block until all data have been copied.)
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">Device</span><span 
+class="cmtt-10">_CopyPreSync</span> </dt><dd 
+class="description">
+     <!--l. 262--><p class="noindent" >Copy those data from the device back to the host that will be needed for synchronization (i.e. for
+     inter-process synchronization; AMR is not yet supported). (This routine should block until all data
+     have been copied.)
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">Device</span><span 
+class="cmtt-10">_CopyPostSync</span> </dt><dd 
+class="description">
+     <!--l. 266--><p class="noindent" >Copy the ghost zones to the device. (This routine should not block.)</p></dd></dl>
+<!--l. 270--><p class="noindent" >The note “should not block” indicates that the respective data transfer operation should be performed in
+the background if possible; it is not necessary to wait until the data transfer has finished before
+returning. However, “should block” indicates that the routine must wait until all data have been
+transferred.
+</p><!--l. 278--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-100004"></a>Restrictions</h3>
+<!--l. 280--><p class="noindent" >At the moment, <span 
+class="cmtt-10">Accelerator </span>only supports unigrid simulations; adaptive mesh refinement or multi-block
+methods are not yet supported. The main reason for this is that it does not keep track of the additional
+metadata – this would be straightforward to add.
+                                                                                       
+                                                                                       
+</p><!--l. 285--><p class="noindent" ><span 
+class="cmtt-10">Accelerator </span>is currently also tied to using <span 
+class="cmtt-10">Carpet </span>as driver and does e.g. not work with <span 
+class="cmtt-10">PUGH</span>. The main reason
+for this is that <span 
+class="cmtt-10">PUGH </span>and the flesh do not provide the hooks necessary for <span 
+class="cmtt-10">Accelerator </span>to work – these would
+also be straightforward to add.
+</p><!--l. 302--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-110005"></a>Parameters</h3>
+<!--l. 321--><p class="noindent" ></p> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /></colgroup><colgroup id="TBL-2-2g"><col 
+id="TBL-2-2" /><col 
+id="TBL-2-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:normal; text-align:left;" id="TBL-2-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">copy_back_all_timelevels</div>                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-1-3"  
+class="td01">                     BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-2-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Copy all timelevels back to the host for output</span></div>                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-1"  
+class="td11">                                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-3-3"  
+class="td01">                    <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-4-1"  
+class="td11">                                  </td></tr></table>
+<!--l. 328--><p class="noindent" ></p> <table id="TBL-3" class="tabular" 
+ 
+><colgroup id="TBL-3-1g"><col 
+id="TBL-3-1" /></colgroup><colgroup id="TBL-3-2g"><col 
+id="TBL-3-2" /><col 
+id="TBL-3-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-1-"><td  style="white-space:normal; text-align:left;" id="TBL-3-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">copy_back_all_written_variables_in_analysis</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-1-3"  
+class="td01">                     BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-3-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Copy all variables that are written to in analysis back to the host</span></div>                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-3-1"  
+class="td11">                                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-3-3"  
+class="td01">                    <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-4-1"  
+class="td11">                                  </td></tr></table>
+<!--l. 335--><p class="noindent" ></p> <table id="TBL-4" class="tabular" 
+ 
+><colgroup id="TBL-4-1g"><col 
+id="TBL-4-1" /></colgroup><colgroup id="TBL-4-2g"><col 
+id="TBL-4-2" /><col 
+id="TBL-4-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-1-"><td  style="white-space:normal; text-align:left;" id="TBL-4-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">copy_back_every</div>                             </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-1-3"  
+class="td01">                                INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-4-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">When to copy variables back to the host</span></div>                                                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-3-1"  
+class="td11">              <span 
+class="cmbx-10">Range                   </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-3-3"  
+class="td01">                          <span 
+class="cmbx-10">Default: </span>1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-4-"><td  style="white-space:normal; text-align:left;" id="TBL-4-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">never</div>                                                                         
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-5-"><td  style="white-space:normal; text-align:left;" id="TBL-4-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1:*</div>                                                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">every so many iterations</div>                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-6-1"  
+class="td11">                                  </td></tr></table>
+<!--l. 342--><p class="noindent" ></p> <table id="TBL-5" class="tabular" 
+ 
+><colgroup id="TBL-5-1g"><col 
+id="TBL-5-1" /></colgroup><colgroup id="TBL-5-2g"><col 
+id="TBL-5-2" /><col 
+id="TBL-5-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-1-"><td  style="white-space:normal; text-align:left;" id="TBL-5-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">copy_back_vars</div>                              </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-1-3"  
+class="td01">                            STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-5-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Which variables to copy back</span></div>                                                                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-3-1"  
+class="td11">              <span 
+class="cmbx-10">Range                   </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-3-3"  
+class="td01">                         <span 
+class="cmbx-10">Default: </span>all  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-4-"><td  style="white-space:normal; text-align:left;" id="TBL-5-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.*</div>
+                                                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-5-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">list of group or variable names; empty to copy nothing, ’all’
+  to copy all variables</div>                                                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-5-1"  
+class="td11">                                  </td></tr></table>
+<!--l. 349--><p class="noindent" ></p> <table id="TBL-6" class="tabular" 
+ 
+><colgroup id="TBL-6-1g"><col 
+id="TBL-6-1" /></colgroup><colgroup id="TBL-6-2g"><col 
+id="TBL-6-2" /><col 
+id="TBL-6-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-1-"><td  style="white-space:normal; text-align:left;" id="TBL-6-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">verbose</div>                                         </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-1-3"  
+class="td01">                     BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-6-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Output detailed information</span></div>                                                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-3-1"  
+class="td11">                                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-3-3"  
+class="td01">                    <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-4-1"  
+class="td11">                                  </td></tr></table>
+<!--l. 356--><p class="noindent" ></p> <table id="TBL-7" class="tabular" 
+ 
+><colgroup id="TBL-7-1g"><col 
+id="TBL-7-1" /></colgroup><colgroup id="TBL-7-2g"><col 
+id="TBL-7-2" /><col 
+id="TBL-7-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-1-"><td  style="white-space:normal; text-align:left;" id="TBL-7-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">veryverbose</div>                                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-1-3"  
+class="td01">                     BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-7-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Output even more detailed information</span></div>                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-3-1"  
+class="td11">                                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-3-3"  
+class="td01">                    <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-4-1"  
+class="td11">                                  </td></tr></table>
+<!--l. 363--><p class="noindent" ></p> <table id="TBL-8" class="tabular" 
+ 
+><colgroup id="TBL-8-1g"><col 
+id="TBL-8-1" /></colgroup><colgroup id="TBL-8-2g"><col 
+id="TBL-8-2" /><col 
+id="TBL-8-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-1-"><td  style="white-space:normal; text-align:left;" id="TBL-8-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">only_reads_current_timelevel</div>            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-1-3"  
+class="td01">                   BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-8-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Assume that functions read only the current timelevel</span></div>                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-3-1"  
+class="td11">                                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-3-3"  
+class="td01">                  <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-4-1"  
+class="td11">                                  </td></tr></table>
+<!--l. 370--><p class="noindent" ></p> <table id="TBL-9" class="tabular" 
+ 
+><colgroup id="TBL-9-1g"><col 
+id="TBL-9-1" /></colgroup><colgroup id="TBL-9-2g"><col 
+id="TBL-9-2" /><col 
+id="TBL-9-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-1-"><td  style="white-space:normal; text-align:left;" id="TBL-9-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">only_writes_current_timelevel</div>           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-1-3"  
+class="td01">                   BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-9-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Assume that functions write only the current timelevel</span></div>                                    
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-3-1"  
+class="td11">                                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-3-3"  
+class="td01">                  <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-4-1"  
+class="td11">                                  </td></tr></table>
+<!--l. 379--><p class="noindent" >
+</p>
+                                                                                       
+                                                                                       
+<h3 class="sectionHead"><span class="titlemark">6   </span> <a 
+ id="x1-120006"></a>Interfaces</h3>
+<!--l. 384--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-13000"></a>General</h4>
+<!--l. 386--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 388--><p class="noindent" >accelerator
+</p><!--l. 393--><p class="noindent" ><span 
+class="cmbx-10">Uses header</span>:
+</p><!--l. 395--><p class="noindent" >carpet.hh
+</p><!--l. 398--><p class="noindent" ><span 
+class="cmbx-10">Provides</span>:
+</p><!--l. 402--><p class="noindent" >Accelerator_Cycle to
+</p><!--l. 404--><p class="noindent" >Accelerator_CopyFromPast to
+</p><!--l. 406--><p class="noindent" >Accelerator_PreSync to
+</p><!--l. 408--><p class="noindent" >Accelerator_PostSync to
+</p><!--l. 410--><p class="noindent" >Accelerator_PreCallFunction to
+</p><!--l. 412--><p class="noindent" >Accelerator_PostCallFunction to
+</p><!--l. 414--><p class="noindent" >Accelerator_NotifyDataModified to
+</p><!--l. 416--><p class="noindent" >Accelerator_RequireInvalidData to
+</p><!--l. 418--><p class="noindent" >Accelerator_RequireValidData to
+</p><!--l. 421--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">7   </span> <a 
+ id="x1-140007"></a>Schedule</h3>
+<!--l. 427--><p class="noindent" >This section lists all the variables which are assigned storage by thorn CactusUtils/Accelerator. Storage can
+either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 430--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-15000"></a>Storage</h4>
+<!--l. 430--><p class="noindent" >NONE
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-16000"></a>Scheduled Functions</h4>
+<!--l. 434--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_STARTUP</span>
+</p><!--l. 436--><p class="noindent" >      accelerator_init
+</p><!--l. 438--><p class="noindent" >     <span 
+class="cmti-10">initialise accelerator thorn</span>
+                                                                                       
+                                                                                       
+</p><!--l. 441--><p class="noindent" > 
+</p><!--l. 443--><p class="noindent" ></p> <table id="TBL-10" class="tabular" 
+ 
+><colgroup id="TBL-10-1g"><col 
+id="TBL-10-1" /><col 
+id="TBL-10-2" /><col 
+id="TBL-10-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-10-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 451--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_ANALYSIS</span>
+</p><!--l. 453--><p class="noindent" >      accelerator_copyback
+</p><!--l. 455--><p class="noindent" >     <span 
+class="cmti-10">copy memory buffers back to host memory</span>
+</p><!--l. 458--><p class="noindent" > 
+</p><!--l. 460--><p class="noindent" ></p> <table id="TBL-11" class="tabular" 
+ 
+><colgroup id="TBL-11-1g"><col 
+id="TBL-11-1" /><col 
+id="TBL-11-2" /><col 
+id="TBL-11-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-11-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-3-1"  
+class="td11">    </td></tr></table>
+ 
+</body></html> 
+
+                                                                                       
+
+
