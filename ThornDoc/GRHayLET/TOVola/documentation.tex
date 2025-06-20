@@ -1,0 +1,504 @@
+% *======================================================================*
+%  Cactus Thorn template for ThornGuide documentation
+%  Author: Ian Kelley
+%  Date: Sun Jun 02, 2002
+%  $Header$
+%
+%  Thorn documentation in the latex file doc/documentation.tex
+%  will be included in ThornGuides built with the Cactus make system.
+%  The scripts employed by the make system automatically include
+%  pages about variables, parameters and scheduling parsed from the
+%  relevant thorn CCL files.
+%
+%  This template contains guidelines which help to assure that your
+%  documentation will be correctly added to ThornGuides. More
+%  information is available in the Cactus UsersGuide.
+%
+%  Guidelines:
+%   - Do not change anything before the line
+%       % START CACTUS THORNGUIDE",
+%     except for filling in the title, author, date, etc. fields.
+%        - Each of these fields should only be on ONE line.
+%        - Author names should be separated with a \\ or a comma.
+%   - You can define your own macros, but they must appear after
+%     the START CACTUS THORNGUIDE line, and must not redefine standard
+%     latex commands.
+%   - To avoid name clashes with other thorns, 'labels', 'citations',
+%     'references', and 'image' names should conform to the following
+%     convention:
+%       ARRANGEMENT_THORN_LABEL
+%     For example, an image wave.eps in the arrangement CactusWave and
+%     thorn WaveToyC should be renamed to CactusWave_WaveToyC_wave.eps
+%   - Graphics should only be included using the graphicx package.
+%     More specifically, with the "\includegraphics" command.  Do
+%     not specify any graphic file extensions in your .tex file. This
+%     will allow us to create a PDF version of the ThornGuide
+%     via pdflatex.
+%   - References should be included with the latex "\bibitem" command.
+%   - Use \begin{abstract}...\end{abstract} instead of \abstract{...}
+%   - Do not use \appendix, instead include any appendices you need as
+%     standard sections.
+%   - For the benefit of our Perl scripts, and for future extensions,
+%     please use simple latex.
+%
+% *======================================================================*
+%
+% Example of including a graphic image:
+%    \begin{figure}[ht]
+% 	\begin{center}
+%    	   \includegraphics[width=6cm]{/home/runner/work/tests/tests/arrangements/GRHayLET/TOVola/doc/MyArrangement_MyThorn_MyFigure}
+% 	\end{center}
+% 	\caption{Illustration of this and that}
+% 	\label{MyArrangement_MyThorn_MyLabel}
+%    \end{figure}
+%
+% Example of using a label:
+%   \label{MyArrangement_MyThorn_MyLabel}
+%
+% Example of a citation:
+%    \cite{MyArrangement_MyThorn_Author99}
+%
+% Example of including a reference
+%   \bibitem{MyArrangement_MyThorn_Author99}
+%   {J. Author, {\em The Title of the Book, Journal, or periodical}, 1 (1999),
+%   1--16. \texttt{http://www.nowhere.com/}}
+%
+% *======================================================================*
+
+% If you are using CVS use this line to give version information
+% $Header$
+
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+% The author of the documentation
+\author{David Boyer \textless dboyer@uidaho.edu \textgreater}
+
+% The title of the document (not necessarily the name of the Thorn)
+\title{TOVola}
+
+% the date your document was last changed, if your document is in CVS,
+% please use:
+%    \date{$ $Date$ $}
+% when using git instead record the commit ID:
+%    \date{\gitrevision{<path-to-your-.git-directory>}}
+\date{October 10, 2024}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+% Add all definitions used in this documentation here
+%   \def\mydef etc
+
+% Add an abstract for this thorn's documentation
+\begin{abstract}
+
+\texttt{TOVola} is a thorn for the Einstien Toolkit that solves the Tolman-Oppenheimer-Volkov (TOV) equations for spherically symmetric static stars using an adaptive ODE method (RK45 or DP78) using GSL's ODE solver. This TOV solver is compatible with three types of Equations of State (EOS): Simple Polytrope, Piecewise Polytrope, and Tabulated EOS. Examples of using each EOS is included in the \texttt{par} directory. Raw data is solved for, normalized, and set onto the ET grid, and constraint tested via the \texttt{Baikal} thorn.\cite{TOVola_TOVola_Baikal}
+\end{abstract}
+
+% The following sections are suggestive only.
+% Remove them or add your own.
+
+\section{Introduction}
+
+\texttt{TOVola} is a thorn developed to handle the TOV equations using multiple different types of EOS and use adaptive methods to solve the system of ODEs. It is specifically developed to solve the TOV equations and adjust and interpolate the TOV data to the ET grid.
+
+\texttt{TOVola} features multiple EOS compatibility, for Simple and Piecewise Polytropes, as well as Tabulated EOS. EOS parameters are stored by the \texttt{GRHayL} library, \texttt{GRHayLib} \cite{TOVola_TOVola_GRHayL}, so make sure you specify for it either your polytropic parameters or your specific table path in your parfile.
+
+\section{TOV Equations and Equations of State}
+
+Note that this section will not be a derivation of the equations. If more information is desired, see the original TOV papers \cite{TOVola_TOVola_Tolman, TOVola_TOVola_OppVol}.
+
+The TOV equations are the equations of hydrostatic equilibrium for relativistic stars that are spherically symmetric and static. They are as follows:
+
+\begin{eqnarray}
+    \frac{dP}{dr} & = & -(\rho_e+P)\frac{(\frac{2m}{r}+8\pi r^2P)}{2r(1-\frac{2m}{r})} \\
+    \frac{d\nu}{dr} & = & \frac{(\frac{2m}{r}+8\pi r^2P)}{r(1-\frac{2m}{r})} \\
+    \frac{dm}{dr} & = & 4\pi r^2 \rho_e \\
+    \frac{d\bar{r}}{dr} & = & \frac{\bar{r}}{r\sqrt{1-\frac{2m}{r}}}
+\end{eqnarray}
+
+where we adopt geometerized units (G=c=1). We followed the form used in \texttt{nrpytutorial}.\cite{TOVola_TOVola_NRpy}
+
+I will note that I will be differentiating between total energy density and baryon matter density as $\rho_e$ and $\rho_b$, respectively. $P$ is the system's pressure, $m$ is mass, $r$ is Schwarzchild radius, $\nu$ is an associated metric function tied to the lapse, and $\bar{r}$ is the isotropic radius.
+
+One must also declare an EOS the relates $P$ and $\rho_b$:
+\begin{eqnarray}
+    P & = & P(\rho_b)
+\end{eqnarray}
+\texttt{TOVola} has compatibility with three different types of EOS: Simple Polytrope, Piecewise Polytrope, and Tabulated EOS:
+
+\begin{eqnarray}
+    P & = & K\rho_b^{\Gamma} \\
+    P & = & K_i\rho_b^{\Gamma_i} \\
+    P & = & P_{table}(\rho_b)
+\end{eqnarray}
+
+Furthermore, $\rho_e$ and $\rho_b$ are related by the following equation:
+\begin{eqnarray}
+    \rho_e & = & \rho_b(1+\epsilon)
+\end{eqnarray}
+where $\epsilon$ is the internal energy density.
+
+\section{Solving the ODE System}
+
+The ODE solver that \texttt{TOVola} uses is the \texttt{GSL} ODE solver. It can solve any ODE system it is given, as long as it is broken into a set of 1st-order ODEs (exactly what the TOV equations are in the first place). It can handle a variety of ODE methods, as well as adaptive and non-adaptive methods. \texttt{TOVola} only enables the adaptive RK4(5) method (ARKF) and the adaptive DP7(8) method (ADP8). If there is demand, I can enable more methods, but these are the ones that I felt were of the most use.
+
+The integration starts by calculating the initial pressure of the system from a given central baryon density, $\rho_c$. Then, using \texttt{GSL}, it steps through the integration. The integration will continue until the termination condition is hit, which was chosen to be the surface of the star. It saves the solution for each step, reallocating memory for the stored solution if the solution gets sufficiently large.
+
+Afterwards, the raw $\bar{r}$ is normalized and conformal factors and lapses are calculated for further use in the toolkit. \texttt{TOVola} then uses an interpolator heavily inspired from the \texttt{nrpytutorial}\cite{TOVola_TOVola_NRpy} library to interpolate the adjusted data to the ET grid. From there, the grid functions are saved and, if needed, time levels are populated by copying the data over (as the TOVs are static).
+
+The example parfiles give an example of what you can do with that data from there. In the example parfiles, the initial data is stored with \texttt{Hydrobase} and \texttt{ADMbase}, and the \texttt{Baikal} thorn calculates the constraint violation of the initial data. Gallery examples are also currently in the works that use the thorn \texttt{GRHydro} to evolve the initial data that was calculated by \texttt{TOVola}. In \cite{TOVola_TOVola_GRHayL}, initial data from \texttt{TOVola} is being used for the evolutions of TOV data. Once TOVola creates the initial data, it is up to the user to then decide what they want to use that initial data for.
+
+\section{Using TOVola}
+
+In this section, I will explain the general use of this thorn. 
+
+\subsection{Basic Usage}
+
+For finding TOV solutions using \texttt{TOVola}, one only needs to set up variables in a parfile. Since most of the EOS information is stored by \texttt{GRHayL}, most of the \texttt{TOVola} parameters are related to the error tolerances for GSL, with the exception of the beta equilibrium temperature \texttt{Tin} and the choice of EOS type \texttt{TOVola\_EOS\_type}. To see examples of how to build a TOV parfile, just look at the examples in the \texttt{par} directory and follow suit.
+
+\subsection{Compatible Equations of State}
+
+As mentioned earlier, \texttt{TOVola} has 3 types of EOS that are compatible: Simple Polytrope, Piecewise Polytrope, and Tabulated EOS.
+
+As \texttt{GRHayL}\cite{TOVola_TOVola_GRHayL} holds the information on the EOS, you must set its parameters in the parfile as well. Depending on the EOS you are using, you will set different parameters ($K$ and $Gamma$ for polytropes, or a beta\_equilibrium\_temperature for Tabulated). For more details, please refer to the example parfiles in the \texttt{par} directory. They act as templates of how your parfile should look.
+
+\subsubsection{Using a Simple Polytrope}
+
+Aside from telling both \texttt{TOVola} and \texttt{GRHayLib} which EOS type you are using, \texttt{GRHayLib} also needs to know the polytropic parameters:
+
+\begin{itemize}
+    \item \texttt{GRHayLib::Gamma\_th}
+    \item \texttt{GRHayLib::Gamma\_ppoly\_in[0]}
+    \item \texttt{GRHayLib::k\_ppoly0}
+\end{itemize}
+
+\subsubsection{Using a Piecewise Polytrope}
+
+Piecewise Polytrope is practically identical in setting up as the simple polytrope, however, you need to tell \texttt{GRHayLib} the polytropic parameters of each region, as well as how many regions you are using:
+
+\begin{itemize}
+    \item \texttt{GRHayLib::neos}
+    \item \texttt{GRHayLib::Gamma\_th}
+    \item \texttt{GRHayLib::Gamma\_ppoly\_in[i]} for each region
+    \item \texttt{GRHayLib::rho\_ppoly\_in[i]} for each region boundary
+    \item \texttt{GRHayLib::k\_ppoly0}
+\end{itemize}
+
+\subsubsection{Using a Tabulated EOS}
+
+Setting up a Tabulated EOS is going to be rather different than the last two EOS types. \texttt{GRHayLib} needs to know a completely different set of variables than the polytropes. Instead of the polytropic parameters, you need to give \texttt{GRHayLib} information that will help it slice the table you are using. Furthermore, you will need to activate the \texttt{GRHayLID} thorn to impose a beta equilibrium temperature. This will allow for proper table slicing:
+
+\begin{itemize}
+    \item \texttt{TOVola::TOVola\_Tin}, beta equilibrium temperature, to take the table slice we want
+    \item \texttt{GRHayLib::EOS\_tablepath}, where your table is located.
+    \item \texttt{GRHayLib::Y\_e\_atm}
+    \item \texttt{GRHayLib::Y\_e\_min}
+    \item \texttt{GRHayLib::Y\_e\_max}
+    \item \texttt{GRHayLib::T\_atm}
+    \item \texttt{GRHayLib::T\_min}
+    \item \texttt{GRHayLib::T\_max}
+    \item \texttt{GRHayLID::impose\_beta\_equilibrium = yes}
+    \item \texttt{GRHayLID::beq\_temperature}
+\end{itemize}
+
+Please note: \texttt{TOVola} does NOT provide the EOS table. You must provide your own table to be able to use the Tabulated feature. HDF5 EOS tables are readily available at "stellarcollapse.org".
+
+\subsection{Examples}
+
+Example parfiles can be found in the thorn's \texttt{par} directory. There is one for each type of EOS:
+
+\begin{itemize}
+    \item \texttt{Simple.par }
+    \begin{itemize}
+    \item A Simple Polytrope example, with $K=1.0$ and $\Gamma=2.0$
+    \end{itemize}
+    \item \texttt{Piecewise.par }
+    \begin{itemize}
+    \item A Piecewise Polytrope example, using the Piecewise parameters for $K_i$ and $\Gamma_i$ of Read et. al for the SLy EOS.\cite{TOVola_TOVola_Read} 7 Regions are used in this example.
+    \end{itemize}
+    \item \texttt{Tabulated.par }
+    \begin{itemize}
+	    \item An Example of using a Tabulated EOS. One must replace the \texttt{GRHayLib::EOS\_tablepath } in the parfile to the location of you EOS table. We used an SLy4 table for this specific example.
+    \end{itemize}
+\end{itemize}
+
+\texttt{Baikal} was used to test each EOS type and example for any Hamiltonian or momentum constraint violation, so these example parfiles still include constraint violation calculations.
+
+Gallery examples are also being created that evolve the initial data with \texttt{GRHydro} and will be included in the example parfiles once they are acceptable.
+
+\section{Acknowledgements}
+
+I acknowledge the use of \texttt{nrpytutorial}\cite{TOVola_TOVola_NRpy} to generate a base interpolator to put the TOV data on the grid, of which I edited from there. I acknowledge the use of the \texttt{GRHayL} thorn, which was used to store and use EOS specific data in the solution to the TOVs.
+
+\begin{thebibliography}{9}
+\bibitem{TOVola_TOVola_Baikal}
+Z. Etienne. Document in the nrpytutorial github repo: https://nbviewer.jupyter.org/github/zachetienne/nrpytutorial/blob/master/Tutorial-ETK\_thorn-BaikalETK.ipynb
+%
+\bibitem{TOVola_TOVola_GRHayL}
+S. Cupp, L. Werneck, T. Pierre Jacques, Z. Etienne. Paper In Prep (6/24). Thorn found in the GRHayL directory of the toolkit
+%
+\bibitem{TOVola_TOVola_Tolman}
+R.~C. Tolman, Phys. Rev. {\bf 55}, 364 (1939).
+%
+\bibitem{TOVola_TOVola_OppVol}
+J.~R. Oppenheimer and G. Volkoff, Physical Review {\bf 55}, 374 (1939).
+%
+\bibitem{TOVola_TOVola_NRpy}
+Z. Etienne. Github repository: https://github.com/zachetienne/nrpytutorial
+%
+\bibitem{TOVola_TOVola_Read}
+J. Read, B. Lackey, B. Owen, and J. Friedman, Phys. Rev. D {\bf 79}, 124032 (2008).
+%
+\end{thebibliography}
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{tovola\_max\_interpolation\_stencil}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{tovola\_absolute\_max\_step} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Biggest possible step size.}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0.0:*} & \multicolumn{2}{p{\paraWidth}|}{Must be positive} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{tovola\_absolute\_min\_step} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Smallest possible step size}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0e-20 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0.0:*} & \multicolumn{2}{p{\paraWidth}|}{Must be positive} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{tovola\_central\_baryon\_density} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em What's the initial baryon density? (Used to calculate initial pressure).}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.125 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0.0:*} & \multicolumn{2}{p{\paraWidth}|}{Must be Positive} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{tovola\_eos\_type} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em What EOS type are you using?}} \\
+\hline{\bf Range} & &  {\bf Default:} Simple \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Simple} & \multicolumn{2}{p{\paraWidth}|}{Simple Polytrope} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Piecewise} & \multicolumn{2}{p{\paraWidth}|}{Piecewise Polytrope} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Tabulated} & \multicolumn{2}{p{\paraWidth}|}{Tabulated EOS} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{tovola\_error\_limit} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Limiting factor of the error. Determines GSL's Tolerance.}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0e-8 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0.0:*} & \multicolumn{2}{p{\paraWidth}|}{Must be Positive} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{tovola\_initial\_ode\_step\_size} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial Step Size}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0e-20 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0.0:*} & \multicolumn{2}{p{\paraWidth}|}{Must be Positive} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{tovola\_interpolation\_stencil} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Stencil Size for Interpollator to Grid}} \\
+\hline{\bf Range} & &  {\bf Default:} 11 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{Minimum stencil of 1} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{tovola\_max\_interpolation\_stencil} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Maximum Interpollator stencil}} \\
+\hline{\bf Range} & &  {\bf Default:} 13 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{Minimum stencil of 1} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{tovola\_ode\_method} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em What type of ODE method are we using (More Methods can be added if there is demand)}} \\
+\hline{\bf Range} & &  {\bf Default:} ARKF \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering ARKF} & \multicolumn{2}{p{\paraWidth}|}{"Adaptive Runge-Kutta-Fehlberg 
+ (RK4(5))"} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering ADP8} & \multicolumn{2}{p{\paraWidth}|}{Adaptive Dormand-Prince Eigth Order (DP7(8))} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{tovola\_size} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Maximum number of steps}} \\
+\hline{\bf Range} & &  {\bf Default:} 10000000 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{Minimum of 1 step} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{tovola\_tin} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Beta Equilibrium Temperature}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0e-2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0.0:*} & \multicolumn{2}{p{\paraWidth}|}{Must be Positive} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{tovola\_tov\_populate\_timelevels} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Populate that amount of timelevels}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:3} & \multicolumn{2}{p{\paraWidth}|}{1 (default) to 3} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{initial\_hydro} & {\bf Scope:} shared from HYDROBASE & KEYWORD \\\hline
+\multicolumn{3}{|l|}{\bf Extends ranges:}\\ 
+\hline\multicolumn{1}{|p{\maxVarWidth}|}{\centering TOVola} & \multicolumn{2}{p{\paraWidth}|}{TOV star initial hydrobase variables} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+tovola
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+grhaylib
+
+admbase
+
+hydrobase
+
+grid
+\vspace{2mm}
+
+\vspace{5mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn GRHayLET/TOVola.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}NONE
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PARAMCHECK} 
+
+\hspace{5mm} tovola\_parameter\_checker 
+
+\hspace{5mm}{\it check if interpollation stencil does not exceed maximum value, and eos type is used appropriately. } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Initial}   (conditional) 
+
+\hspace{5mm} tovola\_tov\_grid 
+
+\hspace{5mm}{\it group for the tov initial data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Sync:  & admbase::metric \\ 
+~& ~ &admbase::curv\\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &rho\\ 
+~& ~ &press\\ 
+~& ~ &eps\\ 
+~& ~ &vel\\ 
+~& ~ &w\_lorentz\\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf TOVola\_TOV\_Grid}   (conditional) 
+
+\hspace{5mm} tovola\_solve\_and\_interp 
+
+\hspace{5mm}{\it performs/drives the tov initial data solution algorithm. calls the integration function for the raw data, normalizes the data to make it more usable, and interpolates to the et grid. } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & grid::coordinates \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & admbase::curv(everywhere) \\ 
+~& ~ &admbase::shift(everywhere)\\ 
+~& ~ &admbase::alp(everywhere)\\ 
+~& ~ &admbase::metric\_p\_p(everywhere)\\ 
+~& ~ &admbase::metric\_p(everywhere)\\ 
+~& ~ &admbase::metric(everywhere)\\ 
+~& ~ &hydrobase::rho\_p\_p(everywhere)\\ 
+~& ~ &hydrobase::rho\_p(everywhere)\\ 
+~& ~ &hydrobase::rho(everywhere)\\ 
+~& ~ &hydrobase::press\_p\_p(everywhere)\\ 
+~& ~ &hydrobase::press\_p(everywhere)\\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps\_p\_p(everywhere)\\ 
+~& ~ &hydrobase::eps\_p(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+~& ~ &hydrobase::vel\_p\_p(everywhere)\\ 
+~& ~ &hydrobase::vel\_p(everywhere)\\ 
+~& ~ &hydrobase::vel(everywhere)\\ 
+~& ~ &hydrobase::w\_lorentz\_p\_p(everywhere)\\ 
+~& ~ &hydrobase::w\_lorentz\_p(everywhere)\\ 
+~& ~ &hydrobase::w\_lorentz(everywhere)\\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}
