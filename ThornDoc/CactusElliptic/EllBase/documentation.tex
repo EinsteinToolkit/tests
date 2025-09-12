@@ -1,0 +1,607 @@
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a 
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+\title{EllBase}
+\author{Gerd Lanfermann}
+\date{$ $Date$ $}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+\begin{abstract}
+Infrastructure for standard elliptic solvers
+\end{abstract}
+
+
+\section{Introduction}
+Following a brief introduction to the elliptic solver interfaces
+provided by {\tt EllBase}, we explain how to add a 
+new class of elliptic equations and how to implement a particular solver 
+for any class.
+We do not discuss the individual elliptic solvers here since these are
+documented in their own thorns.
+
+\subsection{Purpose of Thorn}
+
+Thorn EllBase provides the basic functionality for 
+\begin{itemize}
+\item registering a class of elliptic equations
+\item register a solver for any particular class
+\end{itemize}
+
+The solvers are called by the user through a unique interface, which calls the 
+required elliptic solver for a class using the name under which the solver 
+routine is  registered. 
+
+{\tt EllBase} itself defines the elliptic classes
+\begin{enumerate}
+\item{\bf flat:} {\tt Ell\_LinFlat}\\
+solves a linear elliptic equation in flat space: $\nabla \phi + M \phi
++N = 0 $
+
+\item{\bf metric:} {\tt Ell\_LinMetric}\\
+solves a linear elliptic equation for a given metric: $\nabla_{g} \phi
++ M \phi + N = 0 $
+\item{\bf conformal metric:} {\tt Ell\_LinConfMetric}\\
+ solves a linear elliptic equation for a
+given metric and a conformal factor: $\nabla_{cg} \phi + M \phi
++ N = 0 $
+\item{\bf generic:} solves a linear elliptic equation by passing the 
+	stencil functions. There is support for a maximum of 27 stencil 
+	functions ($3^3$). {\em This is not implemented, yet.}
+\end{enumerate}
+
+\section{Technical Specification}
+
+\begin{itemize}
+
+\item{Implements:} {\tt ellbase}
+\item{Inherits from:} {\tt grid}
+\item{Tested with thorns:} \\
+{\tt CactusElliptic/EllTest},\\
+ {\tt CactusWave/IDScalarWaveElliptic}
+
+\end{itemize}
+
+\section{ToDo}
+\begin{itemize}
+\item{}Add more standard equation classes.
+\item{}The method for passing  boundary conditions  into the 
+elliptic solvers has not fully consolidated. We have some good ideas
+on what the interface should look like, but the implementation will
+take some time. If you are worried about BCs, please contact me.
+\end{itemize}
+
+\section{Solving an elliptic equation}
+EllBase provides a calling interface for each of the elliptic classes 
+implemented.
+As a user you must provide all information needed for a
+particular elliptic class.  In general this will include
+\begin{itemize}
+\item{} the gridfunction(s) to solve for
+\item{} the coefficient matrix or source terms
+\item{} information on termination tolerances
+\item{} the name of the solver to be used
+\end{itemize}
+
+{\bf Motivation:} At a later stage you  might want to compile with a different 
+solver for this elliptic class: just change the name of the solver in your
+elliptic interface call. If somebody improves a solver you have been using,
+there is no need for you to change any code on your side: the interface 
+will hide all of that. Another advantage is that your code will compile 
+and run, even though certain solvers are not compiled in. In this case, you 
+will have to do some return value checking to offer alternatives.
+
+\subsection{{\tt Ell\_LinFlat}}
+To call this interface from {\bf Fortran}:
+\begin{verbatim}
+	 call Ell_LinFlatSolver(ierr, cctkGH, phi_gfi, M_gfi, N_gfi,
+	.                       AbsTol, RelTol, "solvername") 
+\end{verbatim}
+To call this interface from {\bf C}:
+\begin{verbatim}
+
+	 ierr = Ell_LinFlatSolver(GH, phi_gfi, M_gfi, N_gfi,
+	                          AbsTol, RelTol, "solvername"); 
+\end{verbatim}
+{\bf Argument List:}
+\begin{itemize}
+\item{\tt ierr}: return value: ``0'' for success.
+\item{\tt cctkGH}: the Fortran ``pointer'' to the grid function
+hierachy.
+\item{\tt GH}: the C pointer to the grid hierarchy, type: {\tt pGH *GH}.
+\item{\tt phi\_gif}: the integer {\em index} of the grid function to solve
+for.
+\item{\tt M\_gfi}:  the integer {\em index} of the grid function which holds
+$M$.
+\item{\tt N\_gif}: the integer {\em index} of the grid function which holds $N$.
+\item{\tt AbsTol}: array of size $3$: holding {\em absolute} tolerance values for the 
+$L_1$, $L_2$, $L_\infty$ norm.  Check if the solver side supports
+these norms.  The interface side does not guarantee that these norms are 
+actually implemenented by a solver. See the section on norms: \ref{sec:ellnorms}.
+\item{\tt RelTol}: array of size $3$: holding {\em relative}
+tolerance factors for the $L_1$, $L_2$, $L_\infty$. Check if the 
+solver side supports these norms. The interface side does not
+guarantee that these norms are actually implemenented by a solver. 
+See the section on Norms: \ref{sec:ellnorms}.
+\item{\tt  "solvername"}: the name of a solver, which is registered
+for a particular equation class. How does one find out the names?  Either
+check the documentation of the elliptic solvers or check for
+registration infomation outputted by a cactus at runtime.
+\end{itemize}
+{\bf Example use in Fortran}, as used in the WaveToy arrangement: {\tt
+CactusWave/IDScalarWave}:
+\begin{verbatim}
+
+c     We derive the grid function indicies from the names of the 
+c     grid functions:
+      call CCTK_VarIndex (Mcoeff_gfi, "idscalarwaveelliptic::Mcoeff")
+      call CCTK_VarIndex (Ncoeff_gfi, "idscalarwaveelliptic::Ncoeff")
+      call CCTK_VarIndex (phi_gfi,    "wavetoy::phi")
+
+c     Load the Absolute Tolerance Arrays
+      AbsTol(1)=1.0d-5
+      AbsTol(2)=1.0d-5
+      AbsTol(3)=1.0d-5
+
+c     Load the Relative Tolerance Arrays, they are not
+c     used here: -1
+      RelTol(1)=-1
+      RelTol(2)=-1
+      RelTol(3)=-1
+
+c     Call to elliptic solver, named ``sor''
+      call Ell_LinFlatSolver(ierr, cctkGH, 
+     .     phi_gfi, Mcoeff_gfi, Ncoeff_gfi, AbsTol, RelTol,
+     .     "sor")
+
+c     Do some error checking, a call to another solver 
+c     could be coded here
+      if (ierr.ne.0) then
+         call CCTK_WARN(0,"Requested solver not found / solve failed");
+      endif
+\end{verbatim}
+
+
+\subsection{{\tt Ell\_LinMetric}}
+To call this interface from {\bf Fortran}:
+\begin{verbatim}
+	 call Ell_LinMetricSolver(ierr, cctkGH, Metric_gfi, 
+	.	 	          phi_gfi, M_gfi, N_gfi,
+	.                         AbsTol, RelTol, "solvername") 
+\end{verbatim}
+To call this interface from {\bf C}:
+\begin{verbatim}
+	 ierr = Ell_LinMetricSolver(GH, Metric_gfi, 
+		 	            phi_gfi, M_gfi, N_gfi,
+	                            AbsTol, RelTol, "solvername");
+\end{verbatim}
+{\bf Argument List:}
+\begin{itemize}
+\item{\tt ierr}: return value: ``0'' success
+\item{\tt cctkGH}: the Fortran ``pointer'' to the grid function
+hierachy.
+\item{\tt GH}: the C pointer to the grid hierarchy, type: {\tt pGH
+*GH}
+\item{\tt Metric\_gfi}: array of size $6$, containing the {\em index} components of 
+the metric $g$: $g_{11}$, $g_{12}$, $g_{13}$, $g_{22}$, $g_{23}$,
+$g_{33}$. The {\bf order} is important.
+\item{\tt phi\_gif}: the integer {\em index} of the grid function so solver
+for.
+\item{\tt M\_gfi}:  the integer {\em index} of the grid function which holds
+$M$.
+\item{\tt N\_gif}: the integer {\em index} of the grid function which holds $N$
+\item{\tt AbsTol}: array of size $3$: holding {\em absolute} tolerance values for the 
+$L_1$, $L_2$, $L_\infty$ Norm.  Check, if the solver side supports
+these norms.The interface side does not guarantee that these norms are 
+actually implemenented by a solver. See the section on Norms: \ref{sec:ellnorms}.
+\item{\tt RelTol}: array of size $3$: holding {\em relative}
+tolerance factors for the $L_1$, $L_2$, $L_\infty$. Check, if the 
+solver side supports these norms. The interface side does not
+guarantee that these norms are actually implemenented by a solver. 
+See the section on Norms: \ref{sec:ellnorms}.
+\item{\tt  "solvername"}: the name of a solver, which is registered
+for a particular equation class. How to find out the names ? Either
+check the documentation of the elliptic solvers or check for
+registration infomation outputted by a cactus at runtime.
+\end{itemize}
+
+\subsection{{\tt Ell\_LinConfMetric}}
+To call this interface from {\bf Fortran}:
+\begin{verbatim}
+	 call Ell_LinMetricSolver(ierr, cctkGH, MetricPsi_gfi, 
+	.	 	          phi_gfi, M_gfi, N_gfi,
+	.                         AbsTol, RelTol, "solvername") 
+\end{verbatim}
+To call this interface from {\bf C}:
+\begin{verbatim}
+	 ierr = Ell_LinMetricSolver(GH, MetricPsi_gfi, 
+		 	            phi_gfi, M_gfi, N_gfi,
+	                            AbsTol, RelTol, "solvername");
+\end{verbatim}
+{\bf Argument List:}
+\begin{itemize}
+\item{\tt ierr}: return value: ``0'' success
+\item{\tt cctkGH}: the Fortran ``pointer'' to the grid function
+hierachy.
+\item{\tt GH}: the C pointer to the grid hierarchy, type: {\tt pGH
+*GH}
+\item{\tt MetricPsi\_gfi}: array of size $7$, containing the {\em
+grid function index} of the metric components and the {\em grid
+function index} of the conformal factor $\Psi$: $g_{11}$, 
+$g_{12}$, $g_{13}$, $g_{22}$, $g_{23}$, $g_{33}$, $\Psi$. The {\bf order} is important.
+\item{\tt phi\_gif}: the integer {\em index} of the grid function so solver
+for.
+\item{\tt M\_gfi}:  the integer {\em index} of the grid function which holds
+$M$.
+\item{\tt N\_gif}: the integer {\em index} of the grid function which holds $N$
+\item{\tt AbsTol}: array of size $3$: holding {\em absolute} tolerance values for the 
+$L_1$, $L_2$, $L_\infty$ Norm.  Check, if the solver side supports
+these norms.The interface side does not guarantee that these norms are 
+actually implemenented by a solver. See the section on Norms: \ref{sec:ellnorms}.
+\item{\tt RelTol}: array of size $3$: holding {\em relative}
+tolerance factors for the $L_1$, $L_2$, $L_\infty$. Check, if the 
+solver side supports these norms. The interface side does not
+guarantee that these norms are actually implemenented by a solver. 
+See the section on Norms: \ref{sec:ellnorms}.
+\item{\tt  "solvername"}: the name of a solver, which is registered
+for a particular equation class. How to find out the names ? Either
+check the documentation of the elliptic solvers or check for
+registration infomation outputted by a cactus at runtime.
+
+\end{itemize}
+
+
+
+\section{Extending the elliptic solver class}
+
+EllBase by itself does not provide any elliptic solving capabilities. 
+It merely provides the registration structure and calling interface.
+
+The idea of a unified calling interface can be motivated as follows: 
+assume you a have elliptic problem which conforms to one of the elliptic 
+classes defined in EllBase.
+
+
+\subsection{Registration Mechanism}
+
+Before a user can successfully apply a elliptic solver to one of his problems,
+two things need to be done by the author who programs the solver.
+\begin{itemize}
+\item{\bf Register a class of elliptic equations} Depending on the elliptic 
+problem This provides the unique calling, the solving routines needs to have 
+specific input data. The interface, which is called by the user, has to 
+reflect these arguments. EllBase already offers 
+several of these interfaces, but if you need to have a new one, you can 
+provide your own.
+
+\item{\bf Register a solver for a particular elliptic equation class}
+Once a class of elliptic equations has been made available as described 
+above, the author can now register solvers for that particular class. 
+Later a user will access the solver calling the interface with the 
+arguments needed for the elliptic class and a name, under which a solver 
+for this elliptic problem has been registered.
+\end{itemize}
+
+The registration process is part of the authors thorn, not part of EllBase. 
+There is no need to change code in EllBase. Usually, a author of solver 
+routines will register the routines that register an elliptic equation class 
+and/or an elliptic solver in the STARTUP timebin. If a author registers both, class and solver, you must make 
+sure, that the elliptic class is registered {\em before} the solver 
+registration takes place. 
+
+\subsection{EllBase Programming Guide}
+
+Here we give a step by step guide on how to implement an new elliptic 
+solver class, its interface and provide a solver for this class.  Since 
+some of the functionality needed in the registration code can only be 
+achieved in C, a basic knowledge of C is helpful.
+
+\begin{itemize}
+\item{\bf Assumption}:
+\begin{itemize} 
+\item{}The elliptic equation 
+class will be called ``{\em SimpleEllClass}'': it will be flat space solver, 
+that only 
+takes the coefficient matrix $M$: 
+%\begin{equation}
+%\nabla \phi - M \phi \eq 0
+%\end{equation}
+Note that this solver class is already provided by EllBase.
+\item{}The name of the demonstration thorn will be 
+``{\tt ThornFastSOR}''. Since I will only demonstrate the registration principle 
+and calling structure, I leave it to the interested reader to write a really 
+fast SOR solver.
+\item{}The solver for this elliptic equation will be called ``{\tt FastSOR\_solver}''
+and will be written in Fortran. Since Fortran cannot be called
+directly by the registration mechanism, we
+need to have C wrapper function ``{\tt FastSOR\_wrapper}''. 
+\end{itemize}
+
+\item{\bf Elliptic class declaration}: {\tt SimpleEllThorn/src/SimpleEll\_Class.c} 
+\begin{verbatim}
+\end{verbatim}
+
+\item{\bf Elliptic solver interface}: {\tt src/SimpleEll\_Interface.c}
+\begin{verbatim}
+
+#include ``cctk.h''
+#include ``cctk_Parameters.h''
+
+#include ``cctk_FortranString.h'' 
+#include ``StoreNamedData.h''
+
+static pNamedData *SimpleEllSolverDB;
+
+void Ell_SimpleEllSolverRegistry(void (*solver_func), const char *solver_name)
+{
+  StoreNamedData(&SimpleEllSolverDB,solver_name,(void*)solver_func);
+}
+\end{verbatim}
+The routine above registers the solver (or better the function pointer of the solver routine ``*solve\_func'') for the equation class 
+{\em SimpleEllClass} by the name {\tt solver\_name} in the database {\tt
+SimpleEllSolverDB}. This database is declared in statement {\tt static pNamedData...}.
+
+
+Next, we write our interface in the same file {\tt ./SimpleEll\_Interface.c}:
+\begin{verbatim}
+void Ell_SimpleEllSolver(cGH *GH, int *FieldIndex, int *MIndex, 
+		         CCTK_REAL *AbsTol, CCTK_REAL *RelTol,
+                         const char *solver_name) {
+
+/* prototype for the equation class wrapper:
+   grid hierarchy(*GH), ID-number of field to solve for (*FieldIndex),
+   two arrays of size three holding convergence information (*AbsTol, *RelTol)
+*/
+  void (*fn)(cGH *GH, int *FieldIndex, int *AbsTol, int *RelTol);
+
+  /* derive the function name from the requested name and hope it is there */
+  fn = (void(*)) GetNamedData(LinConfMetricSolverDB,solver_name);
+  if (!fn) CCTK_WARN(0,''Ell_SimpleEllSolver: Cannot find solver! ``);
+
+  /* Now that we have the function pointer to our solver, call the 
+     solver and pass through all the necessary arguments */
+  fn( GH, FieldIndex, MIndex, AbsTol, RelTol);
+}
+
+\end{verbatim}
+The interface {\tt Ell\_SimpleEllSolver} is called from the user side. It receives a pointer to the grid hierarchy, the ID-number of the field to solver for, two arrays which the used upload with convergence test info, and finally, the name of the solver the user want to employ {\tt *solver\_name}. {\bf Note:} all these quantities are referenced by pointers, hence the ``*''.
+
+Within the interface, the solver\_name is used to get the pointer to function which was registered under this name.
+Once the function is known, it called with all the arguments passed to 
+the interface.
+
+To allow calls from Fortran, the interface in C needs to be ``wrapped''. 
+(This wrapping  is different from the one necessary to make to actual solver 
+accessible by the elliptic registry).
+
+\begin{verbatim}
+/* Fortran wrapper for the routine Ell_SimpleEllSolver */
+void CCTK_FCALL CCTK_FNAME(Ell_SimpelEllSolver)
+     (cGH *GH, int *FieldIndex, int *MIndex, 
+     int *AbsTol, int *RelTol, ONE_FORTSTRING_ARG) {
+  ONE_FORTSTRING_CREATE(solver_name);
+
+  /* Call the interface */
+  Ell_SimpleEllSolver(GH, FieldIndex, MIndex, AbsTol, RelTol, solver_name);
+  free(solver_name);
+}
+\end{verbatim}
+
+\item{\bf Elliptic solver}:{\tt ./src/FastSOR\_solver.F}\\
+Here we show the first lines of the Fortran code for the solver:
+
+\begin{verbatim}
+      subroutine FastSOR_solver(_CCTK_ARGUMENTS,
+     .   Mlinear_lsh,Mlinear, 
+     .   var,
+     .   abstol,reltol)
+
+      implicit none
+
+      _DECLARE_CCTK_ARGUMENTS
+      DECLARE_CCTK_PARAMETERS
+      INTEGER CCTK_Equals
+
+      INTEGER Mlinear_lsh(3)
+      CCTK_REAL Mlinear(Mlinear_lsh(1),Mlinear_lsh(2),Mlinear_lsh(3))
+      CCTK_REAL var(cctk_lsh(1),cctk_lsh(2),cctk_lsh(3))
+	
+      INTEGER Mlinear_storage
+
+c     We have no storage for M if they are of size one in each direction
+      if ((Mlinear_lsh(1).eq.1) .and. 
+     .   (Mlinear_lsh(2).eq.1)  .and.
+     .   (Mlinear_lsh(3).eq.1)) then
+         Mlinear_storage=0
+      else
+         Mlinear_storage=1
+      endif
+
+
+\end{verbatim}
+This Fortran solver receives the following arguments: the ``typical''
+ CCTK\_ARGUMENTS: {\tt \_CCTK\_ARGUMENTS},
+the {\em size} of the coefficient matrix: {\tt Mlinear\_lsh}, the coefficient
+matrix {\tt Mlinear}, the variable to solve for: {\tt var}, and the two arrays with convergence information. 
+
+In the declaration section, we declare: the cctk arguments, the Mlinear size array, the coefficient matrix, by the 3-dim. size array, the variable to solve for. Why do we pass the size of Mlinear explicitly and do not use the 
+{\tt cctk\_lsh} (processor local shape of a grid function) as we did for {\tt var} ? The reason is the following: while we can expect the storage of {\tt var} to be {\em on} for the solve, there is no reason (in a more general elliptic case) to assume, that the coefficient 
+matrix has storage allocated, perhaps it is not needed at all! In this case, we have to protect ourself against referencing empty arrays. For this reason, we also employ the flag {\tt Mlinear\_storage}.
+
+\item{\bf Elliptic solver wrapper}:{\tt ./src/FastSOR\_wrapper.c}\\
+The Fortran solver can not be used within the elliptic registry directly. 
+Instead the Fortran code is called through a wrapper:
+\begin{verbatim}
+
+void FastSOR_wrapper(cGH *GH, int *FieldIndex, int *MIndex, 
+		     int *AbsTol,int *RelTol) {
+
+  CCTK_REAL *Mlinear=NULL, *var=NULL;
+  int Mlinear_lsh[3];
+  int i;
+
+  var = (CCTK_REAL*) CCTK_VarDataPtrI(GH,0,*FieldIndex);
+
+  if (*MIndex>0) Mlinear   = (CCTK_REAL*) CCTK_VarDataPtrI(GH,0,*MIndex);
+
+
+  if (GH->cctk_dim>3)
+    CCTK_WARN(0,''This elliptic solver implementation does not do dimension>3!'');  
+  
+  for (i=0;i<GH->cctk_dim;i++) {
+    if((*MIndex<0))  Mlinear_lsh[i]=1;
+    else             Mlinear_lsh[i]=GH->cctk_lsh[i];
+  }
+
+  /* call the fortran routine */
+  CCTK_FNAME(SimpleEll_Solver)(_PASS_CCTK_C2F(GH),
+         Mlinear_lsh, Mlinear, var, 	
+	 AbsTol, RelTol);
+}
+\end{verbatim}
+
+The wrapper {\tt FastSOR\_wrapper} takes these arguments: the indices 
+of the field to solve for ({\tt FieldIndex}) and the coefficient matrix 
+({\tt MIndex}), the two arrays containing
+convergence information ({\tt AbsTol, RelTol}). 
+In the body of the program we provide two CCTK\_REAL pointers to the 
+data section of the field to solver ({\tt var, Mlinear}) by means of {\tt Get\_VarDataPtrI}. For Mlinear, we only do this, if the index is non-negative. 
+A negative index is a signal by the user that the coefficient matrix has 
+no storage allocated.(For more general elliptic equation cases, e.g. no 
+source terms.)
+ To make this information of a possibly empty matrix available to Fortran, we load a 3-dim. and pass this array through to Fortran. See discussion above.
+
+
+\item{\bf Elliptic solver startup}: {\tt ./src/Startup.c}\\
+The routine below in {\tt Startup.c} performs the registration of our solver wrapper {\tt FastSOR\_wrapper} under the name ``{\em fastsor}'' for the elliptic class ``{\em Ell\_SimpleEll}''. We do not register with the solver interface 
+{\tt Ell\_SimpleEllSolver} directly, but with the class. In {\tt
+Startup,c} we have:
+\begin{verbatim}
+#include ``cctk.h''
+#include ``cctk_Parameters.h''
+
+void FastSOR_register(cGH *GH) {
+
+  /* protoype of the solver wrapper: */
+  void FastSOR_wrapper(cGH *GH, int *FieldIndex, int *MIndex,
+                      	int *AbsTol, int*RelTol);
+
+  Ell_RegisterSolver(FastSOR_wrapper,''fastsor'',''Ell_SimpleEll'');
+}
+\end{verbatim}
+Note that more solver registration code could be put here (registration 
+for other classes, etc.)
+
+
+\item{\bf Elliptic solver scheduling}: {\tt schedule.ccl}
+We schedule the registration of the fast SOR solver at CCTK\_BASE, by this time, 
+{\em the elliptic class} {\tt Ell\_SimpleEll} has already been registered. 
+\begin{verbatim}
+schedule FastSOR_register at CCTK_INITIAL
+{
+  LANG:C
+} ``Register the fast sor solver''
+\end{verbatim}
+
+\end{itemize}
+
+\section{Norms}
+\label{sec:ellnorms}
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{elliptic\_verbose}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{elliptic\_verbose} & {\bf Scope:} restricted & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em elliptic verbosity}} \\
+\hline{\bf Range} & &  {\bf Default:} no \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering yes} & \multicolumn{2}{p{\paraWidth}|}{be verbose in elliptic} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering no} & \multicolumn{2}{p{\paraWidth}|}{silence in elliptic} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering debug} & \multicolumn{2}{p{\paraWidth}|}{even more verbose in elliptic} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+ellbase
+\vspace{2mm}
+
+\vspace{5mm}
+
+\noindent {\bf Adds header}: 
+
+
+
+EllBase.h
+
+Ell\_DBstructure.h
+\vspace{2mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn CactusElliptic/EllBase.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}NONE
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_STARTUP} 
+
+\hspace{5mm} ell\_registerbaseeqtypes 
+
+\hspace{5mm}{\it register the standard elliptic classes } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}
