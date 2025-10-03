@@ -1,0 +1,525 @@
+% *======================================================================*
+%  Cactus Thorn template for ThornGuide documentation
+%  Author: Ian Kelley
+%  Date: Sun Jun 02, 2002
+%  $Header$                                                             
+%
+%  Thorn documentation in the latex file doc/documentation.tex 
+%  will be included in ThornGuides built with the Cactus make system.
+%  The scripts employed by the make system automatically include 
+%  pages about variables, parameters and scheduling parsed from the 
+%  relevent thorn CCL files.
+%  
+%  This template contains guidelines which help to assure that your     
+%  documentation will be correctly added to ThornGuides. More 
+%  information is available in the Cactus UsersGuide.
+%                                                    
+%  Guidelines:
+%   - Do not change anything before the line
+%       % START CACTUS THORNGUIDE",
+%     except for filling in the title, author, date etc. fields.
+%        - Each of these fields should only be on ONE line.
+%        - Author names should be sparated with a \\ or a comma
+%   - You can define your own macros, but they must appear after
+%     the START CACTUS THORNGUIDE line, and must not redefine standard 
+%     latex commands.
+%   - To avoid name clashes with other thorns, 'labels', 'citations', 
+%     'references', and 'image' names should conform to the following 
+%     convention:          
+%       ARRANGEMENT_THORN_LABEL
+%     For example, an image wave.eps in the arrangement CactusWave and 
+%     thorn WaveToyC should be renamed to CactusWave_WaveToyC_wave.eps
+%   - Graphics should only be included using the graphix package. 
+%     More specifically, with the "includegraphics" command. Do
+%     not specify any graphic file extensions in your .tex file. This 
+%     will allow us (later) to create a PDF version of the ThornGuide
+%     via pdflatex. |
+%   - References should be included with the latex "bibitem" command. 
+%   - Use \begin{abstract}...\end{abstract} instead of \abstract{...}
+%   - Do not use \appendix, instead include any appendices you need as 
+%     standard sections. 
+%   - For the benefit of our Perl scripts, and for future extensions, 
+%     please use simple latex.     
+%
+% *======================================================================* 
+% 
+% Example of including a graphic image:
+%    \begin{figure}[ht]
+%       \begin{center}
+%          \includegraphics[width=6cm]{/home/runner/work/tests/tests/arrangements/CactusExamples/WaveMoL/doc/MyArrangement_MyThorn_MyFigure}
+%       \end{center}
+%       \caption{Illustration of this and that}
+%       \label{MyArrangement_MyThorn_MyLabel}
+%    \end{figure}
+%
+% Example of using a label:
+%   \label{MyArrangement_MyThorn_MyLabel}
+%
+% Example of a citation:
+%    \cite{MyArrangement_MyThorn_Author99}
+%
+% Example of including a reference
+%   \bibitem{MyArrangement_MyThorn_Author99}
+%   {J. Author, {\em The Title of the Book, Journal, or periodical}, 1 (1999), 
+%   1--16. {\tt http://www.nowhere.com/}}
+%
+% *======================================================================* 
+
+% If you are using CVS use this line to give version information
+% $Header$
+
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a 
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+% The author of the documentation
+\author{Ian Hawke} 
+
+% The title of the document (not necessarily the name of the Thorn)
+\title{The scalar wave equation in Method of Lines form}
+
+% the date your document was last changed, if your document is in CVS, 
+% please use:
+\date{$ $Date$ $}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+% Add all definitions used in this documentation here 
+%   \def\mydef etc
+
+% Add an abstract for this thorn's documentation
+\begin{abstract}
+  WaveMoL is an example implementation of a thorn that uses the method
+  of lines thorn MoL. The wave equation in first order form is
+  implemented. 
+\end{abstract}
+
+% The following sections are suggestive only.
+% Remove them or add your own.
+
+% \section{Introduction}
+
+% \section{Physical System}
+
+% \section{Numerical Implementation}
+
+% \section{Using This Thorn}
+
+% \subsection{Obtaining This Thorn}
+
+% \subsection{Basic Usage}
+
+% \subsection{Special Behaviour}
+
+% \subsection{Interaction With Other Thorns}
+
+% \subsection{Examples}
+
+% \subsection{Support and Feedback}
+
+% \section{History}
+
+% \subsection{Thorn Source Code}
+
+% \subsection{Thorn Documentation}
+
+% \subsection{Acknowledgements}
+
+\section{Purpose}
+\label{sec:purpose}
+
+WaveToy is the simple test thorn that comes with Cactus as
+standard. This is written so that it solves the wave equation
+\begin{equation}
+  \label{eq:wave1}
+  \partial_t^2 \phi = \partial_{x^i}^2 \phi^i
+\end{equation}
+directly using the leapfrog scheme. This form of the equations isn't
+suitable for use with the method of lines.
+
+The purpose of this thorn is to rewrite the equations in first order
+form
+\begin{eqnarray}
+  \label{eq:wave2}
+  \partial_t \Phi & = & \partial_{x^i} \Pi^i, \\
+  \partial_t \Pi^j & = & \partial_{x^j} \Phi, \\
+  \partial_t \phi & = & \Phi, \\
+  \partial_{x^j} \phi & = & \Pi^j.
+\end{eqnarray}
+The first three equations (which expand to five separate PDEs) will be
+evolved. The final equation is used to set the initial data and can be
+thought of as a constraint.
+
+This will be implemented using simple second order differencing in
+space. Time evolution is performed by the method of lines thorn MoL.
+
+\section{How it works}
+\label{sec:details}
+
+The equations are evolved entirely using the method of lines thorn. So
+all we have to provide (for the evolution) is a method of calculating
+the right hand side of equation~(\ref{eq:wave2}) and boundary
+conditions. The boundary conditions are standard from wavetoy
+itself. The right hand side is calculated using second order centred
+finite differences.
+
+To be compatible with the method of lines thorn we must let it know
+that the GFs $(\phi, \Pi, \Phi^j)$ exist and where they are stored.
+They should all have at least two time levels (although the addition
+of extra time levels may not cause problems it's just wasting space).
+The GFs corresponding to the right hand sides must also be registered
+with the MoL thorn. These should only have one time level. MoL is
+informed of the existence of these grid functions through the
+accumulator parameters and the aliased functions.
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{wavemol\_maxnumconstrainedvars}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bound} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Type of boundary condition to use}} \\
+\hline{\bf Range} & &  {\bf Default:} none \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering none} & \multicolumn{2}{p{\paraWidth}|}{No boundary condition} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering flat} & \multicolumn{2}{p{\paraWidth}|}{Flat boundary condition} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering radiation} & \multicolumn{2}{p{\paraWidth}|}{Radiation boundary condition} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{wavemol\_maxnumconstrainedvars} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em The maximum number of constrained variables used by WaveMoL}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:1} & \multicolumn{2}{p{\paraWidth}|}{The energy} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{wavemol\_maxnumevolvedvars} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em The maximum number of evolved variables used by WaveMoL}} \\
+\hline{\bf Range} & &  {\bf Default:} 5 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 5:5} & \multicolumn{2}{p{\paraWidth}|}{Just 5: phi and the four derivatives} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{mol\_num\_constrained\_vars} & {\bf Scope:} shared from METHODOFLINES & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{mol\_num\_evolved\_vars} & {\bf Scope:} shared from METHODOFLINES & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{mol\_num\_saveandrestore\_vars} & {\bf Scope:} shared from METHODOFLINES & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+wavemol
+\vspace{2mm}
+\subsection*{Grid Variables}
+\vspace{5mm}\subsubsection{PUBLIC GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+scalarevolvemol\_scalar &  & compact & 0 \\ 
+ & phi & description & The scalar field and time derivative \\ 
+ & phit & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="Scalar" \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+scalarevolvemol\_vector &  & compact & 0 \\ 
+ & phix & description & The scalar field spatial derivatives \\ 
+ & phiy & dimensions & 3 \\ 
+ & phiz & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="U" \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+scalarrhsmol\_scalar &  & compact & 0 \\ 
+ & phirhs & description & The right hand side for the scalar field \\ 
+ & phitrhs & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+scalarrhsmol\_vector &  & compact & 0 \\ 
+ & phixrhs & description & The right hand side for the scalar field derivatives \\ 
+ & phiyrhs & dimensions & 3 \\ 
+ & phizrhs & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+energy & energy & compact & 0 \\ 
+ &  & description & The energy of the field \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+
+\noindent {\bf Uses header}: 
+
+Symmetry.h
+\vspace{2mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn CactusExamples/WaveMoL.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Always:}&  ~ \\ 
+ scalarevolvemol\_scalar[3] scalarevolvemol\_vector[3] & ~\\ 
+ scalarrhsmol\_scalar scalarrhsmol\_vector & ~\\ 
+ energy & ~\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_STARTUP} 
+
+\hspace{5mm} wavemol\_startup 
+
+\hspace{5mm}{\it register banner } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_BASEGRID} 
+
+\hspace{5mm} wavemol\_initsymbound 
+
+\hspace{5mm}{\it schedule symmetries } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & meta \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Register} 
+
+\hspace{5mm} wavemol\_registervars 
+
+\hspace{5mm}{\it register variables for mol } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & meta \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf Driver\_BoundarySelect} 
+
+\hspace{5mm} wavemol\_selectdriverbc 
+
+\hspace{5mm}{\it choose boundary condtion for driver to apply } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_CalcRHS} 
+
+\hspace{5mm} wavemol\_calcrhs 
+
+\hspace{5mm}{\it register rhs calculation for mol } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & wavemol::phit(everywhere) \\ 
+~& ~ &scalarevolvemol\_vector\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & wavemol::scalarrhsmol\_scalar(interior) \\ 
+~& ~ &scalarrhsmol\_vector\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_PostStep} 
+
+\hspace{5mm} wavemol\_boundaries 
+
+\hspace{5mm}{\it register boundary enforcement in mol } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & level \\ 
+~ & Sync:  & scalarevolvemol\_scalar \\ 
+~& ~ &scalarevolvemol\_vector\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_PostStep} 
+
+\hspace{5mm} applybcs 
+
+\hspace{5mm}{\it apply boundary conditions for wavemol } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & wavemol\_boundaries \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_PostStep} 
+
+\hspace{5mm} wavemol\_energy 
+
+\hspace{5mm}{\it calculate the energy } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & wavemol\_applybcs \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & wavemol::phit(everywhere) \\ 
+~& ~ &scalarevolvemol\_vector\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & wavemol::energy(everywhere) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTINITIAL} 
+
+\hspace{5mm} wavemol\_energy 
+
+\hspace{5mm}{\it calculate the energy } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & wavemol::phit(everywhere) \\ 
+~& ~ &scalarevolvemol\_vector\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & wavemol::energy(everywhere) \\ 
+\end{tabular*} 
+
+
+\subsection*{Aliased Functions}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Alias Name:} ~~~~~~~ & {\bf Function Name:} \\ 
+ApplyBCs & WaveMoL\_ApplyBCs \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}
