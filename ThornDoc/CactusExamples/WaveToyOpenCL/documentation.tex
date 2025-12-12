@@ -1,0 +1,385 @@
+% *======================================================================*
+%  Cactus Thorn template for ThornGuide documentation
+%  Author: Ian Kelley
+%  Date: Sun Jun 02, 2002
+%  $Header$
+%
+%  Thorn documentation in the latex file doc/documentation.tex
+%  will be included in ThornGuides built with the Cactus make system.
+%  The scripts employed by the make system automatically include
+%  pages about variables, parameters and scheduling parsed from the
+%  relevant thorn CCL files.
+%
+%  This template contains guidelines which help to assure that your
+%  documentation will be correctly added to ThornGuides. More
+%  information is available in the Cactus UsersGuide.
+%
+%  Guidelines:
+%   - Do not change anything before the line
+%       % START CACTUS THORNGUIDE",
+%     except for filling in the title, author, date, etc. fields.
+%        - Each of these fields should only be on ONE line.
+%        - Author names should be separated with a \\ or a comma.
+%   - You can define your own macros, but they must appear after
+%     the START CACTUS THORNGUIDE line, and must not redefine standard
+%     latex commands.
+%   - To avoid name clashes with other thorns, 'labels', 'citations',
+%     'references', and 'image' names should conform to the following
+%     convention:
+%       ARRANGEMENT_THORN_LABEL
+%     For example, an image wave.eps in the arrangement CactusWave and
+%     thorn WaveToyC should be renamed to CactusWave_WaveToyC_wave.eps
+%   - Graphics should only be included using the graphicx package.
+%     More specifically, with the "\includegraphics" command.  Do
+%     not specify any graphic file extensions in your .tex file. This
+%     will allow us to create a PDF version of the ThornGuide
+%     via pdflatex.
+%   - References should be included with the latex "\bibitem" command.
+%   - Use \begin{abstract}...\end{abstract} instead of \abstract{...}
+%   - Do not use \appendix, instead include any appendices you need as
+%     standard sections.
+%   - For the benefit of our Perl scripts, and for future extensions,
+%     please use simple latex.
+%
+% *======================================================================*
+%
+% Example of including a graphic image:
+%    \begin{figure}[ht]
+% 	\begin{center}
+%    	   \includegraphics[width=6cm]{/home/runner/work/tests/tests/arrangements/CactusExamples/WaveToyOpenCL/doc/MyArrangement_MyThorn_MyFigure}
+% 	\end{center}
+% 	\caption{Illustration of this and that}
+% 	\label{MyArrangement_MyThorn_MyLabel}
+%    \end{figure}
+%
+% Example of using a label:
+%   \label{MyArrangement_MyThorn_MyLabel}
+%
+% Example of a citation:
+%    \cite{MyArrangement_MyThorn_Author99}
+%
+% Example of including a reference
+%   \bibitem{MyArrangement_MyThorn_Author99}
+%   {J. Author, {\em The Title of the Book, Journal, or periodical}, 1 (1999),
+%   1--16. {\tt http://www.nowhere.com/}}
+%
+% *======================================================================*
+
+% If you are using CVS use this line to give version information
+% $Header$
+
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+% The author of the documentation
+\author{Erik Schnetter \textless eschnetter@perimeterinstitute.ca\textgreater}
+
+% The title of the document (not necessarily the name of the Thorn)
+\title{WaveToyOpenCL}
+
+% the date your document was last changed, if your document is in CVS,
+% please use:
+%    \date{$ $Date: 2004-01-07 14:12:39 -0600 (Wed, 07 Jan 2004) $ $}
+\date{May 15, 2012}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+% Add all definitions used in this documentation here
+%   \def\mydef etc
+
+% Add an abstract for this thorn's documentation
+\begin{abstract}
+  This thorn implements WaveToy, solving the scalar wave equation (in
+  a Euclidean, i.e.\ trivial geometry). The thorn is implemented in
+  OpenCL, with some wrapper code in C++.
+\end{abstract}
+
+% The following sections are suggestive only.
+% Remove them or add your own.
+
+\section{Introduction}
+
+This thorn \texttt{WavetoyOpenCL} solves the scalar wave equation, the
+same equation solved in thorn \texttt{WaveToy} and its companions
+written in other languages. Its major purpose is to serve as
+high-level example of using OpenCL in Cactus. It is purposefully
+written to be simple and easy to understand; for example, there are no
+parameters to choose different types of initial or boundary
+conditions.
+
+\section{Thorn Structure}
+
+We assume the reader is familiar with the structure of a Cactus thorn
+written e.g.\ in C or C++. An OpenCL thorn is slightly more complex
+because it (1) has to describe when and what data are moved between
+host and device, and (2) Cactus does not (yet?) support calling OpenCL
+code directly; some boilerplate code is necessary.
+
+\subsection{Schedule Declarations}
+
+Thorn \texttt{WaveToyOpenCL} relies on thorn \texttt{Accelerator} to
+handle data movement between host and device. This does not need to be
+managed explicitly; instead, the file \texttt{schedule.ccl} describes
+which routines are executed where (host or device), and which
+variables or groups are read or written.
+
+The location where a scheduled routine is ultimately executed needs to
+be described in a \texttt{Device=} schedule tag. The set of variables
+that are read and/or written needs to be declared in \texttt{READS}
+and \texttt{WRITES} schedule statements. For example, this is the
+schedule item for the evolution routine of thorn
+\texttt{WaveToyOpenCL}:
+
+\begin{verbatim}
+SCHEDULE WaveToyOpenCL_Evol AT evol
+{
+  LANG:   C
+  TAGS:   Device=1
+  WRITES: WaveToyOpenCL::Scalar
+} "Evolve scalar wave"
+\end{verbatim}
+
+This indicates that this routine executes on the device, i.e.\ its
+kernel is implemented in OpenCL\@. Note that, in OpenCL, both CPU and
+GPU count as \emph{devices} (thus every routine written in OpenCL
+counts as executing on a device, even if the device happens to be the
+CPU\@).
+
+This also indicates that this routine writes (i.e.\ defines) the grid
+function group \texttt{Scalar}, without looking at (the current
+timelevel of) this group.
+
+\subsection{Schedule Routines}
+
+Executing OpenCL code requires some boilerplate: One needs to choose
+an OpenCL platform and device, needs to compile the code (from a
+C string), needs to pass in arguments, and finally needs to execute
+the actual kernel code. Thorn \texttt{OpenCLRunTime} provides a simple
+helper routine for these tasks that can be used e.g.\ as follows:
+
+\begin{verbatim}
+  char const *const groups[] = {
+    "WaveToyOpenCL::Scalar",
+    NULL};
+  
+  int const imin[] = {cctk_nghostzones[0],
+                      cctk_nghostzones[1],
+                      cctk_nghostzones[2]};
+  int const imax[] = {cctk_lsh[0] - cctk_nghostzones[0],
+                      cctk_lsh[1] - cctk_nghostzones[1],
+                      cctk_lsh[2] - cctk_nghostzones[2]};
+  
+  static struct OpenCLKernel *kernel = NULL;
+  char const *const sources[] = {"", OpenCL_source_WaveToyOpenCL_evol, NULL};
+  OpenCLRunTime_CallKernel(cctkGH, CCTK_THORNSTRING, "evol",
+                           sources, groups, NULL, NULL, NULL, -1,
+                           imin, imax, &kernel);
+\end{verbatim}
+
+The function \texttt{OpenCLRunTime\_CallKernel} performs the following
+steps:
+\begin{enumerate}
+\item Choose a platform and device, compile the kernel code, and
+  memoise (remember) the kernel for the next call
+\item Pass a set of grid functions to the kernel routine
+\item Parallelise the kernel over a certain set of grid points (this
+  is similar e.g.\ to an OpenMP parallelisation, except that OpenCL
+  devices may offer much more parallelism)
+\item Call the kernel
+\end{enumerate}
+Consequently, one needs to define the set of grid functions to be
+passed to the OpenCL kernel (\texttt{groups}, a C array terminated by
+NULL), needs to define the iteration bounds (\texttt{imin} and
+\texttt{imax}), and needs to provide the actual source code
+(\texttt{sources}, a C array terminated by NULL\@).
+
+Note that the first element of \texttt{sources} contains declarations
+(it is empty here), while the second element contains the actual
+kernel code (see thorn \texttt{OpenCLRunTime}). See thorn OpenCL how
+the string \texttt{OpenCL\_source\_WaveToyOpenCL\_evol} is generated
+from \texttt{.cl} files).
+
+The actual kernel is contained in the file \texttt{evol.cl}, and
+should be readable with some C knowledge. \texttt{LC\_LOOP3} is a
+macro that parallelises a loop, similar to the macros provided by
+thorn \texttt{LoopControl}.
+
+
+
+% \begin{thebibliography}{9}
+% 
+% \end{thebibliography}
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{wavelength}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{verbose} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Output progress information}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{wavelength} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Wavelength of initial data}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+wavetoyopencl
+\vspace{2mm}
+\subsection*{Grid Variables}
+\vspace{5mm}\subsubsection{PRIVATE GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+scalar &  & compact & 0 \\ 
+ & u & description & Scalar \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+
+\noindent {\bf Uses header}: 
+
+OpenCLRunTime.h
+\vspace{2mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn CactusExamples/WaveToyOpenCL.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Always:}&  ~ \\ 
+ Scalar[3] & ~\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_INITIAL} 
+
+\hspace{5mm} wavetoyopencl\_init 
+
+\hspace{5mm}{\it initialise scalar wave } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Tags:  & device=1 \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & wavetoyopencl::scalar \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_EVOL} 
+
+\hspace{5mm} wavetoyopencl\_evol 
+
+\hspace{5mm}{\it evolve scalar wave } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Tags:  & device=1 \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & wavetoyopencl::scalar \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_EVOL} 
+
+\hspace{5mm} wavetoyopencl\_boundary 
+
+\hspace{5mm}{\it boundary conditions for scalar wave } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & wavetoyopencl\_evol \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & wavetoyopencl::scalar \\ 
+~ & Sync:  & scalar \\ 
+~ & Tags:  & device=1 \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & wavetoyopencl::scalar \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}
