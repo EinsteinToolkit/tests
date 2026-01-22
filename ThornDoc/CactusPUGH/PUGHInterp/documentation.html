@@ -1,0 +1,397 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>PUGHInterp</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">PUGHInterp</h2>
+ <div class="author" ><span 
+class="cmr-12">Paul Walker, Thomas Radke, Erik Schnetter</span></div>
+<br />
+<div class="date" >\( \)<span 
+class="cmr-12">Date</span>\( \)</div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 24--><p class="noindent" ><span 
+class="cmr-9">Thorn </span><span 
+class="cmti-9">PUGHInterp</span><span 
+class="cmr-9"> implements the Cactus interpolation API </span><span 
+class="cmtt-9">CCTK</span><span 
+class="cmtt-9">_InterpGridArrays()</span><span 
+class="cmr-9"> for the</span>
+     <span 
+class="cmr-9">interpolation of CCTK grid arrays at arbitrary points.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Introduction</h3>
+<!--l. 29--><p class="noindent" >Thorn <span 
+class="cmti-10">PUGHInterp</span> provides an implementation of the Cactus interpolation API specification for the
+interpolation of CCTK grid arrays at arbitrary points, <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpGridArrays()</span>.
+</p><!--l. 33--><p class="noindent" >This function interpolates a list of CCTK grid arrays (in a multiprocessor run these are generally distributed
+over processors) on a list of interpolation points. The grid topology and coordinates are implicitly specified via a
+Cactus coordinate system. The interpolation points may be anywhere in the global Cactus grid. In a
+multiprocessor run they may vary from processor to processor; each processor will get whatever interpolated
+data it asks for.
+</p><!--l. 41--><p class="noindent" >The routine <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpGridArrays()</span> does not do the actual interpolation itself but rather takes
+                                                                                       
+                                                                                       
+care of whatever interprocessor communication may be necessary, and – for each processor’s local
+patch of the domain-decomposed grid arrays – calls <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpLocalUniform() </span>to invoke an
+external local interpolation operator (as identified by an interpolation handle). It is advantageous to
+interpolate a list of grid arrays at once (for the same list of interpolation points) rather than calling
+<span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpGridArrays()</span> several times with a single grid array. This way note only can <span 
+class="cmti-10">PUGHInterp</span>’s
+implementation of <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpGridArrays()</span> aggregate communications for multiple grid arrays into one
+(resulting in less communications overhead) but also <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpLocalUniform() </span>may compute interpolation
+coefficients once and reuse them for all grid arrays.
+</p><!--l. 54--><p class="noindent" >Please refer to the <span 
+class="cmti-10">Cactus UsersGuide </span>for a complete function description of <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpGridArrays()</span> and
+<span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpLocalUniform()</span>.<br 
+class="newline" />
+</p><!--l. 58--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a><span 
+class="cmti-10">PUGHInterp</span>’s Implementation of <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpGridArrays()</span></h3>
+<!--l. 60--><p class="noindent" >If thorn <span 
+class="cmti-10">PUGHInterp</span> was activated in the <span 
+class="cmtt-10">ActiveThorns </span>list of a parameter file for a Cactus run, it will
+overload at startup the flesh-provided dummy function for <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpGridArrays()</span> with its own routine.
+This routine will then be invoked in subsequent calls to <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpGridArrays()</span>.
+</p><!--l. 65--><p class="noindent" ><span 
+class="cmti-10">PUGHInterp</span>’s routine for the interpolation of grid arrays provides exactly the same semantics as
+<span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpGridArrays()</span>which is thoroughly described in the <span 
+class="cmti-10">Function Reference </span>chapter of the <span 
+class="cmti-10">Cactus</span>
+<span 
+class="cmti-10">UsersGuide</span>. In the following, only user-relevant details about its implementation, such as specific error codes
+and the evaluation of parameter options table entries, are explained.
+</p><!--l. 72--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.1   </span> <a 
+ id="x1-30002.1"></a>Implementation Notes</h4>
+<!--l. 74--><p class="noindent" >At first, <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpGridArrays()</span> checks its function arguments for invalid values passed by the
+caller. In case of an error, the routine will issue an error message and return with an error code of
+either <span 
+class="cmtt-10">UTIL</span><span 
+class="cmtt-10">_ERROR</span><span 
+class="cmtt-10">_BAD</span><span 
+class="cmtt-10">_HANDLE </span>for an invalid coordinate system and/or parameter options table, or
+<span 
+class="cmtt-10">UTIL</span><span 
+class="cmtt-10">_ERROR</span><span 
+class="cmtt-10">_BAD</span><span 
+class="cmtt-10">_INPUT </span>otherwise. Currently there is the restriction that only <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_VARIABLE</span><span 
+class="cmtt-10">_REAL </span>is accepted
+as the CCTK data type for the interpolation points coordinates.
+</p><!--l. 82--><p class="noindent" >Then the parameter options table is parsed and evaluated for additional information about the interpolation call
+(see section <a 
+href="#x1-40002.2">2.2<!--tex4ht:ref: PUGHInterp_PTable --></a> for details).
+</p><!--l. 86--><p class="noindent" >In the single-processor case, <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpGridArrays()</span> would now invoke the local interpolation operator (as
+specified by its handle) by a call to <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpLocalUniform() </span>to perform the actual interpolation. The
+return code from this call is then also passed back to the user.
+</p><!--l. 91--><p class="noindent" >For the multi-processor case, <span 
+class="cmti-10">PUGHInterp</span> does a query call to the local interpolator first to
+find out whether it can deal with the number of interprocessor ghostzones available. For that
+                                                                                       
+                                                                                       
+purpose it sets up an array of two interpolation points which denote the extremes of the physical
+coordinates on a processor: the lower-left and upper-right point of the processor-local grid’s bounding
+box<span class="footnote-mark"><a 
+href="documentation2.html#fn1x0"><sup class="textsuperscript">1</sup></a></span><a 
+ id="x1-3001f1"></a> .
+The query gets passed the same user-supplied function arguments as for the real interpolation call, apart from
+the interpolation points coordinates (which now describe a processor’s physical bounding box coordinates) and
+the output array pointers (which are all set to NULL in order to indicate that this is a query call only). A return
+code of <span class="obeylines-h"><code class="verb">CCTK_ERROR_INTERP_POINT_OUTSIDE</code></span> from <span class="obeylines-h"><code class="verb">CCTK_InterpLocalUniform()</code></span> for this query call (meaning
+the local interpolator potentially requires values from grid points which are outside of the available
+processor-local patch of the global grid) causes <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpGridArrays()</span> to return immediately with a
+<span class="obeylines-h"><code class="verb">CCTK_ERROR_INTERP_GHOST_SIZE_TOO_SMALL</code></span> error code on all processors.
+</p><!--l. 112--><p class="noindent" >Otherwise the <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpGridArrays()</span> routine will continue and map the user-supplied interpolation points
+onto the processors which own these points. In a subsequent global communication all processors receive
+”their” interpolation points coordinates and call <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpLocalUniform() </span>with those. The
+interpolation results are then sent back to the processors which originally requested the interpolation
+points.
+</p><!--l. 119--><p class="noindent" >Like the <span 
+class="cmti-10">PUGH </span>driver thorn, <span 
+class="cmti-10">PUGHInterp</span> uses MPI for the necessary interprocessor communication. Note that
+the <span 
+class="cmtt-10">MPI</span><span 
+class="cmtt-10">_Alltoall()/MPI</span><span 
+class="cmtt-10">_Alltoallv() </span>calls for the distribution of interpolation points coordinates to their
+owning processors and the back transfer of the interpolation results to the requesting processors are collective
+communication operations. So in the multi-processor case you <span 
+class="cmti-10">must </span>call <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpGridArrays()</span> in parallel
+on <span 
+class="cmti-10">each </span>processor (even if a processor doesn’t request any points to interpolate at), otherwise the program will
+run into a deadlock.
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.2   </span> <a 
+ id="x1-40002.2"></a>Passing Additional Information via the Parameter Table</h4>
+<!--l. 132--><p class="noindent" >One of the function arguments to <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpGridArrays()</span> is an integer handle which refers to a key/value
+options table. Such a table can be used to pass additional information (such as the interpolation order) to the
+interpolation routines (i.e. to both <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpGridArrays()</span> and the local interpolator as invoked via
+<span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpLocalUniform()</span>). The table may also be modified by these routines, eg. to exchange internal
+information between the local and global interpolator, and/or to pass back arbitrary information to the
+user.
+</p><!--l. 140--><p class="noindent" >The only table option currently evaluated by <span 
+class="cmti-10">PUGHInterp</span>’s implementation of <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpGridArrays()</span> is:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-1">
+  CCTK_INT input_array_time_levels[N_input_arrays];
+</pre>
+<!--l. 144--><p class="nopar" > which lets you choose the timelevels for the individual grid arrays to interpolate (in the range \([0, N\_time\_levels\-\_of\_var\_i - 1]\)). If no such table
+option is given, then the current timelevel (0) will be taken as the default.
+</p><!--l. 150--><p class="noindent" >The following table options are meant for the user to specify how the local interpolator should deal with
+interpolation points near grid boundaries:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-2">
+  CCTK_INT  N_boundary_points_to_omit[2 * N_dims];
+  CCTK_REAL boundary_off_centering_tolerance[2 * N_dims];
+  CCTK_REAL boundary_extrapolation_tolerance[2 * N_dims];
+</pre>
+<!--l. 156--><p class="nopar" > In the multi-processor case, <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpGridArrays()</span> will modify these arrays in a user-supplied
+options table in order to specify the handling of interpolation points near interprocessor boundaries
+(ghostzones) for the local interpolator; corresponding elements in the options arrays are set to zero for
+all ghostzone faces, i.e. no points should be omitted, and no off-centering and extrapolation is
+allowed at those boundaries. Array elements for physical grid boundaries are left unchanged by
+<span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpGridArrays()</span>.
+</p><!--l. 165--><p class="noindent" >If any of the above three boundary handling table options is missing in the user-supplied table,
+<span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpGridArrays()</span> will create and add it to the table with appropriate defaults. For the default
+values, as well as a comprehensive discussion of grid boundary handling options, please refer to
+documentation of the thorn(s) providing local interpolator(s) (eg. thorn <span 
+class="cmti-10">LocalInterp </span>in the <span 
+class="cmti-10">Cactus</span>
+<span 
+class="cmti-10">ThornGuide</span>).
+</p><!--l. 172--><p class="noindent" >At present, the table option <span class="obeylines-h"><code class="verb">boundary_extrapolation_tolerance</code></span> is not implemented. Instead, if any point
+cannot be mapped onto a processor (i.e. the point is outside the global grid), a level-1 warning is printed
+to stdout by default, and the error code <span class="obeylines-h"><code class="verb">CCTK_ERROR_INTERP_POINT_OUTSIDE</code></span> is returned. The
+warning will not be printed if the parameter table contains an entry (of any type) with the key
+<span class="obeylines-h"><code class="verb">&#x0022;suppress_warnings&#x0022;</code></span>.
+</p><!--l. 179--><p class="noindent" >The local interpolation status will be stored in the user-supplied parameter table (if given) as an integer scalar
+value with the option key <span class="obeylines-h"><code class="verb">&#x0022;local_interpolator_status&#x0022;</code></span> (see section <a 
+href="#x1-50002.3">2.3<!--tex4ht:ref: PUGHInterp_return_codes --></a> for details).
+</p><!--l. 183--><p class="noindent" >The table options
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-3">
+  CCTK_POINTER per_point_status;
+  CCTK_INT     error_point_status;
+</pre>
+<!--l. 187--><p class="nopar" > are used internally by <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpGridArrays()</span> to pass information about per-point status codes between
+the global and the local interpolator (again see section <a 
+href="#x1-50002.3">2.3<!--tex4ht:ref: PUGHInterp_return_codes --></a> for details).
+</p><!--l. 194--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.3   </span> <a 
+ id="x1-50002.3"></a><span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpGridArrays()</span> Return Codes</h4>
+<!--l. 197--><p class="noindent" >The return code from <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpGridArrays()</span><span class="footnote-mark"><a 
+href="documentation3.html#fn2x0"><sup class="textsuperscript">2</sup></a></span><a 
+ id="x1-5001f2"></a> is
+determined as follows: </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 205--><p class="noindent" >If any of the arguments are invalid (e.g. \(\verb |N_dims| &lt; 0\)), the return code is <span class="obeylines-h"><code class="verb">UTIL_ERROR_BAD_INPUT</code></span>.
+     </p></li>
+     <li class="itemize">
+     <!--l. 207--><p class="noindent" >If any errors are encountered when processing the parameter table, the return code is the appropriate
+     <span class="obeylines-h"><code class="verb">UTIL_ERROR_TABLE_*</code></span> error code.
+     </p></li>
+     <li class="itemize">
+     <!--l. 210--><p class="noindent" >If the query call determines that the number of ghost zones in the grid is too small for the local
+     interpolator, the return code is <span class="obeylines-h"><code class="verb">CCTK_ERROR_INTERP_POINT_OUTSIDE</code></span>.
+     </p></li>
+     <li class="itemize">
+     <!--l. 214--><p class="noindent" >Otherwise, the return code from <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpGridArrays()</span> is the minimum over all processors of
+     the return code from the local interpolation on that processor.</p></li></ul>
+<!--l. 219--><p class="noindent" >If the local interpolator supports per-point status returns and the user supplies an interpolator parameter table,
+then in addition to this global interpolation return code, <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpGridArrays()</span> also returns a “local”
+status code which describes the outcome of the local interpolation for all the interpolation points which
+originated on <span 
+class="cmti-10">this </span>processor:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-4">
+  CCTK_INT local_interpolator_status;
+</pre>
+<!--l. 227--><p class="nopar" > This gives the minimum over all the interpolation points originating on <span 
+class="cmti-10">this </span>processor, of the
+<span class="obeylines-h"><code class="verb">CCTK_InterpLocalUniform()</code></span> return codes for those points. (It doesn’t matter on which processor(s) the points
+were actually interpolated – <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpGridArrays()</span> takes care of gathering all the status information back
+to the originating processors.)
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-60003"></a>Comments</h3>
+<!--l. 237--><p class="noindent" >For more information on how to invoke interpolation operators please refer to the flesh documentation.
+</p><!--l. 245--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-70004"></a>Parameters</h3>
+<!--l. 251--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-80005"></a>Interfaces</h3>
+<!--l. 256--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-9000"></a>General</h4>
+<!--l. 258--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 260--><p class="noindent" >interp
+</p><!--l. 265--><p class="noindent" ><span 
+class="cmbx-10">Provides</span>:
+</p><!--l. 269--><p class="noindent" >DriverInterpolate to
+                                                                                       
+                                                                                       
+</p><!--l. 272--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">6   </span> <a 
+ id="x1-100006"></a>Schedule</h3>
+<!--l. 278--><p class="noindent" >This section lists all the variables which are assigned storage by thorn CactusPUGH/PUGHInterp. Storage can
+either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 281--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-11000"></a>Storage</h4>
+<!--l. 281--><p class="noindent" >NONE
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-12000"></a>Scheduled Functions</h4>
+<!--l. 285--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_STARTUP</span>
+</p><!--l. 287--><p class="noindent" >      pughinterp_startup
+</p><!--l. 289--><p class="noindent" >     <span 
+class="cmti-10">pughinterp startup routine</span>
+</p><!--l. 292--><p class="noindent" > 
+</p><!--l. 294--><p class="noindent" ></p> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /><col 
+id="TBL-2-2" /><col 
+id="TBL-2-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-3"  
+class="td11"> driver_startup  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-2-3"  
+class="td11"> c                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-3"  
+class="td11"> function          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-4-1"  
+class="td11">    </td></tr></table>
+ 
+</body></html> 
+
+                                                                                       
+
+

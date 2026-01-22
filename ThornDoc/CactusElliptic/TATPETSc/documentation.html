@@ -1,0 +1,730 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>Solving Nonlinear Elliptic Equations:
+Calling PETSc from Cactus</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+   <div class="maketitle">
+
+
+
+<h2 class="titleHead">Solving Nonlinear Elliptic Equations:<br />
+Calling PETSc from Cactus</h2>
+ <div class="author" ><span 
+class="cmr-12x-x-120">Erik Schnetter</span> \(&lt;\)<span 
+class="cmr-12x-x-120">schnetter@uni-tuebingen.de</span>\(&gt;\)</div><br />
+<div class="date" ><span 
+class="cmr-12x-x-120">August 28, 2001</span></div>
+   </div>
+   <div 
+class="abstract" 
+>
+   <h3 class="abstracttitle">
+<span 
+class="cmbx-10x-x-109">Abstract</span>
+</h3>
+      <!--l. 17--><p class="noindent" ><span 
+class="cmr-10x-x-109">The Cactus thorn </span><span 
+class="cmtt-10x-x-109">TATPETSc </span><span 
+class="cmr-10x-x-109">provides a simple interface to the SNES</span>
+      <span 
+class="cmr-10x-x-109">interface of PETSc. SNES (“Simple Nonlinear Elliptic Solver”) is a</span>
+      <span 
+class="cmr-10x-x-109">set of efficient parallel solvers for sparse matrices, i.e.</span><span 
+class="cmr-10x-x-109"> for discretised</span>
+      <span 
+class="cmr-10x-x-109">problems with small stencils. The main task of </span><span 
+class="cmtt-10x-x-109">TATPETSc </span><span 
+class="cmr-10x-x-109">is in handling</span>
+      <span 
+class="cmr-10x-x-109">the mismatch in the different parallelisation models.</span>
+</p>
+</div>
+   <h3 class="likesectionHead"><a 
+ id="x1-1000"></a>Contents</h3>
+   <div class="tableofcontents">
+   <span class="sectionToc" >1 <a 
+href="#x1-20001" id="QQ2-1-2">Introduction</a></span>
+
+<br />   <span class="sectionToc" >2 <a 
+href="#x1-30002" id="QQ2-1-3">Nonlinear Elliptic Equations</a></span>
+<br />   <span class="sectionToc" >3 <a 
+href="#x1-40003" id="QQ2-1-4">Solving a Nonlinear Elliptic Equation</a></span>
+<br />   <span class="sectionToc" >4 <a 
+href="#x1-50004" id="QQ2-1-5">Initial data</a></span>
+<br />   <span class="sectionToc" >5 <a 
+href="#x1-60005" id="QQ2-1-6">Boundary Conditions</a></span>
+<br />   <span class="sectionToc" >6 <a 
+href="#x1-70006" id="QQ2-1-7">The Solution, Or Not</a></span>
+<br />   <span class="sectionToc" >7 <a 
+href="#x1-80007" id="QQ2-1-8">Excision</a></span>
+<br />   <span class="sectionToc" >8 <a 
+href="#x1-90008" id="QQ2-1-9">Common PETSc options</a></span>
+<br />   <span class="sectionToc" >9 <a 
+href="#x1-100009" id="QQ2-1-10">Installing PETSc</a></span>
+<br />   <span class="sectionToc" >10 <a 
+href="#x1-1200010" id="QQ2-1-12">Parameters</a></span>
+<br />   <span class="sectionToc" >11 <a 
+href="#x1-1300011" id="QQ2-1-13">Interfaces</a></span>
+<br />   <span class="sectionToc" >12 <a 
+href="#x1-1500012" id="QQ2-1-15">Schedule</a></span>
+   </div>
+<!--l. 27--><p class="noindent" >
+</p>
+   <h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-20001"></a>Introduction</h3>
+<!--l. 29--><p class="noindent" >PETSc (“The Portable, Extensible Toolkit for Scientific Computation”) <span class="cite">[<a 
+href="#XTAT:TATPETSc:petsc">1</a>]</span> is a
+library that, among other things, solves nonlinear elliptic equations. It is highly
+configurable, and using it is a nontrivial exercise. It is therefore convenient to
+create wrappers for this library that handle the more common cases. Although
+this introduces a layer that is a black box to the PETSc novice, it at the same
+time enables this PETSc novice to use this library, which would otherwise not be
+possible.
+</p><!--l. 38--><p class="indent" >   At the moment there exist three wrapper routines. Two of them handle
+initialisation and shutting down the library at programme startup and shutdown
+time. The third solves a nonlinear elliptic equation.
+</p><!--l. 42--><p class="noindent" >
+</p>
+   <h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-30002"></a>Nonlinear Elliptic Equations</h3>
+<!--l. 44--><p class="noindent" >Nonlinear elliptic equations can be written in the form
+
+                                     \[ F(x) = 0 \]
+ where \(x\) is an \(n\)-dimensional vector, and \(F\) is function with an \(n\)-dimensional vector as
+result. The vector \(x\) is the unknown to solve for. The function \(F\) has to be given
+together with initial data \(x_0\) for the unknown \(x\).
+</p><!--l. 53--><p class="indent" >   In the case of discretised field equations, the vector \(x\) contains all grid points.
+The function \(F\) then includes the boundary conditions.
+</p><!--l. 57--><p class="indent" >   Consider as an example the Laplace equation \(\Delta \phi = 0\) in three dimensions on a grid
+with \(10^3\) points. In that case, the unknown \(x\) is \(\phi \), with the dimension \(n=1000\). The function \(F\) is
+given by \(F(x) = \Delta x\). Remember that, once a problem is discretised, derivative operators are
+algebraic expressions. That means that calculating \(\Delta x\) does not involve taking
+analytic (“real”) derivatives, but can rather be written as linear function (matrix
+multiplication).
+</p><!--l. 66--><p class="noindent" >
+</p>
+   <h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-40003"></a>Solving a Nonlinear Elliptic Equation</h3>
+<!--l. 68--><p class="noindent" >The wrapper routine that solves a nonlinear elliptic equation is
+</p><!--l. 82--><p class="indent" >     </p>
+<table  
+cellpadding="0" border="0"  
+class="tabbing"><tr  
+style="vertical-align:baseline;" class="tabbing"><td style="width:46;" 
+class="tabbing"><span 
+class="cmtt-12">void </span></td><td  
+class="tabbing"><span 
+class="cmtt-12">TATPETSc</span><span 
+class="cmtt-12">_solve (</span>
+</td></tr></table>
+<!--l. 82--><p class="indent" >                                               </p><table  
+cellpadding="0" border="0"  
+class="tabbing"><tr  
+style="vertical-align:baseline;" class="tabbing"><td style="width:46;" 
+class="tabbing">      </td><td  
+class="tabbing"><span 
+class="cmtt-12">const cGH *cctkGH,</span></td></tr></table>
+<!--l. 82--><p class="indent" >                                                   </p><table  
+cellpadding="0" border="0"  
+class="tabbing"><tr  
+style="vertical-align:baseline;" class="tabbing"><td style="width:46;" 
+class="tabbing">      </td><td  
+class="tabbing"><span 
+class="cmtt-12">const int *var,</span></td></tr></table>
+<!--l. 82--><p class="indent" >                                                   </p><table  
+cellpadding="0" border="0"  
+class="tabbing"><tr  
+style="vertical-align:baseline;" class="tabbing"><td style="width:46;" 
+class="tabbing">      </td><td  
+class="tabbing"><span 
+class="cmtt-12">const int *val,</span></td></tr></table>
+<!--l. 82--><p class="indent" >                                                         </p><table  
+cellpadding="0" border="0"  
+class="tabbing"><tr  
+style="vertical-align:baseline;" class="tabbing"><td style="width:46;" 
+class="tabbing">      </td><td  
+class="tabbing"><span 
+class="cmtt-12">int nvars,</span></td></tr></table>
+<!--l. 82--><p class="indent" >                                               </p><table  
+cellpadding="0" border="0"  
+class="tabbing"><tr  
+style="vertical-align:baseline;" class="tabbing"><td style="width:46;" 
+class="tabbing">      </td><td  
+class="tabbing"><span 
+class="cmtt-12">int options</span><span 
+class="cmtt-12">_table,</span></td></tr></table>
+<!--l. 82--><p class="indent" >   </p><table  
+cellpadding="0" border="0"  
+class="tabbing"><tr  
+style="vertical-align:baseline;" class="tabbing"><td style="width:46;" 
+class="tabbing">      </td><td  
+class="tabbing"><span 
+class="cmtt-12">void (*fun) (cGH *cctkGH, int options</span><span 
+class="cmtt-12">_table, void *userdata),</span></td></tr></table>
+<!--l. 82--><p class="indent" >   </p><table  
+cellpadding="0" border="0"  
+class="tabbing"><tr  
+style="vertical-align:baseline;" class="tabbing"><td style="width:46;" 
+class="tabbing">      </td><td  
+class="tabbing"><span 
+class="cmtt-12">void (*bnd) (cGH *cctkGH, int options</span><span 
+class="cmtt-12">_table, void *userdata),</span></td></tr></table>
+
+<!--l. 82--><p class="indent" >                                                      </p><table  
+cellpadding="0" border="0"  
+class="tabbing"><tr  
+style="vertical-align:baseline;" class="tabbing"><td style="width:46;" 
+class="tabbing">      </td><td  
+class="tabbing"><span 
+class="cmtt-12">void *data);</span></td></tr></table>
+<!--l. 82--><p class="indent" >
+</p><!--l. 84--><p class="indent" >   There is currently no Fortran wrapper for this routine.
+</p><!--l. 86--><p class="indent" >   This routine takes the following arguments:
+      </p><dl class="description"><dt class="description">
+<span 
+class="cmtt-12">cctkGH</span> </dt><dd 
+class="description">
+      <!--l. 88--><p class="noindent" >a pointer to the Cactus grid hierarchy
+      </p></dd><dt class="description">
+<span 
+class="cmtt-12">var</span> </dt><dd 
+class="description">
+      <!--l. 90--><p class="noindent" >the list of indices of the grid variables \(x\) to solve for
+      </p></dd><dt class="description">
+<span 
+class="cmtt-12">val</span> </dt><dd 
+class="description">
+      <!--l. 93--><p class="noindent" >the list of indices of the grid variables that contain the function value
+      \(F(x)\)
+      </p></dd><dt class="description">
+<span 
+class="cmtt-12">nvars</span> </dt><dd 
+class="description">
+      <!--l. 96--><p class="noindent" >the number of variables to solve for, which is the same as the number
+      of function values
+      </p></dd><dt class="description">
+<span 
+class="cmtt-12">options</span><span 
+class="cmtt-12">_table</span> </dt><dd 
+class="description">
+      <!--l. 99--><p class="noindent" >a table with additional options (see below)
+      </p></dd><dt class="description">
+<span 
+class="cmtt-12">fun</span> </dt><dd 
+class="description">
+      <!--l. 102--><p class="noindent" >the routine that calculates the function values from the variables
+      </p></dd><dt class="description">
+<span 
+class="cmtt-12">bnd</span> </dt><dd 
+class="description">
+      <!--l. 105--><p class="noindent" >the routine that applies the boundary conditions to the variables
+      </p></dd><dt class="description">
+<span 
+class="cmtt-12">data</span> </dt><dd 
+class="description">
+      <!--l. 108--><p class="noindent" >data that are passed through unchanged to the callback routines</p></dd></dl>
+
+<!--l. 112--><p class="indent" >   The options table can have the following elements:
+      </p><dl class="description"><dt class="description">
+<span 
+class="cmtt-12">CCTK</span><span 
+class="cmtt-12">_INT periodic[dim]</span> </dt><dd 
+class="description">
+      <!--l. 114--><p class="noindent" >\(dim\) flags  indicating  whether  the  grid  is  periodic  in  the  corresponding
+      direction. (\(dim\) is the number of dimensions of the grid variables.) The
+      default values are 0.
+      </p></dd><dt class="description">
+<span 
+class="cmtt-12">CCTK</span><span 
+class="cmtt-12">_INT solvebnds[2*dim]</span> </dt><dd 
+class="description">
+      <!--l. 119--><p class="noindent" >\(2\cdot dim\) flags indicating whether the grid points on the corresponding outer
+      boundaries should be solved for (usually not). The default values are
+      0.
+      </p></dd><dt class="description">
+<span 
+class="cmtt-12">CCTK</span><span 
+class="cmtt-12">_INT stencil</span><span 
+class="cmtt-12">_width</span> </dt><dd 
+class="description">
+      <!--l. 124--><p class="noindent" >the maximum stencil size used while calculating the function values
+      from the variables (should be as small as possible). The default value
+      is 1.
+      </p></dd><dt class="description">
+<span 
+class="cmtt-12">CCTK</span><span 
+class="cmtt-12">_FN</span><span 
+class="cmtt-12">_POINTER jacobian</span> </dt><dd 
+class="description">
+      <!--l. 128--><p class="noindent" >The real type of <span 
+class="cmtt-12">jacobian </span>must be <span 
+class="cmtt-12">void (*jacobian)(cGH *cctkGH,</span>
+      <span 
+class="cmtt-12">void *data)</span>.  This  is  either  a  routine  that  calculates  the  Jacobian
+      directly, or 0 (zero). The default is 0.
+      </p></dd><dt class="description">
+<span 
+class="cmtt-12">CCTK</span><span 
+class="cmtt-12">_FN</span><span 
+class="cmtt-12">_POINTER get</span><span 
+class="cmtt-12">_coloring</span> </dt><dd 
+class="description">
+      <!--l. 133--><p class="noindent" >The real type of <span 
+class="cmtt-12">get</span><span 
+class="cmtt-12">_coloring </span>must be <span 
+class="cmtt-12">void (*get</span><span 
+class="cmtt-12">_coloring)(DA</span>
+      <span 
+class="cmtt-12">da, ISColoring *iscoloring, void *userdata)</span>.  This  is  either  a
+      routine that calculates the colouring for calculating the Jacobian, or 0
+      (zero). You need to pass a nonzero value only if you have very special
+      boundary conditions. The default is 0.</p></dd></dl>
+<!--l. 141--><p class="indent" >   A few remarks: </p>
+      <ul class="itemize1">
+      <li class="itemize">
+
+      <!--l. 144--><p class="noindent" >In order to be able to call this routine directly, it is necessary to inherit
+      from TATPETSc in the thorn where this routine is called.
+      </p></li>
+      <li class="itemize">
+      <!--l. 148--><p class="noindent" >Increasing <span 
+class="cmtt-12">stencil</span><span 
+class="cmtt-12">_width </span>from 1 to 2 increases the run time by about
+      a factor of 5. In general you want to be able to set <span 
+class="cmtt-12">stencil</span><span 
+class="cmtt-12">_width </span>to
+      1. Note that calculating \(F\) does normally not require upwind derivatives
+      with their larger size. <span 
+class="cmtt-12">stencil</span><span 
+class="cmtt-12">_width </span>does not have to be equal to the
+      number of ghost zones.
+      </p></li>
+      <li class="itemize">
+      <!--l. 155--><p class="noindent" >One sure way to speed up solving nonlinear elliptic equations is to
+      provide an explicit function that calculates the Jacobian. While such
+      a function is in principle straightforward to write, it is very (very!)
+      tedious to do so. If you pass 0 for this function, the Jacobian is evaluated
+      numerically. This is about one order of magnitude slower, but is also a
+      lot less work.</p></li></ul>
+<!--l. 163--><p class="noindent" >
+</p>
+   <h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-50004"></a>Initial data</h3>
+<!--l. 165--><p class="noindent" >A linear elliptic equation does not need initial data. However, a nonlinear
+elliptic equation does. It may have several solutions, and the initial data
+select between these solutions. The initial data \(x_0\) have to be put into the
+variables \(x\) before the solver is called. The function values \(F(x)\) can remain
+undefined.
+</p><!--l. 171--><p class="noindent" >
+</p>
+   <h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-60005"></a>Boundary Conditions</h3>
+
+<!--l. 173--><p class="noindent" >There are two functions that you have to apply boundary conditions to. You need
+to apply boundary conditions to the right hand side, i.e. \(F\), and to the solution,
+i.e. \(x\).
+</p><!--l. 177--><p class="indent" >   The routine <span 
+class="cmtt-12">bnd </span>has to apply boundary conditions to \(x\) at exactly those
+boundaries where <span 
+class="cmtt-12">solvebnds </span>is false. (The boundaries where <span 
+class="cmtt-12">solvebnds </span>is true
+have already been determined by the solver.) This includes imposing the
+symmetry boundary conditions. Not applying a boundary condition on the outer
+boundaries is equivalent to a Dirichlet boundary condition, with the boundary
+values given in the initial data \(x_0\).
+</p><!--l. 185--><p class="indent" >   After calculating \(F\), you need to apply the necessary boundary conditions to \(F\) as
+well. You have to do this in the routine <span 
+class="cmtt-12">fun </span>that calculates \(F\).
+</p><!--l. 189--><p class="noindent" >
+</p>
+   <h3 class="sectionHead"><span class="titlemark">6   </span> <a 
+ id="x1-70006"></a>The Solution, Or Not</h3>
+<!--l. 191--><p class="noindent" >When the solver returns, the result is available in \(x\). \(F(x)\) contains the corresponding
+function value, which should be close to zero.
+</p><!--l. 195--><p class="indent" >   It is possible that the solver doesn’t converge. In this case, \(F\) will not be close to
+zero.
+</p><!--l. 198--><p class="indent" >   It is possible (by the way of programming error) to make certain grid points in
+\(F\) independent of \(x\), or to ignore certain grid points in \(x\) while calculating \(F\). This leads
+to a singular matrix when the nonlinear solver calls a linear solver as a substep.
+Such a system is ill-posed and cannot be solved.
+</p><!--l. 204--><p class="noindent" >
+</p>
+   <h3 class="sectionHead"><span class="titlemark">7   </span> <a 
+ id="x1-80007"></a>Excision</h3>
+<!--l. 206--><p class="noindent" >An excision boundary leads to a certain number of grid points that should not be
+solved for. In order to avoid a singular matrix, it is still necessary to impose a
+condition on these grid points. Assuming that you want a Dirichlet-like condition
+for these grid points, I suggest
+
+                                     \[ F(x) = x - x_0 \]
+ where \(x_0\) are the initial data that you have to save someplace. Note that you have
+to impose this (or a different) condition not only onto the boundary points, but
+onto all excised points, i.e. all points that are not solved for.
+</p><!--l. 219--><p class="indent" >   (The above condition satisfies \(F(x)=0\) for \(x=x_0\), which will be the solution for these grid
+points. Setting \(F(x)=0\) does <span 
+class="cmti-12">not </span>work because it leads to a singular matrix, as outlined
+above.)
+</p><!--l. 223--><p class="noindent" >
+</p>
+   <h3 class="sectionHead"><span class="titlemark">8   </span> <a 
+ id="x1-90008"></a>Common PETSc options</h3>
+<!--l. 225--><p class="noindent" >Options Database Keys (from the PETSc documentation)
+</p><!--l. 227--><p class="indent" >
+      </p><dl class="description"><dt class="description">
+<span 
+class="cmtt-12">-snes</span><span 
+class="cmtt-12">_type </span><span 
+class="cmbxti-10x-x-120">type</span> </dt><dd 
+class="description">
+      <!--l. 229--><p class="noindent" >ls, tr, umls, umtr, test
+      </p></dd><dt class="description">
+<span 
+class="cmtt-12">-snes</span><span 
+class="cmtt-12">_stol</span> </dt><dd 
+class="description">
+      <!--l. 232--><p class="noindent" >convergence tolerance in terms of the norm of the change in the solution
+      between steps
+      </p></dd><dt class="description">
+<span 
+class="cmtt-12">-snes</span><span 
+class="cmtt-12">_atol </span><span 
+class="cmbxti-10x-x-120">atol</span> </dt><dd 
+class="description">
+      <!--l. 236--><p class="noindent" >absolute tolerance of residual norm
+      </p></dd><dt class="description">
+<span 
+class="cmtt-12">-snes</span><span 
+class="cmtt-12">_rtol </span><span 
+class="cmbxti-10x-x-120">rtol</span> </dt><dd 
+class="description">
+      <!--l. 239--><p class="noindent" >relative decrease in tolerance norm from initial
+      </p></dd><dt class="description">
+<span 
+class="cmtt-12">-snes</span><span 
+class="cmtt-12">_max</span><span 
+class="cmtt-12">_it </span><span 
+class="cmbxti-10x-x-120">max</span><span 
+class="cmbxti-10x-x-120">_it</span> </dt><dd 
+class="description">
+      <!--l. 242--><p class="noindent" >maximum number of iterations
+
+      </p></dd><dt class="description">
+<span 
+class="cmtt-12">-snes</span><span 
+class="cmtt-12">_max</span><span 
+class="cmtt-12">_funcs </span><span 
+class="cmbxti-10x-x-120">max</span><span 
+class="cmbxti-10x-x-120">_funcs</span> </dt><dd 
+class="description">
+      <!--l. 245--><p class="noindent" >maximum number of function evaluations
+      </p></dd><dt class="description">
+<span 
+class="cmtt-12">-snes</span><span 
+class="cmtt-12">_trtol </span><span 
+class="cmbxti-10x-x-120">trtol</span> </dt><dd 
+class="description">
+      <!--l. 248--><p class="noindent" >trust region tolerance
+      </p></dd><dt class="description">
+<span 
+class="cmtt-12">-snes</span><span 
+class="cmtt-12">_no</span><span 
+class="cmtt-12">_convergence</span><span 
+class="cmtt-12">_test</span> </dt><dd 
+class="description">
+      <!--l. 251--><p class="noindent" >skip  convergence  test  in  nonlinear  or  minimization  solver;  hence
+      iterations will continue until <span 
+class="cmti-12">max</span><span 
+class="cmti-12">_it </span>or some other criterion is reached.
+      Saves expense of convergence test
+      </p></dd><dt class="description">
+<span 
+class="cmtt-12">-snes</span><span 
+class="cmtt-12">_monitor</span> </dt><dd 
+class="description">
+      <!--l. 256--><p class="noindent" >prints residual norm at each iteration
+      </p></dd><dt class="description">
+<span 
+class="cmtt-12">-snes</span><span 
+class="cmtt-12">_vecmonitor</span> </dt><dd 
+class="description">
+      <!--l. 259--><p class="noindent" >plots solution at each iteration
+      </p></dd><dt class="description">
+<span 
+class="cmtt-12">-snes</span><span 
+class="cmtt-12">_vecmonitor</span><span 
+class="cmtt-12">_update</span> </dt><dd 
+class="description">
+      <!--l. 262--><p class="noindent" >plots update to solution at each iteration
+      </p></dd><dt class="description">
+<span 
+class="cmtt-12">-snes</span><span 
+class="cmtt-12">_xmonitor</span> </dt><dd 
+class="description">
+      <!--l. 265--><p class="noindent" >plots residual norm at each iteration
+      </p></dd><dt class="description">
+<span 
+class="cmtt-12">-snes</span><span 
+class="cmtt-12">_fd</span> </dt><dd 
+class="description">
+      <!--l. 268--><p class="noindent" >use finite differences to compute Jacobian; very slow, only for testing
+      </p></dd><dt class="description">
+<span 
+class="cmtt-12">-snes</span><span 
+class="cmtt-12">_mf</span><span 
+class="cmtt-12">_ksp</span><span 
+class="cmtt-12">_monitor</span> </dt><dd 
+class="description">
+      <!--l. 272--><p class="noindent" >if using matrix-free multiply then print \(h\) at each KSP iteration
+
+</p>
+      </dd></dl>
+<!--l. 278--><p class="noindent" >
+</p>
+   <h3 class="sectionHead"><span class="titlemark">9   </span> <a 
+ id="x1-100009"></a>Installing PETSc</h3>
+<!--l. 280--><p class="noindent" >Before you can use TATPETSc, you have to install PETSc. PETSc comes with
+extensive documentation for that.
+</p><!--l. 283--><p class="indent" >   In order to be able to use PETSc with Cactus, you have to give certain options
+when you configure your Cactus applications. To do so, create an options file
+containing the following options.
+</p><!--l. 287--><p class="indent" >
+      </p><dl class="description"><dt class="description">
+ </dt><dd 
+class="description">
+      <!--l. 288--><p class="noindent" >SYS_INC_DIRS /usr/include/petsc
+      </p></dd><dt class="description">
+ </dt><dd 
+class="description">
+      <!--l. 290--><p class="noindent" >LIBDIRS /usr/X11R6/lib
+      </p></dd><dt class="description">
+ </dt><dd 
+class="description">
+      <!--l. 292--><p class="noindent" >LIBS crypt petscfortran petscts petscsnes petscsles petscdm petscmat
+      petscvec petsc lapack blas mpe mpich X11 g2c z</p></dd></dl>
+<!--l. 296--><p class="indent" >   Replace /usr/include/petsc with the corresponding directory on your
+machine.
+</p><!--l. 299--><p class="indent" >   If you have other packages that need other options, then you have to combine
+these options manually. Even if the other options would normally be selected
+automatically, selecting the PETSc options manually will override the other
+options.
+</p><!--l. 304--><p class="indent" >   Do not forget to activate MPI. PETSc needs MPI to run.
+
+</p><!--l. 306--><p class="noindent" >
+</p>
+   <h3 class="likesectionHead"><a 
+ id="x1-11000"></a>References</h3>
+<!--l. 306--><p class="noindent" >
+     </p><div class="thebibliography">
+     <p class="bibitem" ><span class="biblabel">
+  [1]<span class="bibsp">   </span></span><a 
+ id="XTAT:TATPETSc:petsc"></a>PETSc: <span class="obeylines-h"><code class="verb">http://www-fp.mcs.anl.gov/petsc/</code></span></p></div>
+<!--l. 313--><p class="noindent" >
+</p>
+   <h3 class="sectionHead"><span class="titlemark">10   </span> <a 
+ id="x1-1200010"></a>Parameters</h3>
+<!--l. 332--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /></colgroup><colgroup id="TBL-2-2g"><col 
+id="TBL-2-2" /><col 
+id="TBL-2-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:normal; text-align:left;" id="TBL-2-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">options</div>       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-2"  
+class="td10"> <span 
+class="cmbx-12">Scope: </span>private </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-1-3"  
+class="td01">                                    STRING </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-2-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-12">Description: </span><span 
+class="cmti-12">Command line options for PETSc</span></div>                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-1"  
+class="td11">   <span 
+class="cmbx-12">Range    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-2"  
+class="td10">               </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-3-3"  
+class="td01">                              <span 
+class="cmbx-12">Default: </span>(none) </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-4-"><td  style="white-space:normal; text-align:left;" id="TBL-2-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.*</div>               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-2-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">no restriction</div>                                                                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-5-1"  
+class="td11">            </td></tr></table>                                                                          </div>
+<!--l. 339--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-3" class="tabular" 
+ 
+><colgroup id="TBL-3-1g"><col 
+id="TBL-3-1" /></colgroup><colgroup id="TBL-3-2g"><col 
+id="TBL-3-2" /><col 
+id="TBL-3-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-1-"><td  style="white-space:normal; text-align:left;" id="TBL-3-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">verbose</div>       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-2"  
+class="td10"> <span 
+class="cmbx-12">Scope: </span>private </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-1-3"  
+class="td01">                             BOOLEAN </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-3-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-12">Description: </span><span 
+class="cmti-12">Produce log output while running</span></div>                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-3-1"  
+class="td11">            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-3-2"  
+class="td10">               </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-3-3"  
+class="td01">                             <span 
+class="cmbx-12">Default: </span>no </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-4-1"  
+class="td11">            </td></tr></table>                                                                     </div>
+<!--l. 346--><p class="noindent" ><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-4" class="tabular" 
+ 
+><colgroup id="TBL-4-1g"><col 
+id="TBL-4-1" /></colgroup><colgroup id="TBL-4-2g"><col 
+id="TBL-4-2" /><col 
+id="TBL-4-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-1-"><td  style="white-space:normal; text-align:left;" id="TBL-4-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">veryverbose</div>  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-2"  
+class="td10"> <span 
+class="cmbx-12">Scope: </span>private </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-1-3"  
+class="td01">                             BOOLEAN </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-4-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-12">Description: </span><span 
+class="cmti-12">Produce much log output while running</span></div>                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-3-1"  
+class="td11">            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-2"  
+class="td10">               </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-3-3"  
+class="td01">                             <span 
+class="cmbx-12">Default: </span>no </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-4-1"  
+class="td11">            </td></tr></table>                                                                     </div>
+<!--l. 355--><p class="noindent" >
+</p>
+   <h3 class="sectionHead"><span class="titlemark">11   </span> <a 
+ id="x1-1300011"></a>Interfaces</h3>
+<!--l. 360--><p class="noindent" >
+</p>
+
+   <h4 class="likesubsectionHead"><a 
+ id="x1-14000"></a>General</h4>
+<!--l. 362--><p class="noindent" ><span 
+class="cmbx-12">Implements</span>:
+</p><!--l. 364--><p class="indent" >   tatpetsc
+</p><!--l. 367--><p class="noindent" ><span 
+class="cmbx-12">Inherits</span>:
+</p><!--l. 369--><p class="indent" >   tatelliptic
+</p><!--l. 374--><p class="noindent" ><span 
+class="cmbx-12">Uses header</span>:
+</p><!--l. 376--><p class="indent" >   TATelliptic.h
+</p><!--l. 379--><p class="noindent" >
+</p>
+   <h3 class="sectionHead"><span class="titlemark">12   </span> <a 
+ id="x1-1500012"></a>Schedule</h3>
+<!--l. 385--><p class="noindent" >This section lists all the variables which are assigned storage by thorn
+CactusElliptic/TATPETSc. Storage can either last for the duration of the run
+(<span 
+class="cmbx-12">Always </span>means that if this thorn is activated storage will be assigned,
+<span 
+class="cmbx-12">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration
+of a schedule function.
+</p><!--l. 388--><p class="noindent" >
+</p>
+   <h4 class="likesubsectionHead"><a 
+ id="x1-16000"></a>Storage</h4>
+<!--l. 388--><p class="noindent" >NONE
+</p>
+   <h4 class="likesubsectionHead"><a 
+ id="x1-17000"></a>Scheduled Functions</h4>
+<!--l. 392--><p class="noindent" ><span 
+class="cmbx-12">CCTK</span><span 
+class="cmbx-12">_STARTUP</span>
+</p><!--l. 394--><p class="indent" >         tatpetsc_initialize
+</p><!--l. 396--><p class="indent" >        <span 
+class="cmti-12">initialise petsc</span>
+
+</p><!--l. 399--><p class="indent" >    
+</p>
+   <div class="tabular"> <table id="TBL-5" class="tabular" 
+ 
+><colgroup id="TBL-5-1g"><col 
+id="TBL-5-1" /><col 
+id="TBL-5-2" /><col 
+id="TBL-5-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-5-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-2"  
+class="td11"> After:       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-3"  
+class="td11"> driver_startup  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-2-3"  
+class="td11"> c                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-3-2"  
+class="td11"> Type:       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-3-3"  
+class="td11"> function          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-4-1"  
+class="td11">    </td> </tr></table>                                                          </div>
+<!--l. 410--><p class="noindent" ><span 
+class="cmbx-12">CCTK</span><span 
+class="cmbx-12">_SHUTDOWN</span>
+</p><!--l. 412--><p class="indent" >         tatpetsc_finalize
+</p><!--l. 414--><p class="indent" >        <span 
+class="cmti-12">finalise petsc</span>
+</p><!--l. 417--><p class="indent" >    
+</p>
+   <div class="tabular"> <table id="TBL-6" class="tabular" 
+ 
+><colgroup id="TBL-6-1g"><col 
+id="TBL-6-1" /><col 
+id="TBL-6-2" /><col 
+id="TBL-6-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-6-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-2-2"  
+class="td11"> Type:       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-3-1"  
+class="td11">    </td> </tr></table>                                                          </div>
+    
+</body></html> 
+
+
+

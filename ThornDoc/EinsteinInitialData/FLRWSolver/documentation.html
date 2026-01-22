@@ -1,0 +1,1590 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>FLRWSolver</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">FLRWSolver</h2>
+ <div class="author" ><span 
+class="cmr-12">H. </span><span 
+class="cmr-12"> J. Macpherson </span><span 
+class="cmmi-12">&#x003C;</span><span 
+class="cmr-12">hayleyjmacpherson@gmail.com </span><span 
+class="cmmi-12">&#x003E;</span><span 
+class="cmr-12">,</span>
+<br />                      <span 
+class="cmr-12">P.</span><span 
+class="cmr-12"> D. Lasky,</span>
+<br />                       <span 
+class="cmr-12">D.</span><span 
+class="cmr-12"> J. Price</span></div>
+<br />
+<div class="date" ><span 
+class="cmr-12">January 22, 2026</span></div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 115--><p class="noindent" ><span 
+class="cmr-9">This thorn provides cosmological initial conditions based on a Friedmann-Lemaitre-Robertson-Walker</span>
+     <span 
+class="cmr-9">(FLRW) spacetime, either with or without small perturbations.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Introduction</h3>
+<!--l. 123--><p class="noindent" >FLRW spacetime is a homogeneous, isotropic, expanding solution to Einstein’s equations. This solution is the
+basis for the current standard cosmological model; \(\Lambda \)CDM. The spatially-flat FLRW spacetime sourced by
+pure-dust with no cosmological constant is the Einstein-de Sitter (EdS) spacetime.
+</p><!--l. 126--><p class="noindent" >Here we provide a thorn to give initial conditions for cosmology using the Einstein Toolkit (ET). Currently,
+<span 
+class="cmtt-10">FLRWSolver</span> only implements the EdS solution. We provide pure-EdS spacetime (no perturbations) and
+perturbed EdS spacetime for various kinds of perturbations. Namely, you can choose a single (3-dimensional)
+sine-wave perturbation, a powerspectrum of perturbations, or your own perturbations read in from
+files.
+                                                                                       
+                                                                                       
+</p><!--l. 128--><p class="noindent" >Links to detailed tutorials on setting up, compiling, and running simple simulations using <span 
+class="cmtt-10">FLRWSolver</span> with the
+ET can be found in <span 
+class="cmtt-10">doc/tutorials/</span>.
+</p><!--l. 130--><p class="noindent" >In this documentation, and in <span 
+class="cmtt-10">FLRWSolver</span>, we have set \(G=c=1\).
+</p><!--l. 133--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a>Use of this thorn</h3>
+<!--l. 136--><p class="noindent" >To use this thorn to provide initial data for the <span 
+class="cmtt-10">ADMBase </span>variables \(\alpha \), \(\beta \), \(g_{ij}\) and \(K_{ij}\), and <span 
+class="cmtt-10">HydroBase </span>variables \(\rho \), \(v^i\) activate
+the thorn and set the following parameters: </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 138--><p class="noindent" ><span 
+class="cmtt-10">HydroBase::initial</span><span 
+class="cmtt-10">_hydro </span>= “flrw”
+     </p></li>
+     <li class="itemize">
+     <!--l. 139--><p class="noindent" ><span 
+class="cmtt-10">ADMBase::initial</span><span 
+class="cmtt-10">_data </span>= “flrw”
+     </p></li>
+     <li class="itemize">
+     <!--l. 140--><p class="noindent" ><span 
+class="cmtt-10">ADMBase::initial</span><span 
+class="cmtt-10">_lapse </span>= “flrw”
+     </p></li>
+     <li class="itemize">
+     <!--l. 141--><p class="noindent" ><span 
+class="cmtt-10">ADMBase::initial</span><span 
+class="cmtt-10">_shift </span>= “flrw”
+     </p></li>
+     <li class="itemize">
+     <!--l. 142--><p class="noindent" ><span 
+class="cmtt-10">ADMBase::initial</span><span 
+class="cmtt-10">_dtlapse </span>= “flrw”
+     </p></li>
+     <li class="itemize">
+     <!--l. 143--><p class="noindent" ><span 
+class="cmtt-10">ADMBase::initial</span><span 
+class="cmtt-10">_dtshift </span>= “zero”</p></li></ul>
+<!--l. 146--><p class="noindent" >Template parameter files for a pure-FLRW, single-mode perturbation, and powerspectrum of perturbations to
+FLRW spacetime are provided in the <span 
+class="cmtt-10">par/ </span>directory.
+</p><!--l. 148--><p class="noindent" >This thorn was first presented in <span class="cite">[<a 
+href="#XEinsteinInitialData_flrwsolver_macpherson2017">2</a>]</span>, and used further in <span class="cite">[<a 
+href="#XEinsteinInitialData_flrwsolver_macpherson2019">3</a>]</span>. It is written for use with <span 
+class="cmtt-10">GRHydro </span>(see Section <a 
+href="#x1-120006">6<!--tex4ht:ref: EinsteinInitialData_flrwsolver_sec:note --></a>)
+and <span 
+class="cmtt-10">EOS</span><span 
+class="cmtt-10">_Omni</span>. At the time of writing, neither of these thorns can handle a pure dust description, i.e. \(P=0\). Instead
+we use a polytropic EOS and ensure \(P\ll \rho \) by setting the polytropic constant accordingly. In <span class="cite">[<a 
+href="#XEinsteinInitialData_flrwsolver_macpherson2017">2</a>]</span> this was shown to be
+sufficient to match a dust FLRW evolution.
+                                                                                       
+                                                                                       
+</p><!--l. 154--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-30003"></a>Choosing initial conditions</h3>
+<!--l. 157--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">3.1   </span> <a 
+ id="x1-40003.1"></a>FLRW spacetime &#x0026; background for perturbations</h4>
+<!--l. 159--><p class="noindent" >The FLRW line element in conformal time, \(\eta \), is given by \begin {equation} \label {EinsteinInitialData_flrwsolver_eq:FLRWmetric} ds^2 = a^2(\eta ) \left ( - d\eta ^2 + \delta _{ij}dx^i dx^j \right )  \end {equation}<a 
+ id="x1-4001r1"></a> where \(a(\eta )\) is the scale factor describing the
+size of the Universe at time \(\eta \). To initialise this spacetime, the user must specify <span 
+class="cmtt-10">FLRW</span><span 
+class="cmtt-10">_perturb </span>=
+“no”.
+</p><!--l. 165--><p class="noindent" >The user chooses the initial value of \(\mathcal {H}L\), i.e. the ratio of the initial Hubble horizon \(d_H(z_{\rm init})\equiv c/\mathcal {H}(z_{\rm init})\) to the comoving
+length of the box \(L\) in physical units. Since this quantity is dimensionless, this is the same ratio
+of the Hubble parameter to the box length in code units. This is controlled using the parameter
+<span 
+class="cmtt-10">FLRW</span><span 
+class="cmtt-10">_init</span><span 
+class="cmtt-10">_HL</span>. This choice of \(\mathcal {H}L\), along with the size of the box set in code units via <span 
+class="cmtt-10">CoordBase</span>,
+sets the initial Hubble rate, \(\mathcal {H}_{\rm ini}\), and therefore the initial background density in code units via the
+Friedmann equation for a matter-dominated spacetime, namely \begin {equation}  \mathcal {H}_{\rm init} = \sqrt {\frac {8\pi \rho _{\rm init} a_{\rm init}^2}{3}},  \end {equation}<a 
+ id="x1-4002r2"></a> where the initial value for the scale
+factor, \(a_{\rm ini}\), is set via <span 
+class="cmtt-10">FLRW</span><span 
+class="cmtt-10">_init</span><span 
+class="cmtt-10">_a</span>. The initial lapse is set via <span 
+class="cmtt-10">FLRW</span><span 
+class="cmtt-10">_lapse</span><span 
+class="cmtt-10">_value</span>. The user should also
+ensure the initial coordinate time (<span 
+class="cmtt-10">Cactus::cctk</span><span 
+class="cmtt-10">_initial</span><span 
+class="cmtt-10">_time</span>) is consistent, i.e. for EdS we have
+\(\eta _{\rm ini} = 2/\mathcal {H}_{\rm ini}\).
+</p><!--l. 172--><p class="noindent" >When setting pure FLRW or single-mode perturbations to FLRW (see Section <a 
+href="#x1-60003.2.1">3.2.1<!--tex4ht:ref: EinsteinInitialData_flrwsolver_sec:singlemode_ics --></a> below), the physical side of
+the box (or, equivalently, the initial redshift \(z_{\rm init}\)) is not necessary for creating initial data. However, setting a
+powerspectrum of initial data does require the physical length of the box at the initial time, see
+Section <a 
+href="#x1-70003.2.2">3.2.2<!--tex4ht:ref: EinsteinInitialData_flrwsolver_sec:pspec_ics --></a>.
+</p><!--l. 175--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">3.2   </span> <a 
+ id="x1-50003.2"></a>Linear perturbations to FLRW spacetime</h4>
+<!--l. 177--><p class="noindent" >Including scalar only perturbations to the FLRW metric in the longitudinal gauge gives \begin {equation} \label {EinsteinInitialData_flrwsolver_eq:perturbed_metric} ds^2 = a^2(\eta ) \left [ - \left (1 + 2\psi \right ) d\eta ^2 + \left (1 - 2\phi \right ) \delta _{ij}dx^i dx^j \right ],  \end {equation}<a 
+ id="x1-5001r3"></a> where \(\phi ,\psi \) coincide with
+the Bardeen potentials <span class="cite">[<a 
+href="#XEinsteinInitialData_flrwsolver_bardeen1980">1</a>]</span> in this gauge. Assuming \(\phi ,\psi \ll 1\) allows us to solve Einstein’s equations using linear
+perturbation theory, giving the system of equations <span class="cite">[<a 
+href="#XEinsteinInitialData_flrwsolver_macpherson2017">2</a>, <a 
+href="#XEinsteinInitialData_flrwsolver_macpherson2019">3</a>]</span> </p><div class="subequations">\begin {subequations}  \label {EinsteinInitialData_flrwsolver_eqs:perturbed_einstein} \begin {align} \nabla ^{2}\phi - 3 \mathcal {H}\left (\frac {\phi '}{c^2} + \frac {\mathcal {H} \phi }{c^2}\right ) &amp;= 4\pi G \bar {\rho }\,\delta a^{2}, \label {EinsteinInitialData_flrwsolver_eq:einstein_1} \\ \mathcal {H} \partial _{i}\phi + \partial _{i}\phi ' &amp;= -4\pi G\bar {\rho } \,a^{2} \delta _{ij}v^{j}, \label {EinsteinInitialData_flrwsolver_eq:einstein_2} \\ \phi '' + 3\mathcal {H}\phi ' &amp;=0, \label {EinsteinInitialData_flrwsolver_eq:einstein_3} \end {align}  \end {subequations}</div>
+<!--l. 189--><p class="noindent" >and \(\phi =\psi \), and we have left \(G, c\neq 1\) in the above for clarity of physical units. The perturbed rest-mass density is \(\rho = \bar {\rho } \left (1 + \delta \right )\), with \(\bar {\rho }\) the
+background FLRW density. We have \(v^i = \delta v^i\), since \(\bar {v}^i = 0\) for FLRW. In the above, \(\mathcal {H}\equiv a'/a\) is the conformal Hubble parameter, where
+\('\equiv \partial /\partial \eta \) and \(\partial _i \equiv \partial /\partial x^i\). Solving the above system, choosing <span 
+class="cmti-10">only </span>the growing mode (see <span class="cite">[<a 
+href="#XEinsteinInitialData_flrwsolver_macpherson2019">3</a>]</span> for more details), gives
+</p><div class="subequations">\begin {subequations}  \label {EinsteinInitialData_flrwsolver_eqs:linear_solnsg0} \begin {align} \phi &amp;= f(x^{i}), \label {EinsteinInitialData_flrwsolver_eq:linear_phi}\\ \delta &amp;= \frac {2}{3\mathcal {H}^2} \nabla ^{2}f(x^{i}) - 2 f(x^i) \\ v^{i} &amp;= -\frac {2}{3 a \mathcal {H}} \partial ^{i}f(x^{i}), \end {align}  \end {subequations}</div>
+<!--l. 213--><p class="noindent" >where we have the freedom to choose the form of \(f(x^i)\), so long as it has amplitude such that \(\phi \ll 1\). Equations (<span 
+class="cmbx-10">??</span>) denote
+the standard form of linear perturbations implemented in this thorn, with \(a\rightarrow a_{\rm init}\) and \(\mathcal {H}\rightarrow \mathcal {H}_{\rm init}\). See <span class="cite">[<a 
+href="#XEinsteinInitialData_flrwsolver_macpherson2019">3</a>]</span> for more details on the
+derivation of these relations.
+</p><!--l. 215--><p class="noindent" >The user must still specify the FLRW background as in Section <a 
+href="#x1-40003.1">3.1<!--tex4ht:ref: EinsteinInitialData_flrwsolver_sec:FLRWinit --></a>.
+                                                                                       
+                                                                                       
+</p><!--l. 217--><p class="noindent" >Below we outline several different choices for perturbations, and how to set these using the thorn
+parameters.
+</p><!--l. 220--><p class="noindent" >
+</p>
+<h5 class="subsubsectionHead"><span class="titlemark">3.2.1   </span> <a 
+ id="x1-60003.2.1"></a>Single-mode perturbation</h5>
+<!--l. 223--><p class="noindent" >This initial condition sets \(\phi \) as a sine-wave function, and the corresponding density and velocity perturbations are
+set using (<span 
+class="cmbx-10">??</span>). Choose <span 
+class="cmtt-10">FLRW</span><span 
+class="cmtt-10">_perturb</span><span 
+class="cmtt-10">_type</span>=“single_mode”. The parameter <span 
+class="cmtt-10">FLRW</span><span 
+class="cmtt-10">_perturb</span><span 
+class="cmtt-10">_direction </span>controls
+in which spatial dimension to apply the perturbation, and will set either \(\phi =f(x^1),f(x^2),f(x^3)\), or \(f(x^i)\) depending on the choice. For
+example, choosing <span 
+class="cmtt-10">FLRW</span><span 
+class="cmtt-10">_perturb</span><span 
+class="cmtt-10">_direction</span>=“all” we have \begin {equation} \label {EinsteinInitialData_flrwsolver_eq:phi} \phi = \phi _{0} \sum _{i=1}^{3} \mathrm {sin}\left (\frac {2\pi x^{i}}{\lambda } - \theta \right ),  \end {equation}<a 
+ id="x1-6001r4"></a> where \(\lambda \) is the wavelength of the perturbation, \(\theta \)
+is some phase offset, and \(\phi _0\ll 1\). This gives the density and velocity perturbation as, respectively, <span class="cite">[<a 
+href="#XEinsteinInitialData_flrwsolver_macpherson2017">2</a>]</span>
+\begin {align}  \delta &amp;= - \left [ \left (\frac {2\pi }{\lambda }\right )^{2} \frac {a_{\mathrm {init}}}{4\pi \rho ^{*}} + 2\right ] \phi _{0} \sum _{i=1}^{3} \mathrm {sin}\left (\frac {2\pi x^{i}}{\lambda } - \theta \right ),\label {EinsteinInitialData_flrwsolver_eq:initial_delta}\\ v^{i} &amp;= -\left (\frac {2\pi }{\lambda }\right )\frac {\mathcal {H}_{\rm init}}{4\pi \rho ^{*}}\, \phi _{0}\, \mathrm {cos}\left (\frac {2\pi x^{i}}{\lambda } - \theta \right ). \label {EinsteinInitialData_flrwsolver_eq:initial_deltav}  \end {align}
+</p><!--l. 233--><p class="noindent" >The wavelength, \(\lambda \), of the perturbation is controlled by <span 
+class="cmtt-10">single</span><span 
+class="cmtt-10">_perturb</span><span 
+class="cmtt-10">_wavelength</span>, given relative to the
+total box length. The phase offset \(\theta \) is controlled by <span 
+class="cmtt-10">phi</span><span 
+class="cmtt-10">_phase</span><span 
+class="cmtt-10">_offset</span>, and the amplitude is set
+by <span 
+class="cmtt-10">phi</span><span 
+class="cmtt-10">_amplitude</span>, which must be set such that \(\phi _0\ll 1\) to ensure that the corresponding density and
+velocity perturbations are also small enough to satisfy the linear approximation. The code will
+produce a warning if either of the (dimensionless) density or velocity perturbations have amplitude
+\(&gt; 10^{-5}\).
+</p><!--l. 240--><p class="noindent" >
+</p>
+<h5 class="subsubsectionHead"><span class="titlemark">3.2.2   </span> <a 
+ id="x1-70003.2.2"></a>Power spectrum of perturbations</h5>
+<!--l. 243--><p class="noindent" >We can instead choose the initial conditions to be a power spectrum of fluctuations, to better mimic the early
+state of the Universe (see <span class="cite">[<a 
+href="#XEinsteinInitialData_flrwsolver_macpherson2019">3</a>]</span>). These fluctuations are still assumed to be linear perturbations to an EdS
+background.
+</p><!--l. 246--><p class="noindent" >The initial data are generated from a user-specified 3-dimensional matter power spectrum, \(P(k)\) (in units of (Mpc/\(h)^3)\), in the
+<span 
+class="cmti-10">synchronous gauge </span>at the chosen initial redshift, where the wavenumber \(k=\sqrt {k_x^2+k_y^2+k_z^2}\) (in units of \(h\)/Mpc). Here, \(h\) is defined
+such that \(H_0 = 100 h\) km/s/Mpc. It is assumed the text file is the same format as the matter power spectrum output from
+CAMB<span class="footnote-mark"><a 
+href="documentation2.html#fn1x0"><sup class="textsuperscript">1</sup></a></span><a 
+ id="x1-7001f1"></a> 
+or CLASS<span class="footnote-mark"><a 
+href="documentation3.html#fn2x0"><sup class="textsuperscript">2</sup></a></span><a 
+ id="x1-7003f2"></a> ,
+i.e. a text file with two columns \(k, P(k)\) and no entry for \(k=0\) (this is added by the code).
+                                                                                       
+                                                                                       
+</p><!--l. 248--><p class="noindent" ><span 
+class="cmtt-10">FLRWSolver</span> then generates a Gaussian random field and scales it to the given power spectrum. This
+field is centred around zero and represents the initial (dimensionless) density perturbation to the
+EdS background in synchronous gauge, \(\delta _s\). We choose to first calculate \(\delta _s\) because CAMB/CLASS by
+default output \(P(k)\) in the synchronous gauge. We calculate the gauge-invariant Bardeen potential from \(\delta _s\)
+with the Poisson equation \begin {equation} \label {EinsteinInitialData_flrwsolver_eq:poisson} \nabla ^2 \Phi = \frac {3\mathcal {H}^2}{2}\delta _s,  \end {equation}<a 
+ id="x1-7005r5"></a> and the metric perturbation in longitudinal gauge is \(\phi =\Phi \). We use equations
+(<span 
+class="cmbx-10">??</span>) and (<a 
+href="#x1-7005r5">5<!--tex4ht:ref: EinsteinInitialData_flrwsolver_eq:poisson --></a>) in Fourier space to find the corresponding density and velocity perturbations in the
+longitudinal gauge, which are then inverse Fourier transformed back to give the perturbations in real
+space.
+</p><!--l. 254--><p class="noindent" >This initial condition is chosen by setting <span 
+class="cmtt-10">FLRW</span><span 
+class="cmtt-10">_perturb</span><span 
+class="cmtt-10">_type</span>=“powerspectrum”. Set the
+FLRW background according to Section <a 
+href="#x1-40003.1">3.1<!--tex4ht:ref: EinsteinInitialData_flrwsolver_sec:FLRWinit --></a>, and set the path to (including the name of) the
+text file containing the matter power spectrum using <span 
+class="cmtt-10">FLRW</span><span 
+class="cmtt-10">_powerspectrum</span><span 
+class="cmtt-10">_file</span>. There is
+an example power spectrum in <span 
+class="cmtt-10">FLRWSolver/powerspectra/ </span>for \(z_{\rm ini}=1000\) which was generated using
+CLASS<span class="footnote-mark"><a 
+href="documentation4.html#fn3x0"><sup class="textsuperscript">3</sup></a></span><a 
+ id="x1-7006f3"></a> 
+(see the <span 
+class="cmtt-10">README </span>in that directory), however, we recommend you run CLASS or
+CAMB<span class="footnote-mark"><a 
+href="documentation5.html#fn4x0"><sup class="textsuperscript">4</sup></a></span><a 
+ id="x1-7008f4"></a> 
+with your desired cosmological parameters. The Gaussian random field will be drawn with seed from
+<span 
+class="cmtt-10">FLRW</span><span 
+class="cmtt-10">_random</span><span 
+class="cmtt-10">_seed</span>, so keep this constant to draw the same realisation more than once. You also must specify
+the size of the domain in comoving Mpc\(/h\) using <span 
+class="cmtt-10">FLRW</span><span 
+class="cmtt-10">_boxlength</span>, which is required to use the correct physical
+scales from the power spectrum.
+</p>
+<h5 class="subsubsectionHead"><span class="titlemark">3.2.3   </span> <a 
+ id="x1-80003.2.3"></a>Linear perturbations from user-specified files</h5>
+<!--l. 264--><p class="noindent" >There is also an option for you to set up your own initial conditions and read them in to <span 
+class="cmtt-10">FLRWSolver</span>. These
+must be in ascii format, and the 3D data must be stored in a specific way. Namely, the data must be written in
+2D \(N\times N\) slices of the \(x-y\) plane, with the \(z\) index increasing every \(N\) rows, where \(N=n+n_{\rm gh}\) is the resolution (\(n\)) including the total
+number of boundary zones in each dimension (\(n_{\rm gh}=2\times \texttt {driver::ghost\_size}\)). Therefore, the columns are the \(x\) indices, and the
+rows are the \(y\) indices, repeating every \(N\) rows. The files must include boundary zones, although these
+may be set to zero, since your chosen boundary conditions will be applied after <span 
+class="cmtt-10">FLRWSolver</span> is
+called.
+</p><!--l. 267--><p class="noindent" >To use this initial condition set <span 
+class="cmtt-10">FLRW</span><span 
+class="cmtt-10">_perturb</span><span 
+class="cmtt-10">_type</span>=“fileread”. The files you must supply are the linear
+perturbations around an EdS background, and it is up to you to ensure these satisfy the constraint equations.
+You must set several string parameters containing the path to each file. The parameter <span 
+class="cmtt-10">FLRW</span><span 
+class="cmtt-10">_deltafile</span>
+specifies the fractional density perturbation \(\delta \), <span 
+class="cmtt-10">FLRW</span><span 
+class="cmtt-10">_phifile </span>for the metric perturbation \(\phi /c^2\), and <span 
+class="cmtt-10">FLRW</span><span 
+class="cmtt-10">_velxfile</span>,
+<span 
+class="cmtt-10">FLRW</span><span 
+class="cmtt-10">_velyfile</span>, and <span 
+class="cmtt-10">FLRW</span><span 
+class="cmtt-10">_velzfile </span>for the components of the contravariant fluid three-velocity
+with respect to the Eulerian observer, \(v^i/c\) (see <span 
+class="cmtt-10">HydroBase </span>documentation for an explicit definition of
+\(v^i\)).
+                                                                                       
+                                                                                       
+</p><!--l. 273--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">3.3   </span> <a 
+ id="x1-90003.3"></a>‘Exact’ perturbations to FLRW spacetime</h4>
+<!--l. 276--><p class="noindent" >This initial condition choice results in a power spectrum of metric fluctuations \(\phi \) then solves the Hamiltonian and
+momentum constraints ‘exactly’ (i.e., to the level we can achieve with the order of finite-difference used in
+the calculations described below) to obtain the corresponding density \(\rho \) and velocity \(v^i\) fields. The
+form of the metric components is the same as (<a 
+href="#x1-5001r3">3<!--tex4ht:ref: EinsteinInitialData_flrwsolver_eq:perturbed_metric --></a>), and the method similar to that described in
+Section <a 
+href="#x1-70003.2.2">3.2.2<!--tex4ht:ref: EinsteinInitialData_flrwsolver_sec:pspec_ics --></a>. The difference is the user-specified 3-dimensional power spectrum instead describes
+the power in fluctuations of the metric potential \(\phi \) in <span 
+class="cmti-10">Newtonian gauge </span>(this can be output from
+CAMB<span class="footnote-mark"><a 
+href="documentation6.html#fn5x0"><sup class="textsuperscript">5</sup></a></span><a 
+ id="x1-9001f5"></a> .
+At the time of writing I don’t think you can output this from CLASS without making adjustments to the code
+itself). As in Section <a 
+href="#x1-70003.2.2">3.2.2<!--tex4ht:ref: EinsteinInitialData_flrwsolver_sec:pspec_ics --></a>, the power spectrum should be for the same initial redshift as the simulation and
+be in the CAMB/CLASS output style: a plain text file with two columns \(k,P(k)\) with no first line for
+\(k=0\).
+</p><!--l. 279--><p class="noindent" ><span 
+class="cmtt-10">FLRWSolver </span>then generates a Gaussian random field scaled to this power spectrum, representing the initial \(\phi (x^i)\). The
+next step is to put this into the components \(g_{ij}\) as in (<a 
+href="#x1-5001r3">3<!--tex4ht:ref: EinsteinInitialData_flrwsolver_eq:perturbed_metric --></a>) (for the chosen FLRW background parameters), as well as
+the components of the extrinsic curvature \(K_{ij}\) (with the time derivative assumed to be \(\dot {\phi }=0\), which is a good
+approximation so long as the simulation is initialised in the matter-dominated era when perturbations are close
+to linear). We then calculate the Ricci scalar, trace of \(K_{ij}\), derivatives of \(K_{ij}\), using existing routines amended from the
+<span 
+class="cmtt-10">mescaline</span><span class="footnote-mark"><a 
+href="documentation7.html#fn6x0"><sup class="textsuperscript">6</sup></a></span><a 
+ id="x1-9003f6"></a> 
+post-processing code <span class="cite">[<a 
+href="#XEinsteinInitialData_flrwsolver_macpherson2019">3</a>]</span> (all using fourth-order accurate finite differences). From these we use the Hamiltonian
+constraint to obtain the simulation-frame density \(\rho \) and the momentum density \(S_i\).
+</p><!--l. 281--><p class="noindent" >The rest-mass density \(\rho _R\equiv T_{\mu \nu }u^\mu u^\nu \), where \(u^\mu \) is the fluid 4–velocity, is related to the simulation-frame density \(\rho \equiv T_{\mu \nu }n^\mu n^\nu \), where \(n^\mu \) is the
+normal to the hypersurfaces, via \(\rho =\rho _R\alpha ^2 (u^0)^2\), where \(\alpha \) is the lapse. For a pressureless (dust) fluid, the momentum density is \(S_i=\alpha \rho _Ru^i u^0\).
+With these expressions we can obtain the rest-mass density and velocity in <span 
+class="cmtt-10">FLRWSolver </span>using \begin {equation}  \rho _R = \rho - \frac {S_i S^i}{\rho }; \quad v^i = \frac {S^i}{\rho },  \end {equation}<a 
+ id="x1-9005r6"></a> where \(\rho \) and \(S_i\) are
+obtained directly from the Hamiltonian and momentum constraints, respectively. In principle, this method could
+be adapted to other forms of the stress-energy tensor \(T_{\mu \nu }\), however currently we have only implemented this case of
+a cosmological dust fluid.
+</p><!--l. 287--><p class="noindent" >The point of this method is to minimise constraint violation on the initial surface with respect to the method
+using linearised equations in Section <a 
+href="#x1-70003.2.2">3.2.2<!--tex4ht:ref: EinsteinInitialData_flrwsolver_sec:pspec_ics --></a>. If your simulation begins at a high enough redshift (\(z_{\rm init}\sim 1000\)) then you
+shouldn’t get much difference in violation between the two methods. The main benefit of using this type of
+initial condition is that you can start at much later redshifts (we have tested down to \(z_{\rm init}=20\)), where the linear
+approximation might be violated but the Universe is still in a matter-dominated era. This also means your
+simulation will have less accumulation of finite-difference constraint violation since the number of iterations can
+be almost halved.
+                                                                                       
+                                                                                       
+</p><!--l. 289--><p class="noindent" >Choose this initial condition by setting <span 
+class="cmtt-10">FLRW</span><span 
+class="cmtt-10">_perturb</span><span 
+class="cmtt-10">_type</span>=“powerspectrum_exact”. Set the FLRW
+background according to Section <a 
+href="#x1-40003.1">3.1<!--tex4ht:ref: EinsteinInitialData_flrwsolver_sec:FLRWinit --></a>, and set the path to (including the name of) the text file containing your
+desired power spectrum of \(\phi \) using <span 
+class="cmtt-10">FLRW</span><span 
+class="cmtt-10">_phi</span><span 
+class="cmtt-10">_powerspectrum</span><span 
+class="cmtt-10">_file</span>. There is an example phi power spectrum in
+<span 
+class="cmtt-10">FLRWSolver/powerspectra/ </span>which was generated using CAMB (see the <span 
+class="cmtt-10">README </span>in that directory) for redshift \(z_{\rm ini}=20\),
+however, we recommend you run CAMB yourself with your desired cosmological parameters. The
+Gaussian random field will be drawn with seed from <span 
+class="cmtt-10">FLRW</span><span 
+class="cmtt-10">_random</span><span 
+class="cmtt-10">_seed</span>, so keep this constant to draw
+the same realisation more than once. You also must specify the size of the domain in comoving
+Mpc\(/h\) using <span 
+class="cmtt-10">FLRW</span><span 
+class="cmtt-10">_boxlength</span>, which is required to use the correct physical scales from the power
+spectrum.
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-100004"></a>Tools</h3>
+<!--l. 296--><p class="noindent" >There are some useful tools located in <span 
+class="cmtt-10">FLRWSolver/tools/</span>. Here we describe the purpose and use of each of
+these files. </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 299--><p class="noindent" ><span 
+class="cmtt-10">get</span><span 
+class="cmtt-10">_init</span><span 
+class="cmtt-10">_HL.py</span>: This script is useful for ensuring all background parameters are set consistently.
+     Given a numerical resolution, comoving box length in Gpc\(/h\) (i.e. the proper length at \(z=0\)), and initial
+     redshift, it will give the corresponding initial \(\mathcal {H}L\) and conformal time in code units. The script will also
+     output the final time corresponding to a particular (approximate; based on the EdS prediction)
+     scale factor, and intermediate times corresponding to particular redshifts (again based on EdS
+     predictions) to assist with restarting simulations for increased output frequency. First, please check
+     the parameters in this script carefully to ensure they are consistent with your simulation parameters.
+     The script assumes an EdS evolution for \(\mathcal {H}\) in scaling \(H_0=100 h\) km/s/Mpc back to an initial value of \(\mathcal {H}_{\rm ini}\).
+     </p></li>
+     <li class="itemize">
+     <!--l. 302--><p class="noindent" ><span 
+class="cmtt-10">cut</span><span 
+class="cmtt-10">_powerspectrum.py</span>: This script makes a minimum scale cut to a provided power spectrum
+     to remove small-scale structure. We might be interested in doing this if we want to ensure our
+     simulation initially samples all perturbation modes with a certain number of grid cells. This can help
+     reduce the amount of constraint violation due to under-sampled structures. Follow the instructions
+     inside the script and ensure you have set all parameters within the “user changes” section of the
+     script.
+     </p></li>
+     <li class="itemize">
+     <!--l. 304--><p class="noindent" ><span 
+class="cmtt-10">make</span><span 
+class="cmtt-10">_test</span><span 
+class="cmtt-10">_ics.py</span>:  This  script’s  purpose  is  to  generate  initial  data  for  convergence  testing.
+     For numerical convergence studies of quantities calculated at the grid scale (i.e., not statistical
+     convergence), we need physical gradients to be consistent between all resolutions. This script will
+     generate three sets of power spectrum initial data (at specified resolutions) which have identical
+     structure at the initial time. This script uses <span 
+class="cmtt-10">cut</span><span 
+class="cmtt-10">_powerspectrum.py </span>to ensure the modes are
+     large-scale and thus remain in the linear regime.
+     </p></li>
+     <li class="itemize">
+                                                                                       
+                                                                                       
+     <!--l. 306--><p class="noindent" ><span 
+class="cmtt-10">split</span><span 
+class="cmtt-10">_HDF5</span><span 
+class="cmtt-10">_per</span><span 
+class="cmtt-10">_iteration2(3).py</span>:  This  script  takes  the  *.xyz.h5  files  in  your  simulation
+     directory output by the ET (using <span 
+class="cmtt-10">IO::out</span><span 
+class="cmtt-10">_mode = &#x0022;onefile&#x0022; </span>and <span 
+class="cmtt-10">IO::out</span><span 
+class="cmtt-10">_unchunked = &#x0022;yes&#x0022;</span>,
+     namely, one file per variable containing all time steps) and splits them into individual files for each
+     time step containing all variables. The format output by this script can be read SPLASH (see
+     <span 
+class="cmtt-10">tools/README.splash</span>) for visualisation as well as into the Python notebook <span 
+class="cmtt-10">Plot</span><span 
+class="cmtt-10">_ET</span><span 
+class="cmtt-10">_data.ipynb</span>.
+     </p></li>
+     <li class="itemize">
+     <!--l. 308--><p class="noindent" ><span 
+class="cmtt-10">Plot</span><span 
+class="cmtt-10">_ET</span><span 
+class="cmtt-10">_data.ipynb</span>: This notebook provides an example of how to read in ET data with Python,
+     using the split HDF5 file format described above.
+     </p></li>
+     <li class="itemize">
+     <!--l. 310--><p class="noindent" ><span 
+class="cmtt-10">README.tutorial</span>: This file contains links to two documents containing step-by-step tutorials for
+     downloading, compiling, and running the ET with FLRWSolver.
+</p>
+     </li></ul>
+<!--l. 313--><p class="noindent" >Please correctly cite <span 
+class="cmtt-10">FLRWSolver </span>if you use any of these tools in your analysis, and do let us know of any
+improvements that can be made.
+</p><!--l. 317--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-110005"></a>Gauge</h3>
+<!--l. 322--><p class="noindent" >We note here that a useful gauge is the “harmonic-type” gauge specified by \begin {equation}  \partial _t \alpha = - f \alpha ^n K,  \end {equation}<a 
+ id="x1-11001r7"></a> where \(K\) is the trace of the
+extrinsic curvature. This is implemented in <span 
+class="cmtt-10">ML</span><span 
+class="cmtt-10">_BSSN</span>, and the parameters \(f\) and \(n\) are controlled using
+<span 
+class="cmtt-10">ML</span><span 
+class="cmtt-10">_BSSN::harmonicF </span>and <span 
+class="cmtt-10">ML</span><span 
+class="cmtt-10">_BSSN::harmonicN</span>, respectively. The initial value of the lapse, \(\alpha \) is set using
+<span 
+class="cmtt-10">FLRW</span><span 
+class="cmtt-10">_lapse</span><span 
+class="cmtt-10">_value</span>. In a perturbed FLRW spacetime (using <span 
+class="cmtt-10">single</span><span 
+class="cmtt-10">_mode </span>or <span 
+class="cmtt-10">powerspectrum</span>) this
+is the background value of the lapse, which is then perturbed according to (<a 
+href="#x1-5001r3">3<!--tex4ht:ref: EinsteinInitialData_flrwsolver_eq:perturbed_metric --></a>). This thorn uses
+\(\beta ^i=0\).
+</p><!--l. 328--><p class="noindent" >Setting \(f=1/3\) and \(n=2\) in the above yields \(\partial _t \alpha = \partial _t a\) for EdS (where \(a\) is the scale factor), i.e. we have \(t=\eta \) and our coordinate time of
+the simulation is the conformal time in the metric (<a 
+href="#x1-4001r1">1<!--tex4ht:ref: EinsteinInitialData_flrwsolver_eq:FLRWmetric --></a>). This is valid at all times for a pure-FLRW evolution, and
+within the linear regime for the case of linear initial perturbations. Once any perturbations grow nonlinearly this
+connection is no longer valid. See, e.g., <span class="cite">[<a 
+href="#XEinsteinInitialData_flrwsolver_macpherson2019">3</a>]</span> for a discussion about appropriate gauges for nonlinear structure
+formation.
+</p><!--l. 333--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">6   </span> <a 
+ id="x1-120006"></a>Notes on using <span 
+class="cmtt-10">GRHydro </span>for cosmology</h3>
+<!--l. 337--><p class="noindent" >The work done in <span class="cite">[<a 
+href="#XEinsteinInitialData_flrwsolver_macpherson2017">2</a>]</span> and <span class="cite">[<a 
+href="#XEinsteinInitialData_flrwsolver_macpherson2019">3</a>]</span> using this thorn used <span 
+class="cmtt-10">GRHydro </span>for the hydrodynamic evolution. Below we offer a few
+notes and suggestions on using this thorn for cosmological evolutions.
+                                                                                       
+                                                                                       
+</p><!--l. 340--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">6.1   </span> <a 
+ id="x1-130006.1"></a>Equation of state</h4>
+<!--l. 343--><p class="noindent" >In deriving the initial conditions above, we assume a dust fluid in an FLRW spacetime, i.e. \(P=0\). If using <span 
+class="cmtt-10">GRHydro </span>for
+the hydrodynamical evolution, it should be noted that this thorn does not work with an identically zero
+pressure. To compensate this, it is recommended to use a polytropic EOS, \(P=K \rho ^{\gamma }\) such that \(P\ll \rho \). In <span class="cite">[<a 
+href="#XEinsteinInitialData_flrwsolver_macpherson2017">2</a>]</span> this is shown to be
+sufficient to match the evolution of a dust FLRW spacetime.
+</p><!--l. 345--><p class="noindent" >The polytropic constant \(K\) (set via <span 
+class="cmtt-10">EOS</span><span 
+class="cmtt-10">_Omni::poly</span><span 
+class="cmtt-10">_k</span>) will need to be adjusted accordingly for different choices of
+initial \(\mathcal {H}\) (since this directly sets the initial density, and larger \(\mathcal {H}\) implies larger \(\bar {\rho }\) in code units) to ensure \(P\ll \rho \), otherwise
+the evolution <span 
+class="cmti-10">will not </span>be close enough to a dust FLRW evolution. Currently no other evolution thorns or EOS
+choices have been tested with this thorn, but we invite users to explore this and let us know of any success or
+failures.
+</p><!--l. 350--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">6.2   </span> <a 
+ id="x1-140006.2"></a>Potential issues with the atmosphere</h4>
+<!--l. 353--><p class="noindent" >In <span 
+class="cmtt-10">GRHydro</span>, the atmosphere is used to solve the problem that part of the computational domain is essentially
+vacuum (when simulating compact objects; see the relevant documentation). For cosmology, we do not need an
+atmosphere as the matter fluid is continuous across the whole domain (in the absence of shell-crossings).
+<span 
+class="cmtt-10">GRHydro </span>decides whether the position on the grid coincides with the atmosphere by checking several conditions.
+In some cases we have found that regions of the domain are flagged as being in “the atmosphere” for our
+cosmological simulations when the value of density in code units is very small. This causes these regions in the
+domain to be overwritten to the value of <span 
+class="cmtt-10">GRHydro::rho</span><span 
+class="cmtt-10">_abs</span><span 
+class="cmtt-10">_min</span>. A way around this is to comment
+out the line which reliably causes this behaviour (as found in our cases). This will have no effect
+on the evolution as the purpose of the atmosphere is for simulations of compact objects, and not
+cosmology.
+</p><!--l. 355--><p class="noindent" >If you run into this problem, and if you intend to use <span 
+class="cmtt-10">GRHydro </span><span 
+class="cmti-10">exclusively </span>for cosmology, in the code
+<span 
+class="cmtt-10">GRHydro/src/GRHydro</span><span 
+class="cmtt-10">_UpdateMask.F90 </span>comment out line 76 that sets <span 
+class="cmtt-10">atmosphere</span><span 
+class="cmtt-10">_mask</span><span 
+class="cmtt-10">_real(i,j,k) = 1</span>. If
+using <span 
+class="cmtt-10">GRHydro </span>for any simulations of compact objects, be sure to change this back to the distributed form (and
+recompile), as in these cases the atmosphere is necessary.
+</p><!--l. 361--><p class="noindent" >
+</p>
+<h3 class="likesectionHead"><a 
+ id="x1-15000"></a>References</h3>
+<!--l. 361--><p class="noindent" >
+                                                                                       
+                                                                                       
+   </p><div class="thebibliography">
+   <p class="bibitem" ><span class="biblabel">
+ [1]<span class="bibsp">   </span></span><a 
+ id="XEinsteinInitialData_flrwsolver_bardeen1980"></a>J. M. Bardeen, Phys. Rev. D 22, 1882 (1980)
+   </p>
+   <p class="bibitem" ><span class="biblabel">
+ [2]<span class="bibsp">   </span></span><a 
+ id="XEinsteinInitialData_flrwsolver_macpherson2017"></a>H. J. Macpherson, P. D. Lasky, and D. J. Price, Phys. Rev. D 95, 064028 (2017), arXiv:1611.05447
+   </p>
+   <p class="bibitem" ><span class="biblabel">
+ [3]<span class="bibsp">   </span></span><a 
+ id="XEinsteinInitialData_flrwsolver_macpherson2019"></a>H. J. Macpherson, D. J. Price, and P. D. Lasky, Phys. Rev. D99, 063522 (2019), arXiv:1807.01711
+</p>
+   </div>
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+<h3 class="sectionHead"><span class="titlemark">7   </span> <a 
+ id="x1-160007"></a>Parameters</h3>
+<!--l. 403--><p class="noindent" ></p> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /></colgroup><colgroup id="TBL-2-2g"><col 
+id="TBL-2-2" /><col 
+id="TBL-2-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:normal; text-align:left;" id="TBL-2-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">flrw_boxlength</div>               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-1-3"  
+class="td01">                                      REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-2-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Size  of  box  used  in  comoving  Mpc  –  only  used  in  generating  power  spectrum</span>
+  <span 
+class="cmti-10">perturbations</span></div>                                                                                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>1.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-4-"><td  style="white-space:normal; text-align:left;" id="TBL-2-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0.0:*</div>                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-2-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Must be positive.</div>                                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-5-1"  
+class="td11">                        </td></tr></table>
+<!--l. 410--><p class="noindent" ></p> <table id="TBL-3" class="tabular" 
+ 
+><colgroup id="TBL-3-1g"><col 
+id="TBL-3-1" /></colgroup><colgroup id="TBL-3-2g"><col 
+id="TBL-3-2" /><col 
+id="TBL-3-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-1-"><td  style="white-space:normal; text-align:left;" id="TBL-3-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">flrw_deltafile</div>                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-1-3"  
+class="td01">                                    STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-3-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description:  </span><span 
+class="cmti-10">Path  to  (including  name  of)  text  file  specifying  the  initial  fractional  density</span>
+  <span 
+class="cmti-10">perturbation, delta. This file is assumed to be in a 2D-stacked format, see documentation for more</span>
+  <span 
+class="cmti-10">details.</span></div>                                                                                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-3-3"  
+class="td01">                              <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-4-"><td  style="white-space:normal; text-align:left;" id="TBL-3-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-3-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Any string containing the path to the density perturbation file</div>              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-5-1"  
+class="td11">                        </td></tr></table>
+<!--l. 417--><p class="noindent" ></p> <table id="TBL-4" class="tabular" 
+ 
+><colgroup id="TBL-4-1g"><col 
+id="TBL-4-1" /></colgroup><colgroup id="TBL-4-2g"><col 
+id="TBL-4-2" /><col 
+id="TBL-4-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-1-"><td  style="white-space:normal; text-align:left;" id="TBL-4-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">flrw_init_a</div>                    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-1-3"  
+class="td01">                                      REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-4-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">FLRW initial scale factor</span></div>                                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>1.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-4-"><td  style="white-space:normal; text-align:left;" id="TBL-4-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0.0001:*</div>                         </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Must be positive and non-zero</div>                                                         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-5-1"  
+class="td11">                        </td></tr></table>
+<!--l. 424--><p class="noindent" ></p> <table id="TBL-5" class="tabular" 
+ 
+><colgroup id="TBL-5-1g"><col 
+id="TBL-5-1" /></colgroup><colgroup id="TBL-5-2g"><col 
+id="TBL-5-2" /><col 
+id="TBL-5-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-1-"><td  style="white-space:normal; text-align:left;" id="TBL-5-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">flrw_init_hl</div>                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-1-3"  
+class="td01">                                      REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-5-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">FLRW initial H</span><span 
+class="cmti-10">_* L – ratio of box length to horizon size. This sets initial background</span>
+  <span 
+class="cmti-10">density</span></div>                                                                                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>1.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-4-"><td  style="white-space:normal; text-align:left;" id="TBL-5-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0.0:*</div>                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-5-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Must be positive</div>                                                                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-5-1"  
+class="td11">                        </td></tr></table>
+<!--l. 431--><p class="noindent" ></p> <table id="TBL-6" class="tabular" 
+ 
+><colgroup id="TBL-6-1g"><col 
+id="TBL-6-1" /></colgroup><colgroup id="TBL-6-2g"><col 
+id="TBL-6-2" /><col 
+id="TBL-6-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-1-"><td  style="white-space:normal; text-align:left;" id="TBL-6-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">flrw_lapse_value</div>             </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-1-3"  
+class="td01">                                      REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-6-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description:  </span><span 
+class="cmti-10">Value  of  background  initial  lapse  (alpha)  –  for  perturbations  this  becomes</span>
+  <span 
+class="cmti-10">alp=FLRW</span><span 
+class="cmti-10">_lapse</span><span 
+class="cmti-10">_value*sqrt(1 + 2 Phi)</span></div>                                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>1.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-4-"><td  style="white-space:normal; text-align:left;" id="TBL-6-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-6-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Anything</div>                                                                                    
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-5-1"  
+class="td11">                        </td></tr></table>
+<!--l. 438--><p class="noindent" ></p> <table id="TBL-7" class="tabular" 
+ 
+><colgroup id="TBL-7-1g"><col 
+id="TBL-7-1" /></colgroup><colgroup id="TBL-7-2g"><col 
+id="TBL-7-2" /><col 
+id="TBL-7-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-1-"><td  style="white-space:normal; text-align:left;" id="TBL-7-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">flrw_perturb</div>                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-1-3"  
+class="td01">                                 KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-7-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Add perturbation to matter and metric</span></div>                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-4-"><td  style="white-space:normal; text-align:left;" id="TBL-7-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">yes</div>                                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-7-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Add perturbation to FLRW spacetime</div>                                              
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-5-"><td  style="white-space:normal; text-align:left;" id="TBL-7-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">no</div>                                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-7-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Do not add perturbation, will run FLRW spacetime</div>                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-6-1"  
+class="td11">                        </td></tr></table>
+<!--l. 445--><p class="noindent" ></p> <table id="TBL-8" class="tabular" 
+ 
+><colgroup id="TBL-8-1g"><col 
+id="TBL-8-1" /></colgroup><colgroup id="TBL-8-2g"><col 
+id="TBL-8-2" /><col 
+id="TBL-8-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-1-"><td  style="white-space:normal; text-align:left;" id="TBL-8-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">flrw_perturb_direction</div>     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-1-3"  
+class="td01">                                 KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-8-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Choose which direction to perturb (only used if FLRW</span><span 
+class="cmti-10">_perturb</span><span 
+class="cmti-10">_type = single</span><span 
+class="cmti-10">_mode)</span></div>         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>all  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-4-"><td  style="white-space:normal; text-align:left;" id="TBL-8-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">x</div>                                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-8-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">perturb x-direction only</div>                                                                 
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-5-"><td  style="white-space:normal; text-align:left;" id="TBL-8-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">y</div>                                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-8-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">perturb y-direction only</div>                                                                 
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-6-"><td  style="white-space:normal; text-align:left;" id="TBL-8-6-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">z</div>                                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-8-6-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">perturb z-direction only</div>                                                                 
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-7-"><td  style="white-space:normal; text-align:left;" id="TBL-8-7-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">all</div>                                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-8-7-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">perturb all dimensions</div>                                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-8-1"  
+class="td11">                        </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 452--><p class="noindent" ></p> <table id="TBL-9" class="tabular" 
+ 
+><colgroup id="TBL-9-1g"><col 
+id="TBL-9-1" /></colgroup><colgroup id="TBL-9-2g"><col 
+id="TBL-9-2" /><col 
+id="TBL-9-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-1-"><td  style="white-space:normal; text-align:left;" id="TBL-9-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">flrw_perturb_type</div>           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-1-3"  
+class="td01">                                 KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-9-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Add perturbation of the following type</span></div>                                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-3-3"  
+class="td01">                         <span 
+class="cmbx-10">Default: </span>single_mode  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-4-"><td  style="white-space:normal; text-align:left;" id="TBL-9-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">single_mode</div>
+                                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-9-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">”Single      mode      perturbation      (sine      wave      in      density).
+  Set FLRW_perturb_directi on to choose dimensions of perturbation and
+  single_perturb_wavel ength.”</div>                                                          
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-5-"><td  style="white-space:normal; text-align:left;" id="TBL-9-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">powerspectrum</div>
+                                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-9-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">”A power spectrum of (linear) perturbations. Supply the path to your
+  chosen P_delta(k) in FLRW_powerspectrum_f ile”</div>                              
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-6-"><td  style="white-space:normal; text-align:left;" id="TBL-9-6-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">powerspectrum_exact</div>
+                                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-9-6-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">”A  power  spectrum  of  phi  perturbations;  constraints  solved  exactly.
+  Supply  the  path  to  your  chosen  P_phi(k)  in  FLRW_phi_powerspectr
+  um_file”</div>                                                                                     
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-7-"><td  style="white-space:normal; text-align:left;" id="TBL-9-7-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">fileread</div>
+                                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-9-7-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Linear perturbations to FLRW in longitudinal gauge; specify phi, delta,
+  vi; read in from supplied ascii files (specific format - see doc)</div>                
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-8-"><td  style="white-space:normal; text-align:left;" id="TBL-9-8-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">fileread_exact</div>
+                                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-9-8-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Perturbations  to  FLRW  in  longitudinal  gauge;  specify  phi  only;
+  constraints solved exactly; read in from supplied ascii files (specific format
+  - see doc)</div>                                                                                    
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-9-1"  
+class="td11">                        </td></tr></table>
+<!--l. 463--><p class="noindent" ></p> <table id="TBL-10" class="tabular" 
+ 
+><colgroup id="TBL-10-1g"><col 
+id="TBL-10-1" /></colgroup><colgroup id="TBL-10-2g"><col 
+id="TBL-10-2" /><col 
+id="TBL-10-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-1-"><td  style="white-space:normal; text-align:left;" id="TBL-10-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">flrw_phi_powerspectrum_file</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-1-3"  
+class="td01">                                    STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-10-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Path to (and name of) text file specifying the phi P</span><span 
+class="cmti-10">_phi(k) (Newtonian gauge) to be</span>
+  <span 
+class="cmti-10">used to generate scalar perturbations if perturb</span><span 
+class="cmti-10">_type=powerspectrum</span><span 
+class="cmti-10">_exact is chosen.</span></div>                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-3-3"  
+class="td01">                              <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-4-"><td  style="white-space:normal; text-align:left;" id="TBL-10-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-10-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Any string containing the path to the phi powerspectrum file</div>                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-5-1"  
+class="td11">                        </td></tr></table>
+<!--l. 470--><p class="noindent" ></p> <table id="TBL-11" class="tabular" 
+ 
+><colgroup id="TBL-11-1g"><col 
+id="TBL-11-1" /></colgroup><colgroup id="TBL-11-2g"><col 
+id="TBL-11-2" /><col 
+id="TBL-11-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-1-"><td  style="white-space:normal; text-align:left;" id="TBL-11-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">flrw_phifile</div>                    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-1-3"  
+class="td01">                                    STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-11-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Path to (including name of) text file specifying the initial metric perturbation, phi/c</span><img 
+src="documentation0x.png" alt="2ˆ
+  "  class="circ"  /><span 
+class="cmti-10">. This file is assumed to be in a 2D-stacked format, see documentation for more details.</span></div>                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-3-3"  
+class="td01">                              <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-4-"><td  style="white-space:normal; text-align:left;" id="TBL-11-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-11-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Any string containing the path to the metric perturbation file</div>               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-5-1"  
+class="td11">                        </td></tr></table>
+<!--l. 477--><p class="noindent" ></p> <table id="TBL-12" class="tabular" 
+ 
+><colgroup id="TBL-12-1g"><col 
+id="TBL-12-1" /></colgroup><colgroup id="TBL-12-2g"><col 
+id="TBL-12-2" /><col 
+id="TBL-12-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-1-"><td  style="white-space:normal; text-align:left;" id="TBL-12-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">flrw_powerspectrum_file</div>   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-1-3"  
+class="td01">                                    STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-12-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Path to (and name of) text file specifying the matter P</span><span 
+class="cmti-10">_delta(k) (in synchronous</span>
+  <span 
+class="cmti-10">gauge) to be used to generate scalar perturbations if perturb</span><span 
+class="cmti-10">_type=powerspectrum is chosen.</span></div>                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-3-3"  
+class="td01">                              <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-4-"><td  style="white-space:normal; text-align:left;" id="TBL-12-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-12-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Any string containing the path to the matter powerspectrum file</div>           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-5-1"  
+class="td11">                        </td></tr></table>
+<!--l. 484--><p class="noindent" ></p> <table id="TBL-13" class="tabular" 
+ 
+><colgroup id="TBL-13-1g"><col 
+id="TBL-13-1" /></colgroup><colgroup id="TBL-13-2g"><col 
+id="TBL-13-2" /><col 
+id="TBL-13-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-1-"><td  style="white-space:normal; text-align:left;" id="TBL-13-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">flrw_random_seed</div>           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-1-3"  
+class="td01">                                        INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-13-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Random seed for generating the Gaussian random density perturbation from the</span>
+  <span 
+class="cmti-10">power spectrum given in FLRW</span><span 
+class="cmti-10">_powerspectrum</span><span 
+class="cmti-10">_file.</span></div>                                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>10  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-4-"><td  style="white-space:normal; text-align:left;" id="TBL-13-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-13-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Must be positive</div>                                                                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-5-1"  
+class="td11">                        </td></tr></table>
+<!--l. 491--><p class="noindent" ></p> <table id="TBL-14" class="tabular" 
+ 
+><colgroup id="TBL-14-1g"><col 
+id="TBL-14-1" /></colgroup><colgroup id="TBL-14-2g"><col 
+id="TBL-14-2" /><col 
+id="TBL-14-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-1-"><td  style="white-space:normal; text-align:left;" id="TBL-14-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">flrw_velxfile</div>                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-1-3"  
+class="td01">                                    STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-14-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Path to (including name of) text file specifying the initial velocity, v</span><img 
+src="documentation1x.png" alt="ˆx  "  class="circ"  /><span 
+class="cmti-10">/c. This is</span>
+  <span 
+class="cmti-10">the contravariant fluid three-velocity w.r.t the Eulerian observer (see HydroBase doc). This file is</span>
+  <span 
+class="cmti-10">assumed to be in a 2D-stacked format, see documentation for more details.</span></div>                                    
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-3-3"  
+class="td01">                              <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-4-"><td  style="white-space:normal; text-align:left;" id="TBL-14-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-14-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Any string containing the path to the velocity v<img 
+src="documentation2x.png" alt="ˆx  "  class="circ"  />/c</div>                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-5-1"  
+class="td11">                        </td></tr></table>
+<!--l. 498--><p class="noindent" ></p> <table id="TBL-15" class="tabular" 
+ 
+><colgroup id="TBL-15-1g"><col 
+id="TBL-15-1" /></colgroup><colgroup id="TBL-15-2g"><col 
+id="TBL-15-2" /><col 
+id="TBL-15-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-1-"><td  style="white-space:normal; text-align:left;" id="TBL-15-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">flrw_velyfile</div>                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-15-1-3"  
+class="td01">                                    STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-15-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Path to (including name of) text file specifying the initial velocity, v</span><span 
+class="cmti-10">ŷ/c. This is</span>
+  <span 
+class="cmti-10">the contravariant fluid three-velocity w.r.t the Eulerian observer (see HydroBase doc). This file is</span>
+  <span 
+class="cmti-10">assumed to be in a 2D-stacked format, see documentation for more details.</span></div>                                    
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-15-3-3"  
+class="td01">                              <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-4-"><td  style="white-space:normal; text-align:left;" id="TBL-15-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-15-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Any string containing the path to the velocity vŷ/c</div>                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-5-1"  
+class="td11">                        </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 505--><p class="noindent" ></p> <table id="TBL-16" class="tabular" 
+ 
+><colgroup id="TBL-16-1g"><col 
+id="TBL-16-1" /></colgroup><colgroup id="TBL-16-2g"><col 
+id="TBL-16-2" /><col 
+id="TBL-16-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-1-"><td  style="white-space:normal; text-align:left;" id="TBL-16-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">flrw_velzfile</div>                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-16-1-3"  
+class="td01">                                    STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-16-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Path to (including name of) text file specifying the initial velocity, v</span><span 
+class="cmti-10">ẑ/c. This is</span>
+  <span 
+class="cmti-10">the contravariant fluid three-velocity w.r.t the Eulerian observer (see HydroBase doc). This file is</span>
+  <span 
+class="cmti-10">assumed to be in a 2D-stacked format, see documentation for more details.</span></div>                                    
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-16-3-3"  
+class="td01">                              <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-4-"><td  style="white-space:normal; text-align:left;" id="TBL-16-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-16-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Any string containing the path to the velocity vẑ/c</div>                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-5-1"  
+class="td11">                        </td></tr></table>
+<!--l. 512--><p class="noindent" ></p> <table id="TBL-17" class="tabular" 
+ 
+><colgroup id="TBL-17-1g"><col 
+id="TBL-17-1" /></colgroup><colgroup id="TBL-17-2g"><col 
+id="TBL-17-2" /><col 
+id="TBL-17-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-1-"><td  style="white-space:normal; text-align:left;" id="TBL-17-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">phi_amplitude</div>                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-1-3"  
+class="td01">                                      REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-17-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Amplitude of perturbation in phi - implicitly sets amplitude of rho,vel perturbation</span></div>         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-3-3"  
+class="td01">                               <span 
+class="cmbx-10">Default: </span>1.e-8  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-4-"><td  style="white-space:normal; text-align:left;" id="TBL-17-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0.0:*</div>                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-17-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Must be positive</div>                                                                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-5-1"  
+class="td11">                        </td></tr></table>
+<!--l. 519--><p class="noindent" ></p> <table id="TBL-18" class="tabular" 
+ 
+><colgroup id="TBL-18-1g"><col 
+id="TBL-18-1" /></colgroup><colgroup id="TBL-18-2g"><col 
+id="TBL-18-2" /><col 
+id="TBL-18-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-1-"><td  style="white-space:normal; text-align:left;" id="TBL-18-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">phi_phase_offset</div>             </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-18-1-3"  
+class="td01">                                      REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-18-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">The phase offset, eta, in phi=A*sin(kx*x - eta) for single mode perturbation –</span>
+  <span 
+class="cmti-10">applied same in all dimentions if FLRW</span><span 
+class="cmti-10">_perturb</span><span 
+class="cmti-10">_direction = all</span></div>                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-18-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>0.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-4-"><td  style="white-space:normal; text-align:left;" id="TBL-18-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-18-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Anything</div>                                                                                    
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-5-1"  
+class="td11">                        </td></tr></table>
+<!--l. 526--><p class="noindent" ></p> <table id="TBL-19" class="tabular" 
+ 
+><colgroup id="TBL-19-1g"><col 
+id="TBL-19-1" /></colgroup><colgroup id="TBL-19-2g"><col 
+id="TBL-19-2" /><col 
+id="TBL-19-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-1-"><td  style="white-space:normal; text-align:left;" id="TBL-19-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">single_perturb_wavelength</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-1-3"  
+class="td01">                                      REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-19-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Wavelength of single mode scalar perturbation relative to box size</span></div>                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>1.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-4-"><td  style="white-space:normal; text-align:left;" id="TBL-19-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0.0001:*</div>
+                                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-19-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">”Must  be  in  (0,1].  Wavelength  will  be  single_perturb_wavel  ength  *
+  FLRW_boxlength”</div>                                                                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-5-1"  
+class="td11">                        </td></tr></table>
+<!--l. 534--><p class="noindent" ></p> <table id="TBL-20" class="tabular" 
+ 
+><colgroup id="TBL-20-1g"><col 
+id="TBL-20-1" /></colgroup><colgroup id="TBL-20-2g"><col 
+id="TBL-20-2" /><col 
+id="TBL-20-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-1-"><td  style="white-space:normal; text-align:left;" id="TBL-20-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">initial_hydro</div>                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from HYDROBASE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-20-1-3"  
+class="td01">                  KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-2-"><td colspan="3" style="white-space:nowrap; text-align:left;" id="TBL-20-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:nowrap; text-align:left;"><span 
+class="cmbx-10">Extends ranges:</span></div>                                                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-3-"><td  style="white-space:normal; text-align:left;" id="TBL-20-3-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">flrw</div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-20-3-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">FLRWSolver initial hydrobase variables</div>                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-4-1"  
+class="td11">                        </td></tr></table>
+<!--l. 543--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">8   </span> <a 
+ id="x1-170008"></a>Interfaces</h3>
+<!--l. 548--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-18000"></a>General</h4>
+<!--l. 550--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 552--><p class="noindent" >flrwsolver
+</p><!--l. 555--><p class="noindent" ><span 
+class="cmbx-10">Inherits</span>:
+</p><!--l. 557--><p class="noindent" >hydrobase
+</p><!--l. 559--><p class="noindent" >eos_omni
+</p><!--l. 561--><p class="noindent" >admbase
+</p><!--l. 563--><p class="noindent" >constants
+</p><!--l. 565--><p class="noindent" >staticconformal
+</p><!--l. 567--><p class="noindent" >coordbase
+                                                                                       
+                                                                                       
+</p><!--l. 572--><p class="noindent" ><span 
+class="cmbx-10">Uses header</span>:
+</p><!--l. 574--><p class="noindent" >SpaceMask.h
+</p><!--l. 577--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">9   </span> <a 
+ id="x1-190009"></a>Schedule</h3>
+<!--l. 583--><p class="noindent" >This section lists all the variables which are assigned storage by thorn EinsteinInitialData/FLRWSolver. Storage
+can either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 586--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-20000"></a>Storage</h4>
+<!--l. 586--><p class="noindent" >NONE
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-21000"></a>Scheduled Functions</h4>
+<!--l. 590--><p class="noindent" ><span 
+class="cmbx-10">HydroBase</span><span 
+class="cmbx-10">_Initial </span>(conditional)
+</p><!--l. 592--><p class="noindent" >      flrw_noperturb
+</p><!--l. 594--><p class="noindent" >     <span 
+class="cmti-10">sets up initial data for flrw spacetime</span>
+</p><!--l. 597--><p class="noindent" > 
+</p><!--l. 599--><p class="noindent" ></p> <table id="TBL-21" class="tabular" 
+ 
+><colgroup id="TBL-21-1g"><col 
+id="TBL-21-1" /><col 
+id="TBL-21-2" /><col 
+id="TBL-21-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-21-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-1-3"  
+class="td11"> fortran   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 607--><p class="noindent" ><span 
+class="cmbx-10">HydroBase</span><span 
+class="cmbx-10">_Initial </span>(conditional)
+</p><!--l. 609--><p class="noindent" >      flrw_singlemode
+</p><!--l. 611--><p class="noindent" >     <span 
+class="cmti-10">sets up initial data for a single-mode perturbation to flrw spacetime</span>
+</p><!--l. 614--><p class="noindent" > 
+</p><!--l. 616--><p class="noindent" ></p> <table id="TBL-22" class="tabular" 
+ 
+><colgroup id="TBL-22-1g"><col 
+id="TBL-22-1" /><col 
+id="TBL-22-2" /><col 
+id="TBL-22-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-22-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-1-3"  
+class="td11"> fortran   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 624--><p class="noindent" ><span 
+class="cmbx-10">HydroBase</span><span 
+class="cmbx-10">_Initial </span>(conditional)
+</p><!--l. 626--><p class="noindent" >      flrw_powerspectrum
+</p><!--l. 628--><p class="noindent" >     <span 
+class="cmti-10">sets up initial data for a power spectrum of linear perturbations to flrw spacetime</span>
+</p><!--l. 631--><p class="noindent" > 
+</p><!--l. 633--><p class="noindent" ></p> <table id="TBL-23" class="tabular" 
+ 
+><colgroup id="TBL-23-1g"><col 
+id="TBL-23-1" /><col 
+id="TBL-23-2" /><col 
+id="TBL-23-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-23-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-1-3"  
+class="td11"> fortran   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 641--><p class="noindent" ><span 
+class="cmbx-10">HydroBase</span><span 
+class="cmbx-10">_Initial </span>(conditional)
+</p><!--l. 643--><p class="noindent" >      flrw_powerspectrum_exact
+</p><!--l. 645--><p class="noindent" >     <span 
+class="cmti-10">sets up initial data for a power spectrum of perturbations to flrw spacetime</span>
+</p><!--l. 648--><p class="noindent" > 
+                                                                                       
+                                                                                       
+</p><!--l. 650--><p class="noindent" ></p> <table id="TBL-24" class="tabular" 
+ 
+><colgroup id="TBL-24-1g"><col 
+id="TBL-24-1" /><col 
+id="TBL-24-2" /><col 
+id="TBL-24-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-24-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-1-3"  
+class="td11"> fortran   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 658--><p class="noindent" ><span 
+class="cmbx-10">HydroBase</span><span 
+class="cmbx-10">_Initial </span>(conditional)
+</p><!--l. 660--><p class="noindent" >      flrw_fileread
+</p><!--l. 662--><p class="noindent" >     <span 
+class="cmti-10">sets up initial data for linear perturbations to flrw spacetime from user-specified ascii files</span>
+</p><!--l. 665--><p class="noindent" > 
+</p><!--l. 667--><p class="noindent" ></p> <table id="TBL-25" class="tabular" 
+ 
+><colgroup id="TBL-25-1g"><col 
+id="TBL-25-1" /><col 
+id="TBL-25-2" /><col 
+id="TBL-25-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-25-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-1-3"  
+class="td11"> fortran   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 675--><p class="noindent" ><span 
+class="cmbx-10">HydroBase</span><span 
+class="cmbx-10">_Initial </span>(conditional)
+</p><!--l. 677--><p class="noindent" >      flrw_fileread_exact
+</p><!--l. 679--><p class="noindent" >     <span 
+class="cmti-10">sets up initial data for perturbations to flrw spacetime from user-specified ascii files</span>
+</p><!--l. 682--><p class="noindent" > 
+</p><!--l. 684--><p class="noindent" ></p> <table id="TBL-26" class="tabular" 
+ 
+><colgroup id="TBL-26-1g"><col 
+id="TBL-26-1" /><col 
+id="TBL-26-2" /><col 
+id="TBL-26-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-26-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-1-3"  
+class="td11"> fortran   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 692--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_PARAMCHECK</span>
+</p><!--l. 694--><p class="noindent" >      flrw_paramcheck
+</p><!--l. 696--><p class="noindent" >     <span 
+class="cmti-10">check some parameters are set correctly</span>
+</p><!--l. 699--><p class="noindent" > 
+</p><!--l. 701--><p class="noindent" ></p> <table id="TBL-27" class="tabular" 
+ 
+><colgroup id="TBL-27-1g"><col 
+id="TBL-27-1" /><col 
+id="TBL-27-2" /><col 
+id="TBL-27-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-27-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-1-3"  
+class="td11"> fortran   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-3-1"  
+class="td11">    </td></tr></table>
+ 
+</body></html> 
+
+                                                                                       
+
+

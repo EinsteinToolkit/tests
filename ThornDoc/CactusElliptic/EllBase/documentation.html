@@ -1,0 +1,922 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>EllBase</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">EllBase</h2>
+ <div class="author" ><span 
+class="cmr-12">Gerd Lanfermann</span></div>
+<br />
+<div class="date" >\( \)<span 
+class="cmr-12">Date</span>\( \)</div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 21--><p class="noindent" ><span 
+class="cmr-9">Infrastructure for standard elliptic solvers</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Introduction</h3>
+<!--l. 26--><p class="noindent" >Following a brief introduction to the elliptic solver interfaces provided by <span 
+class="cmtt-10">EllBase</span>, we explain how to add a new
+class of elliptic equations and how to implement a particular solver for any class. We do not discuss the
+individual elliptic solvers here since these are documented in their own thorns.
+</p><!--l. 33--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">1.1   </span> <a 
+ id="x1-20001.1"></a>Purpose of Thorn</h4>
+                                                                                       
+                                                                                       
+<!--l. 35--><p class="noindent" >Thorn EllBase provides the basic functionality for </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 37--><p class="noindent" >registering a class of elliptic equations
+     </p></li>
+     <li class="itemize">
+     <!--l. 38--><p class="noindent" >register a solver for any particular class</p></li></ul>
+<!--l. 41--><p class="noindent" >The solvers are called by the user through a unique interface, which calls the required elliptic solver for a class
+using the name under which the solver routine is registered.
+</p><!--l. 45--><p class="noindent" ><span 
+class="cmtt-10">EllBase </span>itself defines the elliptic classes
+     </p><ol  class="enumerate1" >
+<li 
+  class="enumerate" id="x1-2002x1">
+     <!--l. 47--><p class="noindent" ><span 
+class="cmbx-10">flat: </span><span 
+class="cmtt-10">Ell</span><span 
+class="cmtt-10">_LinFlat</span><br 
+class="newline" />solves a linear elliptic equation in flat space: \(\nabla \phi + M \phi +N = 0 \)
+     </p></li>
+<li 
+  class="enumerate" id="x1-2004x2">
+     <!--l. 51--><p class="noindent" ><span 
+class="cmbx-10">metric: </span><span 
+class="cmtt-10">Ell</span><span 
+class="cmtt-10">_LinMetric</span><br 
+class="newline" />solves a linear elliptic equation for a given metric: \(\nabla _{g} \phi + M \phi + N = 0 \)
+     </p></li>
+<li 
+  class="enumerate" id="x1-2006x3">
+     <!--l. 54--><p class="noindent" ><span 
+class="cmbx-10">conformal metric: </span><span 
+class="cmtt-10">Ell</span><span 
+class="cmtt-10">_LinConfMetric</span><br 
+class="newline" />solves a linear elliptic equation for a given metric and a conformal factor: \(\nabla _{cg} \phi + M \phi + N = 0 \)
+     </p></li>
+<li 
+  class="enumerate" id="x1-2008x4">
+     <!--l. 58--><p class="noindent" ><span 
+class="cmbx-10">generic: </span>solves a linear elliptic equation by passing the stencil functions. There is support for a
+     maximum of 27 stencil functions (\(3^3\)). <span 
+class="cmti-10">This is not implemented, yet.</span></p></li></ol>
+<!--l. 63--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-30002"></a>Technical Specification</h3>
+                                                                                       
+                                                                                       
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 67--><p class="noindent" >Implements: <span 
+class="cmtt-10">ellbase</span>
+     </p></li>
+     <li class="itemize">
+     <!--l. 68--><p class="noindent" >Inherits from: <span 
+class="cmtt-10">grid</span>
+     </p></li>
+     <li class="itemize">
+     <!--l. 69--><p class="noindent" >Tested with thorns: <br 
+class="newline" /><span 
+class="cmtt-10">CactusElliptic/EllTest</span>,<br 
+class="newline" /><span 
+class="cmtt-10">CactusWave/IDScalarWaveElliptic</span>
+</p>
+     </li></ul>
+<!--l. 75--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-40003"></a>ToDo</h3>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 77--><p class="noindent" >Add more standard equation classes.
+     </p></li>
+     <li class="itemize">
+     <!--l. 78--><p class="noindent" >The method for passing boundary conditions into the elliptic solvers has not fully consolidated. We
+     have some good ideas on what the interface should look like, but the implementation will take some
+     time. If you are worried about BCs, please contact me.</p></li></ul>
+<!--l. 84--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-50004"></a>Solving an elliptic equation</h3>
+<!--l. 85--><p class="noindent" >EllBase provides a calling interface for each of the elliptic classes implemented. As a user you must provide all
+information needed for a particular elliptic class. In general this will include </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 90--><p class="noindent" > the gridfunction(s) to solve for
+                                                                                       
+                                                                                       
+     </p></li>
+     <li class="itemize">
+     <!--l. 91--><p class="noindent" > the coefficient matrix or source terms
+     </p></li>
+     <li class="itemize">
+     <!--l. 92--><p class="noindent" > information on termination tolerances
+     </p></li>
+     <li class="itemize">
+     <!--l. 93--><p class="noindent" > the name of the solver to be used</p></li></ul>
+<!--l. 96--><p class="noindent" ><span 
+class="cmbx-10">Motivation: </span>At a later stage you might want to compile with a different solver for this elliptic class:
+just change the name of the solver in your elliptic interface call. If somebody improves a solver
+you have been using, there is no need for you to change any code on your side: the interface will
+hide all of that. Another advantage is that your code will compile and run, even though certain
+solvers are not compiled in. In this case, you will have to do some return value checking to offer
+alternatives.
+</p><!--l. 104--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">4.1   </span> <a 
+ id="x1-60004.1"></a><span 
+class="cmtt-10">Ell</span><span 
+class="cmtt-10">_LinFlat</span></h4>
+<!--l. 105--><p class="noindent" >To call this interface from <span 
+class="cmbx-10">Fortran</span>:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-1">
+  call Ell_LinFlatSolver(ierr, cctkGH, phi_gfi, M_gfi, N_gfi,
+ .                       AbsTol, RelTol, &#x0022;solvername&#x0022;)
+</pre>
+<!--l. 109--><p class="nopar" > To call this interface from <span 
+class="cmbx-10">C</span>:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-2">
+
+  ierr = Ell_LinFlatSolver(GH, phi_gfi, M_gfi, N_gfi,
+                           AbsTol, RelTol, &#x0022;solvername&#x0022;);
+</pre>
+<!--l. 115--><p class="nopar" > <span 
+class="cmbx-10">Argument List:</span> </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 118--><p class="noindent" ><span 
+class="cmtt-10">ierr</span>: return value: “0” for success.
+     </p></li>
+     <li class="itemize">
+     <!--l. 119--><p class="noindent" ><span 
+class="cmtt-10">cctkGH</span>: the Fortran “pointer” to the grid function hierachy.
+     </p></li>
+     <li class="itemize">
+     <!--l. 121--><p class="noindent" ><span 
+class="cmtt-10">GH</span>: the C pointer to the grid hierarchy, type: <span 
+class="cmtt-10">pGH *GH</span>.
+     </p></li>
+     <li class="itemize">
+     <!--l. 122--><p class="noindent" ><span 
+class="cmtt-10">phi</span><span 
+class="cmtt-10">_gif</span>: the integer <span 
+class="cmti-10">index </span>of the grid function to solve for.
+     </p></li>
+     <li class="itemize">
+     <!--l. 124--><p class="noindent" ><span 
+class="cmtt-10">M</span><span 
+class="cmtt-10">_gfi</span>: the integer <span 
+class="cmti-10">index </span>of the grid function which holds \(M\).
+     </p></li>
+     <li class="itemize">
+     <!--l. 126--><p class="noindent" ><span 
+class="cmtt-10">N</span><span 
+class="cmtt-10">_gif</span>: the integer <span 
+class="cmti-10">index </span>of the grid function which holds \(N\).
+     </p></li>
+     <li class="itemize">
+     <!--l. 127--><p class="noindent" ><span 
+class="cmtt-10">AbsTol</span>: array of size \(3\): holding <span 
+class="cmti-10">absolute </span>tolerance values for the \(L_1\), \(L_2\), \(L_\infty \) norm. Check if the solver
+     side supports these norms. The interface side does not guarantee that these norms are actually
+     implemenented by a solver. See the section on norms: <a 
+href="#x1-120006">6<!--tex4ht:ref: sec:ellnorms --></a>.
+     </p></li>
+     <li class="itemize">
+     <!--l. 131--><p class="noindent" ><span 
+class="cmtt-10">RelTol</span>: array of size \(3\): holding <span 
+class="cmti-10">relative </span>tolerance factors for the \(L_1\), \(L_2\), \(L_\infty \). Check if the solver side supports
+     these norms. The interface side does not guarantee that these norms are actually implemenented
+     by a solver. See the section on Norms: <a 
+href="#x1-120006">6<!--tex4ht:ref: sec:ellnorms --></a>.
+                                                                                       
+                                                                                       
+     </p></li>
+     <li class="itemize">
+     <!--l. 136--><p class="noindent" ><span 
+class="cmtt-10">&#x0022;solvername&#x0022;</span>: the name of a solver, which is registered for a particular equation class. How does one
+     find out the names? Either check the documentation of the elliptic solvers or check for registration
+     infomation outputted by a cactus at runtime.</p></li></ul>
+<!--l. 141--><p class="noindent" ><span 
+class="cmbx-10">Example use in Fortran</span>, as used in the WaveToy arrangement: <span 
+class="cmtt-10">CactusWave/IDScalarWave</span>:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-3">
+
+c     We derive the grid function indicies from the names of the
+c     grid functions:
+      call CCTK_VarIndex (Mcoeff_gfi, &#x0022;idscalarwaveelliptic::Mcoeff&#x0022;)
+      call CCTK_VarIndex (Ncoeff_gfi, &#x0022;idscalarwaveelliptic::Ncoeff&#x0022;)
+      call CCTK_VarIndex (phi_gfi,    &#x0022;wavetoy::phi&#x0022;)
+
+c     Load the Absolute Tolerance Arrays
+      AbsTol(1)=1.0d-5
+      AbsTol(2)=1.0d-5
+      AbsTol(3)=1.0d-5
+
+c     Load the Relative Tolerance Arrays, they are not
+c     used here: -1
+      RelTol(1)=-1
+      RelTol(2)=-1
+      RelTol(3)=-1
+
+c     Call to elliptic solver, named ‘‘sor’’
+      call Ell_LinFlatSolver(ierr, cctkGH,
+     .     phi_gfi, Mcoeff_gfi, Ncoeff_gfi, AbsTol, RelTol,
+     .     &#x0022;sor&#x0022;)
+
+c     Do some error checking, a call to another solver
+c     could be coded here
+      if (ierr.ne.0) then
+         call CCTK_WARN(0,&#x0022;Requested solver not found / solve failed&#x0022;);
+      endif
+</pre>
+<!--l. 172--><p class="nopar" >
+</p><!--l. 175--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">4.2   </span> <a 
+ id="x1-70004.2"></a><span 
+class="cmtt-10">Ell</span><span 
+class="cmtt-10">_LinMetric</span></h4>
+<!--l. 176--><p class="noindent" >To call this interface from <span 
+class="cmbx-10">Fortran</span>:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-4">
+  call Ell_LinMetricSolver(ierr, cctkGH, Metric_gfi,
+ .             phi_gfi, M_gfi, N_gfi,
+ .                         AbsTol, RelTol, &#x0022;solvername&#x0022;)
+</pre>
+<!--l. 181--><p class="nopar" > To call this interface from <span 
+class="cmbx-10">C</span>:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-5">
+  ierr = Ell_LinMetricSolver(GH, Metric_gfi,
+                phi_gfi, M_gfi, N_gfi,
+                             AbsTol, RelTol, &#x0022;solvername&#x0022;);
+</pre>
+<!--l. 187--><p class="nopar" > <span 
+class="cmbx-10">Argument List:</span> </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 190--><p class="noindent" ><span 
+class="cmtt-10">ierr</span>: return value: “0” success
+     </p></li>
+     <li class="itemize">
+     <!--l. 191--><p class="noindent" ><span 
+class="cmtt-10">cctkGH</span>: the Fortran “pointer” to the grid function hierachy.
+     </p></li>
+     <li class="itemize">
+     <!--l. 193--><p class="noindent" ><span 
+class="cmtt-10">GH</span>: the C pointer to the grid hierarchy, type: <span 
+class="cmtt-10">pGH *GH</span>
+     </p></li>
+     <li class="itemize">
+     <!--l. 195--><p class="noindent" ><span 
+class="cmtt-10">Metric</span><span 
+class="cmtt-10">_gfi</span>: array of size \(6\), containing the <span 
+class="cmti-10">index </span>components of the metric \(g\): \(g_{11}\), \(g_{12}\), \(g_{13}\), \(g_{22}\), \(g_{23}\), \(g_{33}\). The <span 
+class="cmbx-10">order </span>is
+     important.
+     </p></li>
+     <li class="itemize">
+     <!--l. 198--><p class="noindent" ><span 
+class="cmtt-10">phi</span><span 
+class="cmtt-10">_gif</span>: the integer <span 
+class="cmti-10">index </span>of the grid function so solver for.
+     </p></li>
+     <li class="itemize">
+     <!--l. 200--><p class="noindent" ><span 
+class="cmtt-10">M</span><span 
+class="cmtt-10">_gfi</span>: the integer <span 
+class="cmti-10">index </span>of the grid function which holds \(M\).
+     </p></li>
+     <li class="itemize">
+     <!--l. 202--><p class="noindent" ><span 
+class="cmtt-10">N</span><span 
+class="cmtt-10">_gif</span>: the integer <span 
+class="cmti-10">index </span>of the grid function which holds \(N\)
+     </p></li>
+     <li class="itemize">
+     <!--l. 203--><p class="noindent" ><span 
+class="cmtt-10">AbsTol</span>: array of size \(3\): holding <span 
+class="cmti-10">absolute </span>tolerance values for the \(L_1\), \(L_2\), \(L_\infty \) Norm. Check, if the solver
+     side supports these norms.The interface side does not guarantee that these norms are actually
+     implemenented by a solver. See the section on Norms: <a 
+href="#x1-120006">6<!--tex4ht:ref: sec:ellnorms --></a>.
+     </p></li>
+     <li class="itemize">
+     <!--l. 207--><p class="noindent" ><span 
+class="cmtt-10">RelTol</span>: array of size \(3\): holding <span 
+class="cmti-10">relative </span>tolerance factors for the \(L_1\), \(L_2\), \(L_\infty \). Check, if the solver side supports
+     these norms. The interface side does not guarantee that these norms are actually implemenented
+     by a solver. See the section on Norms: <a 
+href="#x1-120006">6<!--tex4ht:ref: sec:ellnorms --></a>.
+                                                                                       
+                                                                                       
+     </p></li>
+     <li class="itemize">
+     <!--l. 212--><p class="noindent" ><span 
+class="cmtt-10">&#x0022;solvername&#x0022;</span>: the name of a solver, which is registered for a particular equation class. How to
+     find out the names ? Either check the documentation of the elliptic solvers or check for registration
+     infomation outputted by a cactus at runtime.</p></li></ul>
+<!--l. 218--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">4.3   </span> <a 
+ id="x1-80004.3"></a><span 
+class="cmtt-10">Ell</span><span 
+class="cmtt-10">_LinConfMetric</span></h4>
+<!--l. 219--><p class="noindent" >To call this interface from <span 
+class="cmbx-10">Fortran</span>:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-6">
+  call Ell_LinMetricSolver(ierr, cctkGH, MetricPsi_gfi,
+ .             phi_gfi, M_gfi, N_gfi,
+ .                         AbsTol, RelTol, &#x0022;solvername&#x0022;)
+</pre>
+<!--l. 224--><p class="nopar" > To call this interface from <span 
+class="cmbx-10">C</span>:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-7">
+  ierr = Ell_LinMetricSolver(GH, MetricPsi_gfi,
+                phi_gfi, M_gfi, N_gfi,
+                             AbsTol, RelTol, &#x0022;solvername&#x0022;);
+</pre>
+<!--l. 230--><p class="nopar" > <span 
+class="cmbx-10">Argument List:</span> </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 233--><p class="noindent" ><span 
+class="cmtt-10">ierr</span>: return value: “0” success
+     </p></li>
+     <li class="itemize">
+     <!--l. 234--><p class="noindent" ><span 
+class="cmtt-10">cctkGH</span>: the Fortran “pointer” to the grid function hierachy.
+     </p></li>
+     <li class="itemize">
+     <!--l. 236--><p class="noindent" ><span 
+class="cmtt-10">GH</span>: the C pointer to the grid hierarchy, type: <span 
+class="cmtt-10">pGH *GH</span>
+     </p></li>
+     <li class="itemize">
+     <!--l. 238--><p class="noindent" ><span 
+class="cmtt-10">MetricPsi</span><span 
+class="cmtt-10">_gfi</span>: array of size \(7\), containing the <span 
+class="cmti-10">grid function index </span>of the metric components and the
+     <span 
+class="cmti-10">grid function index </span>of the conformal factor \(\Psi \): \(g_{11}\), \(g_{12}\), \(g_{13}\), \(g_{22}\), \(g_{23}\), \(g_{33}\), \(\Psi \). The <span 
+class="cmbx-10">order </span>is important.
+     </p></li>
+     <li class="itemize">
+     <!--l. 242--><p class="noindent" ><span 
+class="cmtt-10">phi</span><span 
+class="cmtt-10">_gif</span>: the integer <span 
+class="cmti-10">index </span>of the grid function so solver for.
+     </p></li>
+     <li class="itemize">
+     <!--l. 244--><p class="noindent" ><span 
+class="cmtt-10">M</span><span 
+class="cmtt-10">_gfi</span>: the integer <span 
+class="cmti-10">index </span>of the grid function which holds \(M\).
+     </p></li>
+     <li class="itemize">
+     <!--l. 246--><p class="noindent" ><span 
+class="cmtt-10">N</span><span 
+class="cmtt-10">_gif</span>: the integer <span 
+class="cmti-10">index </span>of the grid function which holds \(N\)
+     </p></li>
+     <li class="itemize">
+     <!--l. 247--><p class="noindent" ><span 
+class="cmtt-10">AbsTol</span>: array of size \(3\): holding <span 
+class="cmti-10">absolute </span>tolerance values for the \(L_1\), \(L_2\), \(L_\infty \) Norm. Check, if the solver
+     side supports these norms.The interface side does not guarantee that these norms are actually
+     implemenented by a solver. See the section on Norms: <a 
+href="#x1-120006">6<!--tex4ht:ref: sec:ellnorms --></a>.
+     </p></li>
+     <li class="itemize">
+     <!--l. 251--><p class="noindent" ><span 
+class="cmtt-10">RelTol</span>: array of size \(3\): holding <span 
+class="cmti-10">relative </span>tolerance factors for the \(L_1\), \(L_2\), \(L_\infty \). Check, if the solver side supports
+     these norms. The interface side does not guarantee that these norms are actually implemenented
+     by a solver. See the section on Norms: <a 
+href="#x1-120006">6<!--tex4ht:ref: sec:ellnorms --></a>.
+                                                                                       
+                                                                                       
+     </p></li>
+     <li class="itemize">
+     <!--l. 256--><p class="noindent" ><span 
+class="cmtt-10">&#x0022;solvername&#x0022;</span>: the name of a solver, which is registered for a particular equation class. How to
+     find out the names ? Either check the documentation of the elliptic solvers or check for registration
+     infomation outputted by a cactus at runtime.
+</p>
+     </li></ul>
+<!--l. 265--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-90005"></a>Extending the elliptic solver class</h3>
+<!--l. 267--><p class="noindent" >EllBase by itself does not provide any elliptic solving capabilities. It merely provides the registration structure
+and calling interface.
+</p><!--l. 270--><p class="noindent" >The idea of a unified calling interface can be motivated as follows: assume you a have elliptic problem which
+conforms to one of the elliptic classes defined in EllBase.
+</p><!--l. 275--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">5.1   </span> <a 
+ id="x1-100005.1"></a>Registration Mechanism</h4>
+<!--l. 277--><p class="noindent" >Before a user can successfully apply a elliptic solver to one of his problems, two things need to be done by the
+author who programs the solver. </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 280--><p class="noindent" ><span 
+class="cmbx-10">Register a class of elliptic equations </span>Depending on the elliptic problem This provides the
+     unique calling, the solving routines needs to have specific input data. The interface, which is called
+     by the user, has to reflect these arguments. EllBase already offers several of these interfaces, but if
+     you need to have a new one, you can provide your own.
+     </p></li>
+     <li class="itemize">
+     <!--l. 287--><p class="noindent" ><span 
+class="cmbx-10">Register a solver for a particular elliptic equation class </span>Once a class of elliptic equations
+     has been made available as described above, the author can now register solvers for that particular
+     class. Later a user will access the solver calling the interface with the arguments needed for the
+     elliptic class and a name, under which a solver for this elliptic problem has been registered.</p></li></ul>
+<!--l. 295--><p class="noindent" >The registration process is part of the authors thorn, not part of EllBase. There is no need to change code
+in EllBase. Usually, a author of solver routines will register the routines that register an elliptic
+equation class and/or an elliptic solver in the STARTUP timebin. If a author registers both, class and
+                                                                                       
+                                                                                       
+solver, you must make sure, that the elliptic class is registered <span 
+class="cmti-10">before </span>the solver registration takes
+place.
+</p><!--l. 302--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">5.2   </span> <a 
+ id="x1-110005.2"></a>EllBase Programming Guide</h4>
+<!--l. 304--><p class="noindent" >Here we give a step by step guide on how to implement an new elliptic solver class, its interface and provide a
+solver for this class. Since some of the functionality needed in the registration code can only be achieved in C, a
+basic knowledge of C is helpful.
+</p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 310--><p class="noindent" ><span 
+class="cmbx-10">Assumption</span>: </p>
+         <ul class="itemize2">
+         <li class="itemize">
+         <!--l. 312--><p class="noindent" >The elliptic equation class will be called “<span 
+class="cmti-10">SimpleEllClass</span>”: it will be flat space solver, that
+         only takes the coefficient matrix \(M\): Note that this solver class is already provided by EllBase.
+         </p></li>
+         <li class="itemize">
+         <!--l. 320--><p class="noindent" >The name of the demonstration thorn will be “<span 
+class="cmtt-10">ThornFastSOR</span>”. Since I will only demonstrate
+         the registration principle and calling structure, I leave it to the interested reader to write a
+         really fast SOR solver.
+         </p></li>
+         <li class="itemize">
+         <!--l. 324--><p class="noindent" >The solver for this elliptic equation will be called “<span 
+class="cmtt-10">FastSOR</span><span 
+class="cmtt-10">_solver</span>” and will be written in
+         Fortran. Since Fortran cannot be called directly by the registration mechanism, we need to
+         have C wrapper function “<span 
+class="cmtt-10">FastSOR</span><span 
+class="cmtt-10">_wrapper</span>”.</p></li></ul>
+     </li>
+     <li class="itemize">
+     <!--l. 330--><p class="noindent" ><span 
+class="cmbx-10">Elliptic class declaration</span>: <span 
+class="cmtt-10">SimpleEllThorn/src/SimpleEll</span><span 
+class="cmtt-10">_Class.c</span>
+                                                                                       
+                                                                                       
+</p>
+     <pre class="verbatim" id="verbatim-8">
+</pre>
+     <!--l. 332--><p class="nopar" >
+     </p></li>
+     <li class="itemize">
+     <!--l. 334--><p class="noindent" ><span 
+class="cmbx-10">Elliptic solver interface</span>: <span 
+class="cmtt-10">src/SimpleEll</span><span 
+class="cmtt-10">_Interface.c</span>
+                                                                                       
+                                                                                       
+</p>
+     <pre class="verbatim" id="verbatim-9">
+     
+     #include ‘‘cctk.h’’
+     #include ‘‘cctk_Parameters.h’’
+     
+     #include ‘‘cctk_FortranString.h’’
+     #include ‘‘StoreNamedData.h’’
+     
+     static pNamedData *SimpleEllSolverDB;
+     
+     void Ell_SimpleEllSolverRegistry(void (*solver_func), const char *solver_name)
+     {
+       StoreNamedData(&#x0026;SimpleEllSolverDB,solver_name,(void*)solver_func);
+     }
+</pre>
+     <!--l. 349--><p class="nopar" > The routine above registers the solver (or better the function pointer of the solver routine “*solve_func”)
+     for the equation class <span 
+class="cmti-10">SimpleEllClass </span>by the name <span 
+class="cmtt-10">solver</span><span 
+class="cmtt-10">_name </span>in the database <span 
+class="cmtt-10">SimpleEllSolverDB</span>. This
+     database is declared in statement <span 
+class="cmtt-10">static pNamedData...</span>.
+     </p><!--l. 355--><p class="noindent" >Next, we write our interface in the same file <span 
+class="cmtt-10">./SimpleEll</span><span 
+class="cmtt-10">_Interface.c</span>:
+                                                                                       
+                                                                                       
+</p>
+     <pre class="verbatim" id="verbatim-10">
+     void Ell_SimpleEllSolver(cGH *GH, int *FieldIndex, int *MIndex,
+                CCTK_REAL *AbsTol, CCTK_REAL *RelTol,
+                              const char *solver_name) {
+     
+     /* prototype for the equation class wrapper:
+        grid hierarchy(*GH), ID-number of field to solve for (*FieldIndex),
+        two arrays of size three holding convergence information (*AbsTol, *RelTol)
+     */
+       void (*fn)(cGH *GH, int *FieldIndex, int *AbsTol, int *RelTol);
+     
+       /* derive the function name from the requested name and hope it is there */
+       fn = (void(*)) GetNamedData(LinConfMetricSolverDB,solver_name);
+       if (!fn) CCTK_WARN(0,’’Ell_SimpleEllSolver: Cannot find solver! ‘‘);
+     
+       /* Now that we have the function pointer to our solver, call the
+          solver and pass through all the necessary arguments */
+       fn( GH, FieldIndex, MIndex, AbsTol, RelTol);
+     }
+     
+</pre>
+     <!--l. 376--><p class="nopar" > The interface <span 
+class="cmtt-10">Ell</span><span 
+class="cmtt-10">_SimpleEllSolver </span>is called from the user side. It receives a pointer to the grid
+     hierarchy, the ID-number of the field to solver for, two arrays which the used upload with convergence test
+     info, and finally, the name of the solver the user want to employ <span 
+class="cmtt-10">*solver</span><span 
+class="cmtt-10">_name</span>. <span 
+class="cmbx-10">Note: </span>all these quantities
+     are referenced by pointers, hence the “*”.
+     </p><!--l. 379--><p class="noindent" >Within the interface, the solver_name is used to get the pointer to function which was registered
+     under this name. Once the function is known, it called with all the arguments passed to the
+     interface.
+     </p><!--l. 383--><p class="noindent" >To allow calls from Fortran, the interface in C needs to be “wrapped”. (This wrapping is different from the
+     one necessary to make to actual solver accessible by the elliptic registry).
+                                                                                       
+                                                                                       
+</p>
+     <pre class="verbatim" id="verbatim-11">
+     /* Fortran wrapper for the routine Ell_SimpleEllSolver */
+     void CCTK_FCALL CCTK_FNAME(Ell_SimpelEllSolver)
+          (cGH *GH, int *FieldIndex, int *MIndex,
+          int *AbsTol, int *RelTol, ONE_FORTSTRING_ARG) {
+       ONE_FORTSTRING_CREATE(solver_name);
+     
+       /* Call the interface */
+       Ell_SimpleEllSolver(GH, FieldIndex, MIndex, AbsTol, RelTol, solver_name);
+       free(solver_name);
+     }
+</pre>
+     <!--l. 398--><p class="nopar" >
+     </p></li>
+     <li class="itemize">
+     <!--l. 400--><p class="noindent" ><span 
+class="cmbx-10">Elliptic solver</span>:<span 
+class="cmtt-10">./src/FastSOR</span><span 
+class="cmtt-10">_solver.F</span><br 
+class="newline" />Here we show the first lines of the Fortran code for the solver:
+                                                                                       
+                                                                                       
+</p>
+     <pre class="verbatim" id="verbatim-12">
+           subroutine FastSOR_solver(_CCTK_ARGUMENTS,
+          .   Mlinear_lsh,Mlinear,
+          .   var,
+          .   abstol,reltol)
+     
+           implicit none
+     
+           _DECLARE_CCTK_ARGUMENTS
+           DECLARE_CCTK_PARAMETERS
+           INTEGER CCTK_Equals
+     
+           INTEGER Mlinear_lsh(3)
+           CCTK_REAL Mlinear(Mlinear_lsh(1),Mlinear_lsh(2),Mlinear_lsh(3))
+           CCTK_REAL var(cctk_lsh(1),cctk_lsh(2),cctk_lsh(3))
+      
+           INTEGER Mlinear_storage
+     
+     c     We have no storage for M if they are of size one in each direction
+           if ((Mlinear_lsh(1).eq.1) .and.
+          .   (Mlinear_lsh(2).eq.1)  .and.
+          .   (Mlinear_lsh(3).eq.1)) then
+              Mlinear_storage=0
+           else
+              Mlinear_storage=1
+           endif
+     
+     
+</pre>
+     <!--l. 431--><p class="nopar" > This Fortran solver receives the following arguments: the “typical” CCTK_ARGUMENTS:
+     <span 
+class="cmtt-10">_CCTK</span><span 
+class="cmtt-10">_ARGUMENTS</span>, the <span 
+class="cmti-10">size </span>of the coefficient matrix: <span 
+class="cmtt-10">Mlinear</span><span 
+class="cmtt-10">_lsh</span>, the coefficient matrix <span 
+class="cmtt-10">Mlinear</span>, the
+     variable to solve for: <span 
+class="cmtt-10">var</span>, and the two arrays with convergence information.
+     </p><!--l. 437--><p class="noindent" >In the declaration section, we declare: the cctk arguments, the Mlinear size array, the coefficient matrix, by
+     the 3-dim. size array, the variable to solve for. Why do we pass the size of Mlinear explicitly and do not use
+     the <span 
+class="cmtt-10">cctk</span><span 
+class="cmtt-10">_lsh </span>(processor local shape of a grid function) as we did for <span 
+class="cmtt-10">var </span>? The reason is the following:
+     while we can expect the storage of <span 
+class="cmtt-10">var </span>to be <span 
+class="cmti-10">on </span>for the solve, there is no reason (in a more general elliptic
+     case) to assume, that the coefficient matrix has storage allocated, perhaps it is not needed at all! In this
+     case, we have to protect ourself against referencing empty arrays. For this reason, we also employ the flag
+     <span 
+class="cmtt-10">Mlinear</span><span 
+class="cmtt-10">_storage</span>.
+     </p></li>
+     <li class="itemize">
+     <!--l. 441--><p class="noindent" ><span 
+class="cmbx-10">Elliptic solver wrapper</span>:<span 
+class="cmtt-10">./src/FastSOR</span><span 
+class="cmtt-10">_wrapper.c</span><br 
+class="newline" />The Fortran solver can not be used within the elliptic registry directly. Instead the Fortran code is called
+     through a wrapper:
+                                                                                       
+                                                                                       
+</p>
+     <pre class="verbatim" id="verbatim-13">
+     
+     void FastSOR_wrapper(cGH *GH, int *FieldIndex, int *MIndex,
+            int *AbsTol,int *RelTol) {
+     
+       CCTK_REAL *Mlinear=NULL, *var=NULL;
+       int Mlinear_lsh[3];
+       int i;
+     
+       var = (CCTK_REAL*) CCTK_VarDataPtrI(GH,0,*FieldIndex);
+     
+       if (*MIndex&#x003E;0) Mlinear   = (CCTK_REAL*) CCTK_VarDataPtrI(GH,0,*MIndex);
+     
+     
+       if (GH-&#x003E;cctk_dim&#x003E;3)
+         CCTK_WARN(0,’’This elliptic solver implementation does not do dimension&#x003E;3!’’);
+     
+       for (i=0;i&#x003C;GH-&#x003E;cctk_dim;i++) {
+         if((*MIndex&#x003C;0))  Mlinear_lsh[i]=1;
+         else             Mlinear_lsh[i]=GH-&#x003E;cctk_lsh[i];
+       }
+     
+       /* call the fortran routine */
+       CCTK_FNAME(SimpleEll_Solver)(_PASS_CCTK_C2F(GH),
+              Mlinear_lsh, Mlinear, var,  
+       AbsTol, RelTol);
+     }
+</pre>
+     <!--l. 471--><p class="nopar" >
+     </p><!--l. 473--><p class="noindent" >The wrapper <span 
+class="cmtt-10">FastSOR</span><span 
+class="cmtt-10">_wrapper </span>takes these arguments: the indices of the field to solve for (<span 
+class="cmtt-10">FieldIndex</span>)
+     and the coefficient matrix (<span 
+class="cmtt-10">MIndex</span>), the two arrays containing convergence information (<span 
+class="cmtt-10">AbsTol, RelTol</span>).
+     In the body of the program we provide two CCTK_REAL pointers to the data section of the field to solver
+     (<span 
+class="cmtt-10">var, Mlinear</span>) by means of <span 
+class="cmtt-10">Get</span><span 
+class="cmtt-10">_VarDataPtrI</span>. For Mlinear, we only do this, if the index is non-negative.
+     A negative index is a signal by the user that the coefficient matrix has no storage allocated.(For more
+     general elliptic equation cases, e.g. no source terms.) To make this information of a possibly empty matrix
+     available to Fortran, we load a 3-dim. and pass this array through to Fortran. See discussion
+     above.
+     </p></li>
+     <li class="itemize">
+     <!--l. 485--><p class="noindent" ><span 
+class="cmbx-10">Elliptic solver startup</span>: <span 
+class="cmtt-10">./src/Startup.c</span><br 
+class="newline" />The routine below in <span 
+class="cmtt-10">Startup.c </span>performs the registration of our solver wrapper <span 
+class="cmtt-10">FastSOR</span><span 
+class="cmtt-10">_wrapper </span>under
+     the name “<span 
+class="cmti-10">fastsor</span>” for the elliptic class “<span 
+class="cmti-10">Ell</span><span 
+class="cmti-10">_SimpleEll</span>”. We do not register with the solver interface
+     <span 
+class="cmtt-10">Ell</span><span 
+class="cmtt-10">_SimpleEllSolver </span>directly, but with the class. In <span 
+class="cmtt-10">Startup,c </span>we have:
+                                                                                       
+                                                                                       
+</p>
+     <pre class="verbatim" id="verbatim-14">
+     #include ‘‘cctk.h’’
+     #include ‘‘cctk_Parameters.h’’
+     
+     void FastSOR_register(cGH *GH) {
+     
+       /* protoype of the solver wrapper: */
+       void FastSOR_wrapper(cGH *GH, int *FieldIndex, int *MIndex,
+                            int *AbsTol, int*RelTol);
+     
+       Ell_RegisterSolver(FastSOR_wrapper,’’fastsor’’,’’Ell_SimpleEll’’);
+     }
+</pre>
+     <!--l. 501--><p class="nopar" > Note that more solver registration code could be put here (registration for other classes,
+     etc.)
+     </p></li>
+     <li class="itemize">
+     <!--l. 506--><p class="noindent" ><span 
+class="cmbx-10">Elliptic solver scheduling</span>: <span 
+class="cmtt-10">schedule.ccl </span>We schedule the registration of the fast SOR solver at
+     CCTK_BASE, by this time, <span 
+class="cmti-10">the elliptic class </span><span 
+class="cmtt-10">Ell</span><span 
+class="cmtt-10">_SimpleEll </span>has already been registered.
+                                                                                       
+                                                                                       
+</p>
+     <pre class="verbatim" id="verbatim-15">
+     schedule FastSOR_register at CCTK_INITIAL
+     {
+       LANG:C
+     } ‘‘Register the fast sor solver’’
+</pre>
+     <!--l. 514--><p class="nopar" >
+</p>
+     </li></ul>
+<!--l. 518--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">6   </span> <a 
+ id="x1-120006"></a>Norms</h3>
+<!--l. 526--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">7   </span> <a 
+ id="x1-130007"></a>Parameters</h3>
+<!--l. 545--><p class="noindent" ></p> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /></colgroup><colgroup id="TBL-2-2g"><col 
+id="TBL-2-2" /><col 
+id="TBL-2-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:normal; text-align:left;" id="TBL-2-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">elliptic_verbose</div></td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-1-3"  
+class="td01">                                          KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-2-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">elliptic verbosity</span></div>                                                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-1"  
+class="td11">    <span 
+class="cmbx-10">Range      </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-3-3"  
+class="td01">                                          <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-4-"><td  style="white-space:normal; text-align:left;" id="TBL-2-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">yes</div>                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-2-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">be verbose in elliptic</div>                                                                                    
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-5-"><td  style="white-space:normal; text-align:left;" id="TBL-2-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">no</div>                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-2-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">silence in elliptic</div>                                                                                         
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-6-"><td  style="white-space:normal; text-align:left;" id="TBL-2-6-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">debug</div>             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-2-6-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">even more verbose in elliptic</div>                                                                         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-7-1"  
+class="td11">               </td></tr></table>
+<!--l. 554--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">8   </span> <a 
+ id="x1-140008"></a>Interfaces</h3>
+<!--l. 559--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-15000"></a>General</h4>
+<!--l. 561--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+                                                                                       
+                                                                                       
+</p><!--l. 563--><p class="noindent" >ellbase
+</p><!--l. 568--><p class="noindent" ><span 
+class="cmbx-10">Adds header</span>:
+</p><!--l. 572--><p class="noindent" >EllBase.h
+</p><!--l. 574--><p class="noindent" >Ell_DBstructure.h
+</p><!--l. 577--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">9   </span> <a 
+ id="x1-160009"></a>Schedule</h3>
+<!--l. 583--><p class="noindent" >This section lists all the variables which are assigned storage by thorn CactusElliptic/EllBase. Storage can
+either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 586--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-17000"></a>Storage</h4>
+<!--l. 586--><p class="noindent" >NONE
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-18000"></a>Scheduled Functions</h4>
+<!--l. 590--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_STARTUP</span>
+</p><!--l. 592--><p class="noindent" >      ell_registerbaseeqtypes
+</p><!--l. 594--><p class="noindent" >     <span 
+class="cmti-10">register the standard elliptic classes</span>
+</p><!--l. 597--><p class="noindent" > 
+</p><!--l. 599--><p class="noindent" ></p> <table id="TBL-3" class="tabular" 
+ 
+><colgroup id="TBL-3-1g"><col 
+id="TBL-3-1" /><col 
+id="TBL-3-2" /><col 
+id="TBL-3-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-3-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-3-1"  
+class="td11">    </td></tr></table>
+ 
+</body></html> 
+
+                                                                                       
+
+

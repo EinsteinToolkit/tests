@@ -1,0 +1,297 @@
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+\author{Christian Reisswig \textless reisswig@aei.mpg.de\textgreater}
+\title{GlobalDerivative}
+
+\date{\today}
+
+\maketitle
+
+% START CACTUS THORNGUIDE
+
+\begin{abstract}
+This thorn is ment to provide ``global'' first and second derivatives
+by taking summation by parts (SBP) derivatives in the local grid coordinate system and transforming them
+to the global coordinate system. For this, the Jacobian and its derivatives must be
+provided as functional arguments. If no Jacobian is given, i.e. the grid variable
+pointers are NULL, the global derivatives reduce to the local derivatives.
+\end{abstract}
+
+\section{Introduction}
+
+Some thorns, e.g. those that use the Llama multipatch system, use a local grid coordinate system but the
+(tensor) quantities are represented in a global coordinate system. Since (SBP) finite differences 
+are calculated in the local grid-coordinate system, the derivative operators have to be
+transformed to the global coordinate system in order to be correctly represented in
+the global coordinate basis.
+
+By using this thorn as a provider for finite-difference derivative operators, one can
+implement a thorn by assuming one global coordinate system. By providing Jacobians
+from local to global coordinates one then ends up with a code that is valid on all
+``patches'' that are eventually defined by different local coordinates.
+
+
+We label local grid coordinates by $(x^i) = (a,b,c)$ and global coordinates by $(\hat{x}^i) = (x,y,z)$.
+The first derivatives in global coordinates are then defined by   
+\begin{equation}
+\hat{\partial}_i = \frac{\partial x^j}{\partial \hat{x}^i}\frac{\partial}{\partial x^j},
+\end{equation}
+i.e.
+\begin{eqnarray}
+\hat\partial_x &=& \frac{\partial a(x)}{\partial x}\frac{\partial}{\partial a} + \frac{\partial b(x)}{\partial x}\frac{\partial}{\partial b} + \frac{\partial c(x)}{\partial x}\frac{\partial}{\partial c}, \\
+\hat\partial_y &=& \frac{\partial a(y)}{\partial y}\frac{\partial}{\partial a} + \frac{\partial b(y)}{\partial y}\frac{\partial}{\partial b} + \frac{\partial c(y)}{\partial y}\frac{\partial}{\partial c}, \\
+\hat\partial_z &=& \frac{\partial a(z)}{\partial z}\frac{\partial}{\partial a} + \frac{\partial b(z)}{\partial z}\frac{\partial}{\partial b} + \frac{\partial c(z)}{\partial z}\frac{\partial}{\partial c}.
+\end{eqnarray}
+
+Similarly, second derivatives are calculated by
+\begin{equation}
+\hat\partial_i\hat\partial_j = \frac{\partial x_k}{\partial \hat{x}_i} \partial_k \left( \frac{\partial x_l}{\partial \hat{x}_j} \right) \partial_l + \frac{\partial x_k}{\partial \hat{x}_i} \frac{\partial x_l}{\partial \hat{x}_j} \partial_k \partial_l
+\end{equation}
+
+
+If local and global coordinate system are identical then the global derivatives reduce
+to the local derivatives.
+
+
+\section{Numerical Implementation}
+
+Similar to the SummationByParts thorn, there are subroutines that can be called to apply a global derivative to an entire grid variable.
+However, in most cases, one cannot effort to store the result of the derivative as an extra grid variable. 
+Hence, the thorn provides a number of pointwise inline functions that can be used by including the GlobalDerivative header file.
+ 
+
+% \section{Using This Thorn}
+%
+% \subsection{Obtaining This Thorn}
+%
+% \subsection{Basic Usage}
+%
+% \subsection{Special Behaviour}
+%
+% \subsection{Interaction With Other Thorns}
+%
+% \subsection{Examples}
+%
+% \subsection{Support and Feedback}
+%
+% \section{History}
+%
+% \subsection{Thorn Source Code}
+%
+% \subsection{Thorn Documentation}
+%
+% \subsection{Acknowledgements}
+
+
+% \begin{thebibliography}{9}
+%
+% \end{thebibliography}
+
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{fd\_order\_on\_non\_cart\_maps}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{epsdis\_for\_level} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Epsdis for a specific refinement level}} \\
+\hline{\bf Range} & &  {\bf Default:} -1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{Negative indicates use default} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{fd\_order\_on\_non\_cart\_maps} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Order of accuracy of spatial derivatives on non-Cartesian patches.}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1} & \multicolumn{2}{p{\paraWidth}|}{use same FD order everywhere} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 2:*} & \multicolumn{2}{p{\paraWidth}|}{use different FD order on non-Cartesian patches} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{force\_diss\_order} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Force this order of accuracy for dissipation operator}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1} & \multicolumn{2}{p{\paraWidth}|}{Use default as specified in SBP::order} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 2:8} & \multicolumn{2}{p{\paraWidth}|}{2nd, 4th, 6th and 8th order} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{order\_for\_level} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Order of accuracy for a specific refinement level}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1} & \multicolumn{2}{p{\paraWidth}|}{Use default as specified in SBP::order} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 2:8} & \multicolumn{2}{p{\paraWidth}|}{2nd, 4th, 6th and 8th order} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{use\_dissipation} & {\bf Scope:} restricted & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Use global dissipation}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{diss\_fraction} & {\bf Scope:} shared from SUMMATIONBYPARTS & REAL \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{dissipation\_type} & {\bf Scope:} shared from SUMMATIONBYPARTS & KEYWORD \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{epsdis} & {\bf Scope:} shared from SUMMATIONBYPARTS & REAL \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{h\_scaling} & {\bf Scope:} shared from SUMMATIONBYPARTS & REAL \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{norm\_type} & {\bf Scope:} shared from SUMMATIONBYPARTS & KEYWORD \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{order} & {\bf Scope:} shared from SUMMATIONBYPARTS & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{poison\_dissipation} & {\bf Scope:} shared from SUMMATIONBYPARTS & BOOLEAN \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{use\_variable\_deltas} & {\bf Scope:} shared from SUMMATIONBYPARTS & BOOLEAN \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{vars} & {\bf Scope:} shared from SUMMATIONBYPARTS & STRING \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+globalderivative
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+grid
+
+summationbyparts
+
+coordinates
+\vspace{2mm}
+
+\vspace{5mm}
+
+\noindent {\bf Adds header}: 
+
+
+
+GlobalDerivative.h
+
+AllDerivative.h
+
+AllDerivative\_8th.h
+
+Jacobian.h
+\vspace{2mm}
+
+\noindent {\bf Provides}: 
+
+
+
+globalDiff\_gv to 
+
+globalDiff2\_gv to 
+\vspace{2mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn Llama/GlobalDerivative.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}NONE
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PARAMCHECK} 
+
+\hspace{5mm} globalderiv\_paramcheck 
+
+\hspace{5mm}{\it check parameters } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_PostRHS}   (conditional) 
+
+\hspace{5mm} globalderiv\_dissipation 
+
+\hspace{5mm}{\it apply global dissipation to registered variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & local \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

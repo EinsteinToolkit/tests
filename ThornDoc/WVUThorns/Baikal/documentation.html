@@ -1,0 +1,2588 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>Baikal: An Einstein Toolkit thorn for solving Einstein’s equations in the BSSN formalism, in Cartesian
+coordinates</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">Baikal: An Einstein Toolkit thorn for solving Einstein’s
+equations in the BSSN formalism, in Cartesian coordinates</h2>
+ <div class="author" ><span 
+class="cmr-12">Zachariah B.</span><span 
+class="cmr-12"> Etienne </span><span 
+class="cmmi-12">&#x003C;</span><span 
+class="cmr-12">zachetie *at* gmail *dot* com</span><span 
+class="cmmi-12">&#x003E;</span></div>
+<br />
+<div class="date" ><span 
+class="cmr-12">May 18, 2020</span></div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 135--><p class="noindent" ><span 
+class="cmtt-9">Baikal </span><span 
+class="cmr-9">solves  Einstein’s  equations  of  general  relativity  in  the  BSSN  formalism.  Given  that</span>
+     <span 
+class="cmr-9">the complications and super-short-lengthscale variations usually associated with the stress-energy</span>
+     <span 
+class="cmr-9">tensor</span>  \(T^{\mu \nu }\)  <span 
+class="cmr-9">in  strongly  curved  spacetimes,  this  thorn  implements  finite-difference  derivatives  up  to</span>
+     <span 
+class="cmr-9">and  including  4th  order,  but  no  higher.  All  codes  within  this  thorn  were  generated  using  the</span>
+     <span 
+class="cmr-9">Python-based  NRPy+  infrastructure,  which  may  be  found  at  </span><a 
+href="http://nrpyplus.net/" class="url" ><span 
+class="cmtt-9">http://nrpyplus.net/</span></a> <span 
+class="cmr-9">(alt  link:</span>
+     <a 
+href="https://github.com/zachetienne/nrpytutorial" class="url" ><span 
+class="cmtt-9">https://github.com/zachetienne/nrpytutorial</span></a><span 
+class="cmr-9">).</span>
+</p>
+</div>
+<!--l. 146--><p class="noindent" >Both <span 
+class="cmtt-10">Baikal </span>and its sister thorn <span 
+class="cmtt-10">BaikalVacuum </span>are fully documented in Jupyter notebooks within NRPy+, and
+the latest documentation for <span 
+class="cmtt-10">BaikalETK </span>(the name of the combined <span 
+class="cmtt-10">Baikal </span>/ <span 
+class="cmtt-10">BaikalVacuum </span>project) may be
+found in the <span 
+class="cmtt-10">Tutorial-ETK</span><span 
+class="cmtt-10">_thorn-BaikalETK.ipynb </span>Jupyter notebook here:
+</p><!--l. 152--><p class="noindent" ><a 
+href="https://github.com/zachetienne/nrpytutorial" class="url" ><span 
+class="cmtt-10">https://github.com/zachetienne/nrpytutorial</span></a>
+</p><!--l. 154--><p class="noindent" >Also the NRPy+ Jupyter documentation can be navigated via the following link:
+</p><!--l. 157--><p class="noindent" ><a 
+href="https://nbviewer.jupyter.org/github/zachetienne/nrpytutorial/blob/master/Tutorial-ETK_thorn-BaikalETK.ipynb" class="url" ><span 
+class="cmtt-10">https://nbviewer.jupyter.org/github/zachetienne/nrpytutorial/blob/master/Tutorial-ETK_thorn-BaikalETK.ipynb</span></a>
+                                                                                       
+                                                                                       
+</p>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Planned features</h3>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 162--><p class="noindent" >Currently <span 
+class="cmtt-10">Baikal </span>/ <span 
+class="cmtt-10">BaikalVacuum </span>do not officially support numerical grids containing symmetry
+     assumptions, but appropriate symmetries should be registered. Users are encouraged to proceed with
+     caution when using symmetries. Future work will include adding official support for symmetries.
+     </p></li>
+     <li class="itemize">
+     <!--l. 167--><p class="noindent" ><span 
+class="cmtt-10">Baikal </span>/  <span 
+class="cmtt-10">BaikalVacuum </span>do  not  yet  support  an  extensive  variety  of  gauge  conditions,  instead
+     defaulting to the tried-and-true standard moving puncture gauge conditions (\(1+\log \) lapse combined with
+     the  “Gamma”-driving  shift  [though  note  that  <span 
+class="cmtt-10">Baikal </span>/  <span 
+class="cmtt-10">BaikalVacuum </span>refer  to  the  “Gamma”
+     variable as the “Lambda” variable]). Additional gauge condition options will eventually be added.
+     </p></li>
+     <li class="itemize">
+     <!--l. 174--><p class="noindent" ><span 
+class="cmtt-10">Baikal </span>/ <span 
+class="cmtt-10">BaikalVacuum </span>do not support <span 
+class="cmtt-10">Llama</span>-based multiblock (e.g., cubed sphere) grids, and
+     adding this support is currently not a high priority.</p></li></ul>
+<!--l. 185--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a>Parameters</h3>
+<!--l. 204--><p class="noindent" ></p> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /></colgroup><colgroup id="TBL-2-2g"><col 
+id="TBL-2-2" /><col 
+id="TBL-2-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:normal; text-align:left;" id="TBL-2-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">diss_strength</div>                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-1-3"  
+class="td01">                                       REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-2-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">(see NRPy+ for parameter definition)</span></div>                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-1"  
+class="td11">        <span 
+class="cmbx-10">Range           </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-3-3"  
+class="td01">                                  <span 
+class="cmbx-10">Default: </span>0.1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-4-"><td  style="white-space:normal; text-align:left;" id="TBL-2-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>
+                                    </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-2-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">All  values  accepted.  NRPy+  does  not  restrict  the  allowed  ranges  of
+  parameters yet.</div>                                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-5-1"  
+class="td11">                       </td></tr></table>
+<!--l. 211--><p class="noindent" ></p> <table id="TBL-3" class="tabular" 
+ 
+><colgroup id="TBL-3-1g"><col 
+id="TBL-3-1" /></colgroup><colgroup id="TBL-3-2g"><col 
+id="TBL-3-2" /><col 
+id="TBL-3-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-1-"><td  style="white-space:normal; text-align:left;" id="TBL-3-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">eta</div>                             </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-1-3"  
+class="td01">                                       REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-3-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">(see NRPy+ for parameter definition)</span></div>                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-3-1"  
+class="td11">        <span 
+class="cmbx-10">Range           </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-3-3"  
+class="td01">                                  <span 
+class="cmbx-10">Default: </span>2.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-4-"><td  style="white-space:normal; text-align:left;" id="TBL-3-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>
+                                    </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-3-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">All  values  accepted.  NRPy+  does  not  restrict  the  allowed  ranges  of
+  parameters yet.</div>                                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-5-1"  
+class="td11">                       </td></tr></table>
+<!--l. 218--><p class="noindent" ></p> <table id="TBL-4" class="tabular" 
+ 
+><colgroup id="TBL-4-1g"><col 
+id="TBL-4-1" /></colgroup><colgroup id="TBL-4-2g"><col 
+id="TBL-4-2" /><col 
+id="TBL-4-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-1-"><td  style="white-space:normal; text-align:left;" id="TBL-4-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">fd_order</div>                      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-1-3"  
+class="td01">                                         INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-4-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">(see NRPy+ for parameter definition)</span></div>                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-3-1"  
+class="td11">        <span 
+class="cmbx-10">Range           </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-3-3"  
+class="td01">                                   <span 
+class="cmbx-10">Default: </span>4  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-4-"><td  style="white-space:normal; text-align:left;" id="TBL-4-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>
+                                    </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">All  values  accepted.  NRPy+  does  not  restrict  the  allowed  ranges  of
+  parameters yet.</div>                                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-5-1"  
+class="td11">                       </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 225--><p class="noindent" ></p> <table id="TBL-5" class="tabular" 
+ 
+><colgroup id="TBL-5-1g"><col 
+id="TBL-5-1" /></colgroup><colgroup id="TBL-5-2g"><col 
+id="TBL-5-2" /><col 
+id="TBL-5-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-1-"><td  style="white-space:normal; text-align:left;" id="TBL-5-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">lapse_floor</div>                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-1-3"  
+class="td01">                                       REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-5-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">(see NRPy+ for parameter definition)</span></div>                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-3-1"  
+class="td11">        <span 
+class="cmbx-10">Range           </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-3-3"  
+class="td01">                                <span 
+class="cmbx-10">Default: </span>1e-15  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-4-"><td  style="white-space:normal; text-align:left;" id="TBL-5-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>
+                                    </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-5-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">All  values  accepted.  NRPy+  does  not  restrict  the  allowed  ranges  of
+  parameters yet.</div>                                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-5-1"  
+class="td11">                       </td></tr></table>
+<!--l. 232--><p class="noindent" ></p> <table id="TBL-6" class="tabular" 
+ 
+><colgroup id="TBL-6-1g"><col 
+id="TBL-6-1" /></colgroup><colgroup id="TBL-6-2g"><col 
+id="TBL-6-2" /><col 
+id="TBL-6-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-1-"><td  style="white-space:normal; text-align:left;" id="TBL-6-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">pi</div>                               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-1-3"  
+class="td01">                                       REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-6-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">(see NRPy+ for parameter definition)</span></div>                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-3-1"  
+class="td11">        <span 
+class="cmbx-10">Range           </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-3-3"  
+class="td01"> <span 
+class="cmbx-10">Default: </span>3.14159265358979323846264338327950288  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-4-"><td  style="white-space:normal; text-align:left;" id="TBL-6-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>
+                                    </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-6-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">All  values  accepted.  NRPy+  does  not  restrict  the  allowed  ranges  of
+  parameters yet.</div>                                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-5-1"  
+class="td11">                       </td></tr></table>
+<!--l. 239--><p class="noindent" ></p> <table id="TBL-7" class="tabular" 
+ 
+><colgroup id="TBL-7-1g"><col 
+id="TBL-7-1" /></colgroup><colgroup id="TBL-7-2g"><col 
+id="TBL-7-2" /><col 
+id="TBL-7-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-1-"><td  style="white-space:normal; text-align:left;" id="TBL-7-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">dtlapse_evolution_method</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from ADMBASE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-1-3"  
+class="td01">                      KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-2-"><td colspan="3" style="white-space:nowrap; text-align:left;" id="TBL-7-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:nowrap; text-align:left;"><span 
+class="cmbx-10">Extends ranges:</span></div>                                                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-3-"><td  style="white-space:normal; text-align:left;" id="TBL-7-3-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Baikal</div>                          </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-7-3-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-4-1"  
+class="td11">                       </td></tr></table>
+<!--l. 246--><p class="noindent" ></p> <table id="TBL-8" class="tabular" 
+ 
+><colgroup id="TBL-8-1g"><col 
+id="TBL-8-1" /></colgroup><colgroup id="TBL-8-2g"><col 
+id="TBL-8-2" /><col 
+id="TBL-8-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-1-"><td  style="white-space:normal; text-align:left;" id="TBL-8-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">dtshift_evolution_method</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from ADMBASE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-1-3"  
+class="td01">                      KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-2-"><td colspan="3" style="white-space:nowrap; text-align:left;" id="TBL-8-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:nowrap; text-align:left;"><span 
+class="cmbx-10">Extends ranges:</span></div>                                                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-3-"><td  style="white-space:normal; text-align:left;" id="TBL-8-3-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Baikal</div>                          </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-8-3-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-4-1"  
+class="td11">                       </td></tr></table>
+<!--l. 253--><p class="noindent" ></p> <table id="TBL-9" class="tabular" 
+ 
+><colgroup id="TBL-9-1g"><col 
+id="TBL-9-1" /></colgroup><colgroup id="TBL-9-2g"><col 
+id="TBL-9-2" /><col 
+id="TBL-9-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-1-"><td  style="white-space:normal; text-align:left;" id="TBL-9-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">evolution_method</div>          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from ADMBASE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-1-3"  
+class="td01">                      KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-2-"><td colspan="3" style="white-space:nowrap; text-align:left;" id="TBL-9-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:nowrap; text-align:left;"><span 
+class="cmbx-10">Extends ranges:</span></div>                                                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-3-"><td  style="white-space:normal; text-align:left;" id="TBL-9-3-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Baikal</div>                          </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-9-3-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-4-1"  
+class="td11">                       </td></tr></table>
+<!--l. 260--><p class="noindent" ></p> <table id="TBL-10" class="tabular" 
+ 
+><colgroup id="TBL-10-1g"><col 
+id="TBL-10-1" /></colgroup><colgroup id="TBL-10-2g"><col 
+id="TBL-10-2" /><col 
+id="TBL-10-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-1-"><td  style="white-space:normal; text-align:left;" id="TBL-10-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">lapse_evolution_method</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from ADMBASE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-1-3"  
+class="td01">                      KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-2-"><td colspan="3" style="white-space:nowrap; text-align:left;" id="TBL-10-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:nowrap; text-align:left;"><span 
+class="cmbx-10">Extends ranges:</span></div>                                                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-3-"><td  style="white-space:normal; text-align:left;" id="TBL-10-3-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Baikal</div>                          </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-10-3-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-4-1"  
+class="td11">                       </td></tr></table>
+<!--l. 267--><p class="noindent" ></p> <table id="TBL-11" class="tabular" 
+ 
+><colgroup id="TBL-11-1g"><col 
+id="TBL-11-1" /></colgroup><colgroup id="TBL-11-2g"><col 
+id="TBL-11-2" /><col 
+id="TBL-11-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-1-"><td  style="white-space:normal; text-align:left;" id="TBL-11-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">shift_evolution_method</div>  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from ADMBASE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-1-3"  
+class="td01">                      KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-2-"><td colspan="3" style="white-space:nowrap; text-align:left;" id="TBL-11-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:nowrap; text-align:left;"><span 
+class="cmbx-10">Extends ranges:</span></div>                                                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-3-"><td  style="white-space:normal; text-align:left;" id="TBL-11-3-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Baikal</div>                          </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-11-3-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-4-1"  
+class="td11">                       </td></tr></table>
+<!--l. 276--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-30003"></a>Interfaces</h3>
+<!--l. 281--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-4000"></a>General</h4>
+<!--l. 283--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 285--><p class="noindent" >baikal
+</p><!--l. 288--><p class="noindent" ><span 
+class="cmbx-10">Inherits</span>:
+</p><!--l. 290--><p class="noindent" >admbase
+</p><!--l. 292--><p class="noindent" >boundary
+</p><!--l. 294--><p class="noindent" >grid
+</p><!--l. 296--><p class="noindent" >tmunubase
+                                                                                       
+                                                                                       
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-5000"></a>Grid Variables</h4>
+<!--l. 299--><p class="noindent" >
+</p>
+<h5 class="subsubsectionHead"><span class="titlemark">3.0.1   </span> <a 
+ id="x1-60003.0.1"></a>PUBLIC GROUPS</h5>
+<!--l. 303--><p class="noindent" ></p> <table id="TBL-12" class="tabular" 
+ 
+><colgroup id="TBL-12-1g"><col 
+id="TBL-12-1" /></colgroup><colgroup id="TBL-12-2g"><col 
+id="TBL-12-2" /></colgroup><colgroup id="TBL-12-3g"><col 
+id="TBL-12-3" /><col 
+id="TBL-12-4" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-1-1"  
+class="td11">   <span 
+class="cmbx-10">Group Names </span>   </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-1-2"  
+class="td10">   <span 
+class="cmbx-10">Variable Names </span> </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-1-3"  
+class="td01">    <span 
+class="cmbx-10">Details </span>   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-1-4"  
+class="td11">                                                                                       </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-2-1"  
+class="td11">    evol_variables      </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-2-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-2-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-2-4"  
+class="td11"> 0                                                                                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-3-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-3-2"  
+class="td10">      aDD00GF        </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-3-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-3-4"  
+class="td11"> Evolved gridfunctions.                                                         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-4-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-4-2"  
+class="td10">      aDD01GF        </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-4-3"  
+class="td01">   dimensions  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-4-4"  
+class="td11"> 3                                                                                     </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-5-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-5-2"  
+class="td10"> aDD02GF </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-5-3"  
+class="td01"> distribution </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-5-4"  
+class="td11"> DEFAULT </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-6-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-6-2"  
+class="td10">      aDD11GF        </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-6-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-6-4"  
+class="td11"> GF                                                                                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-7-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-7-2"  
+class="td10">      aDD12GF        </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-7-3"  
+class="td01">    timelevels  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-7-4"  
+class="td11"> 3                                                                                     </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-8-1"  
+class="td11">
+                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-8-2"  
+class="td10">      aDD22GF        </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-8-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-8-4"  
+class="td11"> REAL                                                                              </td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-9-1"  
+class="td11">
+  evol_variables_rhs    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-9-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-9-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-9-4"  
+class="td11"> 0                                                                                     </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-10-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-10-1"  
+class="td11">
+                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-10-2"  
+class="td10">    aDD00_rhsGF     </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-10-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-10-4"  
+class="td11"> Right-hand-side gridfunctions.                                               </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-11-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-11-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-11-2"  
+class="td10"> aDD01_rhsGF </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-11-3"  
+class="td01"> dimensions </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-11-4"  
+class="td11"> 3 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-12-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-12-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-12-2"  
+class="td10">    aDD02_rhsGF     </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-12-3"  
+class="td01">  distribution  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-12-4"  
+class="td11"> DEFAULT                                                                        </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-13-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-13-1"  
+class="td11">
+                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-13-2"  
+class="td10">    aDD11_rhsGF     </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-13-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-13-4"  
+class="td11"> GF                                                                                  </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-14-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-14-1"  
+class="td11">
+                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-14-2"  
+class="td10">    aDD12_rhsGF     </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-14-3"  
+class="td01">         tags  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-14-4"  
+class="td11"> InterpNumTimelevels=1 prolongation=”none” checkpoint=”no”  </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-15-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-15-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-15-2"  
+class="td10"> aDD22_rhsGF </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-15-3"  
+class="td01"> timelevels </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-15-4"  
+class="td11"> 1 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-16-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-16-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-16-2"  
+class="td10">     alpha_rhsGF      </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-16-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-16-4"  
+class="td11"> REAL                                                                              </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-17-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-17-1"  
+class="td11">  auxevol_variables    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-17-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-17-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-17-4"  
+class="td11"> 0                                                                                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-18-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-18-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-18-2"  
+class="td10">     RbarDD00GF     </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-18-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-18-4"  
+class="td11"> Auxiliary gridfunctions needed for evaluating the RHSs.             </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-19-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-19-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-19-2"  
+class="td10">     RbarDD01GF     </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-19-3"  
+class="td01">   dimensions  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-19-4"  
+class="td11"> 3                                                                                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-20-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-20-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-20-2"  
+class="td10">     RbarDD02GF     </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-20-3"  
+class="td01">  distribution  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-20-4"  
+class="td11"> DEFAULT                                                                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-21-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-21-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-21-2"  
+class="td10">     RbarDD11GF     </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-21-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-21-4"  
+class="td11"> GF                                                                                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-22-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-22-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-22-2"  
+class="td10">     RbarDD12GF     </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-22-3"  
+class="td01">         tags  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-22-4"  
+class="td11"> InterpNumTimelevels=1 prolongation=”none” checkpoint=”no”  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-23-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-23-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-23-2"  
+class="td10">     RbarDD22GF     </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-23-3"  
+class="td01">    timelevels  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-23-4"  
+class="td11"> 1                                                                                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-24-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-24-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-24-2"  
+class="td10">     T4UU00GF       </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-24-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-24-4"  
+class="td11"> REAL                                                                              </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-25-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-25-1"  
+class="td11">    aux_variables       </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-25-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-25-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-25-4"  
+class="td11"> 0                                                                                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-26-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-26-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-26-2"  
+class="td10">        HGF           </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-26-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-26-4"  
+class="td11"> Auxiliary gridfunctions for e.g.                                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-27-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-27-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-27-2"  
+class="td10">                         </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-27-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-27-4"  
+class="td11"> diagnostics.                                                                       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-28-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-28-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-28-2"  
+class="td10">   MSQUAREDGF   </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-28-3"  
+class="td01">   dimensions  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-28-4"  
+class="td11"> 3                                                                                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-29-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-29-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-29-2"  
+class="td10">       MU0GF         </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-29-3"  
+class="td01">  distribution  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-29-4"  
+class="td11"> DEFAULT                                                                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-30-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-30-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-30-2"  
+class="td10">       MU1GF         </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-30-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-30-4"  
+class="td11"> GF                                                                                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-31-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-31-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-31-2"  
+class="td10">       MU2GF         </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-31-3"  
+class="td01">    timelevels  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-31-4"  
+class="td11"> 3                                                                                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-32-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-32-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-12-32-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-32-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-32-4"  
+class="td11"> REAL                                                                              </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-33-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-33-1"  
+class="td11">                    </td></tr></table>
+<!--l. 347--><p class="noindent" ><span 
+class="cmbx-10">Uses header</span>:
+</p><!--l. 349--><p class="noindent" >Symmetry.h
+</p><!--l. 351--><p class="noindent" >Boundary.h
+</p><!--l. 353--><p class="noindent" >Slicing.h
+</p><!--l. 356--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-70004"></a>Schedule</h3>
+<!--l. 362--><p class="noindent" >This section lists all the variables which are assigned storage by thorn WVUThorns/Baikal. Storage can
+either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+                                                                                       
+                                                                                       
+</p><!--l. 365--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-8000"></a>Storage</h4>
+<!--l. 367--><p class="noindent" > 
+</p><!--l. 369--><p class="noindent" ></p> <table id="TBL-13" class="tabular" 
+ 
+><colgroup id="TBL-13-1g"><col 
+id="TBL-13-1" /><col 
+id="TBL-13-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-13-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-13-1-1"  
+class="td11"> <span 
+class="cmbx-10">Always:              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-1-2"  
+class="td11">    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-13-2-1"  
+class="td11"> evol_variables[3]       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-2-2"  
+class="td11">    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-13-3-1"  
+class="td11"> evol_variables_rhs[1]  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-3-2"  
+class="td11">    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-13-4-1"  
+class="td11"> auxevol_variables[1]   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-4-2"  
+class="td11">    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-5-"><td  style="white-space:nowrap; text-align:left;" id="TBL-13-5-1"  
+class="td11"> aux_variables[3]        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-5-2"  
+class="td11">    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-6-"><td  style="white-space:nowrap; text-align:left;" id="TBL-13-6-1"  
+class="td11">                             </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-6-2"  
+class="td11">    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-7-"><td  style="white-space:nowrap; text-align:left;" id="TBL-13-7-1"  
+class="td11">                   </td></tr></table>
+<!--l. 380--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-9000"></a>Scheduled Functions</h4>
+<!--l. 383--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_STARTUP</span>
+</p><!--l. 385--><p class="noindent" >      baikal_registerslicing
+</p><!--l. 387--><p class="noindent" >     <span 
+class="cmti-10">register 3+1 slicing condition</span>
+</p><!--l. 390--><p class="noindent" > 
+</p><!--l. 392--><p class="noindent" ></p> <table id="TBL-14" class="tabular" 
+ 
+><colgroup id="TBL-14-1g"><col 
+id="TBL-14-1" /><col 
+id="TBL-14-2" /><col 
+id="TBL-14-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-14-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-2-3"  
+class="td11"> meta      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-3-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 401--><p class="noindent" ><span 
+class="cmbx-10">Driver</span><span 
+class="cmbx-10">_BoundarySelect </span>(conditional)
+</p><!--l. 403--><p class="noindent" >      baikal_specify_driver_boundaryconditions
+</p><!--l. 405--><p class="noindent" >     <span 
+class="cmti-10">register boundary conditions in presync bin driver</span><span 
+class="cmti-10">_boundaryselect.</span>
+</p><!--l. 408--><p class="noindent" > 
+</p><!--l. 410--><p class="noindent" ></p> <table id="TBL-15" class="tabular" 
+ 
+><colgroup id="TBL-15-1g"><col 
+id="TBL-15-1" /><col 
+id="TBL-15-2" /><col 
+id="TBL-15-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-15-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-2-3"  
+class="td11"> meta      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-3-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 419--><p class="noindent" ><span 
+class="cmbx-10">MoL</span><span 
+class="cmbx-10">_CalcRHS </span>(conditional)
+</p><!--l. 421--><p class="noindent" >      baikal_rhs_eval_order_2
+</p><!--l. 423--><p class="noindent" >     <span 
+class="cmti-10">evaluate bssn rhss, at finite-differencing order 2</span>
+</p><!--l. 426--><p class="noindent" > 
+</p><!--l. 428--><p class="noindent" ></p> <table id="TBL-16" class="tabular" 
+ 
+><colgroup id="TBL-16-1g"><col 
+id="TBL-16-1" /><col 
+id="TBL-16-2" /><col 
+id="TBL-16-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-16-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-1-3"  
+class="td11"> baikal_ricci                       </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-2-1"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-2-2"  
+class="td11"> Language: </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-2-3"  
+class="td11"> c</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-3-2"  
+class="td11"> Reads:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-3-3"  
+class="td11"> evol_variables(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-4-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-4-3"  
+class="td11"> auxevol_variables(interior)   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-5-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-5-3"  
+class="td11"> function                           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-6-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-6-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-6-3"  
+class="td11"> evol_variables_rhs(interior)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-7-1"  
+class="td11">    </td></tr></table>
+<!--l. 440--><p class="noindent" ><span 
+class="cmbx-10">MoL</span><span 
+class="cmbx-10">_CalcRHS </span>(conditional)
+</p><!--l. 442--><p class="noindent" >      baikal_rhs_eval_order_4
+</p><!--l. 444--><p class="noindent" >     <span 
+class="cmti-10">evaluate bssn rhss, at finite-differencing order 4</span>
+</p><!--l. 447--><p class="noindent" > 
+</p><!--l. 449--><p class="noindent" ></p> <table id="TBL-17" class="tabular" 
+ 
+><colgroup id="TBL-17-1g"><col 
+id="TBL-17-1" /><col 
+id="TBL-17-2" /><col 
+id="TBL-17-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-17-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-1-3"  
+class="td11"> baikal_ricci                       </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-2-1"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-2-2"  
+class="td11"> Language: </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-2-3"  
+class="td11"> c</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-3-2"  
+class="td11"> Reads:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-3-3"  
+class="td11"> evol_variables(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-4-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-4-3"  
+class="td11"> auxevol_variables(interior)   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-5-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-5-3"  
+class="td11"> function                           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-6-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-6-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-6-3"  
+class="td11"> evol_variables_rhs(interior)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-7-1"  
+class="td11">    </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 461--><p class="noindent" ><span 
+class="cmbx-10">MoL</span><span 
+class="cmbx-10">_CalcRHS </span>(conditional)
+</p><!--l. 463--><p class="noindent" >      baikal_specify_newrad_boundaryconditions_parameters
+</p><!--l. 465--><p class="noindent" >     <span 
+class="cmti-10">newrad boundary conditions, scheduled right after rhs eval.</span>
+</p><!--l. 468--><p class="noindent" > 
+</p><!--l. 470--><p class="noindent" ></p> <table id="TBL-18" class="tabular" 
+ 
+><colgroup id="TBL-18-1g"><col 
+id="TBL-18-1" /><col 
+id="TBL-18-2" /><col 
+id="TBL-18-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-18-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-1-3"  
+class="td11"> baikal_rhs                           </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-2-1"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-2-2"  
+class="td11"> Language: </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-2-3"  
+class="td11"> c</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-3-2"  
+class="td11"> Reads:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-3-3"  
+class="td11"> evol_variables(everywhere)     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-4-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-4-3"  
+class="td11"> function                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-5-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-5-3"  
+class="td11"> evol_variables_rhs(boundary)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-6-1"  
+class="td11">    </td></tr></table>
+<!--l. 481--><p class="noindent" ><span 
+class="cmbx-10">MoL</span><span 
+class="cmbx-10">_PostStep </span>(conditional)
+</p><!--l. 483--><p class="noindent" >      baikal_bssn_to_adm
+</p><!--l. 485--><p class="noindent" >     <span 
+class="cmti-10">perform bssn-to-adm conversion. useful for diagnostics.</span>
+</p><!--l. 488--><p class="noindent" > 
+</p><!--l. 490--><p class="noindent" ></p> <table id="TBL-19" class="tabular" 
+ 
+><colgroup id="TBL-19-1g"><col 
+id="TBL-19-1" /><col 
+id="TBL-19-2" /><col 
+id="TBL-19-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-19-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-1-3"  
+class="td11"> baikal_evol_applybcs             </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-2-2"  
+class="td11"> Before:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-2-3"  
+class="td11"> admbase_setadmvars             </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-3-1"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-3-2"  
+class="td11"> Language: </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-3-3"  
+class="td11"> c</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-4-2"  
+class="td11"> Reads:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-4-3"  
+class="td11"> add00gf                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-5-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-5-3"  
+class="td11"> add01gf                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-6-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-6-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-6-3"  
+class="td11"> add02gf                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-7-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-7-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-7-3"  
+class="td11"> add11gf                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-8-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-8-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-8-3"  
+class="td11"> add12gf                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-9-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-9-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-9-3"  
+class="td11"> add22gf                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-10-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-10-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-10-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-10-3"  
+class="td11"> hdd00gf                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-11-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-11-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-11-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-11-3"  
+class="td11"> hdd01gf                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-12-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-12-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-12-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-12-3"  
+class="td11"> hdd02gf                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-13-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-13-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-13-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-13-3"  
+class="td11"> hdd11gf                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-14-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-14-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-14-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-14-3"  
+class="td11"> hdd12gf                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-15-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-15-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-15-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-15-3"  
+class="td11"> hdd22gf                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-16-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-16-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-16-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-16-3"  
+class="td11"> vetu0gf                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-17-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-17-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-17-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-17-3"  
+class="td11"> vetu1gf                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-18-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-18-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-18-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-18-3"  
+class="td11"> vetu2gf                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-19-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-19-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-19-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-19-3"  
+class="td11"> betu0gf                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-20-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-20-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-20-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-20-3"  
+class="td11"> betu1gf                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-21-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-21-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-21-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-21-3"  
+class="td11"> betu2gf                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-22-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-22-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-22-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-22-3"  
+class="td11"> cfgf                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-23-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-23-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-23-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-23-3"  
+class="td11"> trkgf                                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-24-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-24-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-24-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-24-3"  
+class="td11"> alphagf                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-25-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-25-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-25-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-25-3"  
+class="td11"> function                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-26-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-26-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-26-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-26-3"  
+class="td11"> admbase::metric(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-27-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-27-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-27-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-27-3"  
+class="td11"> admbase::shift(everywhere)     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-28-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-28-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-28-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-28-3"  
+class="td11"> admbase::curv(everywhere)     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-29-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-29-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-29-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-29-3"  
+class="td11"> admbase::dtshift(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-30-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-30-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-30-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-30-3"  
+class="td11"> admbase::lapse(everywhere)    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-31-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-31-1"  
+class="td11">    </td></tr></table>
+<!--l. 526--><p class="noindent" ><span 
+class="cmbx-10">MoL</span><span 
+class="cmbx-10">_PostStep </span>(conditional)
+</p><!--l. 528--><p class="noindent" >      baikal_enforce_detgammahat_constraint
+</p><!--l. 530--><p class="noindent" >     <span 
+class="cmti-10">enforce detgammabar = detgammahat (= 1 in cartesian)</span>
+</p><!--l. 533--><p class="noindent" > 
+</p><!--l. 535--><p class="noindent" ></p> <table id="TBL-20" class="tabular" 
+ 
+><colgroup id="TBL-20-1g"><col 
+id="TBL-20-1" /><col 
+id="TBL-20-2" /><col 
+id="TBL-20-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-20-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-1-3"  
+class="td11"> c                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-2-2"  
+class="td11"> Reads:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-2-3"  
+class="td11"> hdd00gf                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-3-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-3-3"  
+class="td11"> hdd01gf                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-4-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-4-3"  
+class="td11"> hdd02gf                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-5-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-5-3"  
+class="td11"> hdd11gf                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-6-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-6-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-6-3"  
+class="td11"> hdd12gf                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-7-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-7-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-7-3"  
+class="td11"> hdd22gf                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-8-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-8-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-8-3"  
+class="td11"> function                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-9-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-9-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-9-3"  
+class="td11"> hdd00gf(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-10-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-10-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-10-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-10-3"  
+class="td11"> hdd01gf(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-11-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-11-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-11-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-11-3"  
+class="td11"> hdd02gf(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-12-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-12-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-12-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-12-3"  
+class="td11"> hdd11gf(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-13-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-13-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-13-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-13-3"  
+class="td11"> hdd12gf(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-14-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-14-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-14-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-14-3"  
+class="td11"> hdd22gf(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-15-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-15-1"  
+class="td11">    </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 555--><p class="noindent" ><span 
+class="cmbx-10">MoL</span><span 
+class="cmbx-10">_PostStep </span>(conditional)
+</p><!--l. 557--><p class="noindent" >      baikal_floor_the_lapse
+</p><!--l. 559--><p class="noindent" >     <span 
+class="cmti-10">set lapse = max(lapse</span><span 
+class="cmti-10">_floor, lapse)</span>
+</p><!--l. 562--><p class="noindent" > 
+</p><!--l. 564--><p class="noindent" ></p> <table id="TBL-21" class="tabular" 
+ 
+><colgroup id="TBL-21-1g"><col 
+id="TBL-21-1" /><col 
+id="TBL-21-2" /><col 
+id="TBL-21-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-21-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-1-2"  
+class="td11"> Before:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-1-3"  
+class="td11"> baikal_enforce_detgammahat_constraint  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-2-3"  
+class="td11"> c                                                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-3-2"  
+class="td11"> Reads:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-3-3"  
+class="td11"> alphagf(everywhere)                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-4-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-4-3"  
+class="td11"> function                                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-5-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-5-3"  
+class="td11"> alphagf(everywhere)                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-6-1"  
+class="td11">    </td></tr></table>
+<!--l. 575--><p class="noindent" ><span 
+class="cmbx-10">MoL</span><span 
+class="cmbx-10">_PostStep </span>(conditional)
+</p><!--l. 577--><p class="noindent" >      baikal_specify_evol_boundaryconditions
+</p><!--l. 579--><p class="noindent" >     <span 
+class="cmti-10">register boundary conditions and perform amr+interprocessor synchronization</span>
+</p><!--l. 582--><p class="noindent" > 
+</p><!--l. 584--><p class="noindent" ></p> <table id="TBL-22" class="tabular" 
+ 
+><colgroup id="TBL-22-1g"><col 
+id="TBL-22-1" /><col 
+id="TBL-22-2" /><col 
+id="TBL-22-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-22-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-1-3"  
+class="td11"> c                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-2-3"  
+class="td11"> level              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-3-2"  
+class="td11"> Sync:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-3-3"  
+class="td11"> evol_variables  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-4-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-4-3"  
+class="td11"> function         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-5-1"  
+class="td11">    </td></tr></table>
+<!--l. 594--><p class="noindent" ><span 
+class="cmbx-10">MoL</span><span 
+class="cmbx-10">_PostStep </span>(conditional)
+</p><!--l. 596--><p class="noindent" >      applybcs
+</p><!--l. 598--><p class="noindent" >     <span 
+class="cmti-10">apply registered boundary conditions</span>
+</p><!--l. 601--><p class="noindent" > 
+</p><!--l. 603--><p class="noindent" ></p> <table id="TBL-23" class="tabular" 
+ 
+><colgroup id="TBL-23-1g"><col 
+id="TBL-23-1" /><col 
+id="TBL-23-2" /><col 
+id="TBL-23-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-23-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-1-2"  
+class="td11"> After:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-1-3"  
+class="td11"> baikal_specify_evol_boundaryconditions  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-2-2"  
+class="td11"> Type:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-2-3"  
+class="td11"> group                                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 611--><p class="noindent" ><span 
+class="cmbx-10">MoL</span><span 
+class="cmbx-10">_PseudoEvolution </span>(conditional)
+</p><!--l. 613--><p class="noindent" >      baikal_bssn_constraints_order_2
+</p><!--l. 615--><p class="noindent" >     <span 
+class="cmti-10">compute bssn (hamiltonian and momentum) constraints, at finite-differencing order 2</span>
+</p><!--l. 618--><p class="noindent" > 
+</p><!--l. 620--><p class="noindent" ></p> <table id="TBL-24" class="tabular" 
+ 
+><colgroup id="TBL-24-1g"><col 
+id="TBL-24-1" /><col 
+id="TBL-24-2" /><col 
+id="TBL-24-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-24-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-1-3"  
+class="td11"> c                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-2-2"  
+class="td11"> Reads:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-2-3"  
+class="td11"> add00gf         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-3-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-3-3"  
+class="td11"> add01gf         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-4-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-4-3"  
+class="td11"> add02gf         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-5-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-5-3"  
+class="td11"> add11gf         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-6-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-6-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-6-3"  
+class="td11"> add12gf         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-7-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-7-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-7-3"  
+class="td11"> add22gf         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-8-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-8-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-8-3"  
+class="td11"> hdd00gf         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-9-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-9-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-9-3"  
+class="td11"> hdd01gf         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-10-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-10-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-10-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-10-3"  
+class="td11"> hdd02gf         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-11-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-11-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-11-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-11-3"  
+class="td11"> hdd11gf         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-12-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-12-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-12-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-12-3"  
+class="td11"> hdd12gf         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-13-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-13-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-13-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-13-3"  
+class="td11"> hdd22gf         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-14-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-14-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-14-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-14-3"  
+class="td11"> trkgf             </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-15-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-15-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-15-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-15-3"  
+class="td11"> cfgf               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-16-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-16-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-16-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-16-3"  
+class="td11"> lambdau0gf    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-17-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-17-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-17-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-17-3"  
+class="td11"> lambdau1gf    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-18-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-18-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-18-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-18-3"  
+class="td11"> lambdau2gf    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-19-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-19-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-19-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-19-3"  
+class="td11"> alphagf          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-20-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-20-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-20-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-20-3"  
+class="td11"> vetu0gf          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-21-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-21-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-21-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-21-3"  
+class="td11"> vetu1gf          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-22-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-22-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-22-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-22-3"  
+class="td11"> vetu2gf          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-23-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-23-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-23-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-23-3"  
+class="td11"> t4uu00gf        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-24-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-24-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-24-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-24-3"  
+class="td11"> t4uu01gf        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-25-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-25-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-25-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-25-3"  
+class="td11"> t4uu02gf        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-26-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-26-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-26-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-26-3"  
+class="td11"> t4uu03gf        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-27-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-27-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-27-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-27-3"  
+class="td11"> function         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-28-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-28-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-28-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-28-3"  
+class="td11"> aux_variables  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-29-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-29-1"  
+class="td11">    </td></tr></table>
+<!--l. 654--><p class="noindent" ><span 
+class="cmbx-10">MoL</span><span 
+class="cmbx-10">_PseudoEvolution </span>(conditional)
+                                                                                       
+                                                                                       
+</p><!--l. 656--><p class="noindent" >      baikal_bssn_constraints_order_4
+</p><!--l. 658--><p class="noindent" >     <span 
+class="cmti-10">compute bssn (hamiltonian and momentum) constraints, at finite-differencing order 4</span>
+</p><!--l. 661--><p class="noindent" > 
+</p><!--l. 663--><p class="noindent" ></p> <table id="TBL-25" class="tabular" 
+ 
+><colgroup id="TBL-25-1g"><col 
+id="TBL-25-1" /><col 
+id="TBL-25-2" /><col 
+id="TBL-25-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-25-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-1-3"  
+class="td11"> c                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-2-2"  
+class="td11"> Reads:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-2-3"  
+class="td11"> add00gf         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-3-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-3-3"  
+class="td11"> add01gf         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-4-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-4-3"  
+class="td11"> add02gf         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-5-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-5-3"  
+class="td11"> add11gf         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-6-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-6-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-6-3"  
+class="td11"> add12gf         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-7-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-7-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-7-3"  
+class="td11"> add22gf         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-8-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-8-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-8-3"  
+class="td11"> hdd00gf         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-9-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-9-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-9-3"  
+class="td11"> hdd01gf         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-10-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-10-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-10-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-10-3"  
+class="td11"> hdd02gf         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-11-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-11-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-11-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-11-3"  
+class="td11"> hdd11gf         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-12-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-12-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-12-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-12-3"  
+class="td11"> hdd12gf         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-13-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-13-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-13-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-13-3"  
+class="td11"> hdd22gf         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-14-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-14-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-14-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-14-3"  
+class="td11"> trkgf             </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-15-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-15-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-15-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-15-3"  
+class="td11"> cfgf               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-16-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-16-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-16-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-16-3"  
+class="td11"> lambdau0gf    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-17-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-17-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-17-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-17-3"  
+class="td11"> lambdau1gf    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-18-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-18-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-18-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-18-3"  
+class="td11"> lambdau2gf    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-19-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-19-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-19-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-19-3"  
+class="td11"> alphagf          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-20-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-20-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-20-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-20-3"  
+class="td11"> vetu0gf          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-21-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-21-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-21-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-21-3"  
+class="td11"> vetu1gf          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-22-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-22-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-22-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-22-3"  
+class="td11"> vetu2gf          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-23-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-23-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-23-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-23-3"  
+class="td11"> t4uu00gf        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-24-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-24-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-24-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-24-3"  
+class="td11"> t4uu01gf        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-25-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-25-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-25-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-25-3"  
+class="td11"> t4uu02gf        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-26-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-26-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-26-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-26-3"  
+class="td11"> t4uu03gf        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-27-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-27-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-27-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-27-3"  
+class="td11"> function         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-28-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-28-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-28-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-28-3"  
+class="td11"> aux_variables  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-29-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-29-1"  
+class="td11">    </td></tr></table>
+<!--l. 697--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_BASEGRID</span>
+</p><!--l. 699--><p class="noindent" >      baikal_symmetry_registration_oldcartgrid3d
+</p><!--l. 701--><p class="noindent" >     <span 
+class="cmti-10">register symmetries, the cartgrid3d way.</span>
+</p><!--l. 704--><p class="noindent" > 
+</p><!--l. 706--><p class="noindent" ></p> <table id="TBL-26" class="tabular" 
+ 
+><colgroup id="TBL-26-1g"><col 
+id="TBL-26-1" /><col 
+id="TBL-26-2" /><col 
+id="TBL-26-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-26-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-2-3"  
+class="td11"> global     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-3-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 715--><p class="noindent" ><span 
+class="cmbx-10">MoL</span><span 
+class="cmbx-10">_PseudoEvolution</span>
+</p><!--l. 717--><p class="noindent" >      baikal_bssn_to_adm
+</p><!--l. 719--><p class="noindent" >     <span 
+class="cmti-10">perform bssn-to-adm conversion in mol</span><span 
+class="cmti-10">_pseudoevolution. needed for proper hydrobase integration.</span>
+</p><!--l. 722--><p class="noindent" > 
+                                                                                       
+                                                                                       
+</p><!--l. 724--><p class="noindent" ></p> <table id="TBL-27" class="tabular" 
+ 
+><colgroup id="TBL-27-1g"><col 
+id="TBL-27-1" /><col 
+id="TBL-27-2" /><col 
+id="TBL-27-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-27-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-1-3"  
+class="td11"> baikal_aux_applybcs             </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-2-3"  
+class="td11"> c                                       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-3-2"  
+class="td11"> Reads:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-3-3"  
+class="td11"> add00gf                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-4-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-4-3"  
+class="td11"> add01gf                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-5-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-5-3"  
+class="td11"> add02gf                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-6-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-6-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-6-3"  
+class="td11"> add11gf                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-7-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-7-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-7-3"  
+class="td11"> add12gf                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-8-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-8-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-8-3"  
+class="td11"> add22gf                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-9-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-9-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-9-3"  
+class="td11"> hdd00gf                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-10-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-10-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-10-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-10-3"  
+class="td11"> hdd01gf                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-11-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-11-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-11-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-11-3"  
+class="td11"> hdd02gf                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-12-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-12-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-12-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-12-3"  
+class="td11"> hdd11gf                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-13-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-13-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-13-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-13-3"  
+class="td11"> hdd12gf                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-14-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-14-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-14-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-14-3"  
+class="td11"> hdd22gf                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-15-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-15-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-15-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-15-3"  
+class="td11"> vetu0gf                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-16-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-16-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-16-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-16-3"  
+class="td11"> vetu1gf                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-17-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-17-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-17-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-17-3"  
+class="td11"> vetu2gf                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-18-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-18-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-18-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-18-3"  
+class="td11"> betu0gf                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-19-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-19-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-19-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-19-3"  
+class="td11"> betu1gf                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-20-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-20-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-20-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-20-3"  
+class="td11"> betu2gf                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-21-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-21-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-21-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-21-3"  
+class="td11"> cfgf                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-22-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-22-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-22-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-22-3"  
+class="td11"> trkgf                                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-23-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-23-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-23-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-23-3"  
+class="td11"> alphagf                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-24-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-24-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-24-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-24-3"  
+class="td11"> function                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-25-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-25-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-25-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-25-3"  
+class="td11"> admbase::metric(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-26-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-26-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-26-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-26-3"  
+class="td11"> admbase::shift(everywhere)     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-27-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-27-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-27-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-27-3"  
+class="td11"> admbase::curv(everywhere)     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-28-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-28-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-28-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-28-3"  
+class="td11"> admbase::dtshift(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-29-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-29-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-29-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-29-3"  
+class="td11"> admbase::lapse(everywhere)    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-30-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-30-1"  
+class="td11">    </td></tr></table>
+<!--l. 759--><p class="noindent" ><span 
+class="cmbx-10">MoL</span><span 
+class="cmbx-10">_PseudoEvolution</span>
+</p><!--l. 761--><p class="noindent" >      baikal_t4dd_to_t4uu
+</p><!--l. 763--><p class="noindent" >     <span 
+class="cmti-10">compute t4uu from t4dd (provided in et?? from tmunubase), needed for bssn constraints</span>
+</p><!--l. 766--><p class="noindent" > 
+</p><!--l. 768--><p class="noindent" ></p> <table id="TBL-28" class="tabular" 
+ 
+><colgroup id="TBL-28-1g"><col 
+id="TBL-28-1" /><col 
+id="TBL-28-2" /><col 
+id="TBL-28-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-28-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-1-2"  
+class="td11"> Before:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-1-3"  
+class="td11"> baikal_bssn_constraints              </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-2-1"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-2-2"  
+class="td11"> Language: </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-2-3"  
+class="td11"> c</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-3-2"  
+class="td11"> Reads:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-3-3"  
+class="td11"> tmunubase::stress_energy_scalar  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-4-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-4-3"  
+class="td11"> tmunubase::stress_energy_vector  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-5-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-5-3"  
+class="td11"> tmunubase::stress_energy_tensor  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-6-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-6-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-6-3"  
+class="td11"> hdd00gf                                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-7-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-7-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-7-3"  
+class="td11"> hdd01gf                                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-8-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-8-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-8-3"  
+class="td11"> hdd02gf                                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-9-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-9-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-9-3"  
+class="td11"> hdd11gf                                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-10-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-10-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-10-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-10-3"  
+class="td11"> hdd12gf                                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-11-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-11-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-11-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-11-3"  
+class="td11"> hdd22gf                                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-12-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-12-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-12-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-12-3"  
+class="td11"> alphagf                                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-13-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-13-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-13-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-13-3"  
+class="td11"> cfgf                                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-14-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-14-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-14-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-14-3"  
+class="td11"> vetu0gf                                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-15-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-15-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-15-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-15-3"  
+class="td11"> vetu1gf                                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-16-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-16-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-16-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-16-3"  
+class="td11"> vetu2gf                                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-17-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-17-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-17-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-17-3"  
+class="td11"> function                                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-18-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-18-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-18-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-18-3"  
+class="td11"> t4uu00gf(everywhere)                </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-19-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-19-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-19-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-19-3"  
+class="td11"> t4uu01gf(everywhere)                </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-20-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-20-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-20-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-20-3"  
+class="td11"> t4uu02gf(everywhere)                </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-21-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-21-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-21-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-21-3"  
+class="td11"> t4uu03gf(everywhere)                </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-22-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-22-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-22-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-22-3"  
+class="td11"> t4uu11gf(everywhere)                </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-23-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-23-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-23-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-23-3"  
+class="td11"> t4uu12gf(everywhere)                </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-24-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-24-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-24-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-24-3"  
+class="td11"> t4uu13gf(everywhere)                </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-25-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-25-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-25-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-25-3"  
+class="td11"> t4uu22gf(everywhere)                </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-26-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-26-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-26-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-26-3"  
+class="td11"> t4uu23gf(everywhere)                </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-27-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-27-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-27-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-27-3"  
+class="td11"> t4uu33gf(everywhere)                </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-28-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-28-1"  
+class="td11">    </td></tr></table>
+<!--l. 801--><p class="noindent" ><span 
+class="cmbx-10">MoL</span><span 
+class="cmbx-10">_PseudoEvolution</span>
+</p><!--l. 803--><p class="noindent" >      baikal_specify_aux_boundaryconditions
+                                                                                       
+                                                                                       
+</p><!--l. 805--><p class="noindent" >     <span 
+class="cmti-10">register boundary conditions and perform amr+interprocessor synchronization</span>
+</p><!--l. 808--><p class="noindent" > 
+</p><!--l. 810--><p class="noindent" ></p> <table id="TBL-29" class="tabular" 
+ 
+><colgroup id="TBL-29-1g"><col 
+id="TBL-29-1" /><col 
+id="TBL-29-2" /><col 
+id="TBL-29-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-29-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-29-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-1-3"  
+class="td11"> baikal_bssn_constraints  </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-29-2-1"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-2-2"  
+class="td11"> Language: </td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-2-3"  
+class="td11"> c</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-29-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-3-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-3-3"  
+class="td11"> level                           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-29-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-4-2"  
+class="td11"> Sync:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-4-3"  
+class="td11"> aux_variables               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-29-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-5-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-5-3"  
+class="td11"> function                      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-29-6-1"  
+class="td11">    </td></tr></table>
+<!--l. 821--><p class="noindent" ><span 
+class="cmbx-10">MoL</span><span 
+class="cmbx-10">_PseudoEvolution</span>
+</p><!--l. 823--><p class="noindent" >      applybcs
+</p><!--l. 825--><p class="noindent" >     <span 
+class="cmti-10">apply registered boundary conditions</span>
+</p><!--l. 828--><p class="noindent" > 
+</p><!--l. 830--><p class="noindent" ></p> <table id="TBL-30" class="tabular" 
+ 
+><colgroup id="TBL-30-1g"><col 
+id="TBL-30-1" /><col 
+id="TBL-30-2" /><col 
+id="TBL-30-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-30-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-30-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-30-1-2"  
+class="td11"> After:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-30-1-3"  
+class="td11"> baikal_specify_aux_boundaryconditions  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-30-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-30-2-2"  
+class="td11"> Type:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-30-2-3"  
+class="td11"> group                                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-30-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 838--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_BASEGRID</span>
+</p><!--l. 840--><p class="noindent" >      baikal_zero_rhss
+</p><!--l. 842--><p class="noindent" >     <span 
+class="cmti-10">idea from lean: set all rhs functions to zero to prevent spurious nans</span>
+</p><!--l. 845--><p class="noindent" > 
+</p><!--l. 847--><p class="noindent" ></p> <table id="TBL-31" class="tabular" 
+ 
+><colgroup id="TBL-31-1g"><col 
+id="TBL-31-1" /><col 
+id="TBL-31-2" /><col 
+id="TBL-31-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-31-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-31-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-31-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-31-1-3"  
+class="td11"> symmetry_registration             </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-31-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-31-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-31-2-3"  
+class="td11"> c                                         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-31-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-31-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-31-3-3"  
+class="td11"> function                                </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-31-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-31-4-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-31-4-3"  
+class="td11"> evol_variables_rhs(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-31-5-1"  
+class="td11">    </td></tr></table>
+<!--l. 857--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_INITIAL </span>(conditional)
+</p><!--l. 859--><p class="noindent" >      baikal_adm_to_bssn_order_2
+</p><!--l. 861--><p class="noindent" >     <span 
+class="cmti-10">convert initial data into bssn variables</span>
+</p><!--l. 864--><p class="noindent" > 
+</p><!--l. 866--><p class="noindent" ></p> <table id="TBL-32" class="tabular" 
+ 
+><colgroup id="TBL-32-1g"><col 
+id="TBL-32-1" /><col 
+id="TBL-32-2" /><col 
+id="TBL-32-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-32-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-32-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-1-3"  
+class="td11"> admbase_postinitial  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-32-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-2-3"  
+class="td11"> c                           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-32-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-3-2"  
+class="td11"> Reads:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-3-3"  
+class="td11"> admbase::metric       </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-32-4-1"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-4-2"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-4-3"  
+class="td11"> admbase::shift</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-32-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-5-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-5-3"  
+class="td11"> admbase::curv         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-32-6-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-6-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-6-3"  
+class="td11"> admbase::dtshift      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-32-7-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-7-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-7-3"  
+class="td11"> admbase::lapse        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-32-8-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-8-2"  
+class="td11"> Sync:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-8-3"  
+class="td11"> evol_variables          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-32-9-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-9-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-9-3"  
+class="td11"> function                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-10-"><td  style="white-space:nowrap; text-align:center;" id="TBL-32-10-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-10-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-10-3"  
+class="td11"> evol_variables          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-11-"><td  style="white-space:nowrap; text-align:center;" id="TBL-32-11-1"  
+class="td11">    </td></tr></table>
+<!--l. 882--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_INITIAL </span>(conditional)
+</p><!--l. 884--><p class="noindent" >      baikal_adm_to_bssn_order_4
+</p><!--l. 886--><p class="noindent" >     <span 
+class="cmti-10">convert initial data into bssn variables</span>
+</p><!--l. 889--><p class="noindent" > 
+</p><!--l. 891--><p class="noindent" ></p> <table id="TBL-33" class="tabular" 
+ 
+><colgroup id="TBL-33-1g"><col 
+id="TBL-33-1" /><col 
+id="TBL-33-2" /><col 
+id="TBL-33-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-33-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-33-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-1-3"  
+class="td11"> admbase_postinitial  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-33-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-2-3"  
+class="td11"> c                           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-33-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-3-2"  
+class="td11"> Reads:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-3-3"  
+class="td11"> admbase::metric       </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-33-4-1"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-4-2"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-4-3"  
+class="td11"> admbase::shift</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-33-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-5-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-5-3"  
+class="td11"> admbase::curv         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-33-6-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-6-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-6-3"  
+class="td11"> admbase::dtshift      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-33-7-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-7-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-7-3"  
+class="td11"> admbase::lapse        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-33-8-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-8-2"  
+class="td11"> Sync:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-8-3"  
+class="td11"> evol_variables          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-33-9-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-9-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-9-3"  
+class="td11"> function                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-10-"><td  style="white-space:nowrap; text-align:center;" id="TBL-33-10-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-10-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-10-3"  
+class="td11"> evol_variables          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-11-"><td  style="white-space:nowrap; text-align:center;" id="TBL-33-11-1"  
+class="td11">    </td></tr></table>
+<!--l. 907--><p class="noindent" ><span 
+class="cmbx-10">MoL</span><span 
+class="cmbx-10">_Register </span>(conditional)
+</p><!--l. 909--><p class="noindent" >      baikal_mol_registration
+</p><!--l. 911--><p class="noindent" >     <span 
+class="cmti-10">register variables for mol</span>
+</p><!--l. 914--><p class="noindent" > 
+                                                                                       
+                                                                                       
+</p><!--l. 916--><p class="noindent" ></p> <table id="TBL-34" class="tabular" 
+ 
+><colgroup id="TBL-34-1g"><col 
+id="TBL-34-1" /><col 
+id="TBL-34-2" /><col 
+id="TBL-34-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-34-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-34-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-34-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-2-3"  
+class="td11"> meta      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-34-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-3-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-34-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 925--><p class="noindent" ><span 
+class="cmbx-10">MoL</span><span 
+class="cmbx-10">_CalcRHS </span>(conditional)
+</p><!--l. 927--><p class="noindent" >      baikal_ricci_eval_order_2
+</p><!--l. 929--><p class="noindent" >     <span 
+class="cmti-10">compute ricci tensor, needed for bssn rhss, at finite-differencing order 2</span>
+</p><!--l. 932--><p class="noindent" > 
+</p><!--l. 934--><p class="noindent" ></p> <table id="TBL-35" class="tabular" 
+ 
+><colgroup id="TBL-35-1g"><col 
+id="TBL-35-1" /><col 
+id="TBL-35-2" /><col 
+id="TBL-35-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-35-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-1-2"  
+class="td11"> Before:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-1-3"  
+class="td11"> baikal_rhs    </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-2-1"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-2-2"  
+class="td11"> Language: </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-2-3"  
+class="td11"> c</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-3-2"  
+class="td11"> Reads:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-3-3"  
+class="td11"> hdd00gf       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-4-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-4-3"  
+class="td11"> hdd01gf       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-5-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-5-3"  
+class="td11"> hdd02gf       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-6-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-6-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-6-3"  
+class="td11"> hdd11gf       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-7-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-7-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-7-3"  
+class="td11"> hdd12gf       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-8-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-8-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-8-3"  
+class="td11"> hdd22gf       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-9-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-9-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-9-3"  
+class="td11"> lambdau0gf  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-10-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-10-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-10-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-10-3"  
+class="td11"> lambdau1gf  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-11-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-11-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-11-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-11-3"  
+class="td11"> lambdau2gf  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-12-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-12-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-12-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-12-3"  
+class="td11"> function      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-13-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-13-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-13-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-13-3"  
+class="td11"> rbardd00gf   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-14-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-14-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-14-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-14-3"  
+class="td11"> rbardd01gf   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-15-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-15-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-15-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-15-3"  
+class="td11"> rbardd02gf   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-16-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-16-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-16-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-16-3"  
+class="td11"> rbardd11gf   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-17-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-17-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-17-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-17-3"  
+class="td11"> rbardd12gf   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-18-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-18-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-18-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-18-3"  
+class="td11"> rbardd22gf   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-19-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-19-1"  
+class="td11">    </td></tr></table>
+<!--l. 958--><p class="noindent" ><span 
+class="cmbx-10">MoL</span><span 
+class="cmbx-10">_CalcRHS </span>(conditional)
+</p><!--l. 960--><p class="noindent" >      baikal_ricci_eval_order_4
+</p><!--l. 962--><p class="noindent" >     <span 
+class="cmti-10">compute ricci tensor, needed for bssn rhss, at finite-differencing order 4</span>
+</p><!--l. 965--><p class="noindent" > 
+</p><!--l. 967--><p class="noindent" ></p> <table id="TBL-36" class="tabular" 
+ 
+><colgroup id="TBL-36-1g"><col 
+id="TBL-36-1" /><col 
+id="TBL-36-2" /><col 
+id="TBL-36-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-36-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-36-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-1-2"  
+class="td11"> Before:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-1-3"  
+class="td11"> baikal_rhs    </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-36-2-1"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-2-2"  
+class="td11"> Language: </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-2-3"  
+class="td11"> c</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-36-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-3-2"  
+class="td11"> Reads:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-3-3"  
+class="td11"> hdd00gf       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-36-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-4-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-4-3"  
+class="td11"> hdd01gf       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-36-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-5-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-5-3"  
+class="td11"> hdd02gf       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-36-6-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-6-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-6-3"  
+class="td11"> hdd11gf       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-36-7-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-7-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-7-3"  
+class="td11"> hdd12gf       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-36-8-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-8-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-8-3"  
+class="td11"> hdd22gf       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-36-9-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-9-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-9-3"  
+class="td11"> lambdau0gf  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-10-"><td  style="white-space:nowrap; text-align:center;" id="TBL-36-10-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-10-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-10-3"  
+class="td11"> lambdau1gf  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-11-"><td  style="white-space:nowrap; text-align:center;" id="TBL-36-11-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-11-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-11-3"  
+class="td11"> lambdau2gf  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-12-"><td  style="white-space:nowrap; text-align:center;" id="TBL-36-12-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-12-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-12-3"  
+class="td11"> function      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-13-"><td  style="white-space:nowrap; text-align:center;" id="TBL-36-13-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-13-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-13-3"  
+class="td11"> rbardd00gf   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-14-"><td  style="white-space:nowrap; text-align:center;" id="TBL-36-14-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-14-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-14-3"  
+class="td11"> rbardd01gf   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-15-"><td  style="white-space:nowrap; text-align:center;" id="TBL-36-15-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-15-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-15-3"  
+class="td11"> rbardd02gf   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-16-"><td  style="white-space:nowrap; text-align:center;" id="TBL-36-16-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-16-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-16-3"  
+class="td11"> rbardd11gf   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-17-"><td  style="white-space:nowrap; text-align:center;" id="TBL-36-17-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-17-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-17-3"  
+class="td11"> rbardd12gf   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-18-"><td  style="white-space:nowrap; text-align:center;" id="TBL-36-18-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-18-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-18-3"  
+class="td11"> rbardd22gf   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-19-"><td  style="white-space:nowrap; text-align:center;" id="TBL-36-19-1"  
+class="td11">    </td></tr></table>
+<!--l. 991--><p class="noindent" ><span 
+class="cmbx-10">MoL</span><span 
+class="cmbx-10">_CalcRHS </span>(conditional)
+</p><!--l. 993--><p class="noindent" >      baikal_t4dd_to_t4uu
+</p><!--l. 995--><p class="noindent" >     <span 
+class="cmti-10">compute t4uu from t4dd (provided in et?? from tmunubase), needed for bssn rhss</span>
+</p><!--l. 998--><p class="noindent" > 
+                                                                                       
+                                                                                       
+</p><!--l. 1000--><p class="noindent" ></p> <table id="TBL-37" class="tabular" 
+ 
+><colgroup id="TBL-37-1g"><col 
+id="TBL-37-1" /><col 
+id="TBL-37-2" /><col 
+id="TBL-37-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-37-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-1-2"  
+class="td11"> Before:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-1-3"  
+class="td11"> baikal_rhs                               </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-2-1"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-2-2"  
+class="td11"> Language: </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-2-3"  
+class="td11"> c</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-3-2"  
+class="td11"> Reads:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-3-3"  
+class="td11"> tmunubase::stress_energy_scalar  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-4-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-4-3"  
+class="td11"> tmunubase::stress_energy_vector  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-5-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-5-3"  
+class="td11"> tmunubase::stress_energy_tensor  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-6-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-6-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-6-3"  
+class="td11"> hdd00gf                                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-7-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-7-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-7-3"  
+class="td11"> hdd01gf                                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-8-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-8-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-8-3"  
+class="td11"> hdd02gf                                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-9-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-9-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-9-3"  
+class="td11"> hdd11gf                                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-10-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-10-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-10-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-10-3"  
+class="td11"> hdd12gf                                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-11-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-11-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-11-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-11-3"  
+class="td11"> hdd22gf                                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-12-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-12-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-12-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-12-3"  
+class="td11"> alphagf                                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-13-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-13-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-13-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-13-3"  
+class="td11"> cfgf                                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-14-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-14-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-14-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-14-3"  
+class="td11"> vetu0gf                                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-15-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-15-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-15-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-15-3"  
+class="td11"> vetu1gf                                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-16-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-16-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-16-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-16-3"  
+class="td11"> vetu2gf                                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-17-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-17-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-17-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-17-3"  
+class="td11"> function                                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-18-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-18-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-18-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-18-3"  
+class="td11"> t4uu00gf(everywhere)                </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-19-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-19-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-19-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-19-3"  
+class="td11"> t4uu01gf(everywhere)                </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-20-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-20-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-20-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-20-3"  
+class="td11"> t4uu02gf(everywhere)                </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-21-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-21-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-21-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-21-3"  
+class="td11"> t4uu03gf(everywhere)                </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-22-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-22-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-22-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-22-3"  
+class="td11"> t4uu11gf(everywhere)                </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-23-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-23-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-23-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-23-3"  
+class="td11"> t4uu12gf(everywhere)                </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-24-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-24-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-24-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-24-3"  
+class="td11"> t4uu13gf(everywhere)                </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-25-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-25-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-25-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-25-3"  
+class="td11"> t4uu22gf(everywhere)                </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-26-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-26-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-26-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-26-3"  
+class="td11"> t4uu23gf(everywhere)                </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-27-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-27-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-27-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-27-3"  
+class="td11"> t4uu33gf(everywhere)                </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-28-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-28-1"  
+class="td11">    </td></tr></table>
+<!--l. 1031--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-10000"></a>Aliased Functions</h4>
+<!--l. 1033--><p class="noindent" > 
+</p><!--l. 1035--><p class="noindent" ></p> <table id="TBL-38" class="tabular" 
+ 
+><colgroup id="TBL-38-1g"><col 
+id="TBL-38-1" /><col 
+id="TBL-38-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-38-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-38-1-1"  
+class="td11"> <span 
+class="cmbx-10">Alias Name: </span>                                       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-38-1-2"  
+class="td11"> <span 
+class="cmbx-10">Function Name:          </span></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-38-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-38-2-1"  
+class="td11"> ApplyBCs </td><td  style="white-space:nowrap; text-align:left;" id="TBL-38-2-2"  
+class="td11"> Baikal_aux_ApplyBCs</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-38-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-38-3-1"  
+class="td11"> Baikal_BSSN_constraints_order_2                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-38-3-2"  
+class="td11"> Baikal_BSSN_constraints  </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-38-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-38-4-1"  
+class="td11"> Baikal_BSSN_constraints_order_4 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-38-4-2"  
+class="td11"> Baikal_BSSN_constraints</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-38-5-"><td  style="white-space:nowrap; text-align:left;" id="TBL-38-5-1"  
+class="td11"> Baikal_Ricci_eval_order_2                             </td><td  style="white-space:nowrap; text-align:left;" id="TBL-38-5-2"  
+class="td11"> Baikal_Ricci                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-38-6-"><td  style="white-space:nowrap; text-align:left;" id="TBL-38-6-1"  
+class="td11"> Baikal_Ricci_eval_order_4                             </td><td  style="white-space:nowrap; text-align:left;" id="TBL-38-6-2"  
+class="td11"> Baikal_Ricci                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-38-7-"><td  style="white-space:nowrap; text-align:left;" id="TBL-38-7-1"  
+class="td11"> Baikal_Symmetry_registration_oldCartGrid3D  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-38-7-2"  
+class="td11"> Symmetry_registration     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-38-8-"><td  style="white-space:nowrap; text-align:left;" id="TBL-38-8-1"  
+class="td11"> Baikal_rhs_eval_order_2                               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-38-8-2"  
+class="td11"> Baikal_RHS                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-38-9-"><td  style="white-space:nowrap; text-align:left;" id="TBL-38-9-1"  
+class="td11"> Baikal_rhs_eval_order_4                               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-38-9-2"  
+class="td11"> Baikal_RHS                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-38-10-"><td  style="white-space:nowrap; text-align:left;" id="TBL-38-10-1"  
+class="td11">                                         </td></tr></table>
+ 
+</body></html> 
+
+                                                                                       
+
+

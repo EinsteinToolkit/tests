@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>The Llama multipatch infrastructure</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">The Llama multipatch infrastructure</h2>
+ <div class="author" ><span 
+class="cmr-12">Original authors: Denis Pollney, Christian Reisswig, Erik Schnetter, Nils Dorband, Peter Diener</span></div>
+<br />
+<div class="date" ><span 
+class="cmr-12">January 22, 2026</span></div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 17--><p class="noindent" ><span 
+class="cmtt-9">Llama </span><span 
+class="cmr-9">is a collection of thorns that defines a set of curvilinear multipatch grids in Cactus. The grids</span>
+     <span 
+class="cmr-9">are allowed to overlap. Interpatch boundary data is exchanged via interpolation.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Introduction</h3>
+<!--l. 24--><p class="noindent" >The <span 
+class="cmtt-10">Llama</span><span class="footnote-mark"><a 
+href="documentation2.html#fn1x0"><sup class="textsuperscript">1</sup></a></span><a 
+ id="x1-1001f1"></a> 
+code was implemented to allow one to use multiple curvilinear grid patches within <span 
+class="cmtt-10">Cactus</span>. The ability to have
+multiple grid “maps” is provided by <span 
+class="cmtt-10">Carpet</span>. Patch systems, and their coordinate systems and transformations
+are defined in <span 
+class="cmtt-10">Llama</span>.
+                                                                                       
+                                                                                       
+</p><!--l. 31--><p class="noindent" >The core of <span 
+class="cmtt-10">Llama </span>consists of the following core thorns: </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 33--><p class="noindent" ><span 
+class="cmtt-10">Coordinates</span>: Provides patch systems, coordinate mappings, and transformations.
+     </p></li>
+     <li class="itemize">
+     <!--l. 34--><p class="noindent" ><span 
+class="cmtt-10">Interpolate2</span>:  Sets  up  inter-patch  interpolation.  The  interpolation  itself  is  carried  out  using
+     <span 
+class="cmtt-10">CarpetInterp2</span>.</p></li></ul>
+<!--l. 37--><p class="noindent" >In addition, there are a number of optional thorns: </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 39--><p class="noindent" ><span 
+class="cmtt-10">GlobalDerivatives</span>: Provides inlined pointwise finite difference operators in the global Cartesian
+     tensor basis. The differencing is carried out in the local basis. Jacobians are applied to transform
+     to the global basis.</p></li></ul>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a>Using Llama</h3>
+<!--l. 49--><p class="noindent" >What follows is a brief introduction to using <span 
+class="cmtt-10">Llama</span>. It assumes that you are familiar with the two papers
+describing Llama <span class="cite">[<a 
+href="#XLlama_Pollney:2009yz">1</a>, <a 
+href="#XLlama_Reisswig:2012nc">2</a>]</span>.
+</p><!--l. 52--><p class="noindent" ><span 
+class="cmtt-10">Llama: Coordinates </span>provides grid functions for Jacobians, inverse Jacobians, and the derivitives of the
+Jacobian between the local coordinates of a given patch and the global Cartesian coordinates. It also provides a
+volume form to compute volume integrals in the global frame, taking into account the non-trivial overlap
+between patches.
+</p><!--l. 58--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.1   </span> <a 
+ id="x1-30002.1"></a>Obtaining This Thorn</h4>
+<!--l. 60--><p class="noindent" >The public version of <span 
+class="cmtt-10">Llama </span>can be found on the website <span 
+class="cmtt-10">http://www.llama-code.org</span>.
+</p><!--l. 63--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.2   </span> <a 
+ id="x1-40002.2"></a>Basic Usage</h4>
+                                                                                       
+                                                                                       
+<!--l. 68--><p class="noindent" >Here, we describe the basic parameter settings for <span 
+class="cmtt-10">Coordinates </span>and <span 
+class="cmtt-10">Interpolate2</span>. Parameters that are specific
+to a given patch system are described in the sections below.
+</p><!--l. 71--><p class="noindent" >The following parameters must be set for multipatch evolution: </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 73--><p class="noindent" ><span class="obeylines-h"><code class="verb">Carpet::domain_from_multipatch</code></span> must be set to <span 
+class="cmtt-10">yes </span>for multipatch.
+     </p></li>
+     <li class="itemize">
+     <!--l. 74--><p class="noindent" ><span class="obeylines-h"><code class="verb">CartGrid3D::type</code></span> must be set to <span 
+class="cmtt-10">multipatch </span>for multipatch.
+     </p></li>
+     <li class="itemize">
+     <!--l. 75--><p class="noindent" ><span class="obeylines-h"><code class="verb">CartGrid3D::set_coordinate_ranges_on</code></span> must be set to <span 
+class="cmtt-10">&#x0022;all maps&#x0022; </span>for multipatch.</p></li></ul>
+<!--l. 78--><p class="noindent" >The following basic parameters need to be set </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 80--><p class="noindent" ><span class="obeylines-h"><code class="verb">Coordinates::coordinate_system</code></span>. This selects a particular patch system defined in Llama.
+     </p></li>
+     <li class="itemize">
+     <!--l. 81--><p class="noindent" ><span class="obeylines-h"><code class="verb">Coordinates::patch_boundary_size</code></span>.  Sets  the  ghost  size  of  the  interpatch  boundary.  This
+     depends,  e.g.,  on  the  finite  difference  stencil  that  is  used.  This  parameter  should  be  equal  to
+     <span class="obeylines-h"><code class="verb">Driver::ghost_size</code></span>.
+     </p></li>
+     <li class="itemize">
+     <!--l. 83--><p class="noindent" ><span class="obeylines-h"><code class="verb">Coordinates::additional_overlap_size</code></span>. Sets the number of additional overlap points. The size
+     of this parameter depends on the interpolation order and type that is used, and on the patch system.
+     One wants this parameters to be as small as possible. <span 
+class="cmtt-10">Llama </span>will complain if the overlap size is not
+     sufficient for a given patch system and interpolation setup.
+     </p></li>
+     <li class="itemize">
+     <!--l. 86--><p class="noindent" ><span class="obeylines-h"><code class="verb">Coordinates::outer_boundary_size</code></span>. Sets the number of ghost zones at <span 
+class="cmti-10">outer </span>boundaries (i.e.,
+     ghost data is not obtained from inter-patch interpolation) where evolution specific outer boundary
+     conditions must be applied.
+     </p></li>
+     <li class="itemize">
+     <!--l. 88--><p class="noindent" ><span class="obeylines-h"><code class="verb">Coordinates::store_jacobian</code></span>. Activate/deactivate storage for Jacobian grid function. Whether
+     storage is required depends on other thorns that may use this function.
+     </p></li>
+     <li class="itemize">
+     <!--l. 89--><p class="noindent" ><span class="obeylines-h"><code class="verb">Coordinates::store_inverse_jacobian</code></span>.  Activate/deactive  storage  for  inverse  Jacobian  grid
+     function. Whether storage is required depends on other thorns that may use this function.
+                                                                                       
+                                                                                       
+     </p></li>
+     <li class="itemize">
+     <!--l. 90--><p class="noindent" ><span class="obeylines-h"><code class="verb">Coordinates::store_volume_form</code></span>.  Activate/deactive  storage  for  volume  form  grid  function.
+     Whether storage is required depends on other thorns that may use this function.
+     </p></li>
+     <li class="itemize">
+     <!--l. 91--><p class="noindent" ><span class="obeylines-h"><code class="verb">Interpolate::interpolator_order</code></span>. Selects the order of Lagrange inter-patch interpolation.
+     </p></li>
+     <li class="itemize">
+     <!--l. 92--><p class="noindent" ><span class="obeylines-h"><code class="verb">Interpolate::interpolator_order_matter</code></span>.  Selects  the  order  of  ENO  interpolation  for  those
+     variables that contain the “matter” tag. If the default value <span 
+class="cmtt-10">-1 </span>is used, this tag will be ignored and
+     Lagrange interpolation is used also for “matter” variables.</p></li></ul>
+<!--l. 96--><p class="noindent" >With cell-centered AMR, the following parameters must be set: </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 98--><p class="noindent" ><span class="obeylines-h"><code class="verb">Coordinates::stagger_outer_boundaries = yes</code></span>.
+     </p></li>
+     <li class="itemize">
+     <!--l. 99--><p class="noindent" ><span class="obeylines-h"><code class="verb">Coordinates::stagger_patch_boundaries = yes</code></span>.</p></li></ul>
+<!--l. 103--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.3   </span> <a 
+ id="x1-50002.3"></a>Patch systems</h4>
+<!--l. 105--><p class="noindent" >Currently, we support the following patch systems: </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 107--><p class="noindent" ><span 
+class="cmtt-10">Cartesian</span>: This is standard Cartesian coordinates.
+     </p></li>
+     <li class="itemize">
+     <!--l. 108--><p class="noindent" ><span 
+class="cmtt-10">TwoPatchCartesian</span>: This is two Cartesian patches, with one common face.
+     </p></li>
+     <li class="itemize">
+     <!--l. 109--><p class="noindent" ><span 
+class="cmtt-10">TwoPatchDistorted</span>: This is one Cartesian patch and a second patch with distortion. It is useful
+     for testing code.
+                                                                                       
+                                                                                       
+     </p></li>
+     <li class="itemize">
+     <!--l. 110--><p class="noindent" ><span 
+class="cmtt-10">Thornburg04</span>: This is a 7-patch system consisting of 1 central Cartesian cube capable of AMR which
+     is surrounded by 6 “inflated-cube” spherical grids.
+     </p></li>
+     <li class="itemize">
+     <!--l. 111--><p class="noindent" ><span 
+class="cmtt-10">Thornburg04nc</span>: This is a 6-patch system suitable for excision. It consists of 6 “inflated-cube”
+     spherical grids which together cover a spherical shell.
+     </p></li>
+     <li class="itemize">
+     <!--l. 112--><p class="noindent" ><span 
+class="cmtt-10">Thornburg13</span>: This is similar to the 7 patch system <span 
+class="cmtt-10">Thornburg04</span>, but with 13 patches.
+     </p></li>
+     <li class="itemize">
+     <!--l. 113--><p class="noindent" ><span 
+class="cmtt-10">CylinderInBox</span>: This is a hollow (spherical) cylinder in a (Cartesian) box.
+     </p></li>
+     <li class="itemize">
+     <!--l. 114--><p class="noindent" ><span 
+class="cmtt-10">Sphere+Column</span>: This is another system suitable for excision. It has an excision-type overlapping
+     sphere and column grid.
+     </p></li>
+     <li class="itemize">
+     <!--l. 115--><p class="noindent" ><span 
+class="cmtt-10">Cylinder+Column</span>: This is similar to the <span 
+class="cmtt-10">Sphere+Column </span>system, but with a central cylindrical grid
+     instead of a spherical one.</p></li></ul>
+<!--l. 118--><p class="noindent" >
+</p>
+<h5 class="subsubsectionHead"><span class="titlemark">2.3.1   </span> <a 
+ id="x1-60002.3.1"></a>Thornburg04: 7-patch system</h5>
+<!--l. 120--><p class="noindent" >The following basic parameters need to be set for this patch system: </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 122--><p class="noindent" ><span class="obeylines-h"><code class="verb">Coordinates::sphere_outer_radius</code></span>. The physical radius of the outer boundary defined by the
+     “inflated-cube” spherical grids.
+     </p></li>
+     <li class="itemize">
+     <!--l. 123--><p class="noindent" ><span class="obeylines-h"><code class="verb">Coordinates::sphere_inner_radius</code></span>. The radius of the inner boundary of the “inflated-cube”
+     spherical grids to the central cartesian cube. The size of the central Cartesian cube is controlled by
+     this parameter.
+     </p></li>
+     <li class="itemize">
+     <!--l. 125--><p class="noindent" ><span class="obeylines-h"><code class="verb">Coordinates::h_cartesian</code></span>. The coarse grid resolution \(\Delta x\) of the central Cartesian patch.
+                                                                                       
+                                                                                       
+     </p></li>
+     <li class="itemize">
+     <!--l. 126--><p class="noindent" ><span class="obeylines-h"><code class="verb">Coordinates::h_radial</code></span>. The radial resolution \(\Delta r\) of the “inflated-cube” spherical grids.
+     </p></li>
+     <li class="itemize">
+     <!--l. 127--><p class="noindent" ><span class="obeylines-h"><code class="verb">Coordinates::n_angular</code></span>.  The  number  of  grid  cells  per  angular  direction  per  patch  of  the
+     “inflated-cube” spherical grids.
+     </p></li>
+     <li class="itemize">
+     <!--l. 128--><p class="noindent" ><span class="obeylines-h"><code class="verb">Coordinates::radial_stretch</code></span>. Use radial stretching on the spherical inflated-cube grids <span 
+class="cmtt-10">yes/no</span>.
+     </p></li>
+     <li class="itemize">
+     <!--l. 129--><p class="noindent" ><span class="obeylines-h"><code class="verb">Coordinates::stretch_rmin_1</code></span>. Radius from which we start to decrease radial resolution.
+     </p></li>
+     <li class="itemize">
+     <!--l. 130--><p class="noindent" ><span class="obeylines-h"><code class="verb">Coordinates::stretch_rmax_1</code></span>.      Radius      at      which      radial      resolution      becomes
+     <span class="obeylines-h"><code class="verb">Coordinates::h_radial_1</code></span> and remains constant again
+     </p></li>
+     <li class="itemize">
+     <!--l. 131--><p class="noindent" ><span class="obeylines-h"><code class="verb">Coordinates::h_radial_1</code></span>. Radial stretched target resolution.</p></li></ul>
+<!--l. 134--><p class="noindent" >
+</p>
+<h5 class="subsubsectionHead"><span class="titlemark">2.3.2   </span> <a 
+ id="x1-70002.3.2"></a>Thornburg04nc: 6-patch system</h5>
+<!--l. 136--><p class="noindent" >This has the same parameters as the Thornburg04 patch system, with the exception of <span class="obeylines-h"><code class="verb">Coordinates::h_cartesian</code></span>,
+which has no meaning.
+</p><!--l. 142--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.4   </span> <a 
+ id="x1-80002.4"></a>Visualizing multi-patch data</h4>
+<!--l. 143--><p class="noindent" >The <span 
+class="cmtt-10">CarpetHDF5 </span>plugin for <span 
+class="cmtt-10">VisIt</span> <span class="cite">[<a 
+href="#XLlama_VisIt:web">3</a>]</span> supports reading multi-patch HDF5 files out of the box. It does however
+require that coordinates were output along with the actual data files. Assuming that your current options for
+HDF5 output look like this
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-1">
+IOHDF5::out_vars = &#x0022;HydroBase::rho&#x0022;
+</pre>
+<!--l. 150--><p class="nopar" > it is sufficient to change them to
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-2">
+CarpetIOHDF5::one_file_per_group = &#x0022;no&#x0022; # this is required by multipatch
+IOHDF5::out_vars = &#x0022;HydroBase::rho grid::coordinates&#x0022;
+</pre>
+<!--l. 155--><p class="nopar" > <span 
+class="cmtt-10">VisIt </span>will present the Cartesian and curvilinear parts of the grid as two different meshes and two different
+variables.
+</p><!--l. 164--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-90003"></a>History</h3>
+<!--l. 166--><p class="noindent" >The approximate time line is something like this: </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 168--><p class="noindent" > 2009: First version of Llama: Ability to simulate vacuum binary black hole mergers.
+     </p></li>
+     <li class="itemize">
+     <!--l. 169--><p class="noindent" > 2012: Second version of Llama: Ability to simulate general-relativistic hydrodynamics.</p></li></ul>
+<!--l. 181--><p class="noindent" >
+</p>
+<h3 class="likesectionHead"><a 
+ id="x1-10000"></a>References</h3>
+<!--l. 181--><p class="noindent" >
+    </p><div class="thebibliography">
+    <p class="bibitem" ><span class="biblabel">
+  [1]<span class="bibsp">   </span></span><a 
+ id="XLlama_Pollney:2009yz"></a>D. Pollney, C. Reisswig, E. Schnetter, N. Dorband and P. Diener, Phys. Rev. D <span 
+class="cmbx-10">83</span>, 044045
+    (2011), arXiv:0910.3803.
+    </p>
+    <p class="bibitem" ><span class="biblabel">
+  [2]<span class="bibsp">   </span></span><a 
+ id="XLlama_Reisswig:2012nc"></a>C. Reisswig, R. Haas, C. D. Ott, E. Abdikamalov, P. Mösta, D. Pollney and E. Schnetter,
+    Phys. Rev. D <span 
+class="cmbx-10">87</span>, 064023 (2013), arXiv:1212.1191.
+                                                                                       
+                                                                                       
+    </p>
+    <p class="bibitem" ><span class="biblabel">
+  [3]<span class="bibsp">   </span></span><a 
+ id="XLlama_VisIt:web"></a>VisIt visualization tool <a 
+href="https://wci.llnl.gov/codes/visit/" class="url" ><span 
+class="cmtt-10">https://wci.llnl.gov/codes/visit/</span></a>
+</p>
+    </div>
+ 
+</body></html> 
+
+                                                                                       
+
+

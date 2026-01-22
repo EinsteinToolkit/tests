@@ -1,0 +1,1786 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>TOVSolver</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">TOVSolver</h2>
+           <div class="author" ><span 
+class="cmr-12">I.</span><span 
+class="cmr-12"> Hawke,</span>
+<br /> <span 
+class="cmr-12">F.</span><span 
+class="cmr-12"> Loeffler </span><span 
+class="cmmi-12">&#x003C;</span><span 
+class="cmr-12">loeffler@sissa.it </span><span 
+class="cmmi-12">&#x003E;</span></div>
+<br />
+<div class="date" ><span 
+class="cmr-12">January 22, 2026</span></div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 105--><p class="noindent" ><span 
+class="cmr-9">This  thorn  solves  the  Tolman-Oppenheimer-Volkov  equations  of  hydrostatic  equilibrium  for  a</span>
+     <span 
+class="cmr-9">spherically symmetric static star.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Introduction</h3>
+<!--l. 115--><p class="noindent" >The Tolman-Oppenheimer-Volkoff solution is a static perfect fluid “star”. It is frequently used as a test of
+relativistic hydro codes. Here it is intended for use without evolving the matter terms. This provides a compact
+strong field solution which is static but does not contain singularities.
+</p><!--l. 123--><p class="noindent" >
+                                                                                       
+                                                                                       
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a>Equations</h3>
+<!--l. 127--><p class="noindent" >The equations for a TOV star <span class="cite">[<a 
+href="#XTolman39">1</a>, <a 
+href="#XOppVol39">2</a>, <a 
+href="#Xmtw">3</a>]</span> are usually derived in Schwarzschild coordinates. In these coordinates,
+the metric can be brought into the form \begin {equation}  ds^2 = -e^{2\phi }dt^2 + \left (1-\dfrac {2m}{r}\right )^{-1}dr^2 + r^2 d\Omega ^2 \ .  \end {equation}<a 
+ id="x1-2001r1"></a>
+</p><!--l. 135--><p class="noindent" >This thorn is based on the notes of Thomas Baumgarte <span class="cite">[<a 
+href="#XBaumgarte-file">4</a>]</span> that have been partially included in this
+documentation. However the notation for the fluid quantities follows <span class="cite">[<a 
+href="#XFont00a">5</a>]</span>. Here we are assuming that the stress
+energy tensor is given by \begin {equation}  \label {eq:Tmunu} T^{\mu \nu } = (\mu + P)u^{\mu }u^{\nu } + Pg^{\mu \nu },  \end {equation}<a 
+ id="x1-2002r2"></a> where \(\mu \) is the total energy, \(P\) the pressure, \(u^{\mu }\) the fluid four velocity, \(\rho \) the rest-mass density,
+\(\epsilon \) the specific internal energy, and </p><div class="eqnarray">\begin {eqnarray}  \label {eq:fluidquantities} \mu &amp; = &amp; \rho (1 + \epsilon ), \\ P &amp; = &amp; (\Gamma - 1)\rho \epsilon , \\ P &amp; = &amp; K \rho ^{\Gamma }.  \end {eqnarray}</div>
+<!--l. 152--><p class="noindent" >This enforces a polytropic equation of state. We note that in Cactus the units are \(c = G = M_{\odot } = 1\).
+</p><!--l. 155--><p class="noindent" >The equations to give the initial data are solved (as usual) in the Schwarzschild-like coordinates with the areal
+radius labelled \(r\). The equations of the relativistic hydrostatic equilibrium are </p><div class="eqnarray">\begin {eqnarray}  \label {eq:TOViso} \frac {d P}{d r} &amp; = &amp; -(\mu + P) \frac {m + 4\pi r^3 P}{r(r - 2m)}, \\ \frac {d m}{d r} &amp; = &amp; 4 \pi r^2 \mu , \\ \frac {d \phi }{d r} &amp; = &amp; \frac {m + 4\pi r^3 P}{r(r - 2m)} \ . \\  \end {eqnarray}</div>
+<!--l. 167--><p class="noindent" >Here \(m\) is the gravitational mass inside the sphere radius \(r\), and \(\phi \) the logarithm of the lapse. Once the integration
+is done for the interior of the star we match to the exterior (see below). In the exterior we have
+\begin {align}  \label {eq:TOVexterior} P &amp; = {\tt TOV\_atmosphere}, \\ m &amp; = M, \\ \phi &amp; = \dfrac {1}{2} \log (1-2M / r).  \end {align}
+</p><!--l. 178--><p class="noindent" >In order to impose initial data in cartesian coordinates, we want to transform this solution to isotropic
+coordinates, in which the metric takes the form \begin {equation}  \label {eq:metr_iso} ds^2 = -e^{2\phi }dt^2+e^{2\Lambda }\left (d\bar {r}^2+\bar {r}^2d\Omega ^2\right ) \ .  \end {equation}<a 
+ id="x1-2003r3"></a> Here \(\bar {r}\) denotes the isotropic radius. Matching the two metrics,
+one obviously finds \begin {align}  r^2 &amp;= e^{2\Lambda }\bar {r}^2 \ , \\ \left (1-\dfrac {2m}{r}\right )^{-1} dr^2 &amp;= e^{2\Lambda }d\bar {r}^2 \ .  \end {align}
+</p><!--l. 190--><p class="noindent" >As a result, we have an additional differential equation to solve in order to have \(\bar {r}(r)\), that is \begin {equation}  \label {eq:rbar} \frac {d (\log (\bar {r} / r))}{\partial r} = \frac {r^{1/2} - (r-2m)^{1/2}}{r(r-2m)^{1/2}} \ .  \end {equation}<a 
+ id="x1-2004r4"></a> Given such a solution,
+the missing metric potential is simply given by \begin {equation}  e^{\Lambda } = \dfrac {r}{\bar {r}} \ .  \end {equation}<a 
+ id="x1-2005r5"></a> In the following section we concentrate on solving Eq. (<a 
+href="#x1-2004r4">4<!--tex4ht:ref: eq:rbar --></a>) in the
+exterior and in the interior of the star.
+</p><!--l. 203--><p class="noindent" >Then, given these one-dimensional data we interpolate to get data on the three-dimensional Cactus grid; that is,
+we interpolate on the three dimensional <span 
+class="cmtt-10">r </span>given by the <span 
+class="cmtt-10">x, y, z </span>variables the physical hydro and spacetime
+quantities that are function of the isotropic radius \(\bar {r}\) computed above. Only linear interpolation is used. This
+avoids problems at the surface of the star, and does not cause problems if the number of points in the
+one dimensional array is sufficient (\(1\times 10^5\) is the default, which should be sufficient for medium-sized
+grids).
+</p><!--l. 213--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.1   </span> <a 
+ id="x1-30002.1"></a>Exterior</h4>
+<!--l. 217--><p class="noindent" >In the exterior of the star, \(r&gt;R\), the mass \(M\equiv m(R)\) is constant, and Eq. (<a 
+href="#x1-2004r4">4<!--tex4ht:ref: eq:rbar --></a>) can be solved analytically up to a constant of
+integration. Fixing this constant such that \(r\) and \(\bar {r}\) agree at infinity, we find \begin {equation}  \bar {r} = \dfrac {1}{2}\left (\sqrt {r^2-2Mr}+r -M\right ) \ ,  \end {equation}<a 
+ id="x1-3001r6"></a> or, solving for \(r\) [cfr. Exercise 31.7 of
+MTW <span class="cite">[<a 
+href="#Xmtw">3</a>]</span>] \begin {equation}  r=\bar {r}\left (1+\dfrac {M}{2\bar {r}}\right )^2 \ .  \end {equation}<a 
+ id="x1-3002r7"></a> The metric potential as a function of \(\bar {r}\) is obviously \begin {equation}  e^{\Lambda } = \left (1+\dfrac {M}{2\bar {r}}\right )^2 \ .  \end {equation}<a 
+ id="x1-3003r8"></a>
+</p><!--l. 233--><p class="noindent" >
+</p>
+                                                                                       
+                                                                                       
+<h4 class="subsectionHead"><span class="titlemark">2.2   </span> <a 
+ id="x1-40002.2"></a>Interior</h4>
+<!--l. 237--><p class="noindent" >In the interior, Eq, (<a 
+href="#x1-2004r4">4<!--tex4ht:ref: eq:rbar --></a>) can not be integrated analytically, because \(m\) is now a function of \(r\). Instead, we have to
+integrate \begin {equation}  \int _0^{\bar {r}} \dfrac {d\bar {r}}{\bar {r}} = \int _0^r\left (1-\dfrac {2m}{r}\right )^{-1/2}\dfrac {dr}{r} \ .  \end {equation}<a 
+ id="x1-4001r9"></a> The left hand side can be integrated analytically, and has a singular point at \(\bar {r}=0\). The right hand
+side cannot be integrated analytically, but will also be singular at \(r=0\), which poses problems when
+trying to integrate the equation numerically. We therefore rewrite the right hand side by adding and
+subracting a term \(1/r\), which yields \begin {equation}  \int _0^r\dfrac {1}{r(1-2m/r)^{1/2}}dr = \int _0^r\dfrac {1-(1-2m/r)^{1/2}}{r(1-2m/r)^{1/2}}dr+\int _0^r\dfrac {dr}{r} \ .  \end {equation}<a 
+ id="x1-4002r10"></a> Since \(m\sim r^3\) close to the origin, the first term on the right hand side is
+now regular and the second one can be integrated analytically. As a result, we find \begin {equation}  \int _0^{\bar {r}}d\ln \bar {r}-\int _0^rd\ln r=\int _0^r\dfrac {1-(1-2m/r)^{1/2}}{r(1-2m/r)^{1/2}}dr \ .  \end {equation}<a 
+ id="x1-4003r11"></a> Replacing the
+lower limits (\(r=\bar {r}=0\)) temporarily with \(r_0\) and \(\bar {r}_0\), we can integrate the right hand side and find \begin {equation}  \ln \left (\dfrac {\bar {r}}{r}\right )-\ln \left (\dfrac {\bar {r}_0}{r_0}\right )=\int _0^r\dfrac {1-(1-2m/r)^{1/2}}{r(1-2m/r)^{1/2}}dr \ ,  \end {equation}<a 
+ id="x1-4004r12"></a> or \begin {equation}  \bar {r} = C r \exp \left [\int _0^r\dfrac {1-(1-2m/r)^{1/2}}{r(1-2m/r)^{1/2}}dr\right ] \ .  \end {equation}<a 
+ id="x1-4005r13"></a> Here the
+constant of integration \(C\) is related to the ratio \(\bar {r}_0/r_0\) evaluated at the origin (which is perfectly regular). It
+can be chosen such that the interior solution matches the exterior solution at the surface of the
+star. This requirement implies \begin {equation}  C = \dfrac {1}{2R}\left (\sqrt {R^2-2MR}+R-M\right )\exp \left [-\int _0^R\dfrac {1-(1-2m/r)^{1/2}}{r(1-2m/r)^{1/2}}dr\right ] \ .  \end {equation}<a 
+ id="x1-4006r14"></a> In this respect, let us recall how we do initial data for the system
+of equations at \(r=0\). Given a value of the central density \(\rho _c\) (in Cactus units) we pose \(P_0 = K\rho _c^{\Gamma }\), \(m_0=0\), \(\phi _0=0\) and \(\bar {r}_0 = {\tt TOV\_Tiny}\), \(r_0 = {\tt TOV\_Tiny}\). The
+<span 
+class="cmtt-10">TOV</span><span 
+class="cmtt-10">_Tiny </span>number is hardwired into the code to avoid divide by zero errors; it is \(10^{-20}\). Also the default
+parameters will give the TOV star used for the long term evolutions in <span class="cite">[<a 
+href="#XFont02a">6</a>]</span>. That is, a nonrotating \(N=1\) (\(\gamma =1+1/N=2\))
+polytropic star with gravitational mass \(M=1.4M_{\odot }\), circumferential radius \(R=14.15\)km, central rest-mass density \(\rho _c=1.28 \times 10^{-3}\) and
+\(K=100\).
+</p><!--l. 282--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-50003"></a>Use of this thorn</h3>
+<!--l. 286--><p class="noindent" >To use this thorn to provide initial data for the <span 
+class="cmtt-10">ADMBase </span>variables \(\alpha \), \(\beta \), \(g\) and \(K\) just activate the thorn and set
+<span 
+class="cmtt-10">ADMBase:initial</span><span 
+class="cmtt-10">_data = ‘‘TOV’’</span>.
+</p><!--l. 290--><p class="noindent" >There are two ways of coupling the matter sources to the thorn that evolves the Einstein equations. One is to
+use the <span 
+class="cmtt-10">CalcTmunu </span>interface. This will give the components of the stress energy tensor <span 
+class="cmti-10">pointwise </span>across the grid.
+For an example of this, see thorn <span 
+class="cmtt-10">ADM </span>in <span 
+class="cmtt-10">CactusEinstein</span>.
+</p><!--l. 296--><p class="noindent" >To use the <span 
+class="cmtt-10">CalcTmunu </span>interface you should </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 298--><p class="noindent" >put the lines
+                                                                                       
+                                                                                       
+</p>
+     <pre class="verbatim" id="verbatim-1">
+     friend: ADMCoupling
+     
+     USES INCLUDE: CalcTmunu.inc
+     USES INCLUDE: CalcTmunu_temps.inc
+     USES INCLUDE: CalcTmunu_rfr.inc
+</pre>
+     <!--l. 305--><p class="nopar" > in your <span 
+class="cmtt-10">interface.ccl</span>
+     </p></li>
+     <li class="itemize">
+     <!--l. 307--><p class="noindent" >In any routine requiring the matter terms, put </p>
+         <ul class="itemize2">
+         <li class="itemize">
+         <!--l. 309--><p class="noindent" ><span 
+class="cmtt-10">#include ‘‘CalcTmunu</span><span 
+class="cmtt-10">_temps.inc’’ </span>in the variable declarations
+         </p></li>
+         <li class="itemize">
+         <!--l. 311--><p class="noindent" >declare <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_REAL</span>s <span 
+class="cmtt-10">Ttt, Ttx, Tty, Ttz, Txx, Txy, Txz, Tyy, Tyz, Tzz</span>.
+         </p></li>
+         <li class="itemize">
+         <!--l. 313--><p class="noindent" >Inside an <span 
+class="cmtt-10">i,j,k </span>loop put <span 
+class="cmtt-10">#include ‘‘CalcTmunu.inc’’</span>. <span 
+class="cmbx-10">This must be a Fortran routine</span>
+         (We could probably fix this if requested).</p></li></ul>
+     </li>
+     <li class="itemize">
+     <!--l. 317--><p class="noindent" >You then use the real numbers <span 
+class="cmtt-10">Ttt </span>etc. as the stress energy tensor at a point.</p></li></ul>
+<!--l. 321--><p class="noindent" >As an alternative you can use the grid functions <span 
+class="cmtt-10">StressEnergytt, StressEnergytx</span>, etc. directly
+to have the stress energy tensor over the entire grid. To do this you just need the line <span 
+class="cmtt-10">friend:</span>
+<span 
+class="cmtt-10">ADMCoupling </span>in your <span 
+class="cmtt-10">interface.ccl</span>. Although this seems much simpler, you will now <span 
+class="cmti-10">only </span>get
+the contributions from the <span 
+class="cmtt-10">TOVSolver </span>thorn. If you want to use other matter sources, most of the
+current thorns (<span 
+class="cmtt-10">CosmologicalConstant</span>, the hydro code, the scalar field code) all use the <span 
+class="cmtt-10">CalcTmunu</span>
+interface.
+</p><!--l. 330--><p class="noindent" >You also have the possibility to use a parameter <span 
+class="cmtt-10">GRHydrotovsolver::TOV</span><span 
+class="cmtt-10">_Separation </span>to obtain a spacetime
+consisting of one TOV-system for \(x&gt;0\) and a second (similar) for \(x&lt;0\). This parameter sets the separation of the
+centers of two neutron stars, has to be positive and should be larger than twice the radius of one
+star.<br 
+class="newline" />Be aware that the spacetime obtained by this is no physical spacetime and no solution of Einsteins Equations
+and therefore an IVP-run has to follow. This parameter was only introduced for testing purposes of the
+IVP-Solver and should only be considered as such. There would be better (and also easy) ways to obtain initial
+data for two TOVs than that.
+                                                                                       
+                                                                                       
+</p><!--l. 345--><p class="noindent" >
+</p>
+<h3 class="likesectionHead"><a 
+ id="x1-6000"></a>References</h3>
+<!--l. 345--><p class="noindent" >
+    </p><div class="thebibliography">
+    <p class="bibitem" ><span class="biblabel">
+  [1]<span class="bibsp">   </span></span><a 
+ id="XTolman39"></a>R. C. Tolman, Phys. Rev. <span 
+class="cmbx-10">55</span>, 364 (1939).
+    </p>
+    <p class="bibitem" ><span class="biblabel">
+  [2]<span class="bibsp">   </span></span><a 
+ id="XOppVol39"></a>J. R. Oppenheimer and G. Volkoff, Physical Review <span 
+class="cmbx-10">55</span>, 374 (1939).
+    </p>
+    <p class="bibitem" ><span class="biblabel">
+  [3]<span class="bibsp">   </span></span><a 
+ id="Xmtw"></a>C.W. Misner, K.S. Thorn and J.A. Wheeler, Gravitation (Freeman and co. NY, 1973).
+    </p>
+    <p class="bibitem" ><span class="biblabel">
+  [4]<span class="bibsp">   </span></span><a 
+ id="XBaumgarte-file"></a>T. W. Baumgarte. There is a copy of his notes in this directory: <br 
+class="newline" />TOVSolver/doc.
+    </p>
+    <p class="bibitem" ><span class="biblabel">
+  [5]<span class="bibsp">   </span></span><a 
+ id="XFont00a"></a>J. A. Font, M. Miller, W. Suen and M. Tobias, Phys. Rev. <span 
+class="cmbx-10">D61</span>, 044011 (2000).
+    </p>
+    <p class="bibitem" ><span class="biblabel">
+  [6]<span class="bibsp">   </span></span><a 
+ id="XFont02a"></a>J. A. Font, T. Goodale, S. Iyer, M. Miller, L. Rezzolla, E. Seidel, N. Stergioulas, W. Suen and
+    M. Tobias, Phys. Rev. <span 
+class="cmbx-10">D65</span>, 084024 (2002).
+</p>
+    </div>
+<!--l. 378--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-70004"></a>Parameters</h3>
+<!--l. 397--><p class="noindent" ></p> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /></colgroup><colgroup id="TBL-2-2g"><col 
+id="TBL-2-2" /><col 
+id="TBL-2-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:normal; text-align:left;" id="TBL-2-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">pert_amplitude</div>                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-1-3"  
+class="td01">                                      REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-2-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Amplitude of perturbation</span></div>                                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>0.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-4-"><td  style="white-space:normal; text-align:left;" id="TBL-2-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                                   </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-2-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Anything</div>                                                                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 404--><p class="noindent" ></p> <table id="TBL-3" class="tabular" 
+ 
+><colgroup id="TBL-3-1g"><col 
+id="TBL-3-1" /></colgroup><colgroup id="TBL-3-2g"><col 
+id="TBL-3-2" /><col 
+id="TBL-3-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-1-"><td  style="white-space:normal; text-align:left;" id="TBL-3-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">perturb</div>                            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-1-3"  
+class="td01">                             BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-3-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Add density perturbation (you should solve the IVP if true)</span></div>                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-3-1"  
+class="td11">                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-3-3"  
+class="td01">                            <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-4-1"  
+class="td11">                          </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 411--><p class="noindent" ></p> <table id="TBL-4" class="tabular" 
+ 
+><colgroup id="TBL-4-1g"><col 
+id="TBL-4-1" /></colgroup><colgroup id="TBL-4-2g"><col 
+id="TBL-4-2" /><col 
+id="TBL-4-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-1-"><td  style="white-space:normal; text-align:left;" id="TBL-4-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tov_clear_initial_data</div>          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-1-3"  
+class="td01">                             BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-4-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Clear initial data (spacetime)? Default is yes.</span></div>                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-3-1"  
+class="td11">                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-3-3"  
+class="td01">                           <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-4-1"  
+class="td11">                          </td></tr></table>
+<!--l. 418--><p class="noindent" ></p> <table id="TBL-5" class="tabular" 
+ 
+><colgroup id="TBL-5-1g"><col 
+id="TBL-5-1" /></colgroup><colgroup id="TBL-5-2g"><col 
+id="TBL-5-2" /><col 
+id="TBL-5-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-1-"><td  style="white-space:normal; text-align:left;" id="TBL-5-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tov_combine_method</div>          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-1-3"  
+class="td01">                                 KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-5-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Which combine method should be used.</span></div>                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-3-3"  
+class="td01">                             <span 
+class="cmbx-10">Default: </span>average  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-4-"><td  style="white-space:normal; text-align:left;" id="TBL-5-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">maximum</div>                          </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-5-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Take the maximum of rho and gxx as clue for the rest as clue.</div>           
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-5-"><td  style="white-space:normal; text-align:left;" id="TBL-5-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">average</div>                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-5-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Take the average of all available parts.</div>                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-6-1"  
+class="td11">                          </td></tr></table>
+<!--l. 425--><p class="noindent" ></p> <table id="TBL-6" class="tabular" 
+ 
+><colgroup id="TBL-6-1g"><col 
+id="TBL-6-1" /></colgroup><colgroup id="TBL-6-2g"><col 
+id="TBL-6-2" /><col 
+id="TBL-6-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-1-"><td  style="white-space:normal; text-align:left;" id="TBL-6-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tov_conformal_flat_three_metric</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-1-3"  
+class="td01">                             BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-6-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Use conformal factor to get the 3-metric flat. default is no</span></div>                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-3-1"  
+class="td11">                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-3-3"  
+class="td01">                            <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-4-1"  
+class="td11">                          </td></tr></table>
+<!--l. 432--><p class="noindent" ></p> <table id="TBL-7" class="tabular" 
+ 
+><colgroup id="TBL-7-1g"><col 
+id="TBL-7-1" /></colgroup><colgroup id="TBL-7-2g"><col 
+id="TBL-7-2" /><col 
+id="TBL-7-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-1-"><td  style="white-space:normal; text-align:left;" id="TBL-7-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tov_dr</div>                              </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-1-3"  
+class="td01">                                      REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-7-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">The spacing in the radial direction on the 1d grid</span></div>                                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-3-3"  
+class="td01">                               <span 
+class="cmbx-10">Default: </span>5.e-4  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-4-"><td  style="white-space:normal; text-align:left;" id="TBL-7-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">(0.0:*</div>                                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-7-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Greater than 0</div>                                                                         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 439--><p class="noindent" ></p> <table id="TBL-8" class="tabular" 
+ 
+><colgroup id="TBL-8-1g"><col 
+id="TBL-8-1" /></colgroup><colgroup id="TBL-8-2g"><col 
+id="TBL-8-2" /><col 
+id="TBL-8-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-1-"><td  style="white-space:normal; text-align:left;" id="TBL-8-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tov_enforce_interpolation</div>     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-1-3"  
+class="td01">                             BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-8-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Enforce the interpolation of the data onto the Hydro GFs even without tov as</span>
+  <span 
+class="cmti-10">specified initial data</span></div>                                                                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-3-1"  
+class="td11">                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-3-3"  
+class="td01">                            <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-4-1"  
+class="td11">                          </td></tr></table>
+<!--l. 446--><p class="noindent" ></p> <table id="TBL-9" class="tabular" 
+ 
+><colgroup id="TBL-9-1g"><col 
+id="TBL-9-1" /></colgroup><colgroup id="TBL-9-2g"><col 
+id="TBL-9-2" /><col 
+id="TBL-9-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-1-"><td  style="white-space:normal; text-align:left;" id="TBL-9-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tov_fake_evolution</div>              </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-1-3"  
+class="td01">                                        INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-9-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Fake evolution by setting ID at every step</span></div>                                                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-3-3"  
+class="td01">                              <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-4-"><td  style="white-space:normal; text-align:left;" id="TBL-9-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                                   </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-9-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">anything, 0 as off (default), everything else as on</div>                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 453--><p class="noindent" ></p> <table id="TBL-10" class="tabular" 
+ 
+><colgroup id="TBL-10-1g"><col 
+id="TBL-10-1" /></colgroup><colgroup id="TBL-10-2g"><col 
+id="TBL-10-2" /><col 
+id="TBL-10-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-1-"><td  style="white-space:normal; text-align:left;" id="TBL-10-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tov_fast_interpolation</div>         </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-1-3"  
+class="td01">                             BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-10-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Use faster interpolation algorithm? Default is yes.</span></div>                                         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-3-1"  
+class="td11">                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-3-3"  
+class="td01">                           <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-4-1"  
+class="td11">                          </td></tr></table>
+<!--l. 460--><p class="noindent" ></p> <table id="TBL-11" class="tabular" 
+ 
+><colgroup id="TBL-11-1g"><col 
+id="TBL-11-1" /></colgroup><colgroup id="TBL-11-2g"><col 
+id="TBL-11-2" /><col 
+id="TBL-11-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-1-"><td  style="white-space:normal; text-align:left;" id="TBL-11-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tov_gamma</div>                       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-1-3"  
+class="td01">                                      REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-11-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">The polytropic constant in P = K rho</span><span 
+class="cmti-10">Ĝamma</span></div>                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>2.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-4-"><td  style="white-space:normal; text-align:left;" id="TBL-11-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1.0:</div>
+                                         </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-11-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">The physical range at high Lorentz factors is [1,2], but otherwise higher
+  values of gamma can also be used</div>                                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 467--><p class="noindent" ></p> <table id="TBL-12" class="tabular" 
+ 
+><colgroup id="TBL-12-1g"><col 
+id="TBL-12-1" /></colgroup><colgroup id="TBL-12-2g"><col 
+id="TBL-12-2" /><col 
+id="TBL-12-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-1-"><td  style="white-space:normal; text-align:left;" id="TBL-12-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tov_k</div>                               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-1-3"  
+class="td01">                                      REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-12-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">The polytropic constant in P = K rho</span><span 
+class="cmti-10">Ĝamma</span></div>                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-3-3"  
+class="td01">                               <span 
+class="cmbx-10">Default: </span>100.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-4-"><td  style="white-space:normal; text-align:left;" id="TBL-12-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">(0.0:*</div>                                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-12-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Greater than 0</div>                                                                         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 474--><p class="noindent" ></p> <table id="TBL-13" class="tabular" 
+ 
+><colgroup id="TBL-13-1g"><col 
+id="TBL-13-1" /></colgroup><colgroup id="TBL-13-2g"><col 
+id="TBL-13-2" /><col 
+id="TBL-13-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-1-"><td  style="white-space:normal; text-align:left;" id="TBL-13-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tov_momentum_psi_power</div>   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-1-3"  
+class="td01">                                        INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-13-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Power of Psi to be multiplied with J</span><span 
+class="cmti-10">î for Mom</span></div>                                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-3-3"  
+class="td01">                              <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-4-"><td  style="white-space:normal; text-align:left;" id="TBL-13-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                                   </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-13-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">anything, 0 as default</div>                                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 481--><p class="noindent" ></p> <table id="TBL-14" class="tabular" 
+ 
+><colgroup id="TBL-14-1g"><col 
+id="TBL-14-1" /></colgroup><colgroup id="TBL-14-2g"><col 
+id="TBL-14-2" /><col 
+id="TBL-14-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-1-"><td  style="white-space:normal; text-align:left;" id="TBL-14-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tov_num_radial</div>                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-1-3"  
+class="td01">                                        INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-14-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">The number of radial points for the ODE integration</span></div>                                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-3-3"  
+class="td01">                             <span 
+class="cmbx-10">Default: </span>100000  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-4-"><td  style="white-space:normal; text-align:left;" id="TBL-14-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1:*</div>                                   </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-14-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Greater than 0</div>                                                                         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-5-1"  
+class="td11">                          </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 488--><p class="noindent" ></p> <table id="TBL-15" class="tabular" 
+ 
+><colgroup id="TBL-15-1g"><col 
+id="TBL-15-1" /></colgroup><colgroup id="TBL-15-2g"><col 
+id="TBL-15-2" /><col 
+id="TBL-15-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-1-"><td  style="white-space:normal; text-align:left;" id="TBL-15-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tov_num_tovs</div>                    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-15-1-3"  
+class="td01">                                        INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-15-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">The number of TOVs</span></div>                                                                                    
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-15-3-3"  
+class="td01">                                  <span 
+class="cmbx-10">Default: </span>1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-4-"><td  style="white-space:normal; text-align:left;" id="TBL-15-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1:*</div>                                   </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-15-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Greater than 0</div>                                                                         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 495--><p class="noindent" ></p> <table id="TBL-16" class="tabular" 
+ 
+><colgroup id="TBL-16-1g"><col 
+id="TBL-16-1" /></colgroup><colgroup id="TBL-16-2g"><col 
+id="TBL-16-2" /><col 
+id="TBL-16-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-1-"><td  style="white-space:normal; text-align:left;" id="TBL-16-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tov_populate_timelevels</div>       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-16-1-3"  
+class="td01">                                        INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-16-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Populate that amount of timelevels</span></div>                                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-16-3-3"  
+class="td01">                                  <span 
+class="cmbx-10">Default: </span>1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-4-"><td  style="white-space:normal; text-align:left;" id="TBL-16-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1:3</div>                                   </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-16-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1 (default) to 3</div>                                                                         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 502--><p class="noindent" ></p> <table id="TBL-17" class="tabular" 
+ 
+><colgroup id="TBL-17-1g"><col 
+id="TBL-17-1" /></colgroup><colgroup id="TBL-17-2g"><col 
+id="TBL-17-2" /><col 
+id="TBL-17-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-1-"><td  style="white-space:normal; text-align:left;" id="TBL-17-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tov_position_x</div>                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-1-3"  
+class="td01">                                      REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-17-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Position of neutron star, x coordinate</span></div>                                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>0.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-4-"><td  style="white-space:normal; text-align:left;" id="TBL-17-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                                   </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-17-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">real</div>                                                                                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 509--><p class="noindent" ></p> <table id="TBL-18" class="tabular" 
+ 
+><colgroup id="TBL-18-1g"><col 
+id="TBL-18-1" /></colgroup><colgroup id="TBL-18-2g"><col 
+id="TBL-18-2" /><col 
+id="TBL-18-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-1-"><td  style="white-space:normal; text-align:left;" id="TBL-18-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tov_position_y</div>                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-18-1-3"  
+class="td01">                                      REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-18-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Position of neutron star, y coordinate</span></div>                                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-18-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>0.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-4-"><td  style="white-space:normal; text-align:left;" id="TBL-18-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                                   </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-18-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">real</div>                                                                                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 516--><p class="noindent" ></p> <table id="TBL-19" class="tabular" 
+ 
+><colgroup id="TBL-19-1g"><col 
+id="TBL-19-1" /></colgroup><colgroup id="TBL-19-2g"><col 
+id="TBL-19-2" /><col 
+id="TBL-19-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-1-"><td  style="white-space:normal; text-align:left;" id="TBL-19-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tov_position_z</div>                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-1-3"  
+class="td01">                                      REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-19-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Position of neutron star, z coordinate</span></div>                                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>0.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-4-"><td  style="white-space:normal; text-align:left;" id="TBL-19-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                                   </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-19-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">real</div>                                                                                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 523--><p class="noindent" ></p> <table id="TBL-20" class="tabular" 
+ 
+><colgroup id="TBL-20-1g"><col 
+id="TBL-20-1" /></colgroup><colgroup id="TBL-20-2g"><col 
+id="TBL-20-2" /><col 
+id="TBL-20-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-1-"><td  style="white-space:normal; text-align:left;" id="TBL-20-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tov_properposition</div>             </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-20-1-3"  
+class="td01">                             BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-20-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">For use only with two NSs, atm only handles equal mass</span></div>                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-3-1"  
+class="td11">                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-20-3-3"  
+class="td01">                            <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-4-1"  
+class="td11">                          </td></tr></table>
+<!--l. 530--><p class="noindent" ></p> <table id="TBL-21" class="tabular" 
+ 
+><colgroup id="TBL-21-1g"><col 
+id="TBL-21-1" /></colgroup><colgroup id="TBL-21-2g"><col 
+id="TBL-21-2" /><col 
+id="TBL-21-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-1-"><td  style="white-space:normal; text-align:left;" id="TBL-21-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tov_rho_central</div>                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-21-1-3"  
+class="td01">                                      REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-21-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">The central density</span></div>                                                                                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-21-3-3"  
+class="td01">                                <span 
+class="cmbx-10">Default: </span>1e-3  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-4-"><td  style="white-space:normal; text-align:left;" id="TBL-21-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">(0.0:*</div>                                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-21-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Must be positive</div>                                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 537--><p class="noindent" ></p> <table id="TBL-22" class="tabular" 
+ 
+><colgroup id="TBL-22-1g"><col 
+id="TBL-22-1" /></colgroup><colgroup id="TBL-22-2g"><col 
+id="TBL-22-2" /><col 
+id="TBL-22-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-1-"><td  style="white-space:normal; text-align:left;" id="TBL-22-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tov_save_to_datafile</div>            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-22-1-3"  
+class="td01">                                    STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-22-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Only save data to file and exit</span></div>                                                                         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-22-3-3"  
+class="td01">                              <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-4-"><td  style="white-space:normal; text-align:left;" id="TBL-22-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.*</div>                                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-22-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Any filename, not used if empty</div>                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 544--><p class="noindent" ></p> <table id="TBL-23" class="tabular" 
+ 
+><colgroup id="TBL-23-1g"><col 
+id="TBL-23-1" /></colgroup><colgroup id="TBL-23-2g"><col 
+id="TBL-23-2" /><col 
+id="TBL-23-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-1-"><td  style="white-space:normal; text-align:left;" id="TBL-23-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tov_solve_for_tovs</div>              </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-1-3"  
+class="td01">                                        INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-23-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Solve for TOVs even if no TOV initial data was requested?</span></div>                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-3-3"  
+class="td01">                                  <span 
+class="cmbx-10">Default: </span>3  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-4-"><td  style="white-space:normal; text-align:left;" id="TBL-23-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:3</div>                                   </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-23-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">”depreciated in favour of TOVSolver::TOV_Enfor ce_Interpolation”</div>    
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 552--><p class="noindent" ></p> <table id="TBL-24" class="tabular" 
+ 
+><colgroup id="TBL-24-1g"><col 
+id="TBL-24-1" /></colgroup><colgroup id="TBL-24-2g"><col 
+id="TBL-24-2" /><col 
+id="TBL-24-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-1-"><td  style="white-space:normal; text-align:left;" id="TBL-24-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tov_use_old_initial_data</div>      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-24-1-3"  
+class="td01">                             BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-24-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Take old initial data into account (spacetime)? Default is no.</span></div>                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-3-1"  
+class="td11">                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-24-3-3"  
+class="td01">                            <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-4-1"  
+class="td11">                          </td></tr></table>
+<!--l. 559--><p class="noindent" ></p> <table id="TBL-25" class="tabular" 
+ 
+><colgroup id="TBL-25-1g"><col 
+id="TBL-25-1" /></colgroup><colgroup id="TBL-25-2g"><col 
+id="TBL-25-2" /><col 
+id="TBL-25-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-1-"><td  style="white-space:normal; text-align:left;" id="TBL-25-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tov_use_old_matter_initial_data</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-25-1-3"  
+class="td01">                             BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-25-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Use also old matter initial data? Default is no.</span></div>                                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-3-1"  
+class="td11">                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-25-3-3"  
+class="td01">                            <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-4-1"  
+class="td11">                          </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 566--><p class="noindent" ></p> <table id="TBL-26" class="tabular" 
+ 
+><colgroup id="TBL-26-1g"><col 
+id="TBL-26-1" /></colgroup><colgroup id="TBL-26-2g"><col 
+id="TBL-26-2" /><col 
+id="TBL-26-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-1-"><td  style="white-space:normal; text-align:left;" id="TBL-26-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tov_velocity_x</div>                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-1-3"  
+class="td01">                                      REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-26-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">(fixed) Velocity of neutron star, x coordinate (caution!)</span></div>                                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>0.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-4-"><td  style="white-space:normal; text-align:left;" id="TBL-26-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                                   </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-26-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">real</div>                                                                                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 573--><p class="noindent" ></p> <table id="TBL-27" class="tabular" 
+ 
+><colgroup id="TBL-27-1g"><col 
+id="TBL-27-1" /></colgroup><colgroup id="TBL-27-2g"><col 
+id="TBL-27-2" /><col 
+id="TBL-27-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-1-"><td  style="white-space:normal; text-align:left;" id="TBL-27-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tov_velocity_y</div>                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-27-1-3"  
+class="td01">                                      REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-27-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">(fixed) Velocity of neutron star, y coordinate (caution!)</span></div>                                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-27-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>0.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-4-"><td  style="white-space:normal; text-align:left;" id="TBL-27-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                                   </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-27-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">real</div>                                                                                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 580--><p class="noindent" ></p> <table id="TBL-28" class="tabular" 
+ 
+><colgroup id="TBL-28-1g"><col 
+id="TBL-28-1" /></colgroup><colgroup id="TBL-28-2g"><col 
+id="TBL-28-2" /><col 
+id="TBL-28-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-1-"><td  style="white-space:normal; text-align:left;" id="TBL-28-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tov_velocity_z</div>                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-28-1-3"  
+class="td01">                                      REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-28-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">(fixed) Velocity of neutron star, z coordinate (caution!)</span></div>                                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-28-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>0.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-4-"><td  style="white-space:normal; text-align:left;" id="TBL-28-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                                   </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-28-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">real</div>                                                                                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 587--><p class="noindent" ></p> <table id="TBL-29" class="tabular" 
+ 
+><colgroup id="TBL-29-1g"><col 
+id="TBL-29-1" /></colgroup><colgroup id="TBL-29-2g"><col 
+id="TBL-29-2" /><col 
+id="TBL-29-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-1-"><td  style="white-space:normal; text-align:left;" id="TBL-29-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">conformal_storage</div>              </td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from STATICCONFORMAL</td><td  style="white-space:nowrap; text-align:right;" id="TBL-29-1-3"  
+class="td01">KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-29-2-1"  
+class="td11">                          </td></tr></table>
+<!--l. 594--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-80005"></a>Interfaces</h3>
+<!--l. 599--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-9000"></a>General</h4>
+<!--l. 601--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 603--><p class="noindent" >tovsolver
+</p><!--l. 606--><p class="noindent" ><span 
+class="cmbx-10">Inherits</span>:
+</p><!--l. 608--><p class="noindent" >admbase
+</p><!--l. 610--><p class="noindent" >hydrobase
+</p><!--l. 612--><p class="noindent" >constants
+</p><!--l. 614--><p class="noindent" >staticconformal
+</p><!--l. 619--><p class="noindent" ><span 
+class="cmbx-10">Uses header</span>:
+</p><!--l. 621--><p class="noindent" >constants.h
+</p><!--l. 624--><p class="noindent" ><span 
+class="cmbx-10">Provides</span>:
+</p><!--l. 628--><p class="noindent" >Set_Rho_ADM to
+</p><!--l. 630--><p class="noindent" >Set_Momentum_Source to
+</p><!--l. 632--><p class="noindent" >Set_Initial_Guess_for_u to
+</p><!--l. 634--><p class="noindent" >Rescale_Sources to
+                                                                                       
+                                                                                       
+</p><!--l. 637--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">6   </span> <a 
+ id="x1-100006"></a>Schedule</h3>
+<!--l. 643--><p class="noindent" >This section lists all the variables which are assigned storage by thorn EinsteinInitialData/TOVSolver. Storage
+can either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 646--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-11000"></a>Storage</h4>
+<!--l. 646--><p class="noindent" >NONE
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-12000"></a>Scheduled Functions</h4>
+<!--l. 650--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_PARAMCHECK</span>
+</p><!--l. 652--><p class="noindent" >      tov_c_paramcheck
+</p><!--l. 654--><p class="noindent" >     <span 
+class="cmti-10">check parameters</span>
+</p><!--l. 657--><p class="noindent" > 
+</p><!--l. 659--><p class="noindent" ></p> <table id="TBL-30" class="tabular" 
+ 
+><colgroup id="TBL-30-1g"><col 
+id="TBL-30-1" /><col 
+id="TBL-30-2" /><col 
+id="TBL-30-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-30-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-30-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-30-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-30-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-30-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-30-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-30-2-3"  
+class="td11"> global     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-30-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-30-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-30-3-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-30-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 668--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_WRAGH</span>
+</p><!--l. 670--><p class="noindent" >      tov_c_allocatememory
+</p><!--l. 672--><p class="noindent" >     <span 
+class="cmti-10">allocate memory for tovsolver</span><span 
+class="cmti-10">_c</span>
+</p><!--l. 675--><p class="noindent" > 
+</p><!--l. 677--><p class="noindent" ></p> <table id="TBL-31" class="tabular" 
+ 
+><colgroup id="TBL-31-1g"><col 
+id="TBL-31-1" /><col 
+id="TBL-31-2" /><col 
+id="TBL-31-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-31-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-31-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-31-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-31-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-31-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-31-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-31-2-3"  
+class="td11"> global     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-31-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-31-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-31-3-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-31-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 686--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_POSTPOSTINITIAL </span>(conditional)
+</p><!--l. 688--><p class="noindent" >      tov_c_freememory
+</p><!--l. 690--><p class="noindent" >     <span 
+class="cmti-10">free memory from tovsolver</span><span 
+class="cmti-10">_c</span>
+</p><!--l. 693--><p class="noindent" > 
+</p><!--l. 695--><p class="noindent" ></p> <table id="TBL-32" class="tabular" 
+ 
+><colgroup id="TBL-32-1g"><col 
+id="TBL-32-1" /><col 
+id="TBL-32-2" /><col 
+id="TBL-32-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-32-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-32-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-32-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-2-3"  
+class="td11"> global     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-32-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-3-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-32-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 704--><p class="noindent" ><span 
+class="cmbx-10">HydroBase</span><span 
+class="cmbx-10">_Initial </span>(conditional)
+</p><!--l. 706--><p class="noindent" >      tov_initial_data
+</p><!--l. 708--><p class="noindent" >     <span 
+class="cmti-10">group for the tov initial data</span>
+</p><!--l. 711--><p class="noindent" > 
+                                                                                       
+                                                                                       
+</p><!--l. 713--><p class="noindent" ></p> <table id="TBL-33" class="tabular" 
+ 
+><colgroup id="TBL-33-1g"><col 
+id="TBL-33-1" /><col 
+id="TBL-33-2" /><col 
+id="TBL-33-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-33-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-33-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-1-2"  
+class="td11"> Sync:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-1-3"  
+class="td11"> admbase::metric  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-33-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-2-2"  
+class="td11">          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-2-3"  
+class="td11"> admbase::curv    </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-33-3-1"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-3-2"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-3-3"  
+class="td11"> admbase::lapse</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-33-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-4-2"  
+class="td11">          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-4-3"  
+class="td11"> admbase::shift    </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-33-5-1"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-5-2"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-5-3"  
+class="td11"> rho</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-33-6-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-6-2"  
+class="td11">          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-6-3"  
+class="td11"> press                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-33-7-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-7-2"  
+class="td11">          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-7-3"  
+class="td11"> eps                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-33-8-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-8-2"  
+class="td11">          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-8-3"  
+class="td11"> vel                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-33-9-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-9-2"  
+class="td11">          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-9-3"  
+class="td11"> w_lorentz          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-10-"><td  style="white-space:nowrap; text-align:center;" id="TBL-33-10-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-10-2"  
+class="td11"> Type:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-10-3"  
+class="td11"> group                </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-11-"><td  style="white-space:nowrap; text-align:center;" id="TBL-33-11-1"  
+class="td11">    </td></tr></table>
+<!--l. 729--><p class="noindent" ><span 
+class="cmbx-10">TOV</span><span 
+class="cmbx-10">_Initial</span><span 
+class="cmbx-10">_Data </span>(conditional)
+</p><!--l. 731--><p class="noindent" >      tov_c_integrate_rhs
+</p><!--l. 733--><p class="noindent" >     <span 
+class="cmti-10">integrate the 1d equations for the tov star</span>
+</p><!--l. 736--><p class="noindent" > 
+</p><!--l. 738--><p class="noindent" ></p> <table id="TBL-34" class="tabular" 
+ 
+><colgroup id="TBL-34-1g"><col 
+id="TBL-34-1" /><col 
+id="TBL-34-2" /><col 
+id="TBL-34-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-34-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-34-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-1-3"  
+class="td11"> c                                                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-34-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-2-3"  
+class="td11"> global                                                      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-34-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-3-3"  
+class="td11"> function                                                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-34-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-4-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-4-3"  
+class="td11"> staticconformal::conformal_state(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-34-5-1"  
+class="td11">    </td></tr></table>
+<!--l. 748--><p class="noindent" ><span 
+class="cmbx-10">TOV</span><span 
+class="cmbx-10">_Initial</span><span 
+class="cmbx-10">_Data </span>(conditional)
+</p><!--l. 750--><p class="noindent" >      tov_write_1d_datafile
+</p><!--l. 752--><p class="noindent" >     <span 
+class="cmti-10">save data to file and exit</span>
+</p><!--l. 755--><p class="noindent" > 
+</p><!--l. 757--><p class="noindent" ></p> <table id="TBL-35" class="tabular" 
+ 
+><colgroup id="TBL-35-1g"><col 
+id="TBL-35-1" /><col 
+id="TBL-35-2" /><col 
+id="TBL-35-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-35-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-1-3"  
+class="td11"> tov_c_integrate_rhs  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-2-2"  
+class="td11"> Before:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-2-3"  
+class="td11"> tov_c_exact            </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-3-1"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-3-2"  
+class="td11"> Language: </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-3-3"  
+class="td11"> c</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-4-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-4-3"  
+class="td11"> global                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-5-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-5-3"  
+class="td11"> function                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-6-1"  
+class="td11">    </td></tr></table>
+<!--l. 768--><p class="noindent" ><span 
+class="cmbx-10">TOV</span><span 
+class="cmbx-10">_Initial</span><span 
+class="cmbx-10">_Data </span>(conditional)
+</p><!--l. 770--><p class="noindent" >      tov_set_properpositions
+</p><!--l. 772--><p class="noindent" >     <span 
+class="cmti-10">steer ns position parameters according to proper distance</span>
+</p><!--l. 775--><p class="noindent" > 
+</p><!--l. 777--><p class="noindent" ></p> <table id="TBL-36" class="tabular" 
+ 
+><colgroup id="TBL-36-1g"><col 
+id="TBL-36-1" /><col 
+id="TBL-36-2" /><col 
+id="TBL-36-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-36-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-36-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-1-3"  
+class="td11"> tov_c_integrate_rhs  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-36-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-2-2"  
+class="td11"> Before:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-2-3"  
+class="td11"> tov_c_exact            </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-36-3-1"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-3-2"  
+class="td11"> Language: </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-3-3"  
+class="td11"> c</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-36-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-4-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-4-3"  
+class="td11"> global                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-36-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-5-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-5-3"  
+class="td11"> function                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-36-6-1"  
+class="td11">    </td></tr></table>
+<!--l. 788--><p class="noindent" ><span 
+class="cmbx-10">TOV</span><span 
+class="cmbx-10">_Initial</span><span 
+class="cmbx-10">_Data </span>(conditional)
+</p><!--l. 790--><p class="noindent" >      tov_c_exact
+</p><!--l. 792--><p class="noindent" >     <span 
+class="cmti-10">set up the 3d quantities for the tov star</span>
+</p><!--l. 795--><p class="noindent" > 
+                                                                                       
+                                                                                       
+</p><!--l. 797--><p class="noindent" ></p> <table id="TBL-37" class="tabular" 
+ 
+><colgroup id="TBL-37-1g"><col 
+id="TBL-37-1" /><col 
+id="TBL-37-2" /><col 
+id="TBL-37-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-37-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-1-3"  
+class="td11"> tov_c_integrate_rhs                                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-2-3"  
+class="td11"> c                                                          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-3-2"  
+class="td11"> Reads:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-3-3"  
+class="td11"> staticconformal::conformal_state                 </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-4-1"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-4-2"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-4-3"  
+class="td11"> admbase::shift_state</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-5-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-5-3"  
+class="td11"> grid::coordinates                                      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-6-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-6-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-6-3"  
+class="td11"> function                                                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-7-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-7-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-7-3"  
+class="td11"> admbase::alp(everywhere)                          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-8-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-8-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-8-3"  
+class="td11"> admbase::curv(everywhere)                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-9-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-9-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-9-3"  
+class="td11"> admbase::metric_p_p(everywhere)               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-10-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-10-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-10-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-10-3"  
+class="td11"> admbase::metric_p(everywhere)                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-11-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-11-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-11-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-11-3"  
+class="td11"> admbase::metric(everywhere)                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-12-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-12-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-12-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-12-3"  
+class="td11"> admbase::shift(everywhere)                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-13-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-13-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-13-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-13-3"  
+class="td11"> hydrobase::eps_p_p(everywhere)                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-14-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-14-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-14-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-14-3"  
+class="td11"> hydrobase::rho_p_p(everywhere)                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-15-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-15-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-15-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-15-3"  
+class="td11"> hydrobase::vel_p_p(everywhere)                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-16-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-16-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-16-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-16-3"  
+class="td11"> hydrobase::w_lorentz_p_p(everywhere)         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-17-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-17-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-17-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-17-3"  
+class="td11"> hydrobase::eps_p(everywhere)                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-18-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-18-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-18-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-18-3"  
+class="td11"> hydrobase::rho_p(everywhere)                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-19-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-19-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-19-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-19-3"  
+class="td11"> hydrobase::vel_p(everywhere)                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-20-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-20-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-20-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-20-3"  
+class="td11"> hydrobase::w_lorentz_p(everywhere)            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-21-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-21-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-21-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-21-3"  
+class="td11"> hydrobase::eps(everywhere)                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-22-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-22-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-22-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-22-3"  
+class="td11"> hydrobase::rho(everywhere)                       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-23-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-23-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-23-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-23-3"  
+class="td11"> hydrobase::vel(everywhere)                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-24-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-24-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-24-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-24-3"  
+class="td11"> hydrobase::w_lorentz(everywhere)               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-25-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-25-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-25-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-25-3"  
+class="td11"> hydrobase::press(everywhere)                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-26-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-26-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-26-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-26-3"  
+class="td11"> staticconformal::psi(everywhere)                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-27-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-27-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-27-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-27-3"  
+class="td11"> staticconformal::confac_1derivs(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-28-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-28-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-28-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-28-3"  
+class="td11"> staticconformal::confac_2derivs(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-29-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-29-1"  
+class="td11">    </td></tr></table>
+<!--l. 831--><p class="noindent" > (conditional)
+</p><!--l. 833--><p class="noindent" >      tov_prepare_fake_evolution
+</p><!--l. 835--><p class="noindent" >     <span 
+class="cmti-10">prepare for fake evolution</span>
+</p><!--l. 838--><p class="noindent" > 
+</p><!--l. 840--><p class="noindent" ></p> <table id="TBL-38" class="tabular" 
+ 
+><colgroup id="TBL-38-1g"><col 
+id="TBL-38-1" /><col 
+id="TBL-38-2" /><col 
+id="TBL-38-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-38-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-38-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-38-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-38-1-3"  
+class="td11"> tov_c_exact  </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-38-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-38-2-1"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-38-2-2"  
+class="td11"> Language: </td><td  style="white-space:nowrap; text-align:left;" id="TBL-38-2-3"  
+class="td11"> c</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-38-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-38-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-38-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-38-3-3"  
+class="td11"> function       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-38-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-38-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 849--><p class="noindent" ><span 
+class="cmbx-10">MoL</span><span 
+class="cmbx-10">_PostStep </span>(conditional)
+</p><!--l. 851--><p class="noindent" >      tov_c_exact
+</p><!--l. 853--><p class="noindent" >     <span 
+class="cmti-10">use fake evolution</span>
+</p><!--l. 856--><p class="noindent" > 
+</p><!--l. 858--><p class="noindent" ></p> <table id="TBL-39" class="tabular" 
+ 
+><colgroup id="TBL-39-1g"><col 
+id="TBL-39-1" /><col 
+id="TBL-39-2" /><col 
+id="TBL-39-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-39-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-1-3"  
+class="td11"> hydrobase_poststep                                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-2-3"  
+class="td11"> c                                                          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-3-2"  
+class="td11"> Reads:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-3-3"  
+class="td11"> staticconformal::conformal_state                 </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-4-1"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-4-2"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-4-3"  
+class="td11"> admbase::shift_state</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-5-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-5-3"  
+class="td11"> function                                                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-6-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-6-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-6-3"  
+class="td11"> admbase::alp(everywhere)                          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-7-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-7-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-7-3"  
+class="td11"> admbase::curv(everywhere)                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-8-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-8-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-8-3"  
+class="td11"> admbase::metric(everywhere)                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-9-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-9-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-9-3"  
+class="td11"> admbase::shift(everywhere)                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-10-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-10-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-10-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-10-3"  
+class="td11"> hydrobase::eps(everywhere)                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-11-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-11-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-11-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-11-3"  
+class="td11"> hydrobase::press(everywhere)                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-12-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-12-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-12-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-12-3"  
+class="td11"> hydrobase::rho(everywhere)                       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-13-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-13-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-13-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-13-3"  
+class="td11"> hydrobase::w_lorentz(everywhere)               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-14-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-14-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-14-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-14-3"  
+class="td11"> hydrobase::vel(everywhere)                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-15-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-15-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-15-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-15-3"  
+class="td11"> staticconformal::psi(everywhere)                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-16-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-16-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-16-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-16-3"  
+class="td11"> staticconformal::confac_1derivs(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-17-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-17-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-17-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-17-3"  
+class="td11"> staticconformal::confac_2derivs(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-18-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-18-1"  
+class="td11">    </td></tr></table>
+ 
+</body></html> 
+
+                                                                                       
+
+

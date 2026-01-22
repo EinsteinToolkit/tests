@@ -1,0 +1,1398 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>Outflow</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">Outflow</h2>
+ <div class="author" ><span 
+class="cmr-12">Roland Haas </span><span 
+class="cmmi-12">&#x003C;</span><span 
+class="cmr-12">roland.haas@physcis.gatech.edu</span><span 
+class="cmmi-12">&#x003E;</span></div>
+<br />
+<div class="date" ><span 
+class="cmr-12">August 15 2009</span></div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 102--><p class="noindent" ><span 
+class="cmr-9">Outflow calculates the flow of rest mass density across a SphericalSurface, eg. and apparent horizon</span>
+     <span 
+class="cmr-9">or a sphere at “infinity”.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Introduction</h3>
+<!--l. 110--><p class="noindent" >Hydrodynamic simulations should conserve eg. the total rest mass in the system (outside he event horizon, that
+is). This thorn allow to measure the flux of rest mass across a given SphericalSurface.
+</p><!--l. 114--><p class="noindent" >
+</p>
+                                                                                       
+                                                                                       
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a>Physical System</h3>
+<!--l. 115--><p class="noindent" >The Valencia formalism defines its \(D = \rho W\) variable such that one can define a total rest mass density as: \begin {displaymath}  M = \int \sqrt {\gamma } D d^3x  \end {displaymath} and from the
+EOM of \(D\) (see <span class="cite">[<a 
+href="#Xlrr-font">1</a>]</span>) \begin {displaymath}  \frac {\partial }{\partial x^0} (\sqrt {\gamma }D )+ \frac {\partial }{\partial x^i} (\sqrt {\gamma } \alpha D (v^i- \beta ^i/\alpha )) = 0  \end {displaymath} one obtains: </p><div class="eqnarray">\begin {eqnarray}  \dot M &amp;=&amp; - \int _V \frac {\partial }{\partial x^i} (\sqrt \gamma \alpha D(v^i - \beta ^i/\alpha )) d^3x \\ &amp;=&amp; -\int _{\partial V} \sqrt \gamma \alpha D (v^i-\beta ^i/\alpha ) d\sigma _i  \end {eqnarray}</div>
+<!--l. 133--><p class="noindent" >where \(\sigma _i\) is the ordinary flat space directed surface element of the enclosing surface, eg. \begin {displaymath}  d\sigma _i = \hat r_i r^2 \sin \theta d\theta d\phi  \end {displaymath} with \(\hat r_i = [\cos \phi \sin \theta , \sin \phi \sin \theta , \cos (\theta )]\) for a sphere of
+radius r.
+</p><!--l. 142--><p class="noindent" >For a generic SphericalSurface parametrized by \(\theta \) and \(\phi \) one has: </p><div class="eqnarray">\begin {eqnarray}  x &amp;=&amp; \bar r(\theta , \phi ) \cos \phi \sin \theta \\ y &amp;=&amp; \bar r(\theta , \phi ) \sin \phi \sin \theta \\ z &amp;=&amp; \bar r(\theta , \phi ) \cos \theta  \end {eqnarray}</div>
+<!--l. 148--><p class="noindent" >where \(\bar r\) is the isotropic radius. Consequently the surface element is </p><div class="eqnarray">\begin {eqnarray}  d \sigma _i &amp;=&amp; \left ( \frac {\partial \vec {\bar r}}{\partial \theta } \times \frac {\partial \vec {\bar r}}{\partial \phi } \right )_i \\ &amp;=&amp; \bar r^2 \sin \theta \hat {\bar r}_i - \frac {\partial \bar r}{\partial \theta } \bar r \sin \theta \hat \theta _i - \frac {\partial \bar r}{\partial \phi } \bar r \hat \phi _i  \end {eqnarray}</div>
+<!--l. 160--><p class="noindent" >where \(\hat {\bar r}\), \(\hat \theta \) and \(\hat \phi \) are the flat space standard unit vectors on the sphere <span class="cite">[<a 
+href="#Xmtw:73">3</a>]</span>.
+</p><!--l. 163--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-30003"></a>Numerical Implementation</h3>
+<!--l. 164--><p class="noindent" >We implement the surface integral by interpolating the required quantities (\(g_{ij}\), \(\rho \), \(v^i\), \(\beta ^i\), \(\alpha \)) onto the spherical surface and
+then integrate using a fourth order convergent Newton-Cotes formula.
+</p><!--l. 168--><p class="noindent" >For the \(\theta \) direction SphericalSurfaces defines grid points such that \begin {displaymath}  \theta _i = -(n_\theta - 1/2) \Delta _\theta + i \Delta _\theta \qquad 0 \le i &lt; N_\theta -1  \end {displaymath} where \(N_\theta \) is the total number of intervals
+(<span class="obeylines-h"><code class="verb">sf_ntheta</code></span>), \(n_\theta \) is the number of ghost zones in the \(\theta \) direction (<span class="obeylines-h"><code class="verb">nghosttheta</code></span>) and \(\Delta _\theta = \frac {\pi }{N_\theta -2n\theta }\). Since with this \begin {displaymath}  \theta _i \in [\Delta _\theta /2, \pi - \Delta _\theta /2] \qquad \mbox {for $i \in [n_\theta , N_\theta -n_\theta -1]$}  \end {displaymath} we do not
+have grid points at the end of the interval \(\{0,\pi \}\) we derive an open extended Newton-Cotes formula from
+Eq. 4.1.14 of <span class="cite">[<a 
+href="#Xnr-cpp-2nd">2</a>]</span> and a third order accurate extrapolative rule (see Maple worksheet). We find
+</p><div class="eqnarray">\begin {eqnarray}  \int _{x_0}^{x_{N-1}} f(x) dx &amp;\approx &amp; h \Bigl \{ \frac {13}{12} f_{1/2} + \frac {7}{8} f_{3/2} + \frac {25}{24} f_{5/2} + f_{7/2} + f_{9/2} + \cdots + f_{N-1-7/2} \nonumber \\ &amp;&amp; + f_{N-1-9/2} + \frac {25}{24} f_{N-1-5/2} + \frac {7}{8} f_{N-1-3/2} + \frac {13}{12} f_{N-1-1/2} \Bigr \} + O(1/N^4)  \end {eqnarray}</div>
+<!--l. 192--><p class="noindent" >.
+</p><!--l. 194--><p class="noindent" >For the \(\phi \) direction SphericalSurfaces defines grid points such that \begin {displaymath}  \phi _i = -n_\phi \Delta _\phi + i \Delta _\phi \qquad 0 \le i &lt; N_\phi -1  \end {displaymath} where \(N_\phi \) is the total number of intervals
+(<span class="obeylines-h"><code class="verb">sf_nphi</code></span>), \(n_\phi \) is the number of ghost zones in the \(\phi \) direction (<span class="obeylines-h"><code class="verb">nghostphi</code></span>) and \(\Delta _\phi = \frac {\pi }{N_\phi -2n\phi }\). With this \begin {displaymath}  \phi _i \in [0, 2 \pi - \Delta _\phi ] \qquad \mbox {for $i \in [n_\phi , N_\phi -n_\phi -1]$}  \end {displaymath} we use a simple
+extended trapezoid rule to achieve spectral convergence due to the periodic nature of \(\phi \) (note: \(x_N = x_0\))
+</p><div class="eqnarray">\begin {eqnarray}  \int _{x_0}^{x_N} f(x) dx \approx &amp; h \sum _{i=0}^{N-1} f_i  \end {eqnarray}</div>
+<!--l. 212--><p class="noindent" >.
+</p><!--l. 214--><p class="noindent" >The derivatives of \(\vec {\bar r}\) along \(\theta \) and \(\phi \) are obtained numerically and require at least two ghost zones in \(\theta \) and
+\(\phi \).
+</p><!--l. 217--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-40004"></a>Using This Thorn</h3>
+<!--l. 218--><p class="noindent" >Right now surface can only be prescribed by SphericalSurfaces, the flux through each surface is output in in a
+file <span class="obeylines-h"><code class="verb">outflow_det_%d.asc</code></span>
+                                                                                       
+                                                                                       
+</p><!--l. 221--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">4.1   </span> <a 
+ id="x1-50004.1"></a>Interaction With Other Thorns</h4>
+<!--l. 222--><p class="noindent" >Takes care to schedule itself after <span class="obeylines-h"><code class="verb">SphericalSurfaces_HasBeenSet</code></span>.
+</p><!--l. 224--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">4.2   </span> <a 
+ id="x1-60004.2"></a>Examples</h4>
+<!--l. 225--><p class="noindent" >See the parameter file in the test directory. For spherical symmetric infall the flux through all detectors should
+be equal (since rest mass must be conserved).
+</p><!--l. 229--><p class="noindent" >
+</p>
+<h3 class="likesectionHead"><a 
+ id="x1-7000"></a>References</h3>
+<!--l. 229--><p class="noindent" >
+   </p><div class="thebibliography">
+   <p class="bibitem" ><span class="biblabel">
+ [1]<span class="bibsp">   </span></span><a 
+ id="Xlrr-font"></a>José                   A.                   Font,                   “Numerical                   Hydrodynamics
+   and Magnetohydrodynamics in General Relativity”, Living Rev. Relativity 11, (2008), 7. URL (cited
+   on August 15. 2009): http://www.livingreviews.org/lrr-2008-7
+   </p>
+   <p class="bibitem" ><span class="biblabel">
+ [2]<span class="bibsp">   </span></span><a 
+ id="Xnr-cpp-2nd"></a>Press, W. H. (2002). Numerical recipes in C++: the art of scientific computing. Array Cambridge,
+   UK: Cambridge University Press.
+   </p>
+   <p class="bibitem" ><span class="biblabel">
+ [3]<span class="bibsp">   </span></span><a 
+ id="Xmtw:73"></a>Charles W. Misner, Kip S. Thorne, and John Archibald Wheeler (1973). “Gravitation”. New York:
+   W.H. Freeman and Company.</p></div>
+                                                                                       
+                                                                                       
+<!--l. 248--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-80005"></a>Parameters</h3>
+<!--l. 267--><p class="noindent" ></p> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /></colgroup><colgroup id="TBL-2-2g"><col 
+id="TBL-2-2" /><col 
+id="TBL-2-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:normal; text-align:left;" id="TBL-2-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">compute_every</div>                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-1-3"  
+class="td01">                                          INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-2-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">How frequently to compute the outflow</span></div>                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-3-3"  
+class="td01">                                    <span 
+class="cmbx-10">Default: </span>1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-4-"><td  style="white-space:normal; text-align:left;" id="TBL-2-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1:*</div>                                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-2-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">number of iterations</div>                                                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-5-1"  
+class="td11">                        </td></tr></table>
+<!--l. 274--><p class="noindent" ></p> <table id="TBL-3" class="tabular" 
+ 
+><colgroup id="TBL-3-1g"><col 
+id="TBL-3-1" /></colgroup><colgroup id="TBL-3-2g"><col 
+id="TBL-3-2" /><col 
+id="TBL-3-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-1-"><td  style="white-space:normal; text-align:left;" id="TBL-3-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">compute_every_det</div>          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-1-3"  
+class="td01">                                          INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-3-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">How frequently to compute the outflow</span></div>                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-3-3"  
+class="td01">                                   <span 
+class="cmbx-10">Default: </span>-1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-4-"><td  style="white-space:normal; text-align:left;" id="TBL-3-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1</div>                                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-3-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">take from compute_every</div>                                                               
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-5-"><td  style="white-space:normal; text-align:left;" id="TBL-3-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-3-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">do not compute</div>                                                                           
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-6-"><td  style="white-space:normal; text-align:left;" id="TBL-3-6-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1:*</div>                                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-3-6-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">number of iterations</div>                                                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-7-1"  
+class="td11">                        </td></tr></table>
+<!--l. 281--><p class="noindent" ></p> <table id="TBL-4" class="tabular" 
+ 
+><colgroup id="TBL-4-1g"><col 
+id="TBL-4-1" /></colgroup><colgroup id="TBL-4-2g"><col 
+id="TBL-4-2" /><col 
+id="TBL-4-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-1-"><td  style="white-space:normal; text-align:left;" id="TBL-4-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">coord_system</div>                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-1-3"  
+class="td01">                                      STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-4-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">What is the coord system?</span></div>                                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-3-3"  
+class="td01">                                <span 
+class="cmbx-10">Default: </span>cart3d  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-4-"><td  style="white-space:normal; text-align:left;" id="TBL-4-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.*</div>                                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Any smart string will do</div>                                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-5-1"  
+class="td11">                        </td></tr></table>
+<!--l. 288--><p class="noindent" ></p> <table id="TBL-5" class="tabular" 
+ 
+><colgroup id="TBL-5-1g"><col 
+id="TBL-5-1" /></colgroup><colgroup id="TBL-5-2g"><col 
+id="TBL-5-2" /><col 
+id="TBL-5-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-1-"><td  style="white-space:normal; text-align:left;" id="TBL-5-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">extra_variables</div>               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-1-3"  
+class="td01">                                      STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-5-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">extra (scalar) variables to project onto the spherical surface</span></div>                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-3-3"  
+class="td01">                               <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-4-"><td  style="white-space:normal; text-align:left;" id="TBL-5-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.*</div>                                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-5-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Any Cactus variables</div>                                                                    
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-5-1"  
+class="td11">                        </td></tr></table>
+<!--l. 295--><p class="noindent" ></p> <table id="TBL-6" class="tabular" 
+ 
+><colgroup id="TBL-6-1g"><col 
+id="TBL-6-1" /></colgroup><colgroup id="TBL-6-2g"><col 
+id="TBL-6-2" /><col 
+id="TBL-6-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-1-"><td  style="white-space:normal; text-align:left;" id="TBL-6-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">interpolator_name</div>           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-1-3"  
+class="td01">                                      STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-6-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Which interpolator should I use</span></div>                                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-3-3"  
+class="td01">         <span 
+class="cmbx-10">Default: </span>Hermite polynomial interpolation  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-4-"><td  style="white-space:normal; text-align:left;" id="TBL-6-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.+</div>                                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-6-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Any nonempty string</div>                                                                    
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-5-1"  
+class="td11">                        </td></tr></table>
+<!--l. 302--><p class="noindent" ></p> <table id="TBL-7" class="tabular" 
+ 
+><colgroup id="TBL-7-1g"><col 
+id="TBL-7-1" /></colgroup><colgroup id="TBL-7-2g"><col 
+id="TBL-7-2" /><col 
+id="TBL-7-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-1-"><td  style="white-space:normal; text-align:left;" id="TBL-7-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">interpolator_pars</div>             </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-1-3"  
+class="td01">                                      STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-7-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Parameters for the interpolator</span></div>                                                                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-3-3"  
+class="td01">                              <span 
+class="cmbx-10">Default: </span>order=3  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-4-"><td  style="white-space:normal; text-align:left;" id="TBL-7-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.*</div>                                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-7-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">”Any string that Util_TableSetFromStr ing() will take”</div>                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-5-1"  
+class="td11">                        </td></tr></table>
+<!--l. 310--><p class="noindent" ></p> <table id="TBL-8" class="tabular" 
+ 
+><colgroup id="TBL-8-1g"><col 
+id="TBL-8-1" /></colgroup><colgroup id="TBL-8-2g"><col 
+id="TBL-8-2" /><col 
+id="TBL-8-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-1-"><td  style="white-space:normal; text-align:left;" id="TBL-8-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">num_detectors</div>                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-1-3"  
+class="td01">                                          INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-8-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">how many detectors do we have</span></div>                                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-3-3"  
+class="td01">                               <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-4-"><td  style="white-space:normal; text-align:left;" id="TBL-8-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-8-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">number of detectors</div>                                                                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-5-1"  
+class="td11">                        </td></tr></table>
+<!--l. 317--><p class="noindent" ></p> <table id="TBL-9" class="tabular" 
+ 
+><colgroup id="TBL-9-1g"><col 
+id="TBL-9-1" /></colgroup><colgroup id="TBL-9-2g"><col 
+id="TBL-9-2" /><col 
+id="TBL-9-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-1-"><td  style="white-space:normal; text-align:left;" id="TBL-9-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">num_thresholds</div>               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-1-3"  
+class="td01">                                          INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-9-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">how many thresholds to use</span></div>                                                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-3-3"  
+class="td01">                               <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-4-"><td  style="white-space:normal; text-align:left;" id="TBL-9-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-9-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">ignore thresholds, output only one flux</div>                                             
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-5-"><td  style="white-space:normal; text-align:left;" id="TBL-9-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1:20</div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-9-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">how many to use</div>                                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-6-1"  
+class="td11">                        </td></tr></table>
+<!--l. 324--><p class="noindent" ></p> <table id="TBL-10" class="tabular" 
+ 
+><colgroup id="TBL-10-1g"><col 
+id="TBL-10-1" /></colgroup><colgroup id="TBL-10-2g"><col 
+id="TBL-10-2" /><col 
+id="TBL-10-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-1-"><td  style="white-space:normal; text-align:left;" id="TBL-10-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">out_format</div>                     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-1-3"  
+class="td01">                                      STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-10-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Which format for Scalar floating-point number output</span></div>                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>.19g  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-4-"><td  style="white-space:normal; text-align:left;" id="TBL-10-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">see [1] below</div>                    </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-10-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">output with given precision in exponential / floating point notation</div>       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-5-1"  
+class="td11">                        </td></tr></table>
+<!--l. 331--><p class="noindent" ><span 
+class="cmbx-10">[1]</span>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-1">
+\^({\textbackslash}.[1]?[0-9])?[EGefg]\$
+</pre>
+<!--l. 331--><p class="nopar" ></p> <table id="TBL-11" class="tabular" 
+ 
+><colgroup id="TBL-11-1g"><col 
+id="TBL-11-1" /></colgroup><colgroup id="TBL-11-2g"><col 
+id="TBL-11-2" /><col 
+id="TBL-11-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-1-"><td  style="white-space:normal; text-align:left;" id="TBL-11-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">output_2d_data</div>              </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-1-3"  
+class="td01">                               BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-11-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">output 2d data on spherical surface</span></div>                                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-3-1"  
+class="td11">                        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-3-3"  
+class="td01">                              <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-4-1"  
+class="td11">                        </td></tr></table>
+<!--l. 338--><p class="noindent" ></p> <table id="TBL-12" class="tabular" 
+ 
+><colgroup id="TBL-12-1g"><col 
+id="TBL-12-1" /></colgroup><colgroup id="TBL-12-2g"><col 
+id="TBL-12-2" /><col 
+id="TBL-12-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-1-"><td  style="white-space:normal; text-align:left;" id="TBL-12-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">output_relative_coordinates</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-1-3"  
+class="td01">                               BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-12-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">output coordinates on spheroid relative to sf</span><span 
+class="cmti-10">_centroid, absolute coordinates otherwise</span></div>  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-3-1"  
+class="td11">                        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-3-3"  
+class="td01">                              <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-4-1"  
+class="td11">                        </td></tr></table>
+<!--l. 345--><p class="noindent" ></p> <table id="TBL-13" class="tabular" 
+ 
+><colgroup id="TBL-13-1g"><col 
+id="TBL-13-1" /></colgroup><colgroup id="TBL-13-2g"><col 
+id="TBL-13-2" /><col 
+id="TBL-13-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-1-"><td  style="white-space:normal; text-align:left;" id="TBL-13-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">override_radius</div>               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-1-3"  
+class="td01">                               BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-13-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">do not take radius values from spherical surface</span></div>                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-3-1"  
+class="td11">                        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-3-3"  
+class="td01">                              <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-4-1"  
+class="td11">                        </td></tr></table>
+<!--l. 352--><p class="noindent" ></p> <table id="TBL-14" class="tabular" 
+ 
+><colgroup id="TBL-14-1g"><col 
+id="TBL-14-1" /></colgroup><colgroup id="TBL-14-2g"><col 
+id="TBL-14-2" /><col 
+id="TBL-14-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-1-"><td  style="white-space:normal; text-align:left;" id="TBL-14-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">rad_rescale</div>                     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-1-3"  
+class="td01">                                        REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-14-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Factor for scaling radius for this detector surface (e.g. for buffer around AH surface)</span></div>         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-3-3"  
+class="td01">                                    <span 
+class="cmbx-10">Default: </span>1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-4-"><td  style="white-space:normal; text-align:left;" id="TBL-14-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">(0:*</div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-14-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Anything positive</div>                                                                         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-5-1"  
+class="td11">                        </td></tr></table>
+<!--l. 359--><p class="noindent" ></p> <table id="TBL-15" class="tabular" 
+ 
+><colgroup id="TBL-15-1g"><col 
+id="TBL-15-1" /></colgroup><colgroup id="TBL-15-2g"><col 
+id="TBL-15-2" /><col 
+id="TBL-15-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-1-"><td  style="white-space:normal; text-align:left;" id="TBL-15-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">radius</div>                           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-15-1-3"  
+class="td01">                                        REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-15-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">spherical radius for this detector surface</span></div>                                                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-15-3-3"  
+class="td01">                                   <span 
+class="cmbx-10">Default: </span>-1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-4-"><td  style="white-space:normal; text-align:left;" id="TBL-15-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1</div>                                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-15-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Invalid</div>                                                                                       
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-5-"><td  style="white-space:normal; text-align:left;" id="TBL-15-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">(0:*</div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-15-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">any positive value</div>                                                                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-6-1"  
+class="td11">                        </td></tr></table>
+<!--l. 366--><p class="noindent" ></p> <table id="TBL-16" class="tabular" 
+ 
+><colgroup id="TBL-16-1g"><col 
+id="TBL-16-1" /></colgroup><colgroup id="TBL-16-2g"><col 
+id="TBL-16-2" /><col 
+id="TBL-16-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-1-"><td  style="white-space:normal; text-align:left;" id="TBL-16-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">surface_index</div>                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-16-1-3"  
+class="td01">                                          INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-16-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">the indices of the sphericalsurfaces from which we take the surfaces to compute the</span>
+  <span 
+class="cmti-10">outflow on</span></div>                                                                                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-16-3-3"  
+class="td01">                                   <span 
+class="cmbx-10">Default: </span>-1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-4-"><td  style="white-space:normal; text-align:left;" id="TBL-16-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1</div>                                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-16-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Invalid</div>                                                                                       
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-5-"><td  style="white-space:normal; text-align:left;" id="TBL-16-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-16-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">valid surface</div>                                                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-6-1"  
+class="td11">                        </td></tr></table>
+<!--l. 373--><p class="noindent" ></p> <table id="TBL-17" class="tabular" 
+ 
+><colgroup id="TBL-17-1g"><col 
+id="TBL-17-1" /></colgroup><colgroup id="TBL-17-2g"><col 
+id="TBL-17-2" /><col 
+id="TBL-17-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-1-"><td  style="white-space:normal; text-align:left;" id="TBL-17-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">surface_name</div>                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-1-3"  
+class="td01">                                      STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-17-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">the indices of the sphericalsurfaces from which we take the surfaces to compute the</span>
+  <span 
+class="cmti-10">outflow on</span></div>                                                                                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-3-3"  
+class="td01">                               <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-4-"><td  style="white-space:normal; text-align:left;" id="TBL-17-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-17-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">use surface_index</div>                                                                         
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-5-"><td  style="white-space:normal; text-align:left;" id="TBL-17-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.*</div>                                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-17-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">any string</div>                                                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-6-1"  
+class="td11">                        </td></tr></table>
+<!--l. 380--><p class="noindent" ></p> <table id="TBL-18" class="tabular" 
+ 
+><colgroup id="TBL-18-1g"><col 
+id="TBL-18-1" /></colgroup><colgroup id="TBL-18-2g"><col 
+id="TBL-18-2" /><col 
+id="TBL-18-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-1-"><td  style="white-space:normal; text-align:left;" id="TBL-18-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">threshold</div>                       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-18-1-3"  
+class="td01">                                        REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-18-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">compute fluxes with Lorentz factors / specific energy at infinity above these levels</span>
+  <span 
+class="cmti-10">only</span></div>                                                                                                                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-18-3-3"  
+class="td01">                               <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-4-"><td  style="white-space:normal; text-align:left;" id="TBL-18-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-18-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Any real number</div>                                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-5-1"  
+class="td11">                        </td></tr></table>
+<!--l. 387--><p class="noindent" ></p> <table id="TBL-19" class="tabular" 
+ 
+><colgroup id="TBL-19-1g"><col 
+id="TBL-19-1" /></colgroup><colgroup id="TBL-19-2g"><col 
+id="TBL-19-2" /><col 
+id="TBL-19-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-1-"><td  style="white-space:normal; text-align:left;" id="TBL-19-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">threshold_on_var</div>             </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-1-3"  
+class="td01">                                   KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-19-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Which variable to use as threshold</span></div>                                                                    
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-3-3"  
+class="td01">                             <span 
+class="cmbx-10">Default: </span>w_lorentz  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-4-"><td  style="white-space:normal; text-align:left;" id="TBL-19-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">eninf</div>                              </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-19-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">(Approximate) specific energy at infinity, - u_t - 1</div>                              
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-5-"><td  style="white-space:normal; text-align:left;" id="TBL-19-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">w_lorentz</div>                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-19-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Lorentz factor</div>                                                                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-6-1"  
+class="td11">                        </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 394--><p class="noindent" ></p> <table id="TBL-20" class="tabular" 
+ 
+><colgroup id="TBL-20-1g"><col 
+id="TBL-20-1" /></colgroup><colgroup id="TBL-20-2g"><col 
+id="TBL-20-2" /><col 
+id="TBL-20-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-1-"><td  style="white-space:normal; text-align:left;" id="TBL-20-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">verbose</div>                         </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-20-1-3"  
+class="td01">                                          INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-20-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">How verbose do you want it?</span></div>                                                                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-20-3-3"  
+class="td01">                                    <span 
+class="cmbx-10">Default: </span>1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-4-"><td  style="white-space:normal; text-align:left;" id="TBL-20-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-20-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0 is nothing, 1 is interesting, <span 
+class="cmmi-10">&#x003E;</span>1 is crazy</div>                                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-5-1"  
+class="td11">                        </td></tr></table>
+<!--l. 401--><p class="noindent" ></p> <table id="TBL-21" class="tabular" 
+ 
+><colgroup id="TBL-21-1g"><col 
+id="TBL-21-1" /></colgroup><colgroup id="TBL-21-2g"><col 
+id="TBL-21-2" /><col 
+id="TBL-21-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-1-"><td  style="white-space:normal; text-align:left;" id="TBL-21-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">maxnphi</div>                        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from SPHERICALSURFACE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-21-1-3"  
+class="td01">INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-2-1"  
+class="td11">                        </td></tr></table>
+<!--l. 406--><p class="noindent" ></p> <table id="TBL-22" class="tabular" 
+ 
+><colgroup id="TBL-22-1g"><col 
+id="TBL-22-1" /></colgroup><colgroup id="TBL-22-2g"><col 
+id="TBL-22-2" /><col 
+id="TBL-22-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-1-"><td  style="white-space:normal; text-align:left;" id="TBL-22-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">maxntheta</div>                     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from SPHERICALSURFACE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-22-1-3"  
+class="td01">INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-2-1"  
+class="td11">                        </td></tr></table>
+<!--l. 411--><p class="noindent" ></p> <table id="TBL-23" class="tabular" 
+ 
+><colgroup id="TBL-23-1g"><col 
+id="TBL-23-1" /></colgroup><colgroup id="TBL-23-2g"><col 
+id="TBL-23-2" /><col 
+id="TBL-23-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-1-"><td  style="white-space:normal; text-align:left;" id="TBL-23-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">nghostsphi</div>                     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from SPHERICALSURFACE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-1-3"  
+class="td01">INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-2-1"  
+class="td11">                        </td></tr></table>
+<!--l. 416--><p class="noindent" ></p> <table id="TBL-24" class="tabular" 
+ 
+><colgroup id="TBL-24-1g"><col 
+id="TBL-24-1" /></colgroup><colgroup id="TBL-24-2g"><col 
+id="TBL-24-2" /><col 
+id="TBL-24-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-1-"><td  style="white-space:normal; text-align:left;" id="TBL-24-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">nghoststheta</div>                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from SPHERICALSURFACE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-24-1-3"  
+class="td01">INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-2-1"  
+class="td11">                        </td></tr></table>
+<!--l. 421--><p class="noindent" ></p> <table id="TBL-25" class="tabular" 
+ 
+><colgroup id="TBL-25-1g"><col 
+id="TBL-25-1" /></colgroup><colgroup id="TBL-25-2g"><col 
+id="TBL-25-2" /><col 
+id="TBL-25-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-1-"><td  style="white-space:normal; text-align:left;" id="TBL-25-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">sphericalsurfaces_nsurfaces</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from SPHERICALSURFACE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-25-1-3"  
+class="td01">INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-2-1"  
+class="td11">                        </td></tr></table>
+<!--l. 428--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">6   </span> <a 
+ id="x1-90006"></a>Interfaces</h3>
+<!--l. 433--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-10000"></a>General</h4>
+<!--l. 435--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 437--><p class="noindent" >outflow
+</p><!--l. 440--><p class="noindent" ><span 
+class="cmbx-10">Inherits</span>:
+</p><!--l. 442--><p class="noindent" >admbase
+</p><!--l. 444--><p class="noindent" >hydrobase
+</p><!--l. 446--><p class="noindent" >sphericalsurface
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-11000"></a>Grid Variables</h4>
+<!--l. 449--><p class="noindent" >
+</p>
+<h5 class="subsubsectionHead"><span class="titlemark">6.0.1   </span> <a 
+ id="x1-120006.0.1"></a>PRIVATE GROUPS</h5>
+                                                                                       
+                                                                                       
+<!--l. 453--><p class="noindent" ></p> <table id="TBL-26" class="tabular" 
+ 
+><colgroup id="TBL-26-1g"><col 
+id="TBL-26-1" /></colgroup><colgroup id="TBL-26-2g"><col 
+id="TBL-26-2" /></colgroup><colgroup id="TBL-26-3g"><col 
+id="TBL-26-3" /><col 
+id="TBL-26-4" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-1-1"  
+class="td11">   <span 
+class="cmbx-10">Group Names </span>   </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-1-2"  
+class="td10">   <span 
+class="cmbx-10">Variable Names </span> </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-1-3"  
+class="td01">    <span 
+class="cmbx-10">Details </span>   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-1-4"  
+class="td11">                                                                      </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-2-1"  
+class="td11">     outflow_flux       </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-2-2"  
+class="td10">     outflow_flux      </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-2-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-2-4"  
+class="td11"> 0                                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-3-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-3-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-3-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-3-4"  
+class="td11"> flux of mass through the detectors                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-4-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-4-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-4-3"  
+class="td01">   dimensions  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-4-4"  
+class="td11"> 0                                                                    </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-5-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-5-2"  
+class="td10"> </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-5-3"  
+class="td01"> distribution </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-5-4"  
+class="td11"> CONSTANT </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-6-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-6-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-6-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-6-4"  
+class="td11"> SCALAR                                                         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-7-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-7-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-7-3"  
+class="td01">         tags  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-7-4"  
+class="td11"> checkpoint=”no”                                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-8-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-8-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-8-3"  
+class="td01">    timelevels  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-8-4"  
+class="td11"> 1                                                                    </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-9-1"  
+class="td11">
+                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-9-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-9-3"  
+class="td01"> vararray_size  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-9-4"  
+class="td11"> num_detectors                                                  </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-10-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-10-1"  
+class="td11">
+                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-10-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-10-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-10-4"  
+class="td11"> REAL                                                             </td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-11-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-11-1"  
+class="td11">
+  fluxdens_projected   </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-11-2"  
+class="td10">   fluxdens_projected  </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-11-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-11-4"  
+class="td11"> 0                                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-12-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-12-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-12-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-12-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-12-4"  
+class="td11"> 2D (theta                                                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-13-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-13-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-13-2"  
+class="td10">                         </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-13-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-13-4"  
+class="td11"> phi) grid arrays for flux density                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-14-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-14-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-14-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-14-3"  
+class="td01">   dimensions  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-14-4"  
+class="td11"> 2                                                                    </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-15-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-15-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-15-2"  
+class="td10"> </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-15-3"  
+class="td01"> distribution </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-15-4"  
+class="td11"> CONSTANT </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-16-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-16-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-16-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-16-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-16-4"  
+class="td11"> ARRAY                                                          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-17-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-17-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-17-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-17-3"  
+class="td01">         size  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-17-4"  
+class="td11"> SPHERICALSURFACE::MAXNTHETA                </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-18-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-18-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-18-2"  
+class="td10">   </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-18-3"  
+class="td01"> size </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-18-4"  
+class="td11"> SPHERICALSURFACE::MAXNPHI </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-19-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-19-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-19-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-19-3"  
+class="td01">         tags  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-19-4"  
+class="td11"> checkpoint=”no”                                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-20-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-20-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-20-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-20-3"  
+class="td01">    timelevels  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-20-4"  
+class="td11"> 1                                                                    </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-21-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-21-1"  
+class="td11">
+                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-21-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-21-3"  
+class="td01"> vararray_size  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-21-4"  
+class="td11"> num_detectors                                                  </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-22-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-22-1"  
+class="td11">
+                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-22-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-22-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-22-4"  
+class="td11"> REAL                                                             </td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-23-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-23-1"  
+class="td11">
+ w_lorentz_projected  </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-23-2"  
+class="td10">  w_lorentz_projected </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-23-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-23-4"  
+class="td11"> 0                                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-24-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-24-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-24-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-24-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-24-4"  
+class="td11"> 2D (theta                                                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-25-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-25-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-25-2"  
+class="td10">                         </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-25-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-25-4"  
+class="td11"> phi) grid arrays for Lorentz factor                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-26-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-26-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-26-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-26-3"  
+class="td01">   dimensions  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-26-4"  
+class="td11"> 2                                                                    </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-27-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-27-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-27-2"  
+class="td10"> </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-27-3"  
+class="td01"> distribution </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-27-4"  
+class="td11"> CONSTANT </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-28-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-28-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-28-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-28-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-28-4"  
+class="td11"> ARRAY                                                          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-29-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-29-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-29-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-29-3"  
+class="td01">         size  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-29-4"  
+class="td11"> SPHERICALSURFACE::MAXNTHETA                </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-30-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-30-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-30-2"  
+class="td10">   </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-30-3"  
+class="td01"> size </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-30-4"  
+class="td11"> SPHERICALSURFACE::MAXNPHI </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-31-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-31-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-31-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-31-3"  
+class="td01">         tags  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-31-4"  
+class="td11"> checkpoint=”no”                                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-32-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-32-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-32-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-32-3"  
+class="td01">    timelevels  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-32-4"  
+class="td11"> 1                                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-33-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-33-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-33-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-33-3"  
+class="td01"> vararray_size  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-33-4"  
+class="td11"> num_detectors                                                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-34-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-34-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-34-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-34-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-34-4"  
+class="td11"> REAL                                                             </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-35-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-35-1"  
+class="td11">   eninf_projected     </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-35-2"  
+class="td10">    eninf_projected    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-35-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-35-4"  
+class="td11"> 0                                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-36-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-36-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-36-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-36-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-36-4"  
+class="td11"> 2D (theta                                                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-37-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-37-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-37-2"  
+class="td10">                         </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-37-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-37-4"  
+class="td11"> phi) grid arrays for the specific energy at infinity     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-38-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-38-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-38-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-38-3"  
+class="td01">   dimensions  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-38-4"  
+class="td11"> 2                                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-39-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-39-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-39-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-39-3"  
+class="td01">  distribution  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-39-4"  
+class="td11"> CONSTANT                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-40-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-40-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-40-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-40-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-40-4"  
+class="td11"> ARRAY                                                          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-41-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-41-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-41-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-41-3"  
+class="td01">         size  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-41-4"  
+class="td11"> SPHERICALSURFACE::MAXNTHETA                </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-42-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-42-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-42-2"  
+class="td10">                         </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-42-3"  
+class="td01">         size  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-42-4"  
+class="td11"> SPHERICALSURFACE::MAXNPHI                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-43-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-43-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-43-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-43-3"  
+class="td01">         tags  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-43-4"  
+class="td11"> checkpoint=”no”                                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-44-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-44-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-44-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-44-3"  
+class="td01">    timelevels  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-44-4"  
+class="td11"> 1                                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-45-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-45-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-45-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-45-3"  
+class="td01"> vararray_size  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-45-4"  
+class="td11"> num_detectors                                                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-46-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-46-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-46-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-46-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-46-4"  
+class="td11"> REAL                                                             </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-47-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-47-1"  
+class="td11">  surface_projections   </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-47-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-47-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-47-4"  
+class="td11"> 0                                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-48-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-48-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-48-2"  
+class="td10">  surface_projection_0 </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-48-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-48-4"  
+class="td11"> 2D (theta                                                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-49-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-49-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-49-2"  
+class="td10">                         </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-49-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-49-4"  
+class="td11"> phi) grid arrays for points on the spherical surfaces  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-50-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-50-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-50-2"  
+class="td10">  surface_projection_1 </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-50-3"  
+class="td01">   dimensions  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-50-4"  
+class="td11"> 2                                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-51-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-51-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-51-2"  
+class="td10">  surface_projection_2 </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-51-3"  
+class="td01">  distribution  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-51-4"  
+class="td11"> CONSTANT                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-52-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-52-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-52-2"  
+class="td10">  surface_projection_3 </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-52-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-52-4"  
+class="td11"> ARRAY                                                          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-53-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-53-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-53-2"  
+class="td10">  surface_projection_4 </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-53-3"  
+class="td01">         size  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-53-4"  
+class="td11"> SPHERICALSURFACE::MAXNTHETA                </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-54-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-54-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-54-2"  
+class="td10">                         </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-54-3"  
+class="td01">         size  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-54-4"  
+class="td11"> SPHERICALSURFACE::MAXNPHI                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-55-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-55-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-55-2"  
+class="td10">  surface_projection_5 </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-55-3"  
+class="td01">         tags  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-55-4"  
+class="td11"> checkpoint=”no”                                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-56-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-56-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-56-2"  
+class="td10">  surface_projection_6 </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-56-3"  
+class="td01">    timelevels  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-56-4"  
+class="td11"> 1                                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-57-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-57-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-57-2"  
+class="td10">  surface_projection_7 </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-57-3"  
+class="td01"> vararray_size  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-57-4"  
+class="td11"> num_detectors                                                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-58-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-58-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-26-58-2"  
+class="td10">  surface_projection_8 </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-58-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-58-4"  
+class="td11"> REAL                                                             </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-59-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-59-1"  
+class="td11">                    </td></tr></table>
+<!--l. 524--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">7   </span> <a 
+ id="x1-130007"></a>Schedule</h3>
+<!--l. 530--><p class="noindent" >This section lists all the variables which are assigned storage by thorn EinsteinAnalysis/Outflow. Storage can
+either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+                                                                                       
+                                                                                       
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 533--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-14000"></a>Storage</h4>
+<!--l. 535--><p class="noindent" > 
+</p><!--l. 537--><p class="noindent" ></p> <table id="TBL-27" class="tabular" 
+ 
+><colgroup id="TBL-27-1g"><col 
+id="TBL-27-1" /><col 
+id="TBL-27-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-27-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-27-1-1"  
+class="td11"> <span 
+class="cmbx-10">Always:              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-1-2"  
+class="td11">    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-27-2-1"  
+class="td11"> outflow_flux            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-2-2"  
+class="td11">    </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-27-3-1"  
+class="td11"> fluxdens_projected </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-3-2"  
+class="td11">  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-27-4-1"  
+class="td11"> w_lorentz_projected  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-4-2"  
+class="td11">    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-5-"><td  style="white-space:nowrap; text-align:left;" id="TBL-27-5-1"  
+class="td11"> eninf_projected        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-5-2"  
+class="td11">    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-6-"><td  style="white-space:nowrap; text-align:left;" id="TBL-27-6-1"  
+class="td11"> surface_projections   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-6-2"  
+class="td11">    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-7-"><td  style="white-space:nowrap; text-align:left;" id="TBL-27-7-1"  
+class="td11">                             </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-7-2"  
+class="td11">    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-8-"><td  style="white-space:nowrap; text-align:left;" id="TBL-27-8-1"  
+class="td11">                   </td></tr></table>
+<!--l. 549--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-15000"></a>Scheduled Functions</h4>
+<!--l. 552--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_ANALYSIS</span>
+</p><!--l. 554--><p class="noindent" >      outflow
+</p><!--l. 556--><p class="noindent" >     <span 
+class="cmti-10">compute outflow</span>
+</p><!--l. 559--><p class="noindent" > 
+</p><!--l. 561--><p class="noindent" ></p> <table id="TBL-28" class="tabular" 
+ 
+><colgroup id="TBL-28-1g"><col 
+id="TBL-28-1" /><col 
+id="TBL-28-2" /><col 
+id="TBL-28-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-28-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-2-3"  
+class="td11"> global     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-3-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 570--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_STARTUP</span>
+</p><!--l. 572--><p class="noindent" >      outflow_setup
+</p><!--l. 574--><p class="noindent" >     <span 
+class="cmti-10">set up global ompute data structures</span>
+</p><!--l. 577--><p class="noindent" > 
+</p><!--l. 579--><p class="noindent" ></p> <table id="TBL-29" class="tabular" 
+ 
+><colgroup id="TBL-29-1g"><col 
+id="TBL-29-1" /><col 
+id="TBL-29-2" /><col 
+id="TBL-29-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-29-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-29-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-29-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-2-3"  
+class="td11"> global     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-29-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-3-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-29-4-1"  
+class="td11">    </td></tr></table>
+ 
+</body></html> 
+
+                                                                                       
+
+

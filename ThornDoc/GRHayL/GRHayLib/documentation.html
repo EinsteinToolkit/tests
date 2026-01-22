@@ -1,0 +1,1710 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>GRHayLib</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">GRHayLib</h2>
+      <div class="author" ><span 
+class="cmr-12">Samuel Cupp</span>
+<br /> <span 
+class="cmr-12">Leonardo Rosa Werneck</span>
+<br /> <span 
+class="cmr-12">Terrence Pierre Jacques</span>
+<br />    <span 
+class="cmr-12">Zachariah Etienne</span></div>
+<br />
+<div class="date" >\( \)<span 
+class="cmr-12">Date</span>\( \)</div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 27--><p class="noindent" ><span 
+class="cmr-9">Provides access to the General Relativistic Hydrodynamics Library (</span><span 
+class="cmtt-9">GRHayL</span><span 
+class="cmr-9">). This library provides</span>
+     <span 
+class="cmr-9">a suite of functions for GRMHD evolution codes based on the </span><span 
+class="cmtt-9">IllinoisGRMHD </span><span 
+class="cmr-9">code.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Introduction</h3>
+<!--l. 34--><p class="noindent" >This thorn provides access to the General Relativistic Hydrodynamics Library (<span 
+class="cmtt-10">GRHayL</span>) through the
+GRHayLib.h header file. The library contains all the core components necessary to produce an
+<span 
+class="cmtt-10">IllinoisGRMHD</span>-like code in a modular, infrastructure-agnostic form. These functions are tested via unit tests
+using GitHub Actions in the  <a 
+href="https://github.com/GRHayL/GRHayL" >GRHayL repository</a>.
+</p><!--l. 42--><p class="noindent" >For comprehensive documentation of <span 
+class="cmtt-10">GRHayL</span>’s features, please visit the  <a 
+href="https://github.com/GRHayL/GRHayL/wiki" >GitHub wiki</a>. As a brief overview, the
+library is split into several ‘gems’ which are entirely self-contained. These are Atmosphere, Con2Prim, EOS,
+                                                                                       
+                                                                                       
+Flux_Source, Induction, Neutrinos, and Reconstruction. The <span 
+class="cmtt-10">GRHayLib </span>implementation provides access to all
+these gems in its header file. Additionally, the thorn automatically initializes an instance of the <span 
+class="cmtt-10">ghl</span><span 
+class="cmtt-10">_parameters</span>
+and <span 
+class="cmtt-10">ghl</span><span 
+class="cmtt-10">_eos</span><span 
+class="cmtt-10">_parameters </span>structs. The instances are named <span 
+class="cmtt-10">ghl</span><span 
+class="cmtt-10">_params </span>and <span 
+class="cmtt-10">ghl</span><span 
+class="cmtt-10">_eos</span>, and the pointers to these
+structs are provided by the GRHayLib.h header.
+</p><!--l. 54--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a>Equation of State</h3>
+<!--l. 56--><p class="noindent" >One of the more complicated part of GRMHD simulations is properly setting up the equation of state
+(EOS), especially for tabulated EOS. <span 
+class="cmtt-10">GRHayL </span>provides both hybrid and tabulated EOS, and this
+information is passed to the library functions through <span 
+class="cmtt-10">ghl</span><span 
+class="cmtt-10">_eos</span>. <span 
+class="cmtt-10">GRHayLib</span>’s parameters control the
+initialization of this struct, so the user does not need to set any of the struct’s values unless they plan to
+manually adjust these parameters during the simulation. The <span 
+class="cmtt-10">EOS</span><span 
+class="cmtt-10">_type </span>parameter chooses the type
+of EOS, and the thorn then sets up the struct using the other parameters associated with this
+choice.
+</p><!--l. 66--><p class="noindent" >For several variables, there are minimum, atmosphere, and maximum parameters. We will refer to these as
+collectively limit parameters. For the limit parameters a given EOS uses, the atmosphere parameter is required.
+The other parameters either have defaults or are ignored if unset.
+</p><!--l. 71--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.1   </span> <a 
+ id="x1-30002.1"></a>Hybrid EOS</h4>
+<!--l. 73--><p class="noindent" >The hybrid EOS requires several parameters to function properly. First, it needs the number of elements in the
+polytropic approximation. This is currently limited by <span 
+class="cmtt-10">GRHayL </span>to 10 pieces. The transition values of rho_b
+are set by <span 
+class="cmtt-10">rho</span><span 
+class="cmtt-10">_ppoly</span><span 
+class="cmtt-10">_in</span>, and the associated Gamma values are stored in <span 
+class="cmtt-10">Gamma</span><span 
+class="cmtt-10">_ppoly</span><span 
+class="cmtt-10">_in</span>. Note
+that for neos=1, only a single Gamma is necessary. Additionally, the parameter <span 
+class="cmtt-10">k</span><span 
+class="cmtt-10">_ppoly0 </span>sets the
+polytropic constant for the first piece of the piecewise polytrope. The rest of the constanst are computed
+automatically.
+</p><!--l. 82--><p class="noindent" >In addition to the polytropic setup above, the value of the thermal Gamma <span 
+class="cmtt-10">Gamma</span><span 
+class="cmtt-10">_th </span>must be
+set.
+</p><!--l. 85--><p class="noindent" >The hybrid EOS only uses the rho_b limit parameters. If unset, the minimum is set to 0, and the maximum is
+set to 1e300, effectively turning off both of these features.
+</p><!--l. 89--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.2   </span> <a 
+ id="x1-40002.2"></a>Tabulated EOS</h4>
+                                                                                       
+                                                                                       
+<!--l. 91--><p class="noindent" >To properly configure for tabulated EOS, the most important parameter is the path to the EOS table, given by
+the <span 
+class="cmtt-10">EOS</span><span 
+class="cmtt-10">_tablepath </span>parameter. <span 
+class="cmtt-10">GRHayLib </span>automatically reads this table and makes it accessible to <span 
+class="cmtt-10">GRHayL</span>
+functions through <span 
+class="cmtt-10">ghl</span><span 
+class="cmtt-10">_eos</span>.
+</p><!--l. 96--><p class="noindent" >The tabulated EOS uses all the limit parameters (rho_b, Y_e, and T). If unset, the mimima and maxima are set
+to table bounds.
+</p><!--l. 99--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-50003"></a>Conservative-to-Primitive Routines</h3>
+<!--l. 101--><p class="noindent" ><span 
+class="cmtt-10">GRHayL </span>provides a selection of con2prim routines along with automated backup methods.
+<span 
+class="cmtt-10">ghl</span><span 
+class="cmtt-10">_params </span>passes the information from the thorn parameters textttcon2prim_routine and
+textttcon2prim_backup_routines to the library’s multi-method functions. Of course, any of the routines can be
+called manually with logic dictated by the user. However, we provide functions for automatically
+calling the selected routine, as well as triggering the backup routines in the case of failure. The
+ghl_con2prim_hybrid_multi_method() and ghl_con2prim_tabulated_multi_method() functions implement this
+feature, and the ghl_con2prim_hybrid_select_method() and ghl_con2prim_tabulated_select_method() functions
+directly select a single method based on an input value. <span 
+class="cmtt-10">GRHayL </span>supports up to three backups, but more complex
+behavior can be designed by the user using the core con2prim functions. Since the individual con2prim routines
+and the multi-method functions have identical argument lists, swapping routines is straightforward and requires
+little work from the user.
+</p><!--l. 118--><p class="noindent" >These routines are iterative solvers, so they require an initial guess. <span 
+class="cmtt-10">IllinoisGRMHD </span>used always used default
+guess, which is also provided in <span 
+class="cmtt-10">GRHayL</span>. The <span 
+class="cmtt-10">calc</span><span 
+class="cmtt-10">_primitive</span><span 
+class="cmtt-10">_guess </span>parameter automatically sets the guess to
+this default in the multi-method function, so set this to ”no” to use a user-defined guess. Manual use of
+the con2prim routines require the user to either provide a guess or use the ghl_guess_primitives()
+function.
+</p><!--l. 126--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-60004"></a>Changing parameters during a run</h3>
+<!--l. 128--><p class="noindent" >Cactus allows for changing parameters during a run using CCTK_ParameterSet(). However, this
+is only allowed for those with ”STEERABLE=ALWAYS” in the parfile. Those without this tag
+aren’t able to be steered during a run. Because <span 
+class="cmtt-10">GRHayLib </span>stores this information inside <span 
+class="cmtt-10">GRHayL</span>
+structs, the actual parameters are not steerable during a simulation. However, the parameters can
+be effectively steered by changing the values inside the structs. For the EOS struct, this can be
+dangerous since some elements are computed from the other parameters. To remedy this, the derived
+values need to also be recomputed. For the hybrid and simple EOS, we recommend running the
+appropriate ghl_initialize_EOSTYPE_eos() function to ensure that the elements are properly reinitialized.
+For tabulated EOS, initializing the struct involves allocating memory for the table. As such, just
+re-running the initialize function will not behave as desired. The simplest solution is to copy the
+needed code from the <span 
+class="cmtt-10">GRHayL </span>function into a scheduled function and manage the elements values
+                                                                                       
+                                                                                       
+manually.
+</p><!--l. 148--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-70005"></a>Parameters</h3>
+<!--l. 167--><p class="noindent" ></p> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /></colgroup><colgroup id="TBL-2-2g"><col 
+id="TBL-2-2" /><col 
+id="TBL-2-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:normal; text-align:left;" id="TBL-2-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">calc_primitive_guess</div>       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-1-3"  
+class="td01">                                  BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-2-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Do we want to calculate estimates for the primitives in Con2Prim?</span></div>                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-4-"><td  style="white-space:normal; text-align:left;" id="TBL-2-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">no</div>                                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-2-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Uses the data currently in the primitive variables as the guess.</div>               
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-5-"><td  style="white-space:normal; text-align:left;" id="TBL-2-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">yes</div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-2-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Calculates primitive guesses from the current conservatives.</div>                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-6-1"  
+class="td11">                       </td></tr></table>
+<!--l. 174--><p class="noindent" ></p> <table id="TBL-3" class="tabular" 
+ 
+><colgroup id="TBL-3-1g"><col 
+id="TBL-3-1" /></colgroup><colgroup id="TBL-3-2g"><col 
+id="TBL-3-2" /><col 
+id="TBL-3-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-1-"><td  style="white-space:normal; text-align:left;" id="TBL-3-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">con2prim_backup_routines</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-1-3"  
+class="td01">                                  KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-3-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">We allow up to 3 backup routines</span></div>                                                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-3-3"  
+class="td01">                               <span 
+class="cmbx-10">Default: </span>None  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-4-"><td  style="white-space:normal; text-align:left;" id="TBL-3-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">None</div>                            </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-3-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Don’t use backup routines</div>                                                               
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-5-"><td  style="white-space:normal; text-align:left;" id="TBL-3-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Noble2D</div>                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-3-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">”2D routine in https://arxiv.org/pd f/astro-ph/0512420.p df”</div>                
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-6-"><td  style="white-space:normal; text-align:left;" id="TBL-3-6-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Noble1D</div>                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-3-6-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">”1Dw routine in https://arxiv.org/pd f/astro-ph/0512420.p df”</div>              
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-7-"><td  style="white-space:normal; text-align:left;" id="TBL-3-7-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Noble1D_entropy</div>
+                                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-3-7-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">”1Dw routine in https://arxiv.org/pd f/astro-ph/0512420.p df, but uses
+  the entropy”</div>                                                                                 
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-8-"><td  style="white-space:normal; text-align:left;" id="TBL-3-8-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Font1D</div>                         </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-3-8-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">TODO</div>                                                                                        
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-9-"><td  style="white-space:normal; text-align:left;" id="TBL-3-9-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Palenzuela1D</div>
+                                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-3-9-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">”https://arxiv.org/p  df/1505.01607.pdf  (see  also  https://arxiv.org/pd
+  f/1712.07538.pdf)”</div>                                                                         
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-10-"><td  style="white-space:normal; text-align:left;" id="TBL-3-10-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Newman1D</div>
+                                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-3-10-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">”https://escholarshi p.org/content/qt0s53 f84b/qt0s53f84b.pdf (see also
+  https://arxiv.org/pd f/1712.07538.pdf)”</div>                                            
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-11-"><td  style="white-space:normal; text-align:left;" id="TBL-3-11-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">see [1] below</div>
+                                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-3-11-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">”https://arxiv.org/p  df/1505.01607.pdf  (see  also  https://arxiv.org/pd
+  f/1712.07538.pdf)”</div>                                                                         
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-12-"><td  style="white-space:normal; text-align:left;" id="TBL-3-12-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Newman1D_entropy</div>
+                                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-3-12-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">”https://escholarshi p.org/content/qt0s53 f84b/qt0s53f84b.pdf (see also
+  https://arxiv.org/pd f/1712.07538.pdf)”</div>                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-13-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-13-1"  
+class="td11">                       </td></tr></table>
+<!--l. 197--><p class="noindent" ><span 
+class="cmbx-10">[1]</span>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-1">
+Palenzuela1D\_entropy
+</pre>
+<!--l. 197--><p class="nopar" ></p> <table id="TBL-4" class="tabular" 
+ 
+><colgroup id="TBL-4-1g"><col 
+id="TBL-4-1" /></colgroup><colgroup id="TBL-4-2g"><col 
+id="TBL-4-2" /><col 
+id="TBL-4-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-1-"><td  style="white-space:normal; text-align:left;" id="TBL-4-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">con2prim_routine</div>           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-1-3"  
+class="td01">                                  KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-4-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">What con2prim routine is used</span></div>                                                                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-3-3"  
+class="td01">                            <span 
+class="cmbx-10">Default: </span>Noble2D  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-4-"><td  style="white-space:normal; text-align:left;" id="TBL-4-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Noble2D</div>                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">”2D routine in https://arxiv.org/pd f/astro-ph/0512420.p df”</div>                
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-5-"><td  style="white-space:normal; text-align:left;" id="TBL-4-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Noble1D</div>                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">”1Dw routine in https://arxiv.org/pd f/astro-ph/0512420.p df”</div>              
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-6-"><td  style="white-space:normal; text-align:left;" id="TBL-4-6-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Noble1D_entropy</div>
+                                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-6-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">”1Dw routine in https://arxiv.org/pd f/astro-ph/0512420.p df, but uses
+  the entropy”</div>                                                                                 
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-7-"><td  style="white-space:normal; text-align:left;" id="TBL-4-7-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Font1D</div>                         </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-7-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">TODO</div>                                                                                        
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-8-"><td  style="white-space:normal; text-align:left;" id="TBL-4-8-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Palenzuela1D</div>
+                                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-8-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">”https://arxiv.org/p  df/1505.01607.pdf  (see  also  https://arxiv.org/pd
+  f/1712.07538.pdf)”</div>                                                                         
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-9-"><td  style="white-space:normal; text-align:left;" id="TBL-4-9-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Newman1D</div>
+                                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-9-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">”https://escholarshi p.org/content/qt0s53 f84b/qt0s53f84b.pdf (see also
+  https://arxiv.org/pd f/1712.07538.pdf)”</div>                                            
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-10-"><td  style="white-space:normal; text-align:left;" id="TBL-4-10-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">see [1] below</div>
+                                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-10-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">”https://arxiv.org/p  df/1505.01607.pdf  (see  also  https://arxiv.org/pd
+  f/1712.07538.pdf)”</div>                                                                         
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-11-"><td  style="white-space:normal; text-align:left;" id="TBL-4-11-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Newman1D_entropy</div>
+                                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-11-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">”https://escholarshi p.org/content/qt0s53 f84b/qt0s53f84b.pdf (see also
+  https://arxiv.org/pd f/1712.07538.pdf)”</div>                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-12-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-12-1"  
+class="td11">                       </td></tr></table>
+<!--l. 220--><p class="noindent" ><span 
+class="cmbx-10">[1]</span>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-2">
+Palenzuela1D\_entropy
+</pre>
+<!--l. 220--><p class="nopar" ></p> <table id="TBL-5" class="tabular" 
+ 
+><colgroup id="TBL-5-1g"><col 
+id="TBL-5-1" /></colgroup><colgroup id="TBL-5-2g"><col 
+id="TBL-5-2" /><col 
+id="TBL-5-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-1-"><td  style="white-space:normal; text-align:left;" id="TBL-5-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">eos_tablepath</div>                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-1-3"  
+class="td01">                                     STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-5-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Path to the EOS table</span></div>                                                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-3-3"  
+class="td01">                              <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-4-"><td  style="white-space:normal; text-align:left;" id="TBL-5-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                      </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-5-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Forbidden, will error out</div>                                                                 
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-5-"><td  style="white-space:normal; text-align:left;" id="TBL-5-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.+?</div>                              </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-5-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Any string</div>                                                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-6-1"  
+class="td11">                       </td></tr></table>
+<!--l. 227--><p class="noindent" ></p> <table id="TBL-6" class="tabular" 
+ 
+><colgroup id="TBL-6-1g"><col 
+id="TBL-6-1" /></colgroup><colgroup id="TBL-6-2g"><col 
+id="TBL-6-2" /><col 
+id="TBL-6-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-1-"><td  style="white-space:normal; text-align:left;" id="TBL-6-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">eos_type</div>                      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-1-3"  
+class="td01">                                  KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-6-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">The type of EOS for the simulation</span></div>                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-3-3"  
+class="td01">                              <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-4-"><td  style="white-space:normal; text-align:left;" id="TBL-6-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                      </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-6-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Forbidden default; an EOS type must be specified</div>                                
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-5-"><td  style="white-space:normal; text-align:left;" id="TBL-6-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Simple</div>                          </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-6-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Simple EOS (often referred to as ’ideal fluid’ in literature)</div>                     
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-6-"><td  style="white-space:normal; text-align:left;" id="TBL-6-6-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Hybrid</div>                          </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-6-6-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Hybrid EOS</div>                                                                                 
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-7-"><td  style="white-space:normal; text-align:left;" id="TBL-6-7-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Tabulated</div>                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-6-7-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Tabulated EOS</div>                                                                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-8-1"  
+class="td11">                       </td></tr></table>
+<!--l. 234--><p class="noindent" ></p> <table id="TBL-7" class="tabular" 
+ 
+><colgroup id="TBL-7-1g"><col 
+id="TBL-7-1" /></colgroup><colgroup id="TBL-7-2g"><col 
+id="TBL-7-2" /><col 
+id="TBL-7-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-1-"><td  style="white-space:normal; text-align:left;" id="TBL-7-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">evolve_entropy</div>              </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-1-3"  
+class="td01">                             BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-7-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Do we want to evolve the entropy?</span></div>                                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-3-1"  
+class="td11">                       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-3-3"  
+class="td01">                             <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-4-1"  
+class="td11">                       </td></tr></table>
+<!--l. 241--><p class="noindent" ></p> <table id="TBL-8" class="tabular" 
+ 
+><colgroup id="TBL-8-1g"><col 
+id="TBL-8-1" /></colgroup><colgroup id="TBL-8-2g"><col 
+id="TBL-8-2" /><col 
+id="TBL-8-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-1-"><td  style="white-space:normal; text-align:left;" id="TBL-8-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">evolve_temperature</div>        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-1-3"  
+class="td01">                             BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-8-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Do we want to evolve the temperature?</span></div>                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-3-1"  
+class="td11">                       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-3-3"  
+class="td01">                             <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-4-1"  
+class="td11">                       </td></tr></table>
+<!--l. 248--><p class="noindent" ></p> <table id="TBL-9" class="tabular" 
+ 
+><colgroup id="TBL-9-1g"><col 
+id="TBL-9-1" /></colgroup><colgroup id="TBL-9-2g"><col 
+id="TBL-9-2" /><col 
+id="TBL-9-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-1-"><td  style="white-space:normal; text-align:left;" id="TBL-9-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">gamma</div>                        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-1-3"  
+class="td01">                                       REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-9-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Gamma parameter</span></div>                                                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-3-3"  
+class="td01">                                  <span 
+class="cmbx-10">Default: </span>-1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-4-"><td  style="white-space:normal; text-align:left;" id="TBL-9-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-9-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Physical values</div>                                                                              
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-5-"><td  style="white-space:normal; text-align:left;" id="TBL-9-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1</div>                                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-9-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">forbidden value to make sure it is explicitly set in the parfile</div>                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-6-1"  
+class="td11">                       </td></tr></table>
+<!--l. 255--><p class="noindent" ></p> <table id="TBL-10" class="tabular" 
+ 
+><colgroup id="TBL-10-1g"><col 
+id="TBL-10-1" /></colgroup><colgroup id="TBL-10-2g"><col 
+id="TBL-10-2" /><col 
+id="TBL-10-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-1-"><td  style="white-space:normal; text-align:left;" id="TBL-10-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">gamma_ppoly_in</div>           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-1-3"  
+class="td01">                                       REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-10-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description:  </span><span 
+class="cmti-10">Set  polytropic  Gamma  parameters.  Gamma</span><span 
+class="cmti-10">_ppoly</span><span 
+class="cmti-10">_in[0]  goes  from  rho=0  to</span>
+  <span 
+class="cmti-10">rho=rho</span><span 
+class="cmti-10">_ppoly</span><span 
+class="cmti-10">_in[0].</span></div>                                                                                                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-3-3"  
+class="td01">                                  <span 
+class="cmbx-10">Default: </span>-1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-4-"><td  style="white-space:normal; text-align:left;" id="TBL-10-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>
+                                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-10-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">value of Gamma for the polytropic rho in the bounds rho_ppoly[i-1] to
+  rho_ppoly[i]</div>                                                                                  
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-5-"><td  style="white-space:normal; text-align:left;" id="TBL-10-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1</div>                                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-10-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">forbidden value to make sure it is explicitly set in the parfile</div>                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-6-1"  
+class="td11">                       </td></tr></table>
+<!--l. 262--><p class="noindent" ></p> <table id="TBL-11" class="tabular" 
+ 
+><colgroup id="TBL-11-1g"><col 
+id="TBL-11-1" /></colgroup><colgroup id="TBL-11-2g"><col 
+id="TBL-11-2" /><col 
+id="TBL-11-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-1-"><td  style="white-space:normal; text-align:left;" id="TBL-11-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">gamma_th</div>                    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-1-3"  
+class="td01">                                       REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-11-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">thermal Gamma parameter</span></div>                                                                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-3-3"  
+class="td01">                                  <span 
+class="cmbx-10">Default: </span>-1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-4-"><td  style="white-space:normal; text-align:left;" id="TBL-11-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-11-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Physical values</div>                                                                              
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-5-"><td  style="white-space:normal; text-align:left;" id="TBL-11-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1</div>                                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-11-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">forbidden value to make sure it is explicitly set in the parfile</div>                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-6-1"  
+class="td11">                       </td></tr></table>
+<!--l. 269--><p class="noindent" ></p> <table id="TBL-12" class="tabular" 
+ 
+><colgroup id="TBL-12-1g"><col 
+id="TBL-12-1" /></colgroup><colgroup id="TBL-12-2g"><col 
+id="TBL-12-2" /><col 
+id="TBL-12-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-1-"><td  style="white-space:normal; text-align:left;" id="TBL-12-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">k_ppoly0</div>                      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-1-3"  
+class="td01">                                       REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-12-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Also known as k</span><span 
+class="cmti-10">_ppoly[0], this is the polytropic constant for the lowest density piece</span>
+  <span 
+class="cmti-10">of the piecewise polytrope. All other k</span><span 
+class="cmti-10">_ppoly elements are set using rho</span><span 
+class="cmti-10">_ppoly</span><span 
+class="cmti-10">_in and enforcing</span>
+  <span 
+class="cmti-10">continuity in the equation of state.</span></div>                                                                                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-3-3"  
+class="td01">                                  <span 
+class="cmbx-10">Default: </span>-1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-4-"><td  style="white-space:normal; text-align:left;" id="TBL-12-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-12-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Physical values</div>                                                                              
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-5-"><td  style="white-space:normal; text-align:left;" id="TBL-12-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1</div>                                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-12-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">forbidden value to make sure it is explicitly set in the parfile</div>                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-6-1"  
+class="td11">                       </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 276--><p class="noindent" ></p> <table id="TBL-13" class="tabular" 
+ 
+><colgroup id="TBL-13-1g"><col 
+id="TBL-13-1" /></colgroup><colgroup id="TBL-13-2g"><col 
+id="TBL-13-2" /><col 
+id="TBL-13-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-1-"><td  style="white-space:normal; text-align:left;" id="TBL-13-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">lorenz_damping_factor</div>    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-1-3"  
+class="td01">                                       REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-13-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Damping factor for the generalized Lorenz gauge. Has units of 1/length = 1/M.</span>
+  <span 
+class="cmti-10">Typically set this parameter to 1.5/(maximum Delta t on AMR grids).</span></div>                                         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>0.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-4-"><td  style="white-space:normal; text-align:left;" id="TBL-13-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-13-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">any real</div>                                                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-5-1"  
+class="td11">                       </td></tr></table>
+<!--l. 283--><p class="noindent" ></p> <table id="TBL-14" class="tabular" 
+ 
+><colgroup id="TBL-14-1g"><col 
+id="TBL-14-1" /></colgroup><colgroup id="TBL-14-2g"><col 
+id="TBL-14-2" /><col 
+id="TBL-14-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-1-"><td  style="white-space:normal; text-align:left;" id="TBL-14-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">max_lorentz_factor</div>         </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-1-3"  
+class="td01">                                       REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-14-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Maximum Lorentz factor.</span></div>                                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-3-3"  
+class="td01">                                <span 
+class="cmbx-10">Default: </span>10.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-4-"><td  style="white-space:normal; text-align:left;" id="TBL-14-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1:*</div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-14-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Positive <span 
+class="cmmi-10">&#x003E; </span>1, though you’ll likely have troubles far above 10.</div>                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-5-1"  
+class="td11">                       </td></tr></table>
+<!--l. 290--><p class="noindent" ></p> <table id="TBL-15" class="tabular" 
+ 
+><colgroup id="TBL-15-1g"><col 
+id="TBL-15-1" /></colgroup><colgroup id="TBL-15-2g"><col 
+id="TBL-15-2" /><col 
+id="TBL-15-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-1-"><td  style="white-space:normal; text-align:left;" id="TBL-15-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">neos</div>                            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-15-1-3"  
+class="td01">                                         INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-15-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">number of parameters in EOS table</span></div>                                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-15-3-3"  
+class="td01">                                   <span 
+class="cmbx-10">Default: </span>1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-4-"><td  style="white-space:normal; text-align:left;" id="TBL-15-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1:10</div>                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-15-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Any integer between 1 and 10</div>                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-5-1"  
+class="td11">                       </td></tr></table>
+<!--l. 297--><p class="noindent" ></p> <table id="TBL-16" class="tabular" 
+ 
+><colgroup id="TBL-16-1g"><col 
+id="TBL-16-1" /></colgroup><colgroup id="TBL-16-2g"><col 
+id="TBL-16-2" /><col 
+id="TBL-16-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-1-"><td  style="white-space:normal; text-align:left;" id="TBL-16-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">p_atm</div>                         </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-16-1-3"  
+class="td01">                                       REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-16-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Atmospheric pressure (required)</span></div>                                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-16-3-3"  
+class="td01">                                  <span 
+class="cmbx-10">Default: </span>-1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-4-"><td  style="white-space:normal; text-align:left;" id="TBL-16-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-16-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Should be non-negative</div>                                                                   
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-5-"><td  style="white-space:normal; text-align:left;" id="TBL-16-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1</div>                                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-16-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Used to check if anything was given</div>                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-6-1"  
+class="td11">                       </td></tr></table>
+<!--l. 304--><p class="noindent" ></p> <table id="TBL-17" class="tabular" 
+ 
+><colgroup id="TBL-17-1g"><col 
+id="TBL-17-1" /></colgroup><colgroup id="TBL-17-2g"><col 
+id="TBL-17-2" /><col 
+id="TBL-17-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-1-"><td  style="white-space:normal; text-align:left;" id="TBL-17-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">p_max</div>                         </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-1-3"  
+class="td01">                                       REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-17-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Maximum temperature allowed (disabled by default)</span></div>                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-3-3"  
+class="td01">                                  <span 
+class="cmbx-10">Default: </span>-1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-4-"><td  style="white-space:normal; text-align:left;" id="TBL-17-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-17-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Should be non-negative</div>                                                                   
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-5-"><td  style="white-space:normal; text-align:left;" id="TBL-17-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1</div>                                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-17-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Used to check if anything was given</div>                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-6-1"  
+class="td11">                       </td></tr></table>
+<!--l. 311--><p class="noindent" ></p> <table id="TBL-18" class="tabular" 
+ 
+><colgroup id="TBL-18-1g"><col 
+id="TBL-18-1" /></colgroup><colgroup id="TBL-18-2g"><col 
+id="TBL-18-2" /><col 
+id="TBL-18-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-1-"><td  style="white-space:normal; text-align:left;" id="TBL-18-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">p_min</div>                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-18-1-3"  
+class="td01">                                       REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-18-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Minimum temperature allowed (disabled by default)</span></div>                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-18-3-3"  
+class="td01">                                  <span 
+class="cmbx-10">Default: </span>-1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-4-"><td  style="white-space:normal; text-align:left;" id="TBL-18-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-18-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Should be non-negative</div>                                                                   
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-5-"><td  style="white-space:normal; text-align:left;" id="TBL-18-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1</div>                                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-18-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Used to check if anything was given</div>                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-6-1"  
+class="td11">                       </td></tr></table>
+<!--l. 318--><p class="noindent" ></p> <table id="TBL-19" class="tabular" 
+ 
+><colgroup id="TBL-19-1g"><col 
+id="TBL-19-1" /></colgroup><colgroup id="TBL-19-2g"><col 
+id="TBL-19-2" /><col 
+id="TBL-19-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-1-"><td  style="white-space:normal; text-align:left;" id="TBL-19-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">ppm_flattening_epsilon</div>   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-1-3"  
+class="td01">                                       REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-19-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Epsilon used for flattening in PPM algorithm</span></div>                                                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-3-3"  
+class="td01">                                <span 
+class="cmbx-10">Default: </span>0.33  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-4-"><td  style="white-space:normal; text-align:left;" id="TBL-19-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">:</div>                                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-19-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Anything goes. Default is from Colella &#x0026; Woodward</div>                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-5-1"  
+class="td11">                       </td></tr></table>
+<!--l. 325--><p class="noindent" ></p> <table id="TBL-20" class="tabular" 
+ 
+><colgroup id="TBL-20-1g"><col 
+id="TBL-20-1" /></colgroup><colgroup id="TBL-20-2g"><col 
+id="TBL-20-2" /><col 
+id="TBL-20-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-1-"><td  style="white-space:normal; text-align:left;" id="TBL-20-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">ppm_flattening_omega1</div>  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-20-1-3"  
+class="td01">                                       REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-20-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Omega1 used for flattening in PPM algorithm</span></div>                                                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-20-3-3"  
+class="td01">                                <span 
+class="cmbx-10">Default: </span>0.75  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-4-"><td  style="white-space:normal; text-align:left;" id="TBL-20-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">:</div>                                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-20-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Anything goes. Default is from Colella &#x0026; Woodward</div>                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-5-1"  
+class="td11">                       </td></tr></table>
+<!--l. 332--><p class="noindent" ></p> <table id="TBL-21" class="tabular" 
+ 
+><colgroup id="TBL-21-1g"><col 
+id="TBL-21-1" /></colgroup><colgroup id="TBL-21-2g"><col 
+id="TBL-21-2" /><col 
+id="TBL-21-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-1-"><td  style="white-space:normal; text-align:left;" id="TBL-21-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">ppm_flattening_omega2</div>  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-21-1-3"  
+class="td01">                                       REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-21-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Omega2 used for flattening in PPM algorithm</span></div>                                                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-21-3-3"  
+class="td01">                                <span 
+class="cmbx-10">Default: </span>10.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-4-"><td  style="white-space:normal; text-align:left;" id="TBL-21-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">:</div>                                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-21-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Anything goes. Default is from Colella &#x0026; Woodward</div>                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-5-1"  
+class="td11">                       </td></tr></table>
+<!--l. 339--><p class="noindent" ></p> <table id="TBL-22" class="tabular" 
+ 
+><colgroup id="TBL-22-1g"><col 
+id="TBL-22-1" /></colgroup><colgroup id="TBL-22-2g"><col 
+id="TBL-22-2" /><col 
+id="TBL-22-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-1-"><td  style="white-space:normal; text-align:left;" id="TBL-22-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">ppm_shock_epsilon</div>         </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-22-1-3"  
+class="td01">                                       REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-22-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Epsilon used for shock detection in steepen</span><span 
+class="cmti-10">_rho algorithm</span></div>                                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-22-3-3"  
+class="td01">                                <span 
+class="cmbx-10">Default: </span>0.01  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-4-"><td  style="white-space:normal; text-align:left;" id="TBL-22-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">:</div>                                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-22-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Anything goes. Default is from Colella &#x0026; Woodward</div>                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-5-1"  
+class="td11">                       </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 346--><p class="noindent" ></p> <table id="TBL-23" class="tabular" 
+ 
+><colgroup id="TBL-23-1g"><col 
+id="TBL-23-1" /></colgroup><colgroup id="TBL-23-2g"><col 
+id="TBL-23-2" /><col 
+id="TBL-23-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-1-"><td  style="white-space:normal; text-align:left;" id="TBL-23-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">ppm_shock_eta1</div>            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-1-3"  
+class="td01">                                       REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-23-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Eta1 used for shock detection in steepen</span><span 
+class="cmti-10">_rho algorithm</span></div>                                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-3-3"  
+class="td01">                                <span 
+class="cmbx-10">Default: </span>20.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-4-"><td  style="white-space:normal; text-align:left;" id="TBL-23-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">:</div>                                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-23-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Anything goes. Default is from Colella &#x0026; Woodward</div>                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-5-1"  
+class="td11">                       </td></tr></table>
+<!--l. 353--><p class="noindent" ></p> <table id="TBL-24" class="tabular" 
+ 
+><colgroup id="TBL-24-1g"><col 
+id="TBL-24-1" /></colgroup><colgroup id="TBL-24-2g"><col 
+id="TBL-24-2" /><col 
+id="TBL-24-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-1-"><td  style="white-space:normal; text-align:left;" id="TBL-24-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">ppm_shock_eta2</div>            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-24-1-3"  
+class="td01">                                       REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-24-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Eta2 used for shock detection in steepen</span><span 
+class="cmti-10">_rho algorithm</span></div>                                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-24-3-3"  
+class="td01">                                <span 
+class="cmbx-10">Default: </span>0.05  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-4-"><td  style="white-space:normal; text-align:left;" id="TBL-24-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">:</div>                                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-24-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Anything goes. Default is from Colella &#x0026; Woodward</div>                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-5-1"  
+class="td11">                       </td></tr></table>
+<!--l. 360--><p class="noindent" ></p> <table id="TBL-25" class="tabular" 
+ 
+><colgroup id="TBL-25-1g"><col 
+id="TBL-25-1" /></colgroup><colgroup id="TBL-25-2g"><col 
+id="TBL-25-2" /><col 
+id="TBL-25-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-1-"><td  style="white-space:normal; text-align:left;" id="TBL-25-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">ppm_shock_k0</div>              </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-25-1-3"  
+class="td01">                                       REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-25-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">K0 used for shock detection in steepen</span><span 
+class="cmti-10">_rho algorithm</span></div>                                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-25-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>0.1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-4-"><td  style="white-space:normal; text-align:left;" id="TBL-25-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">:</div>
+                                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-25-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Anything goes. Default suggested by Colella &#x0026; Woodward is: (polytropic
+  constant)/10.0</div>                                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-5-1"  
+class="td11">                       </td></tr></table>
+<!--l. 367--><p class="noindent" ></p> <table id="TBL-26" class="tabular" 
+ 
+><colgroup id="TBL-26-1g"><col 
+id="TBL-26-1" /></colgroup><colgroup id="TBL-26-2g"><col 
+id="TBL-26-2" /><col 
+id="TBL-26-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-1-"><td  style="white-space:normal; text-align:left;" id="TBL-26-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">psi6threshold</div>                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-1-3"  
+class="td01">                                       REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-26-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Where Psi</span><img 
+src="documentation0x.png" alt="ˆ
+6  "  class="circ"  /> <span 
+class="cmmi-10">&#x003E; </span><span 
+class="cmti-10">Psi6threshold, we assume we’re inside the horizon in the primitives</span>
+  <span 
+class="cmti-10">solver, and certain limits are relaxed or imposed</span></div>                                                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-3-3"  
+class="td01">                               <span 
+class="cmbx-10">Default: </span>1e100  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-4-"><td  style="white-space:normal; text-align:left;" id="TBL-26-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-26-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Can set to anything</div>                                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-5-1"  
+class="td11">                       </td></tr></table>
+<!--l. 374--><p class="noindent" ></p> <table id="TBL-27" class="tabular" 
+ 
+><colgroup id="TBL-27-1g"><col 
+id="TBL-27-1" /></colgroup><colgroup id="TBL-27-2g"><col 
+id="TBL-27-2" /><col 
+id="TBL-27-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-1-"><td  style="white-space:normal; text-align:left;" id="TBL-27-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">rho_b_atm</div>                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-27-1-3"  
+class="td01">                                       REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-27-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Atmosphere value on the baryonic rest mass density rho</span><span 
+class="cmti-10">_b (required). If this is unset,</span>
+  <span 
+class="cmti-10">the run will die.</span></div>                                                                                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-27-3-3"  
+class="td01">                                  <span 
+class="cmbx-10">Default: </span>-1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-4-"><td  style="white-space:normal; text-align:left;" id="TBL-27-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-27-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Atmosphere density; must be positive</div>                                                
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-5-"><td  style="white-space:normal; text-align:left;" id="TBL-27-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1</div>                                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-27-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Used to check if anything was given</div>                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-6-1"  
+class="td11">                       </td></tr></table>
+<!--l. 381--><p class="noindent" ></p> <table id="TBL-28" class="tabular" 
+ 
+><colgroup id="TBL-28-1g"><col 
+id="TBL-28-1" /></colgroup><colgroup id="TBL-28-2g"><col 
+id="TBL-28-2" /><col 
+id="TBL-28-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-1-"><td  style="white-space:normal; text-align:left;" id="TBL-28-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">rho_b_max</div>                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-28-1-3"  
+class="td01">                                       REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-28-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Ceiling value on the baryonic rest mass density rho</span><span 
+class="cmti-10">_b (disabled by default). Can</span>
+  <span 
+class="cmti-10">help with stability to limit densities inside the BH after black hole formation.</span></div>                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-28-3-3"  
+class="td01">                                  <span 
+class="cmbx-10">Default: </span>-1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-4-"><td  style="white-space:normal; text-align:left;" id="TBL-28-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-28-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Maximum density; must be positive</div>                                                  
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-5-"><td  style="white-space:normal; text-align:left;" id="TBL-28-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1</div>                                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-28-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Used to check if anything was given</div>                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-6-1"  
+class="td11">                       </td></tr></table>
+<!--l. 388--><p class="noindent" ></p> <table id="TBL-29" class="tabular" 
+ 
+><colgroup id="TBL-29-1g"><col 
+id="TBL-29-1" /></colgroup><colgroup id="TBL-29-2g"><col 
+id="TBL-29-2" /><col 
+id="TBL-29-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-1-"><td  style="white-space:normal; text-align:left;" id="TBL-29-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">rho_b_min</div>                    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-29-1-3"  
+class="td01">                                       REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-29-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Floor value on the baryonic rest mass density rho</span><span 
+class="cmti-10">_b (disabled by default).</span></div>                    
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-29-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-29-3-3"  
+class="td01">                                  <span 
+class="cmbx-10">Default: </span>-1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-4-"><td  style="white-space:normal; text-align:left;" id="TBL-29-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-29-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Minimum density; must be positive</div>                                                   
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-5-"><td  style="white-space:normal; text-align:left;" id="TBL-29-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1</div>                                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-29-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Used to check if anything was given</div>                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-29-6-1"  
+class="td11">                       </td></tr></table>
+<!--l. 395--><p class="noindent" ></p> <table id="TBL-30" class="tabular" 
+ 
+><colgroup id="TBL-30-1g"><col 
+id="TBL-30-1" /></colgroup><colgroup id="TBL-30-2g"><col 
+id="TBL-30-2" /><col 
+id="TBL-30-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-1-"><td  style="white-space:normal; text-align:left;" id="TBL-30-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">rho_ppoly_in</div>                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-30-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-30-1-3"  
+class="td01">                                       REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-30-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Set polytropic rho parameters</span></div>                                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-30-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-30-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-30-3-3"  
+class="td01">                                  <span 
+class="cmbx-10">Default: </span>-1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-4-"><td  style="white-space:normal; text-align:left;" id="TBL-30-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-30-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">value of the density delimiters for the pieces of the piecewise polytrope</div>    
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-5-"><td  style="white-space:normal; text-align:left;" id="TBL-30-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1</div>
+                                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-30-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">forbidden value to make sure it is explicitly set in the parfile (only checked
+  for neos <span 
+class="cmmi-10">&#x003E; </span>1)</div>                                                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-30-6-1"  
+class="td11">                       </td></tr></table>
+<!--l. 402--><p class="noindent" ></p> <table id="TBL-31" class="tabular" 
+ 
+><colgroup id="TBL-31-1g"><col 
+id="TBL-31-1" /></colgroup><colgroup id="TBL-31-2g"><col 
+id="TBL-31-2" /><col 
+id="TBL-31-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-1-"><td  style="white-space:normal; text-align:left;" id="TBL-31-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">t_atm</div>                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-31-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-31-1-3"  
+class="td01">                                       REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-31-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Atmospheric temperature (required)</span></div>                                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-31-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-31-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-31-3-3"  
+class="td01">                                  <span 
+class="cmbx-10">Default: </span>-1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-4-"><td  style="white-space:normal; text-align:left;" id="TBL-31-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-31-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Should be non-negative</div>                                                                   
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-5-"><td  style="white-space:normal; text-align:left;" id="TBL-31-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1</div>                                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-31-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Used to check if anything was given</div>                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-31-6-1"  
+class="td11">                       </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 409--><p class="noindent" ></p> <table id="TBL-32" class="tabular" 
+ 
+><colgroup id="TBL-32-1g"><col 
+id="TBL-32-1" /></colgroup><colgroup id="TBL-32-2g"><col 
+id="TBL-32-2" /><col 
+id="TBL-32-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-1-"><td  style="white-space:normal; text-align:left;" id="TBL-32-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">t_max</div>                         </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-32-1-3"  
+class="td01">                                       REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-32-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Maximum temperature allowed (optional; table bounds used by default)</span></div>                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-32-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-32-3-3"  
+class="td01">                                  <span 
+class="cmbx-10">Default: </span>-1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-4-"><td  style="white-space:normal; text-align:left;" id="TBL-32-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-32-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Should be non-negative</div>                                                                   
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-5-"><td  style="white-space:normal; text-align:left;" id="TBL-32-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1</div>                                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-32-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Used to check if anything was given</div>                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-32-6-1"  
+class="td11">                       </td></tr></table>
+<!--l. 416--><p class="noindent" ></p> <table id="TBL-33" class="tabular" 
+ 
+><colgroup id="TBL-33-1g"><col 
+id="TBL-33-1" /></colgroup><colgroup id="TBL-33-2g"><col 
+id="TBL-33-2" /><col 
+id="TBL-33-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-1-"><td  style="white-space:normal; text-align:left;" id="TBL-33-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">t_min</div>                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-33-1-3"  
+class="td01">                                       REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-33-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Minimum temperature allowed (optional; table bounds used by default)</span></div>                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-33-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-33-3-3"  
+class="td01">                                  <span 
+class="cmbx-10">Default: </span>-1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-4-"><td  style="white-space:normal; text-align:left;" id="TBL-33-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-33-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Should be non-negative</div>                                                                   
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-5-"><td  style="white-space:normal; text-align:left;" id="TBL-33-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1</div>                                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-33-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Used to check if anything was given</div>                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-33-6-1"  
+class="td11">                       </td></tr></table>
+<!--l. 423--><p class="noindent" ></p> <table id="TBL-34" class="tabular" 
+ 
+><colgroup id="TBL-34-1g"><col 
+id="TBL-34-1" /></colgroup><colgroup id="TBL-34-2g"><col 
+id="TBL-34-2" /><col 
+id="TBL-34-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-1-"><td  style="white-space:normal; text-align:left;" id="TBL-34-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">y_e_atm</div>                       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-34-1-3"  
+class="td01">                                       REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-34-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Atmospheric electron fraction (required)</span></div>                                                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-34-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-34-3-3"  
+class="td01">                                  <span 
+class="cmbx-10">Default: </span>-1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-4-"><td  style="white-space:normal; text-align:left;" id="TBL-34-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:1</div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-34-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Only makes sense if set to something between 0 and 1</div>                          
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-5-"><td  style="white-space:normal; text-align:left;" id="TBL-34-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1</div>                                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-34-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Used to check if anything was given</div>                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-34-6-1"  
+class="td11">                       </td></tr></table>
+<!--l. 430--><p class="noindent" ></p> <table id="TBL-35" class="tabular" 
+ 
+><colgroup id="TBL-35-1g"><col 
+id="TBL-35-1" /></colgroup><colgroup id="TBL-35-2g"><col 
+id="TBL-35-2" /><col 
+id="TBL-35-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-1-"><td  style="white-space:normal; text-align:left;" id="TBL-35-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">y_e_max</div>                      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-35-1-3"  
+class="td01">                                       REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-35-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Atmospheric electron fraction (optional; table bounds used by default)</span></div>                         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-35-3-3"  
+class="td01">                                  <span 
+class="cmbx-10">Default: </span>-1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-4-"><td  style="white-space:normal; text-align:left;" id="TBL-35-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:1</div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-35-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Only makes sense if set to something between 0 and 1</div>                          
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-5-"><td  style="white-space:normal; text-align:left;" id="TBL-35-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1</div>                                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-35-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Used to check if anything was given</div>                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-6-1"  
+class="td11">                       </td></tr></table>
+<!--l. 437--><p class="noindent" ></p> <table id="TBL-36" class="tabular" 
+ 
+><colgroup id="TBL-36-1g"><col 
+id="TBL-36-1" /></colgroup><colgroup id="TBL-36-2g"><col 
+id="TBL-36-2" /><col 
+id="TBL-36-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-1-"><td  style="white-space:normal; text-align:left;" id="TBL-36-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">y_e_min</div>                       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-36-1-3"  
+class="td01">                                       REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-36-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Atmospheric electron fraction (optional; table bounds used by default)</span></div>                         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-36-3-1"  
+class="td11">         <span 
+class="cmbx-10">Range            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-36-3-3"  
+class="td01">                                  <span 
+class="cmbx-10">Default: </span>-1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-4-"><td  style="white-space:normal; text-align:left;" id="TBL-36-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:1</div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-36-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Only makes sense if set to something between 0 and 1</div>                          
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-5-"><td  style="white-space:normal; text-align:left;" id="TBL-36-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1</div>                                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-36-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Used to check if anything was given</div>                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-36-6-1"  
+class="td11">                       </td></tr></table>
+<!--l. 446--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">6   </span> <a 
+ id="x1-80006"></a>Interfaces</h3>
+<!--l. 451--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-9000"></a>General</h4>
+<!--l. 453--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 455--><p class="noindent" >grhaylib
+</p><!--l. 460--><p class="noindent" ><span 
+class="cmbx-10">Adds header</span>:
+</p><!--l. 464--><p class="noindent" >GRHayLib.h
+                                                                                       
+                                                                                       
+</p><!--l. 467--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">7   </span> <a 
+ id="x1-100007"></a>Schedule</h3>
+<!--l. 473--><p class="noindent" >This section lists all the variables which are assigned storage by thorn GRHayL/GRHayLib. Storage can
+either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 476--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-11000"></a>Storage</h4>
+<!--l. 476--><p class="noindent" >NONE
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-12000"></a>Scheduled Functions</h4>
+<!--l. 480--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_WRAGH </span>(conditional)
+</p><!--l. 482--><p class="noindent" >      grhaylib_initialize
+</p><!--l. 484--><p class="noindent" >     <span 
+class="cmti-10">set up the grhayl structs and read the table for tabulated eos.</span>
+</p><!--l. 487--><p class="noindent" > 
+</p><!--l. 489--><p class="noindent" ></p> <table id="TBL-37" class="tabular" 
+ 
+><colgroup id="TBL-37-1g"><col 
+id="TBL-37-1" /><col 
+id="TBL-37-2" /><col 
+id="TBL-37-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-37-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-2-3"  
+class="td11"> global     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-3-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 498--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_TERMINATE</span>
+</p><!--l. 500--><p class="noindent" >      grhaylib_terminate
+</p><!--l. 502--><p class="noindent" >     <span 
+class="cmti-10">free memory allocated for the grhayl structs.</span>
+</p><!--l. 505--><p class="noindent" > 
+</p><!--l. 507--><p class="noindent" ></p> <table id="TBL-38" class="tabular" 
+ 
+><colgroup id="TBL-38-1g"><col 
+id="TBL-38-1" /><col 
+id="TBL-38-2" /><col 
+id="TBL-38-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-38-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-38-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-38-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-38-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-38-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-38-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-38-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-38-2-3"  
+class="td11"> global     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-38-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-38-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-38-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-38-3-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-38-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-38-4-1"  
+class="td11">    </td></tr></table>
+ 
+</body></html> 
+
+                                                                                       
+
+

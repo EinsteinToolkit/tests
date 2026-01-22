@@ -1,0 +1,1406 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>ScalarEvolve</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">ScalarEvolve</h2>
+ <div class="author" ><span 
+class="cmr-12">Miguel Zilh</span><span 
+class="cmr-12">ão </span><span 
+class="cmmi-12">&#x003C;</span><span 
+class="cmr-12">mzilhao@ua.pt</span><span 
+class="cmmi-12">&#x003E;</span></div>
+<br />
+<div class="date" ><span 
+class="cmr-12">July 1 2023</span></div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 106--><p class="noindent" ><span 
+class="cmr-9">ScalarEvolve  solves  the  (Einstein-)Klein-Gordon  system  of  equations  with  4th  order  accurate</span>
+     <span 
+class="cmr-9">finite-difference stencils. It relies on the MoL thorn for the time integration and can work with any</span>
+     <span 
+class="cmr-9">spacetime evolution thorn to couple with the Einstein equations.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>ScalarEvolve</h3>
+<!--l. 116--><p class="noindent" >This thorn provides the tools to evolve a complex scalar field with nonlinear potential in arbitrary background as
+first described in <span class="cite">[<a 
+href="#XScalar_Cunha:2017wao">1</a>]</span>. Additionally, it is possible to add an external periodic forcing to the right-hand side of the
+Klein-Gordon equation for studies of parametric resonances.
+</p><!--l. 122--><p class="noindent" >ScalarEvolve interfaces with the ScalarBase thorn, which defines the evolution variables <span 
+class="cmtt-10">phi1</span>, <span 
+class="cmtt-10">phi2</span>,
+<span 
+class="cmtt-10">Kphi1 </span>and <span 
+class="cmtt-10">Kphi2</span>. This thorn merely takes care of setting the scalar field stress-energy tensor and
+evolving (with MoL) the scalar field itself. The evolution of the metric sector needs to be done
+elsewhere.
+                                                                                       
+                                                                                       
+</p><!--l. 129--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a>Physical System</h3>
+<!--l. 131--><p class="noindent" >Conventions used here are as in <span class="cite">[<a 
+href="#XScalar_Cunha:2017wao">1</a>]</span> and as follows: \begin {align}  G_{\mu \nu } &amp; = 8 \pi G T_{\mu \nu } \\ \square \Phi &amp; = \mu ^2 \Phi  \end {align}
+</p><!--l. 136--><p class="noindent" >where \(\mu \) is the mass parameter defined in <span 
+class="cmtt-10">ScalarBase </span>and \begin {equation}  T_{\mu \nu } = \bar \Phi _{,\mu } \Phi _{,\nu } + \Phi _{,\mu } \bar \Phi _{,\nu } - g_{\mu \nu } [ \bar \Phi ^{,\sigma } \Phi _{,\sigma } + \mu ^2 \bar \Phi \Phi ]  \end {equation}<a 
+ id="x1-2001r1"></a> and the gridfunctions <span 
+class="cmtt-10">phi1 </span>and <span 
+class="cmtt-10">phi2 </span>used in the code
+(defined in ScalarBase) are the real and imaginary part of the complex field \(\Phi = \phi _1 + i \phi _2\), which for reasons of convenience
+are evolved as separate, independent, variables.
+</p><!--l. 145--><p class="noindent" >Let us briefly present the \(3+1\) decomposed equations of motion in the Einstein-Klein-Gordon case. To complete the
+characterization of the full spacetime we define the extrinsic curvature \begin {equation}  \label {eq:KijDef} K_{ij} = - \frac {1}{2\alpha } \left ( \partial _{t} - \mathcal {L}_{\beta } \right ) \gamma _{ij} \ ,  \end {equation}<a 
+ id="x1-2002r2"></a> and analogously introduce the “canonical
+momentum” of the complex scalar field \(\Phi \) \begin {equation}  \label {eq:Kphi} K_{\Phi } = -\frac {1}{2\alpha } \left ( \partial _{t} - \mathcal {L}_{\beta } \right ) \Phi \,,  \end {equation}<a 
+ id="x1-2003r3"></a> where \(\mathcal {L}\) denotes the Lie derivative. Our evolution system can then be
+written in the form \begin {align}  \partial _{t} \gamma _{ij} &amp; = - 2 \alpha K_{ij} + \mathcal {L}_{\beta } \gamma _{ij} \,, \label {eq:dtgamma} \\ \partial _{t} K_{ij} &amp; = - D_{i} \partial _{j} \alpha + \alpha \left ( R_{ij} - 2 K_{ik} K^{k}{}_{j} + K K_{ij} \right ) \nonumber \\ &amp; \quad + \mathcal {L}_{\beta } K_{ij} + 4\pi \alpha \left [ (S-\rho ) \gamma _{ij} - 2 S_{ij} \right ] \,, \label {eq:dtKij} \\ \partial _{t} \Phi &amp; = - 2 \alpha K_\Phi + \mathcal {L}_{\beta } \Phi \\,, \label {eq:dtPhi} \\ \partial _{t} K_\Phi &amp; = \alpha \left ( K K_{\Phi } - \frac {1}{2} \gamma ^{ij} D_i \partial _j \Phi + \frac {1}{2} \mu ^2 \Phi \right ) \nonumber \\ &amp; \quad - \frac {1}{2} \gamma ^{ij} \partial _i \alpha \partial _j \Phi + \mathcal {L}_{\beta } K_\Phi \,, \label {eq:dtKphi}  \end {align}
+</p><!--l. 179--><p class="noindent" >where \(D_i\) is the covariant derivative with respect to the \(3\)-metric.
+</p><!--l. 182--><p class="noindent" >For completeness, we present also the full evolution equations re-written in the BSSN scheme <span class="cite">[<a 
+href="#XScalar_Shibata:1995we">2</a>, <a 
+href="#XScalar_Baumgarte:1998te">3</a>]</span>. The full
+system of evolution equations is \begin {align}  \partial _t \tilde {\gamma }_{ij} &amp; = \beta ^k \partial _k \tilde {\gamma }_{ij} + 2\tilde {\gamma }_{k(i} \partial _{j)} \beta ^k - \frac {2}{3} \tilde {\gamma }_{ij} \partial _k \beta ^k -2\alpha \tilde {A}_{ij}, \\ \partial _t \chi &amp; = \beta ^k \partial _k \chi + \frac {2}{3} \chi (\alpha K - \partial _k \beta ^k), \\ \partial _t \tilde {A}_{ij} &amp; = \beta ^k \partial _k \tilde {A}_{ij} + 2\tilde {A}_{k(i} \partial _{j)} \beta ^k - \frac {2}{3} \tilde {A}_{ij} \partial _k \beta ^k \notag \\ &amp; \quad + \chi \left ( \alpha R_{ij} - D_i \partial _j \alpha \right )^{\rm TF} + \alpha \left ( K\,\tilde {A}_{ij} - 2 \tilde {A}_i{}^k \tilde {A}_{kj} \right ) \notag \\ &amp; \quad - 8 \pi \alpha \left ( \chi S_{ij} - \frac {S}{3} \tilde \gamma _{ij} \right ), \\ \partial _t K &amp; = \beta ^k \partial _k K - D^k \partial _k \alpha + \alpha \left ( \tilde {A}^{ij} \tilde {A}_{ij} + \frac {1}{3} K^2 \right ) \notag \\ &amp; \quad + 4 \pi \alpha (\rho + S), \\ \partial _t \tilde {\Gamma }^i &amp; = \beta ^k \partial _k \tilde {\Gamma }^i - \tilde {\Gamma }^k \partial _k \beta ^i + \frac {2}{3} \tilde {\Gamma }^i \partial _k \beta ^k + 2 \alpha \tilde {\Gamma }^i_{jk} \tilde {A}^{jk} \notag \\ &amp; \quad + \frac {1}{3} \tilde {\gamma }^{ij}\partial _j \partial _k \beta ^k + \tilde {\gamma }^{jk} \partial _j \partial _k \beta ^i \nonumber \\ &amp; \quad - \frac {4}{3} \alpha \tilde {\gamma }^{ij} \partial _j K - \tilde {A}^{ij} \left ( 3 \alpha \chi ^{-1} \partial _j \chi + 2\partial _j \alpha \right ) \notag \\ &amp; \quad - 16 \pi \alpha \chi ^{-1} j^i \label {eq:tilde-Gamma-evol} \,, \\ \partial _{t} \Phi &amp; = - 2 \alpha K_\Phi + \mathcal {L}_{\beta } \Phi \\,, \label {eq:dtPhi-BSSN} \\ \partial _{t} K_\Phi &amp; = \alpha \left ( K K_{\Phi } - \frac {1}{2} \gamma ^{ij} D_i \partial _j \Phi + \frac {1}{2} \mu ^2 \Phi \right ) \nonumber \\ &amp; \quad - \frac {1}{2} \gamma ^{ij} \partial _i \alpha \partial _j \Phi + \mathcal {L}_{\beta } K_\Phi \,, \label {eq:dtKphi-BSSN}  \end {align}
+</p><!--l. 232--><p class="noindent" >with the source terms given by \begin {align*}  \rho &amp; \equiv T^{\mu \nu }n_{\mu }n_{\nu } \,,\\ j_i &amp;\equiv -\gamma _{i\mu } T^{\mu \nu }n_{\nu } \,, \\ S_{ij} &amp;\equiv \gamma ^{\mu }{}_i \gamma ^{\nu }{}_j T_{\mu \nu } \,, \\ S &amp; \equiv \gamma ^{ij}S_{ij} \,.  \end {align*}
+</p><!--l. 241--><p class="noindent" >Note however, as mentioned above, that the evolution of the metric sector is <span 
+class="cmti-10">not </span>done in this thorn, and thus
+needs to be done elsewhere (ie, LeanBSSNMoL or McLachlan).
+</p><!--l. 244--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-30003"></a>Obtaining This Thorn</h3>
+<!--l. 246--><p class="noindent" >This thorn is included in the Einstein Toolkit and can also be obtained through the <span 
+class="cmtt-10">Canuda </span>numerical relativity
+library <span class="cite">[<a 
+href="#XCanuda">4</a>]</span>.
+</p><!--l. 250--><p class="noindent" >
+</p>
+<h3 class="likesectionHead"><a 
+ id="x1-4000"></a>References</h3>
+<!--l. 250--><p class="noindent" >
+   </p><div class="thebibliography">
+   <p class="bibitem" ><span class="biblabel">
+ [1]<span class="bibsp">   </span></span><a 
+ id="XScalar_Cunha:2017wao"></a>P. V. P. Cunha, J. A. Font, C. Herdeiro, E. Radu, N. Sanchis-Gual and M. Zilhão, “Lensing
+   and   dynamics   of   ultracompact   bosonic   stars,”   Phys.   Rev.   D   <span 
+class="cmbx-10">96</span>,   no.10,   104040   (2017)
+   doi:10.1103/PhysRevD.96.104040 [arXiv:1709.06118 [gr-qc]].
+                                                                                       
+                                                                                       
+   </p>
+   <p class="bibitem" ><span class="biblabel">
+ [2]<span class="bibsp">   </span></span><a 
+ id="XScalar_Shibata:1995we"></a>M. Shibata and T. Nakamura, “Evolution of three-dimensional gravitational waves: Harmonic
+   slicing case,” Phys. Rev. D <span 
+class="cmbx-10">52</span>, 5428-5444 (1995) doi:10.1103/PhysRevD.52.5428
+   </p>
+   <p class="bibitem" ><span class="biblabel">
+ [3]<span class="bibsp">   </span></span><a 
+ id="XScalar_Baumgarte:1998te"></a>T. W. Baumgarte  and  S. L. Shapiro,  “On  the  numerical  integration  of  Einstein’s  field
+   equations,” Phys. Rev. D <span 
+class="cmbx-10">59</span>, 024007 (1998) doi:10.1103/PhysRevD.59.024007 [arXiv:gr-qc/9810065
+   [gr-qc]].
+   </p>
+   <p class="bibitem" ><span class="biblabel">
+ [4]<span class="bibsp">   </span></span><a 
+ id="XCanuda"></a>H. Witek,  M. Zilhao,  G. Bozzola,  C.-H. Cheng,  A. Dima,  M. Elley,  G. Ficarra,  T. Ikeda,
+   R. Luna, C. Richards, N. Sanchis-Gual, H. Okada da Silva. “Canuda: a public numerical relativity
+   library to probe fundamental physics,” Zenodo (2023) doi: 10.5281/zenodo.3565474
+</p>
+   </div>
+<!--l. 285--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-50004"></a>Parameters</h3>
+<!--l. 304--><p class="noindent" ></p> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /></colgroup><colgroup id="TBL-2-2g"><col 
+id="TBL-2-2" /><col 
+id="TBL-2-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:normal; text-align:left;" id="TBL-2-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">chi_floor</div>                                      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-1-3"  
+class="td01">                               REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-2-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Minimal value of abs(chi)</span></div>                                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-3-3"  
+class="td01">                      <span 
+class="cmbx-10">Default: </span>1.0d-06  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-4-"><td  style="white-space:normal; text-align:left;" id="TBL-2-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                                              </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-2-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Any value possible</div>                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-5-1"  
+class="td11">                                 </td></tr></table>
+<!--l. 311--><p class="noindent" ></p> <table id="TBL-3" class="tabular" 
+ 
+><colgroup id="TBL-3-1g"><col 
+id="TBL-3-1" /></colgroup><colgroup id="TBL-3-2g"><col 
+id="TBL-3-2" /><col 
+id="TBL-3-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-1-"><td  style="white-space:normal; text-align:left;" id="TBL-3-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">compute_fluxes</div>                             </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-1-3"  
+class="td01">                      BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-3-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description:  </span><span 
+class="cmti-10">Calculate  the  energy  fluxes  of  the  scalar  field?  calculation  not  available  with</span>
+  <span 
+class="cmti-10">multipatch</span></div>                                                                                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-3-1"  
+class="td11">                                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-3-3"  
+class="td01">                     <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-4-1"  
+class="td11">                                 </td></tr></table>
+<!--l. 318--><p class="noindent" ></p> <table id="TBL-4" class="tabular" 
+ 
+><colgroup id="TBL-4-1g"><col 
+id="TBL-4-1" /></colgroup><colgroup id="TBL-4-2g"><col 
+id="TBL-4-2" /><col 
+id="TBL-4-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-1-"><td  style="white-space:normal; text-align:left;" id="TBL-4-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">eps_r</div>                                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-1-3"  
+class="td01">                               REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-4-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">of value if rr approaches zero in densities computation</span></div>                                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-3-3"  
+class="td01">                      <span 
+class="cmbx-10">Default: </span>1.0d-06  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-4-"><td  style="white-space:normal; text-align:left;" id="TBL-4-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                              </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">any small positive value possible</div>                                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-5-1"  
+class="td11">                                 </td></tr></table>
+<!--l. 325--><p class="noindent" ></p> <table id="TBL-5" class="tabular" 
+ 
+><colgroup id="TBL-5-1g"><col 
+id="TBL-5-1" /></colgroup><colgroup id="TBL-5-2g"><col 
+id="TBL-5-2" /><col 
+id="TBL-5-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-1-"><td  style="white-space:normal; text-align:left;" id="TBL-5-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">outer_bound</div>                                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-1-3"  
+class="td01">                          KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-5-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">outer boundary condition</span></div>                                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-3-3"  
+class="td01">                     <span 
+class="cmbx-10">Default: </span>radiative  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-4-"><td  style="white-space:normal; text-align:left;" id="TBL-5-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">radiative</div>                                      </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-5-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Sommerfeld BC</div>                                                             
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-5-"><td  style="white-space:normal; text-align:left;" id="TBL-5-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">reflecting</div>                                      </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-5-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">reflecting BC</div>                                                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-6-1"  
+class="td11">                                 </td></tr></table>
+<!--l. 332--><p class="noindent" ></p> <table id="TBL-6" class="tabular" 
+ 
+><colgroup id="TBL-6-1g"><col 
+id="TBL-6-1" /></colgroup><colgroup id="TBL-6-2g"><col 
+id="TBL-6-2" /><col 
+id="TBL-6-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-1-"><td  style="white-space:normal; text-align:left;" id="TBL-6-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">use_advection_stencils</div>                    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-1-3"  
+class="td01">                      BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-6-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Use lop-sided stencils for advection derivs</span></div>                                                    
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-3-1"  
+class="td11">                                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-3-3"  
+class="td01">                     <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-4-1"  
+class="td11">                                 </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 339--><p class="noindent" ></p> <table id="TBL-7" class="tabular" 
+ 
+><colgroup id="TBL-7-1g"><col 
+id="TBL-7-1" /></colgroup><colgroup id="TBL-7-2g"><col 
+id="TBL-7-2" /><col 
+id="TBL-7-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-1-"><td  style="white-space:normal; text-align:left;" id="TBL-7-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">z_is_radial</div>                                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-1-3"  
+class="td01">                      BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-7-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">use with multipatch</span></div>                                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-3-1"  
+class="td11">                                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-3-3"  
+class="td01">                     <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-4-1"  
+class="td11">                                 </td></tr></table>
+<!--l. 346--><p class="noindent" ></p> <table id="TBL-8" class="tabular" 
+ 
+><colgroup id="TBL-8-1g"><col 
+id="TBL-8-1" /></colgroup><colgroup id="TBL-8-2g"><col 
+id="TBL-8-2" /><col 
+id="TBL-8-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-1-"><td  style="white-space:normal; text-align:left;" id="TBL-8-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">scalarevolve_maxnumconstrainedvars</div></td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-1-3"  
+class="td01">                               INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-8-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">The maximum number of constrained variables used by ScalarEvolve</span></div>                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-3-3"  
+class="td01">                     <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-4-"><td  style="white-space:normal; text-align:left;" id="TBL-8-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:0</div>                                              </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-8-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">none</div>                                                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-5-1"  
+class="td11">                                 </td></tr></table>
+<!--l. 353--><p class="noindent" ></p> <table id="TBL-9" class="tabular" 
+ 
+><colgroup id="TBL-9-1g"><col 
+id="TBL-9-1" /></colgroup><colgroup id="TBL-9-2g"><col 
+id="TBL-9-2" /><col 
+id="TBL-9-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-1-"><td  style="white-space:normal; text-align:left;" id="TBL-9-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">scalarevolve_maxnumevolvedvars</div>      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-1-3"  
+class="td01">                               INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-9-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">The maximum number of evolved variables used by ScalarEvolve</span></div>                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-3-3"  
+class="td01">                         <span 
+class="cmbx-10">Default: </span>4  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-4-"><td  style="white-space:normal; text-align:left;" id="TBL-9-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">4:4</div>                                              </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-9-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Just 4: phi1, phi2, Kphi1, Kphi2</div>                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-5-1"  
+class="td11">                                 </td></tr></table>
+<!--l. 360--><p class="noindent" ></p> <table id="TBL-10" class="tabular" 
+ 
+><colgroup id="TBL-10-1g"><col 
+id="TBL-10-1" /></colgroup><colgroup id="TBL-10-2g"><col 
+id="TBL-10-2" /><col 
+id="TBL-10-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-1-"><td  style="white-space:normal; text-align:left;" id="TBL-10-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">scalarevolve_maxnumsandrvars</div>        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-1-3"  
+class="td01">                               INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-10-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">The maximum number of save and restore variables used by ScalarEvolve</span></div>                    
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-3-3"  
+class="td01">                        <span 
+class="cmbx-10">Default: </span>16  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-4-"><td  style="white-space:normal; text-align:left;" id="TBL-10-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">16:16</div>                                           </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-10-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">lapse, shift, metric, and extrinsic curvature</div>                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-5-1"  
+class="td11">                                 </td></tr></table>
+<!--l. 367--><p class="noindent" ></p> <table id="TBL-11" class="tabular" 
+ 
+><colgroup id="TBL-11-1g"><col 
+id="TBL-11-1" /></colgroup><colgroup id="TBL-11-2g"><col 
+id="TBL-11-2" /><col 
+id="TBL-11-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-1-"><td  style="white-space:normal; text-align:left;" id="TBL-11-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">evolution_method</div>                         </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from SCALARBASE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-1-3"  
+class="td01">        KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-2-"><td colspan="3" style="white-space:nowrap; text-align:left;" id="TBL-11-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:nowrap; text-align:left;"><span 
+class="cmbx-10">Extends ranges:</span></div>                                                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-3-"><td  style="white-space:normal; text-align:left;" id="TBL-11-3-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">ScalarEvolve</div>                                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-11-3-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Use ScalarEvolve to evolve scalar variables</div>                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-4-1"  
+class="td11">                                 </td></tr></table>
+<!--l. 374--><p class="noindent" ></p> <table id="TBL-12" class="tabular" 
+ 
+><colgroup id="TBL-12-1g"><col 
+id="TBL-12-1" /></colgroup><colgroup id="TBL-12-2g"><col 
+id="TBL-12-2" /><col 
+id="TBL-12-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-1-"><td  style="white-space:normal; text-align:left;" id="TBL-12-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">forcing_switch</div>                              </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from SCALARBASE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-1-3"  
+class="td01">BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-2-1"  
+class="td11">                                 </td></tr></table>
+<!--l. 379--><p class="noindent" ></p> <table id="TBL-13" class="tabular" 
+ 
+><colgroup id="TBL-13-1g"><col 
+id="TBL-13-1" /></colgroup><colgroup id="TBL-13-2g"><col 
+id="TBL-13-2" /><col 
+id="TBL-13-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-1-"><td  style="white-space:normal; text-align:left;" id="TBL-13-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">kphi1_0</div>                                       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from SCALARBASE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-1-3"  
+class="td01">REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-2-1"  
+class="td11">                                 </td></tr></table>
+<!--l. 384--><p class="noindent" ></p> <table id="TBL-14" class="tabular" 
+ 
+><colgroup id="TBL-14-1g"><col 
+id="TBL-14-1" /></colgroup><colgroup id="TBL-14-2g"><col 
+id="TBL-14-2" /><col 
+id="TBL-14-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-1-"><td  style="white-space:normal; text-align:left;" id="TBL-14-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">kphi2_0</div>                                       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from SCALARBASE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-1-3"  
+class="td01">REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-2-1"  
+class="td11">                                 </td></tr></table>
+<!--l. 389--><p class="noindent" ></p> <table id="TBL-15" class="tabular" 
+ 
+><colgroup id="TBL-15-1g"><col 
+id="TBL-15-1" /></colgroup><colgroup id="TBL-15-2g"><col 
+id="TBL-15-2" /><col 
+id="TBL-15-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-1-"><td  style="white-space:normal; text-align:left;" id="TBL-15-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">mu</div>                                             </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from SCALARBASE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-15-1-3"  
+class="td01">REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-2-1"  
+class="td11">                                 </td></tr></table>
+<!--l. 394--><p class="noindent" ></p> <table id="TBL-16" class="tabular" 
+ 
+><colgroup id="TBL-16-1g"><col 
+id="TBL-16-1" /></colgroup><colgroup id="TBL-16-2g"><col 
+id="TBL-16-2" /><col 
+id="TBL-16-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-1-"><td  style="white-space:normal; text-align:left;" id="TBL-16-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">n_kphi1</div>                                      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from SCALARBASE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-16-1-3"  
+class="td01">INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-2-1"  
+class="td11">                                 </td></tr></table>
+<!--l. 399--><p class="noindent" ></p> <table id="TBL-17" class="tabular" 
+ 
+><colgroup id="TBL-17-1g"><col 
+id="TBL-17-1" /></colgroup><colgroup id="TBL-17-2g"><col 
+id="TBL-17-2" /><col 
+id="TBL-17-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-1-"><td  style="white-space:normal; text-align:left;" id="TBL-17-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">n_kphi2</div>                                      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from SCALARBASE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-1-3"  
+class="td01">INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-2-1"  
+class="td11">                                 </td></tr></table>
+<!--l. 404--><p class="noindent" ></p> <table id="TBL-18" class="tabular" 
+ 
+><colgroup id="TBL-18-1g"><col 
+id="TBL-18-1" /></colgroup><colgroup id="TBL-18-2g"><col 
+id="TBL-18-2" /><col 
+id="TBL-18-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-1-"><td  style="white-space:normal; text-align:left;" id="TBL-18-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">n_phi1</div>                                        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from SCALARBASE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-18-1-3"  
+class="td01">INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-2-1"  
+class="td11">                                 </td></tr></table>
+<!--l. 409--><p class="noindent" ></p> <table id="TBL-19" class="tabular" 
+ 
+><colgroup id="TBL-19-1g"><col 
+id="TBL-19-1" /></colgroup><colgroup id="TBL-19-2g"><col 
+id="TBL-19-2" /><col 
+id="TBL-19-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-1-"><td  style="white-space:normal; text-align:left;" id="TBL-19-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">n_phi2</div>                                        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from SCALARBASE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-1-3"  
+class="td01">INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-2-1"  
+class="td11">                                 </td></tr></table>
+<!--l. 414--><p class="noindent" ></p> <table id="TBL-20" class="tabular" 
+ 
+><colgroup id="TBL-20-1g"><col 
+id="TBL-20-1" /></colgroup><colgroup id="TBL-20-2g"><col 
+id="TBL-20-2" /><col 
+id="TBL-20-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-1-"><td  style="white-space:normal; text-align:left;" id="TBL-20-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">phi1_0</div>                                        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from SCALARBASE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-20-1-3"  
+class="td01">REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-2-1"  
+class="td11">                                 </td></tr></table>
+<!--l. 419--><p class="noindent" ></p> <table id="TBL-21" class="tabular" 
+ 
+><colgroup id="TBL-21-1g"><col 
+id="TBL-21-1" /></colgroup><colgroup id="TBL-21-2g"><col 
+id="TBL-21-2" /><col 
+id="TBL-21-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-1-"><td  style="white-space:normal; text-align:left;" id="TBL-21-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">phi2_0</div>                                        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from SCALARBASE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-21-1-3"  
+class="td01">REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-2-1"  
+class="td11">                                 </td></tr></table>
+<!--l. 424--><p class="noindent" ></p> <table id="TBL-22" class="tabular" 
+ 
+><colgroup id="TBL-22-1g"><col 
+id="TBL-22-1" /></colgroup><colgroup id="TBL-22-2g"><col 
+id="TBL-22-2" /><col 
+id="TBL-22-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-1-"><td  style="white-space:normal; text-align:left;" id="TBL-22-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">v_lambda</div>                                    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from SCALARBASE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-22-1-3"  
+class="td01">REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-2-1"  
+class="td11">                                 </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 431--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-60005"></a>Interfaces</h3>
+<!--l. 436--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-7000"></a>General</h4>
+<!--l. 438--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 440--><p class="noindent" >scalarevolve
+</p><!--l. 443--><p class="noindent" ><span 
+class="cmbx-10">Inherits</span>:
+</p><!--l. 445--><p class="noindent" >admbase
+</p><!--l. 447--><p class="noindent" >tmunubase
+</p><!--l. 449--><p class="noindent" >scalarbase
+</p><!--l. 451--><p class="noindent" >boundary
+</p><!--l. 453--><p class="noindent" >sphericalsurface
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-8000"></a>Grid Variables</h4>
+<!--l. 456--><p class="noindent" >
+</p>
+<h5 class="subsubsectionHead"><span class="titlemark">5.0.1   </span> <a 
+ id="x1-90005.0.1"></a>PRIVATE GROUPS</h5>
+                                                                                       
+                                                                                       
+<!--l. 460--><p class="noindent" ></p> <table id="TBL-23" class="tabular" 
+ 
+><colgroup id="TBL-23-1g"><col 
+id="TBL-23-1" /></colgroup><colgroup id="TBL-23-2g"><col 
+id="TBL-23-2" /></colgroup><colgroup id="TBL-23-3g"><col 
+id="TBL-23-3" /><col 
+id="TBL-23-4" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-1-1"  
+class="td11">   <span 
+class="cmbx-10">Group Names </span>   </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-1-2"  
+class="td10">   <span 
+class="cmbx-10">Variable Names </span> </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-1-3"  
+class="td01">    <span 
+class="cmbx-10">Details </span>   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-1-4"  
+class="td11">                                                                                                                                                 </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-2-1"  
+class="td11">       rhs_phi           </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-2-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-2-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-2-4"  
+class="td11"> 0                                                                                                                                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-3-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-3-2"  
+class="td10">       rhs_phi1         </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-3-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-3-4"  
+class="td11"> right hand sides for scalar field evolution equations                                                                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-4-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-4-2"  
+class="td10">       rhs_phi2         </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-4-3"  
+class="td01">   dimensions  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-4-4"  
+class="td11"> 3                                                                                                                                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-5-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-5-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-5-3"  
+class="td01">  distribution  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-5-4"  
+class="td11"> DEFAULT                                                                                                                                   </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-6-1"  
+class="td11">
+                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-6-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-6-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-6-4"  
+class="td11"> GF                                                                                                                                            </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-7-1"  
+class="td11">
+                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-7-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-7-3"  
+class="td01">         tags  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-7-4"  
+class="td11"> tensortypealias=”Scalar” tensorweight=0 prolongation=”none” Checkpoint=”no”                                     </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-8-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-8-2"  
+class="td10"> </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-8-3"  
+class="td01"> timelevels </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-8-4"  
+class="td11"> 1 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-9-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-9-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-9-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-9-4"  
+class="td11"> REAL                                                                                                                                        </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-10-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-10-1"  
+class="td11">      rhs_kphi          </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-10-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-10-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-10-4"  
+class="td11"> 0                                                                                                                                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-11-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-11-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-11-2"  
+class="td10">      rhs_Kphi1        </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-11-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-11-4"  
+class="td11"> right hand sides for evolution of conjugated momenta                                                                          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-12-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-12-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-12-2"  
+class="td10">      rhs_Kphi2        </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-12-3"  
+class="td01">   dimensions  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-12-4"  
+class="td11"> 3                                                                                                                                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-13-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-13-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-13-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-13-3"  
+class="td01">  distribution  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-13-4"  
+class="td11"> DEFAULT                                                                                                                                   </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-14-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-14-1"  
+class="td11">
+                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-14-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-14-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-14-4"  
+class="td11"> GF                                                                                                                                            </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-15-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-15-1"  
+class="td11">
+                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-15-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-15-3"  
+class="td01">         tags  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-15-4"  
+class="td11"> tensortypealias=”Scalar” tensorweight=0 prolongation=”none” Checkpoint=”no”                                     </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-16-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-16-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-16-2"  
+class="td10"> </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-16-3"  
+class="td01"> timelevels </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-16-4"  
+class="td11"> 1 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-17-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-17-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-17-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-17-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-17-4"  
+class="td11"> REAL                                                                                                                                        </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-18-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-18-1"  
+class="td11">       hmetric          </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-18-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-18-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-18-4"  
+class="td11"> 0                                                                                                                                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-19-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-19-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-19-2"  
+class="td10">         hxx            </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-19-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-19-4"  
+class="td11"> <span 
+class="cmsy-10">∖</span>tilde gamma_ij                                                                                                                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-20-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-20-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-20-2"  
+class="td10">         hxy            </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-20-3"  
+class="td01">   dimensions  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-20-4"  
+class="td11"> 3                                                                                                                                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-21-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-21-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-21-2"  
+class="td10">         hxz            </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-21-3"  
+class="td01">  distribution  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-21-4"  
+class="td11"> DEFAULT                                                                                                                                   </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-22-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-22-1"  
+class="td11">
+                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-22-2"  
+class="td10">         hyy            </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-22-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-22-4"  
+class="td11"> GF                                                                                                                                            </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-23-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-23-1"  
+class="td11">
+                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-23-2"  
+class="td10">         hyz            </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-23-3"  
+class="td01">         tags  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-23-4"  
+class="td11"> tensortypealias=”DD_sym” tensorweight=-0.66666666666666666667 prolongation=”none” Checkpoint=”no”  </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-24-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-24-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-24-2"  
+class="td10"> hzz </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-24-3"  
+class="td01"> timelevels </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-24-4"  
+class="td11"> 1 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-25-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-25-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-25-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-25-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-25-4"  
+class="td11"> REAL                                                                                                                                        </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-26-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-26-1"  
+class="td11">     conf_fac_chi       </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-26-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-26-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-26-4"  
+class="td11"> 0                                                                                                                                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-27-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-27-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-27-2"  
+class="td10">         chi             </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-27-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-27-4"  
+class="td11"> conformal factor <span 
+class="cmsy-10">∖</span>chi                                                                                                                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-28-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-28-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-28-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-28-3"  
+class="td01">   dimensions  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-28-4"  
+class="td11"> 3                                                                                                                                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-29-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-29-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-29-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-29-3"  
+class="td01">  distribution  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-29-4"  
+class="td11"> DEFAULT                                                                                                                                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-30-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-30-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-30-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-30-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-30-4"  
+class="td11"> GF                                                                                                                                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-31-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-31-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-31-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-31-3"  
+class="td01">         tags  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-31-4"  
+class="td11"> tensortypealias=”Scalar” tensorweight=-0.66666666666666666667 prolongation=”none” Checkpoint=”no”     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-32-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-32-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-32-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-32-3"  
+class="td01">    timelevels  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-32-4"  
+class="td11"> 1                                                                                                                                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-33-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-33-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-33-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-33-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-33-4"  
+class="td11"> REAL                                                                                                                                        </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-34-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-34-1"  
+class="td11">         trk             </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-34-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-34-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-34-4"  
+class="td11"> 0                                                                                                                                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-35-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-35-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-35-2"  
+class="td10">        tracek          </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-35-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-35-4"  
+class="td11"> Tr(K)                                                                                                                                         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-36-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-36-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-36-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-36-3"  
+class="td01">   dimensions  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-36-4"  
+class="td11"> 3                                                                                                                                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-37-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-37-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-37-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-37-3"  
+class="td01">  distribution  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-37-4"  
+class="td11"> DEFAULT                                                                                                                                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-38-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-38-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-38-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-38-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-38-4"  
+class="td11"> GF                                                                                                                                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-39-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-39-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-39-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-39-3"  
+class="td01">         tags  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-39-4"  
+class="td11"> tensortypealias=”Scalar” tensorweight=0 prolongation=”none” Checkpoint=”no”                                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-40-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-40-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-40-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-40-3"  
+class="td01">    timelevels  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-40-4"  
+class="td11"> 1                                                                                                                                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-41-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-41-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-41-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-41-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-41-4"  
+class="td11"> REAL                                                                                                                                        </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-42-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-42-1"  
+class="td11">     densities_sf        </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-42-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-42-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-42-4"  
+class="td11"> 0                                                                                                                                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-43-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-43-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-43-2"  
+class="td10">       rhoSF_gf         </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-43-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-43-4"  
+class="td11"> energy-momentum densities of scalar field                                                                                          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-44-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-44-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-44-2"  
+class="td10">       jrSF_gf          </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-44-3"  
+class="td01">   dimensions  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-44-4"  
+class="td11"> 3                                                                                                                                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-45-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-45-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-45-2"  
+class="td10">       SrrSF_gf         </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-45-3"  
+class="td01">  distribution  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-45-4"  
+class="td11"> DEFAULT                                                                                                                                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-46-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-46-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-46-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-46-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-46-4"  
+class="td11"> GF                                                                                                                                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-47-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-47-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-47-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-47-3"  
+class="td01">         tags  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-47-4"  
+class="td11"> tensortypealias=”Scalar” tensorweight=0 prolongation=”none” Checkpoint=”no”                                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-48-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-48-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-48-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-48-3"  
+class="td01">    timelevels  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-48-4"  
+class="td11"> 3                                                                                                                                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-49-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-49-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-49-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-49-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-49-4"  
+class="td11"> REAL                                                                                                                                        </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-50-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-50-1"  
+class="td11">                    </td></tr></table>
+<!--l. 523--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">6   </span> <a 
+ id="x1-100006"></a>Schedule</h3>
+<!--l. 529--><p class="noindent" >This section lists all the variables which are assigned storage by thorn Scalar/ScalarEvolve. Storage can
+either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 532--><p class="noindent" >
+                                                                                       
+                                                                                       
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-11000"></a>Storage</h4>
+<!--l. 534--><p class="noindent" > 
+</p><!--l. 536--><p class="noindent" ></p> <table id="TBL-24" class="tabular" 
+ 
+><colgroup id="TBL-24-1g"><col 
+id="TBL-24-1" /><col 
+id="TBL-24-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-24-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-24-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-1-2"  
+class="td11"> <span 
+class="cmbx-10">Conditional:             </span></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-24-2-1"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-2-2"  
+class="td11"> rhs_phi rhs_Kphi</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-24-3-1"  
+class="td11">     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-3-2"  
+class="td11"> hmetric conf_fac_chi trk  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-24-4-1"  
+class="td11">     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-4-2"  
+class="td11"> densities_SF[3]              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-5-"><td  style="white-space:nowrap; text-align:left;" id="TBL-24-5-1"  
+class="td11">     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-5-2"  
+class="td11">                                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-6-"><td  style="white-space:nowrap; text-align:left;" id="TBL-24-6-1"  
+class="td11">    </td></tr></table>
+<!--l. 545--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-12000"></a>Scheduled Functions</h4>
+<!--l. 548--><p class="noindent" ><span 
+class="cmbx-10">SetTmunu </span>(conditional)
+</p><!--l. 550--><p class="noindent" >      scalar_zero_densities
+</p><!--l. 552--><p class="noindent" >     <span 
+class="cmti-10">initialise the sf densities to zero</span>
+</p><!--l. 555--><p class="noindent" > 
+</p><!--l. 557--><p class="noindent" ></p> <table id="TBL-25" class="tabular" 
+ 
+><colgroup id="TBL-25-1g"><col 
+id="TBL-25-1" /><col 
+id="TBL-25-2" /><col 
+id="TBL-25-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-25-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-1-3"  
+class="td11"> fortran                                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-2-3"  
+class="td11"> function                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-3-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-3-3"  
+class="td11"> scalarevolve::rhosf_gf(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-4-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-4-3"  
+class="td11"> scalarevolve::jrsf_gf(everywhere)    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-5-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-5-3"  
+class="td11"> scalarevolve::srrsf_gf(everywhere)   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-6-1"  
+class="td11">    </td></tr></table>
+<!--l. 568--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_PARAMCHECK </span>(conditional)
+</p><!--l. 570--><p class="noindent" >      scalar_init
+</p><!--l. 572--><p class="noindent" >     <span 
+class="cmti-10">initialise flags and boundary condition</span>
+</p><!--l. 575--><p class="noindent" > 
+</p><!--l. 577--><p class="noindent" ></p> <table id="TBL-26" class="tabular" 
+ 
+><colgroup id="TBL-26-1g"><col 
+id="TBL-26-1" /><col 
+id="TBL-26-2" /><col 
+id="TBL-26-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-26-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-2-3"  
+class="td11"> global     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-3-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 586--><p class="noindent" ><span 
+class="cmbx-10">AddToTmunu </span>(conditional)
+</p><!--l. 588--><p class="noindent" >      scalar_calc_tmunu
+</p><!--l. 590--><p class="noindent" >     <span 
+class="cmti-10">compute the energy-momentum tensor</span>
+</p><!--l. 593--><p class="noindent" > 
+</p><!--l. 595--><p class="noindent" ></p> <table id="TBL-27" class="tabular" 
+ 
+><colgroup id="TBL-27-1g"><col 
+id="TBL-27-1" /><col 
+id="TBL-27-2" /><col 
+id="TBL-27-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-27-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-1-3"  
+class="td11"> fortran   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 603--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_BASEGRID </span>(conditional)
+</p><!--l. 605--><p class="noindent" >      scalar_initsymbound
+</p><!--l. 607--><p class="noindent" >     <span 
+class="cmti-10">schedule symmetries</span>
+</p><!--l. 610--><p class="noindent" > 
+</p><!--l. 612--><p class="noindent" ></p> <table id="TBL-28" class="tabular" 
+ 
+><colgroup id="TBL-28-1g"><col 
+id="TBL-28-1" /><col 
+id="TBL-28-2" /><col 
+id="TBL-28-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-28-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-1-3"  
+class="td11"> fortran   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-2-3"  
+class="td11"> meta      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-3-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 621--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_BASEGRID </span>(conditional)
+</p><!--l. 623--><p class="noindent" >      scalar_zero_rhs
+</p><!--l. 625--><p class="noindent" >     <span 
+class="cmti-10">set all rhs functions to zero to prevent spurious nans</span>
+</p><!--l. 628--><p class="noindent" > 
+</p><!--l. 630--><p class="noindent" ></p> <table id="TBL-29" class="tabular" 
+ 
+><colgroup id="TBL-29-1g"><col 
+id="TBL-29-1" /><col 
+id="TBL-29-2" /><col 
+id="TBL-29-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-29-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-29-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-1-3"  
+class="td11"> scalar_initsymbound  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-29-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-2-3"  
+class="td11"> fortran                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-29-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-3-3"  
+class="td11"> function                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-29-4-1"  
+class="td11">    </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 639--><p class="noindent" ><span 
+class="cmbx-10">MoL</span><span 
+class="cmbx-10">_Register </span>(conditional)
+</p><!--l. 641--><p class="noindent" >      scalar_registervars
+</p><!--l. 643--><p class="noindent" >     <span 
+class="cmti-10">register variables for mol</span>
+</p><!--l. 646--><p class="noindent" > 
+</p><!--l. 648--><p class="noindent" ></p> <table id="TBL-30" class="tabular" 
+ 
+><colgroup id="TBL-30-1g"><col 
+id="TBL-30-1" /><col 
+id="TBL-30-2" /><col 
+id="TBL-30-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-30-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-30-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-30-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-30-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-30-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-30-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-30-2-3"  
+class="td11"> meta      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-30-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-30-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-30-3-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-30-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 657--><p class="noindent" ><span 
+class="cmbx-10">MoL</span><span 
+class="cmbx-10">_CalcRHS </span>(conditional)
+</p><!--l. 659--><p class="noindent" >      scalar_ord4_calc_rhs
+</p><!--l. 661--><p class="noindent" >     <span 
+class="cmti-10">mol rhs calculation for scalar variables</span>
+</p><!--l. 664--><p class="noindent" > 
+</p><!--l. 666--><p class="noindent" ></p> <table id="TBL-31" class="tabular" 
+ 
+><colgroup id="TBL-31-1g"><col 
+id="TBL-31-1" /><col 
+id="TBL-31-2" /><col 
+id="TBL-31-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-31-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-31-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-31-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-31-1-3"  
+class="td11"> fortran   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-31-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-31-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-31-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-31-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 674--><p class="noindent" ><span 
+class="cmbx-10">MoL</span><span 
+class="cmbx-10">_CalcRHS </span>(conditional)
+</p><!--l. 676--><p class="noindent" >      scalar_ord4_calc_rhs_bdry
+</p><!--l. 678--><p class="noindent" >     <span 
+class="cmti-10">mol boundary rhs calculation for scalar variables</span>
+</p><!--l. 681--><p class="noindent" > 
+</p><!--l. 683--><p class="noindent" ></p> <table id="TBL-32" class="tabular" 
+ 
+><colgroup id="TBL-32-1g"><col 
+id="TBL-32-1" /><col 
+id="TBL-32-2" /><col 
+id="TBL-32-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-32-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-32-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-1-3"  
+class="td11"> scalar_calcrhs  </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-32-2-1"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-2-2"  
+class="td11"> Language: </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-2-3"  
+class="td11"> fortran</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-32-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-3-3"  
+class="td11"> function         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-32-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 692--><p class="noindent" ><span 
+class="cmbx-10">MoL</span><span 
+class="cmbx-10">_RHSBoundaries </span>(conditional)
+</p><!--l. 694--><p class="noindent" >      scalar_ord4_calc_rhs_bdry_sph
+</p><!--l. 696--><p class="noindent" >     <span 
+class="cmti-10">mol boundary rhs calculation for scalar variables for the multipatch system</span>
+</p><!--l. 699--><p class="noindent" > 
+</p><!--l. 701--><p class="noindent" ></p> <table id="TBL-33" class="tabular" 
+ 
+><colgroup id="TBL-33-1g"><col 
+id="TBL-33-1" /><col 
+id="TBL-33-2" /><col 
+id="TBL-33-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-33-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-33-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-1-3"  
+class="td11"> fortran   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-33-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-33-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 709--><p class="noindent" ><span 
+class="cmbx-10">MoL</span><span 
+class="cmbx-10">_PostStep </span>(conditional)
+</p><!--l. 711--><p class="noindent" >      scalar_boundaries
+</p><!--l. 713--><p class="noindent" >     <span 
+class="cmti-10">mol boundary enforcement for scalar variables</span>
+</p><!--l. 716--><p class="noindent" > 
+</p><!--l. 718--><p class="noindent" ></p> <table id="TBL-34" class="tabular" 
+ 
+><colgroup id="TBL-34-1g"><col 
+id="TBL-34-1" /><col 
+id="TBL-34-2" /><col 
+id="TBL-34-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-34-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-34-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-1-3"  
+class="td11"> fortran   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-34-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-2-3"  
+class="td11"> level       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-34-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-3-2"  
+class="td11"> Sync:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-3-3"  
+class="td11"> phi        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-34-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-4-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-4-3"  
+class="td11"> kphi       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-34-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-5-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-5-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-34-6-1"  
+class="td11">    </td></tr></table>
+<!--l. 729--><p class="noindent" ><span 
+class="cmbx-10">MoL</span><span 
+class="cmbx-10">_PostStep </span>(conditional)
+</p><!--l. 731--><p class="noindent" >      applybcs
+</p><!--l. 733--><p class="noindent" >     <span 
+class="cmti-10">apply boundary conditions</span>
+</p><!--l. 736--><p class="noindent" > 
+</p><!--l. 738--><p class="noindent" ></p> <table id="TBL-35" class="tabular" 
+ 
+><colgroup id="TBL-35-1g"><col 
+id="TBL-35-1" /><col 
+id="TBL-35-2" /><col 
+id="TBL-35-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-35-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-1-2"  
+class="td11"> After:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-1-3"  
+class="td11"> scalar_boundaries  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-2-2"  
+class="td11"> Type:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-2-3"  
+class="td11"> group                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 744--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-13000"></a>Aliased Functions</h4>
+<!--l. 746--><p class="noindent" > 
+                                                                                       
+                                                                                       
+</p><!--l. 748--><p class="noindent" ></p> <table id="TBL-36" class="tabular" 
+ 
+><colgroup id="TBL-36-1g"><col 
+id="TBL-36-1" /><col 
+id="TBL-36-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-36-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-36-1-1"  
+class="td11"> <span 
+class="cmbx-10">Alias Name: </span>                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-1-2"  
+class="td11"> <span 
+class="cmbx-10">Function Name:            </span></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-36-2-1"  
+class="td11"> ApplyBCs </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-2-2"  
+class="td11"> Scalar_ApplyBCs</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-36-3-1"  
+class="td11"> Scalar_calc_Tmunu                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-3-2"  
+class="td11"> Scalar_AddToTmunu          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-36-4-1"  
+class="td11"> Scalar_ord4_calc_rhs                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-4-2"  
+class="td11"> Scalar_CalcRHS                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-5-"><td  style="white-space:nowrap; text-align:left;" id="TBL-36-5-1"  
+class="td11"> Scalar_ord4_calc_rhs_bdry        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-5-2"  
+class="td11"> Scalar_CalcRHS_Bdry        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-6-"><td  style="white-space:nowrap; text-align:left;" id="TBL-36-6-1"  
+class="td11"> Scalar_ord4_calc_rhs_bdry_sph  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-6-2"  
+class="td11"> Scalar_CalcRHS_Bdry_Sph  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-7-"><td  style="white-space:nowrap; text-align:left;" id="TBL-36-7-1"  
+class="td11">                             </td></tr></table>
+ 
+</body></html> 
+
+                                                                                       
+
+

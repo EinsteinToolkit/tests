@@ -1,0 +1,546 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>CCE Export</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">CCE Export</h2>
+ <div class="author" ><span 
+class="cmr-12">Deborah Ferguson</span></div>
+<br />
+<div class="date" ><span 
+class="cmr-12">23 April 2025</span></div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 35--><p class="noindent" ><span 
+class="cmr-9">Outputs EinsteinToolkit data in a format which can be read by SpECTRE’s CCE code for obtaining</span>
+     <span 
+class="cmr-9">waveform data at infinity.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Introduction</h3>
+<!--l. 44--><p class="noindent" >This thorn allows the user to output the metric, lapse, and shift data in a format which can be fed
+directly into SpECTRE’s Cauchy Characteristic Evolution code (documentation for that code here:
+<a 
+href="https://spectre-code.org/tutorial_cce.html" class="url" ><span 
+class="cmtt-10">https://spectre-code.org/tutorial_cce.html</span></a>). Doing so enables the evolution of gravitational
+radiation to spatial and temporal infinity as well as the direct extraction of gravitational wave
+strain.
+</p><!--l. 49--><p class="noindent" >The format is an h5 file for each desired worldtube radius. Within this h5 file are datasets for the metric, lapse,
+shift, and their respective radial and time derivatives:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-1">
+gxx.dat, gxy.dat, gxz.dat, gyy.dat, gyz.dat, gzz.dat
+Drgxx.dat, Drgxy.dat, Drgxz.dat, Drgyy.dat, Drgyz.dat, Drgzz.dat
+Dtgxx.dat, Dtgxy.dat, Dtgxz.dat, Dtgyy.dat, Dtgyz.dat, Dtgzz.dat
+Shiftx.dat, Shifty.dat, Shiftz.dat
+DrShiftx.dat, DrShifty.dat, DrShiftz.dat
+DtShiftx.dat, DtShifty.dat, DtShiftz.dat
+Lapse.dat
+DrLapse.dat
+DtLapse.dat
+</pre>
+<!--l. 62--><p class="nopar" >
+</p><!--l. 64--><p class="noindent" >Each dataset is two dimensional with rows signifying timesteps and coluns containing the data decomposed into
+spin-weight 0 spherical harmonics. The first column denotes the time, and the remaining columns are the real
+and imaginary coefficients for the modes in m-changes-fastest order:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-2">
+&#x0022;time&#x0022;, &#x0022;Re(0,0)&#x0022;, &#x0022;Im(0,0)&#x0022;, &#x0022;Re(1,-1)&#x0022;, &#x0022;Im(1,-1)&#x0022;, &#x0022;Re(1,0)&#x0022;, &#x0022;Im(1,0)&#x0022;,
+&#x0022;Re(1,1)&#x0022;, &#x0022;Im(1,1)&#x0022;, &#x0022;Re(2,-2)&#x0022;, &#x0022;Im(2,-2)&#x0022;, &#x0022;Re(2,-1)&#x0022;, &#x0022;Im(2,-1)&#x0022;, &#x0022;Re(2,0)&#x0022;,
+&#x0022;Im(2,0)&#x0022;, &#x0022;Re(2,1)&#x0022;, &#x0022;Im(2,1)&#x0022;, &#x0022;Re(2,2)&#x0022;, &#x0022;Im(2,2)&#x0022;, ...
+</pre>
+<!--l. 72--><p class="nopar" >
+</p><!--l. 74--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a>Numerical Implementation</h3>
+<!--l. 76--><p class="noindent" >To accomplish this, the metric, extrinsic curvature, lapse, shift, dtlapse, and dtshift are interpolated onto
+spheres of the desired radii using <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpGridArrays</span>. This interpolater can also return the
+cartesian derivatives which are then used to compute the radial derivatives for the metric, lapse, and
+shift.
+</p><!--l. 80--><p class="noindent" >The metric is computed from the extrinsic curvature, lapse, and shift as:
+</p><!--l. 84--><p class="noindent" >\begin {equation}  K_{ij} = \frac {1}{2 \alpha } \left ( -\partial _0 \gamma _{ij} + \beta ^k \partial _k \gamma _{ij} + \gamma _{ki} \partial _j \beta ^k + \gamma _{kj} \partial _i \beta ^k \right ) \, .  \end {equation}<a 
+ id="x1-2001r1"></a>
+</p><!--l. 86--><p class="noindent" >The metric, lapse, shift, and their radial and time derivatives are then decomposed using spin-weight 0 spherical
+harmonics. As described in the Multipole thorn, this allows us to separate out the angular dependence and
+represent a field as:
+</p>
+<div class="eqnarray">\begin {eqnarray}  u(t, r, \theta , \varphi ) = \sum _{l=0}^\infty \sum _{m=-l}^l C^{lm}(t,r) {}_0 Y_{lm}(\theta ,\varphi ) \, .  \end {eqnarray}</div>
+<!--l. 93--><p class="noindent" >The coefficients \(C^{lm}(t,r)\) are computed as
+</p>
+<div class="eqnarray">\begin {eqnarray}  C^{lm}(t, r) = \int {}_0 Y_{lm}^* u(t, r, \theta , \varphi ) r^2 d \Omega \label {eqn:clmint} \, .  \end {eqnarray}</div>
+<!--l. 99--><p class="noindent" >This thorn uses the same numerical implementation of spherical harmonic decomposition as the Multipole thorn
+using Simpson’s rule for the integration.
+</p><!--l. 102--><p class="noindent" >The data is then output into h5 files in the format specified above.
+</p><!--l. 104--><p class="noindent" >
+</p>
+                                                                                       
+                                                                                       
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-30003"></a>Using This Thorn</h3>
+<!--l. 106--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">3.1   </span> <a 
+ id="x1-40003.1"></a>Obtaining This Thorn</h4>
+<!--l. 108--><p class="noindent" >This thorn can be obtained at <a 
+href="https://github.com/deborahferguson/CCE_Export" class="url" ><span 
+class="cmtt-10">https://github.com/deborahferguson/CCE_Export</span></a> and is included as part of
+the EinsteinToolkit.
+</p><!--l. 110--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">3.2   </span> <a 
+ id="x1-50003.2"></a>Basic Usage</h4>
+<!--l. 112--><p class="noindent" >The user specifies how many radii they would like to extract at (<span 
+class="cmtt-10">nradii</span>) and the value of each of those radii in
+M (<span 
+class="cmtt-10">radius[]</span>). The user should also specify how often they want to output the data in iterations (<span 
+class="cmtt-10">out</span><span 
+class="cmtt-10">_every</span>).
+Optionally, the user can also provide a specific location to output the files (<span 
+class="cmtt-10">out</span><span 
+class="cmtt-10">_dir</span>) as well as the desired
+number of iterations to preallocate in the h5 files (<span 
+class="cmtt-10">hdf5</span><span 
+class="cmtt-10">_chunk</span><span 
+class="cmtt-10">_size</span>).
+</p><!--l. 117--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">3.3   </span> <a 
+ id="x1-60003.3"></a>Interaction With Other Thorns</h4>
+<!--l. 119--><p class="noindent" >The functionality of this thorn relies upon grid variables set up in ADMBase, specifically those in the groups
+metric, curv, lapse, shift, dtlapse, and dtshift. These grid variables must all be populated in order to use this
+thorn. Since some evolution codes do not write the time derivatives of the lapse and shift to these variables,
+those evolution codes are not compatible with this thorn.
+</p><!--l. 124--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">3.4   </span> <a 
+ id="x1-70003.4"></a>Examples</h4>
+                                                                                       
+                                                                                       
+<pre class="verbatim" id="verbatim-3">
+CCE_Export::nradii       = 3
+CCE_Export::radius[0]    = 100.00
+CCE_Export::radius[1]    = 150.00
+CCE_Export::radius[2]    = 200.00
+CCE_Export::out_every    = 32
+</pre>
+<!--l. 132--><p class="nopar" >
+</p><!--l. 134--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">3.5   </span> <a 
+ id="x1-80003.5"></a>Support and Feedback</h4>
+<!--l. 136--><p class="noindent" >If any issues arise, please create a ticket on the github (<a 
+href="https://github.com/deborahferguson/CCE_Export/issues" class="url" ><span 
+class="cmtt-10">https://github.com/deborahferguson/CCE_Export/issues</span></a>).
+</p><!--l. 139--><p class="noindent" >
+</p>
+<h3 class="likesectionHead"><a 
+ id="x1-9000"></a>References</h3>
+<!--l. 139--><p class="noindent" >
+</p><!--l. 148--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-100004"></a>Parameters</h3>
+<!--l. 167--><p class="noindent" ></p> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /></colgroup><colgroup id="TBL-2-2g"><col 
+id="TBL-2-2" /><col 
+id="TBL-2-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:normal; text-align:left;" id="TBL-2-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">base_file_name</div></td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-1-3"  
+class="td01">                                               STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-2-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Base file name for CCE</span><span 
+class="cmti-10">_Export’s files, will be appended by ’R’ and then the worldtube</span>
+  <span 
+class="cmti-10">radius with 2 sig figs after the decimal</span></div>                                                                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-1"  
+class="td11">    <span 
+class="cmbx-10">Range      </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-3-3"  
+class="td01">                                    <span 
+class="cmbx-10">Default: </span>CCE_Export  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-4-"><td  style="white-space:normal; text-align:left;" id="TBL-2-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.+</div>                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-2-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">A valid base file name</div>                                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-5-1"  
+class="td11">              </td></tr></table>
+<!--l. 174--><p class="noindent" ></p> <table id="TBL-3" class="tabular" 
+ 
+><colgroup id="TBL-3-1g"><col 
+id="TBL-3-1" /></colgroup><colgroup id="TBL-3-2g"><col 
+id="TBL-3-2" /><col 
+id="TBL-3-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-1-"><td  style="white-space:normal; text-align:left;" id="TBL-3-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">extension</div>        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-1-3"  
+class="td01">                                               STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-3-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Extension for CCE</span><span 
+class="cmti-10">_Extract’s files</span></div>                                                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-3-1"  
+class="td11">    <span 
+class="cmbx-10">Range      </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-3-3"  
+class="td01">                                             <span 
+class="cmbx-10">Default: </span>h5  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-4-"><td  style="white-space:normal; text-align:left;" id="TBL-3-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.+</div>                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-3-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">A nonempty string</div>                                                                                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-5-1"  
+class="td11">              </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 181--><p class="noindent" ></p> <table id="TBL-4" class="tabular" 
+ 
+><colgroup id="TBL-4-1g"><col 
+id="TBL-4-1" /></colgroup><colgroup id="TBL-4-2g"><col 
+id="TBL-4-2" /><col 
+id="TBL-4-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-1-"><td  style="white-space:normal; text-align:left;" id="TBL-4-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">hdf5_chunk_size</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-1-3"  
+class="td01">                                                   INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-4-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">How many iterations to preallocate in extensible HDF5 datasets</span></div>                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-3-1"  
+class="td11">    <span 
+class="cmbx-10">Range      </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-3-3"  
+class="td01">                                            <span 
+class="cmbx-10">Default: </span>200  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-4-"><td  style="white-space:normal; text-align:left;" id="TBL-4-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1:*</div>                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Any integer</div>                                                                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-5-1"  
+class="td11">              </td></tr></table>
+<!--l. 188--><p class="noindent" ></p> <table id="TBL-5" class="tabular" 
+ 
+><colgroup id="TBL-5-1g"><col 
+id="TBL-5-1" /></colgroup><colgroup id="TBL-5-2g"><col 
+id="TBL-5-2" /><col 
+id="TBL-5-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-1-"><td  style="white-space:normal; text-align:left;" id="TBL-5-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">nradii</div>            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-1-3"  
+class="td01">                                                   INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-5-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">How many radii to export the data on</span></div>                                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-3-1"  
+class="td11">    <span 
+class="cmbx-10">Range      </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-3-3"  
+class="td01">                                              <span 
+class="cmbx-10">Default: </span>1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-4-"><td  style="white-space:normal; text-align:left;" id="TBL-5-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:100</div>              </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-5-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">number of radii</div>                                                                                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-5-1"  
+class="td11">              </td></tr></table>
+<!--l. 195--><p class="noindent" ></p> <table id="TBL-6" class="tabular" 
+ 
+><colgroup id="TBL-6-1g"><col 
+id="TBL-6-1" /></colgroup><colgroup id="TBL-6-2g"><col 
+id="TBL-6-2" /><col 
+id="TBL-6-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-1-"><td  style="white-space:normal; text-align:left;" id="TBL-6-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">out_dir</div>          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-1-3"  
+class="td01">                                               STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-6-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Output directory for CCE</span><span 
+class="cmti-10">_Export’s files, overrides IO::out</span><span 
+class="cmti-10">_dir</span></div>                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-3-1"  
+class="td11">    <span 
+class="cmbx-10">Range      </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-3-3"  
+class="td01">                                         <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-4-"><td  style="white-space:normal; text-align:left;" id="TBL-6-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.+</div>                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-6-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">A valid directory name</div>                                                                                 
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-5-"><td  style="white-space:normal; text-align:left;" id="TBL-6-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><img 
+src="documentation0x.png" alt="ˆ$  "  class="circ"  /></div>                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-6-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">An empty string to choose the default from IO::out_dir</div>                                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-6-1"  
+class="td11">              </td></tr></table>
+<!--l. 202--><p class="noindent" ></p> <table id="TBL-7" class="tabular" 
+ 
+><colgroup id="TBL-7-1g"><col 
+id="TBL-7-1" /></colgroup><colgroup id="TBL-7-2g"><col 
+id="TBL-7-2" /><col 
+id="TBL-7-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-1-"><td  style="white-space:normal; text-align:left;" id="TBL-7-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">out_every</div>       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-1-3"  
+class="td01">                                                   INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-7-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">How often to output the metric data</span></div>                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-3-1"  
+class="td11">    <span 
+class="cmbx-10">Range      </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-3-3"  
+class="td01">                                              <span 
+class="cmbx-10">Default: </span>1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-4-"><td  style="white-space:normal; text-align:left;" id="TBL-7-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-7-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">no output</div>                                                                                                  
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-5-"><td  style="white-space:normal; text-align:left;" id="TBL-7-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1:*</div>                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-7-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">output every x iterations</div>                                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-6-1"  
+class="td11">              </td></tr></table>
+<!--l. 209--><p class="noindent" ></p> <table id="TBL-8" class="tabular" 
+ 
+><colgroup id="TBL-8-1g"><col 
+id="TBL-8-1" /></colgroup><colgroup id="TBL-8-2g"><col 
+id="TBL-8-2" /><col 
+id="TBL-8-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-1-"><td  style="white-space:normal; text-align:left;" id="TBL-8-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">radius</div>            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-1-3"  
+class="td01">                                                  REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-8-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Radii to export the metric data on</span></div>                                                                    
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-3-1"  
+class="td11">    <span 
+class="cmbx-10">Range      </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-3-3"  
+class="td01">                                            <span 
+class="cmbx-10">Default: </span>0.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-4-"><td  style="white-space:normal; text-align:left;" id="TBL-8-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0.0:*</div>               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-8-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Extraction radius</div>                                                                                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-5-1"  
+class="td11">              </td></tr></table>
+<!--l. 216--><p class="noindent" ></p> <table id="TBL-9" class="tabular" 
+ 
+><colgroup id="TBL-9-1g"><col 
+id="TBL-9-1" /></colgroup><colgroup id="TBL-9-2g"><col 
+id="TBL-9-2" /><col 
+id="TBL-9-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-1-"><td  style="white-space:normal; text-align:left;" id="TBL-9-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">io_out_dir</div>      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from IO</td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-1-3"  
+class="td01">STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-2-1"  
+class="td11">              </td></tr></table>
+<!--l. 223--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-110005"></a>Interfaces</h3>
+<!--l. 228--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-12000"></a>General</h4>
+<!--l. 230--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 232--><p class="noindent" >cce_export
+</p><!--l. 235--><p class="noindent" ><span 
+class="cmbx-10">Inherits</span>:
+</p><!--l. 237--><p class="noindent" >admbase
+                                                                                       
+                                                                                       
+</p><!--l. 242--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">6   </span> <a 
+ id="x1-130006"></a>Schedule</h3>
+<!--l. 248--><p class="noindent" >This section lists all the variables which are assigned storage by thorn EinsteinAnalysis/CCE_Export. Storage
+can either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 251--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-14000"></a>Storage</h4>
+<!--l. 251--><p class="noindent" >NONE
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-15000"></a>Scheduled Functions</h4>
+<!--l. 255--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_ANALYSIS</span>
+</p><!--l. 257--><p class="noindent" >      cce_export
+</p><!--l. 259--><p class="noindent" >     <span 
+class="cmti-10">export metric data on sphere for cce</span>
+</p><!--l. 262--><p class="noindent" > 
+</p><!--l. 264--><p class="noindent" ></p> <table id="TBL-10" class="tabular" 
+ 
+><colgroup id="TBL-10-1g"><col 
+id="TBL-10-1" /><col 
+id="TBL-10-2" /><col 
+id="TBL-10-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-10-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-1-3"  
+class="td11"> c                                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-2-3"  
+class="td11"> global                                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-3-2"  
+class="td11"> Reads:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-3-3"  
+class="td11"> admbase::metric(everywhere)   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-4-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-4-3"  
+class="td11"> admbase::curv(everywhere)     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-5-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-5-3"  
+class="td11"> admbase::lapse(everywhere)     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-6-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-6-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-6-3"  
+class="td11"> admbase::shift(everywhere)     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-7-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-7-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-7-3"  
+class="td11"> admbase::dtlapse(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-8-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-8-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-8-3"  
+class="td11"> admbase::dtshift(everywhere)   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-9-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-9-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-9-3"  
+class="td11"> function                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-10-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-10-1"  
+class="td11">    </td></tr></table>
+ 
+</body></html> 
+
+                                                                                       
+
+

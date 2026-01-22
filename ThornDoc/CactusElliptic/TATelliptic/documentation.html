@@ -1,0 +1,629 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>Generic nonlinear elliptic solver interface</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">Generic nonlinear elliptic solver interface</h2>
+ <div class="author" ><span 
+class="cmr-12">Erik Schnetter</span> \(&lt;\)<span 
+class="cmr-12">schnetter@uni-tuebingen.de</span>\(&gt;\)</div>
+<br />
+<div class="date" >\( \)<span 
+class="cmr-12">Date</span>\( \)</div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 102--><p class="noindent" ><span 
+class="cmr-9">This thorn is a generic interface to nonlinear elliptic solvers. It provides a uniform calling conventions</span>
+     <span 
+class="cmr-9">to elliptic solvers. Elliptic solvers can register themselves with this thorn. Thorns requiring elliptic</span>
+     <span 
+class="cmr-9">solvers can use this interface to call the solvers, and can choose between different solvers at run time.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Elliptic equations</h3>
+<!--l. 140--><p class="noindent" >This thorn is a generic interface to nonlinear elliptic solvers. It provides a uniform calling conventions to elliptic
+solvers, but does not contain any actual solvers. Solvers are supposed to be implemented in other thorns, and
+then register with this thorn. A generic interface has the advantage that it decouples the thorns calling the
+solvers, and the solvers themselves. Thorns using elliptic solvers can choose among the available solvers at run
+time.
+</p><!--l. 148--><p class="noindent" >For the discussion below, I write elliptic equations as </p><div class="eqnarray">\begin {eqnarray}  F(u) &amp; = &amp; 0  \end {eqnarray}</div>
+<!--l. 154--><p class="noindent" >where \(u\) is the <span 
+class="cmti-10">unknown</span>, which is also known as <span 
+class="cmti-10">variable</span>, or in a sloppy terminology as <span 
+class="cmti-10">solution</span>. \(F\) is the elliptic
+                                                                                       
+                                                                                       
+operator. All elliptic equations can be written in the above form.
+</p><!--l. 159--><p class="noindent" >If \(u^{(n)}\) is an approximation to a solution \(u\), then </p><div class="eqnarray">\begin {eqnarray}  r^{(n)} &amp; := &amp; F(u^{(n)})  \end {eqnarray}</div>
+<!--l. 165--><p class="noindent" >is called the corresponding <span 
+class="cmti-10">residual</span>. An approximation \(u^{(n)}\) is a solution if the residual is zero.
+</p><!--l. 168--><p class="noindent" >The interface provided by this thorn allows for coupled sets of elliptic equations to be solved at the same time.
+The elliptic operator is allowed to be nonlinear.
+</p><!--l. 172--><p class="noindent" >A solution \(u\) is defined by the combination of
+     </p><ol  class="enumerate1" >
+<li 
+  class="enumerate" id="x1-1002x1">
+     <!--l. 175--><p class="noindent" >the elliptic operator \(F\)
+     </p></li>
+<li 
+  class="enumerate" id="x1-1004x2">
+     <!--l. 176--><p class="noindent" >a set of initial data \(u^{(0)}\)
+     </p></li>
+<li 
+  class="enumerate" id="x1-1006x3">
+     <!--l. 177--><p class="noindent" >boundary conditions for the solution \(u\).</p></li></ol>
+<!--l. 180--><p class="noindent" >Note that periodicity is usually not a boundary condition that leads to a well-posed problem. It fails already for
+the Laplace (\(\Delta u = 0\)) and the Poisson (\(\Delta u = \rho \)) equations.
+</p><!--l. 184--><p class="noindent" >In Cactus, \(u^{(n)}\) and \(r^{(n)}\) are represented by grid functions, while \(F\) and the boundary conditions to \(u\) are functions or
+subroutines written in C or Fortran.
+</p><!--l. 190--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a>Solver Interface</h3>
+<!--l. 192--><p class="noindent" ><div class="functiondescription">
+</p>
+<h3 class="likesectionHead"><a 
+ id="x1-3000"></a><span 
+class="cmbx-10">TATelliptic</span><span 
+class="cmbx-10">_CallSolver</span></h3>
+<!--l. 192--><p class="noindent" ></div> <div class="functiondescriptioncontent">
+<a 
+ id="x1-3000doc"></a>
+</p><!--l. 194--><p class="noindent" >Call an elliptic solver
+                                                                                       
+                                                                                       
+</p><!--l. 196--><p class="noindent" ><span 
+class="cmbx-10">Synopsis</span>
+</p><!--l. 197--><p class="noindent" ><div class="codecontent"> <div class="codetype">C</div>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-1">
+#include &#x0022;cctk.h&#x0022;
+#include &#x0022;TATelliptic.h&#x0022;
+int TATelliptic_CallSolver (cGH * cctkGH,
+                            const int * var,
+                            const int * res,
+                            int nvars,
+                            int options_table,
+                            calcfunc calcres,
+                            calcfunc applybnds,
+                            void * userdata,
+                            const char * solvername);
+</pre>
+<!--l. 210--><p class="nopar" > </div><br style="clear: both;"/>
+</p><!--l. 212--><p class="noindent" ><div class="codecontent"> <div class="codetype">Fortran</div>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-2">
+#include &#x0022;cctk.h&#x0022;
+interface
+   subroutine TATelliptic_CallSolver (ierr, cctkGH, var, res, nvars, &#x0026;
+                                      options_table, &#x0026;
+                                      calcres, applybnds, userdata, &#x0026;
+                                      solvername)
+      integer        ierr
+      CCTK_POINTER   cctkGH
+      integer        nvars
+      integer        var(nvars)
+      integer        res(nvars)
+      integer        options_table
+      CCTK_FNPOINTER calcres
+      CCTK_FNPOINTER applybnds
+      CCTK_POINTER   userdata
+      character      solvername*(*)
+   end subroutine TATelliptic_CallSolver
+end interface
+</pre>
+<!--l. 232--><p class="nopar" > </div><br style="clear: both;"/>
+</p><!--l. 236--><p class="noindent" ><span 
+class="cmbx-10">Result</span>
+</p><!--l. 237--><p class="noindent" ><span 
+class="cmtt-10">0 </span>Success. <br/> <span 
+class="cmtt-10">nonzero </span>Failure. Error codes are \(-1\) if there are illegal arguments to the solver interface,
+and \(-2\) if the requested solver does not exist. Otherwise, the error code from the solver is returned.
+<br/>
+</p><!--l. 247--><p class="noindent" ><span 
+class="cmbx-10">Parameters</span>
+</p><!--l. 248--><p class="noindent" ><span 
+class="cmtt-10">cctkGH </span>The pointer to the CCTK grid hierarchy <br/> <span 
+class="cmtt-10">var </span>Array with <span 
+class="cmtt-10">nvars </span>grid function indices for the variables.
+The variables are also called “unknowns”, or “solution”. <br/> <span 
+class="cmtt-10">res </span>Array with <span 
+class="cmtt-10">nvars </span>grid function indices for the
+residuals. These grid functions store the residuals corresponding to the variables above. <br/> <span 
+class="cmtt-10">nvars </span>Number of
+variables. This is also the number of residuals. <br/> <span 
+class="cmtt-10">options</span><span 
+class="cmtt-10">_table </span>Further options to and return values from the
+solver. Different solvers will take different additional arguments. The interface <span 
+class="cmtt-10">TATelliptic </span>does not look at
+these options, but passes this table on to the real solver. This must be a table handle created with the table
+utility functions.
+</p><!--l. 270--><p class="noindent" >Below is a list of some commonly accepted options. See the individual solver documentations for
+details:
+     </p><dl class="description"><dt class="description">
+<span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_REAL minerror</span><span 
+class="cmbx-10">:</span> </dt><dd 
+class="description">
+     <!--l. 273--><p class="noindent" >The desired solver accuracy.
+     </p></dd><dt class="description">
+                                                                                       
+                                                                                       
+<span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_REAL factor</span><span 
+class="cmbx-10">:</span> </dt><dd 
+class="description">
+     <!--l. 274--><p class="noindent" >A factor with which all residuals are multiplied. This factor can be used to scale the residuals.
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_REAL factors[nvars]</span><span 
+class="cmbx-10">:</span> </dt><dd 
+class="description">
+     <!--l. 276--><p class="noindent" >An array of factors with which the residuals are multiplied. These factors can be used to handle
+     inconvenient sign conventions for the residuals.
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_INT maxiters</span><span 
+class="cmbx-10">:</span> </dt><dd 
+class="description">
+     <!--l. 279--><p class="noindent" >Maximum number of iterations.
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_INT nboundaryzones[2*dim]</span><span 
+class="cmbx-10">:</span> </dt><dd 
+class="description">
+     <!--l. 280--><p class="noindent" >Number of boundary points for each face. If not given, this is the same as the number of ghost
+     points.</p></dd></dl>
+<!--l. 285--><p class="noindent" >The following values are often returned. Again, see the individual solver documentations for details:
+     </p><dl class="description"><dt class="description">
+<span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_INT iters</span><span 
+class="cmbx-10">:</span> </dt><dd 
+class="description">
+     <!--l. 288--><p class="noindent" >Number of iterations taken
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_REAL error</span><span 
+class="cmbx-10">:</span> </dt><dd 
+class="description">
+     <!--l. 289--><p class="noindent" >Norm of the final residual</p></dd></dl>
+<br/> <span 
+class="cmtt-10">calcres </span>Pointer to a C function that evaluates the residual. This function is passed in a solution, and has to
+evaluate the residual. See below. <br/> <span 
+class="cmtt-10">applybnds </span>Pointer to a C function that applies the boundary condition to the
+variables. This function is passed in a solution, and has to apply the boundary conditions to it. <br/>
+<span 
+class="cmtt-10">userdata </span>A pointer to arbitrary application data. This pointer is passed through the solver unchanged
+on to <span 
+class="cmtt-10">calcres </span>and <span 
+class="cmtt-10">applybnds</span>. The application can use this instead of global variables to pass
+arbitrary data. If in doubt, pass a null pointer. <br/> <span 
+class="cmtt-10">solvername </span>The name of a registered solver.
+<br/>
+<!--l. 312--><p class="noindent" ><span 
+class="cmbx-10">Discussion</span>
+</p><!--l. 313--><p class="noindent" >The function <span 
+class="cmtt-10">TATelliptic</span><span 
+class="cmtt-10">_CallSolver </span>is the the interface to solve an elliptic equation.
+</p><!--l. 316--><p class="noindent" >Input arguments are the arrays <span 
+class="cmtt-10">var </span>and <span 
+class="cmtt-10">res</span>, containing the grid function indices for the solution and the
+residual, as well as functions <span 
+class="cmtt-10">calcres </span>and <span 
+class="cmtt-10">applybnds </span>to evaluate the residual and apply boundary conditions.
+<span 
+class="cmtt-10">solvername </span>selects the solver.
+</p><!--l. 322--><p class="noindent" >
+     </p><blockquote class="quote">
+     <!--l. 323--><p class="noindent" >Hint: It is convenient to make the solver name a string parameter. This allows the solver to
+     be selected at run time from the parameter file.</p></blockquote>
+                                                                                       
+                                                                                       
+<!--l. 328--><p class="noindent" >On entry, the grid functions listed in <span 
+class="cmtt-10">var </span>have to contain an initial guess for the solution. This is necessary
+because the equations can be nonlinear. An initial guess of zero has to be set explicitly.
+</p><!--l. 333--><p class="noindent" >On exit, if the solver was successul, these grid functions contain an approximation to a solution. The grid
+functions listed in <span 
+class="cmtt-10">res </span>contain the corresponding residual.
+</p><!--l. 337--><p class="noindent" >Additional solver options are passed in a table with the table index <span 
+class="cmtt-10">options</span><span 
+class="cmtt-10">_table</span>. This table must have been
+created with one of the table utility functions. The set of accepted options depends on the particular solver that
+is called. Do not forget to free the table after you are done with it.
+</p><!--l. 343--><p class="noindent" >
+     </p><blockquote class="quote">
+     <!--l. 344--><p class="noindent" >Hint:  It  is  convenient  to  create  the  table  from  a  string  parameter  with  a  call  to
+     <span 
+class="cmtt-10">Util</span><span 
+class="cmtt-10">_TableCreateFromString</span>. This allows the solver parameters to be set in the parameter
+     file.</p></blockquote>
+<!--l. 349--><p class="noindent" >In order to be able to call this function in the thorn <span 
+class="cmtt-10">TATelliptic</span>, your thorn has to inherit from <span 
+class="cmtt-10">TATelliptic</span>
+in your <span 
+class="cmtt-10">interface.ccl</span>:
+     </p><blockquote class="quote">
+     <!--l. 353--><p class="noindent" ><span 
+class="cmtt-10">INHERITS: TATelliptic</span></p></blockquote>
+<!--l. 356--><p class="noindent" >In order to be able to include the file <span 
+class="cmtt-10">TATelliptic.h </span>into your source files, your thorn has to use the header file
+<span 
+class="cmtt-10">TATelliptic.h </span>in your <span 
+class="cmtt-10">interface.ccl</span>:
+     </p><blockquote class="quote">
+     <!--l. 360--><p class="noindent" ><span 
+class="cmtt-10">USES INCLUDE: TATelliptic.h</span></p></blockquote>
+<!--l. 363--><p class="noindent" >Currently, only three-dimensional elliptic equations can be solved.
+</p><!--l. 366--><p class="noindent" ><span 
+class="cmbx-10">See Also</span>
+</p><!--l. 367--><p class="noindent" ><span 
+class="cmtt-10">calcres </span>Evaluate the residual <br/> <span 
+class="cmtt-10">applybnds </span>Apply the boundary conditions <br/>
+</p><!--l. 375--><p class="noindent" ><span 
+class="cmbx-10">Examples</span>
+</p><!--l. 376--><p class="noindent" ><div class="codecontent"> <div class="codetype">C</div>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-3">
+  DECLARE_CCTK_PARAMETERS;
+  /* options and solver are string parameters */
+
+  int varind;   /* index of variable */
+  int resind;   /* index of residual */
+
+  int options_table;  /* table for additional solver options */
+
+  int i,j,k;
+  int ipos;   /* position in 3D array */
+
+  int ierr;
+
+  static int calc_residual (cGH * cctkGH, int options_table, void * userdata);
+  static int apply_bounds (cGH * cctkGH, int options_table, void * userdata);
+
+  /* Initial data for the solver */
+  for (k=0; k&#x003C;cctk_lsh[2]; ++k) {
+    for (j=0; j&#x003C;cctk_lsh[1]; ++j) {
+      for (i=0; i&#x003C;cctk_lsh[0]; ++i) {
+        ipos = CCTK_GFINDEX3D(cctkGH,i,j,k);
+        phi[ipos] = 0;
+      }
+    }
+  }
+
+  /* Options for the solver */
+  options_table = Util_TableCreateFromString (options);
+  assert (options_table&#x003E;=0);
+
+  /* Grid variables for the solver */
+  varind = CCTK_VarIndex (&#x0022;wavetoy::phi&#x0022;);
+  assert (varind&#x003E;=0);
+  resind = CCTK_VarIndex (&#x0022;IDSWTE::residual&#x0022;);
+  assert (varind&#x003E;=0);
+
+  /* Call solver */
+  ierr = TATelliptic_CallSolver (cctkGH, &#x0026;varind, &#x0026;resind, 1,
+                                 options_table,
+                                 calc_residual, apply_bounds, 0,
+                                 solver);
+  if (ierr!=0) {
+    CCTK_WARN (1, &#x0022;Failed to solve elliptic equation&#x0022;);
+  }
+
+                                                                                       
+                                                                                       
+  ierr = Util_TableDestroy (options_table);
+  assert (!ierr);
+</pre>
+<!--l. 425--><p class="nopar" > </div><br style="clear: both;"/>
+</div>
+</p><!--l. 433--><p class="noindent" ><div class="functiondescription">
+</p>
+<h3 class="likesectionHead"><a 
+ id="x1-4000"></a><span 
+class="cmbx-10">calcres</span></h3>
+<!--l. 433--><p class="noindent" ></div> <div class="functiondescriptioncontent">
+<a 
+ id="x1-4000doc"></a>
+</p><!--l. 435--><p class="noindent" >Evaluate the residual. This function is written by the user. The name of this function does not matter (and
+should likely not be <span 
+class="cmtt-10">calcres</span>). This function is passed as a pointer to <span 
+class="cmtt-10">TATelliptic</span><span 
+class="cmtt-10">_CallSolver</span>.
+</p><!--l. 440--><p class="noindent" ><span 
+class="cmbx-10">Synopsis</span>
+</p><!--l. 441--><p class="noindent" ><div class="codecontent"> <div class="codetype">C</div>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-4">
+#include &#x0022;cctk.h&#x0022;
+#include &#x0022;TATelliptic.h&#x0022;
+int calcres (cGH * cctkGH,
+             int options_table,
+             void * userdata);
+</pre>
+<!--l. 448--><p class="nopar" > </div><br style="clear: both;"/>
+</p><!--l. 450--><p class="noindent" ><div class="codecontent"> <div class="codetype">Fortran</div>  No Fortran equivalent. </div><br style="clear: both;"/>
+</p><!--l. 455--><p class="noindent" ><span 
+class="cmbx-10">Result</span>
+</p><!--l. 456--><p class="noindent" ><span 
+class="cmtt-10">0 </span>Success; continue solving <br/> <span 
+class="cmtt-10">nonzero </span>Failure; abort solving <br/>
+</p><!--l. 464--><p class="noindent" ><span 
+class="cmbx-10">Parameters</span>
+</p><!--l. 465--><p class="noindent" ><span 
+class="cmtt-10">cctkGH </span>The pointer to the CCTK grid hierarchy <br/> <span 
+class="cmtt-10">options</span><span 
+class="cmtt-10">_table </span>A table passed from the solver, or an
+illegal table index. If this is a table, then it may contain additional information about the solving
+process (such as the current multigrid level). This depends on the particular solver that is used. <br/>
+<span 
+class="cmtt-10">userdata </span>A pointer to arbitrary application data. This is the same pointer that was passed to
+<span 
+class="cmtt-10">TATelliptic</span><span 
+class="cmtt-10">_CallSolver</span>. The application can use this instead of global variables to pass arbitrary data.
+<br/>
+</p><!--l. 481--><p class="noindent" ><span 
+class="cmbx-10">Discussion</span>
+</p><!--l. 482--><p class="noindent" >This function has to be provided by the user. It has to calculate the residual corresponding to the current
+(approximation of the) solution.
+</p><!--l. 485--><p class="noindent" >Input to this function are the unknowns, output are the residuals.
+</p><!--l. 487--><p class="noindent" >The residuals need not be synchronised. The boundary values of the residuals are not used, and hence do not
+have to be set.
+</p><!--l. 491--><p class="noindent" ><span 
+class="cmbx-10">See Also</span>
+</p><!--l. 492--><p class="noindent" ><span 
+class="cmtt-10">TATelliptic</span><span 
+class="cmtt-10">_CallSolver </span>Call an elliptic solver <br/> <span 
+class="cmtt-10">applybnds </span>Apply the boundary conditions <br/>
+</div>
+</p><!--l. 504--><p class="noindent" ><div class="functiondescription">
+</p>
+<h3 class="likesectionHead"><a 
+ id="x1-5000"></a><span 
+class="cmbx-10">applybnds</span></h3>
+                                                                                       
+                                                                                       
+<!--l. 504--><p class="noindent" ></div> <div class="functiondescriptioncontent">
+<a 
+ id="x1-5000doc"></a>
+</p><!--l. 506--><p class="noindent" >Apply the boundary conditions to the solution. This function is written by the user. The name of this
+function does not matter (and should likely not be <span 
+class="cmtt-10">applybnds</span>). This function is passed as a pointer to
+<span 
+class="cmtt-10">TATelliptic</span><span 
+class="cmtt-10">_CallSolver</span>.
+</p><!--l. 511--><p class="noindent" ><span 
+class="cmbx-10">Synopsis</span>
+</p><!--l. 512--><p class="noindent" ><div class="codecontent"> <div class="codetype">C</div>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-5">
+#include &#x0022;cctk.h&#x0022;
+#include &#x0022;TATelliptic.h&#x0022;
+int applybnds (cGH * cctkGH,
+               int options_table,
+               void * userdata);
+</pre>
+<!--l. 519--><p class="nopar" > </div><br style="clear: both;"/>
+</p><!--l. 521--><p class="noindent" ><div class="codecontent"> <div class="codetype">Fortran</div>  No Fortran equivalent. </div><br style="clear: both;"/>
+</p><!--l. 526--><p class="noindent" ><span 
+class="cmbx-10">Result</span>
+</p><!--l. 527--><p class="noindent" ><span 
+class="cmtt-10">0 </span>Success; continue solving <br/> <span 
+class="cmtt-10">nonzero </span>Failure; abort solving <br/>
+</p><!--l. 535--><p class="noindent" ><span 
+class="cmbx-10">Parameters</span>
+</p><!--l. 536--><p class="noindent" ><span 
+class="cmtt-10">cctkGH </span>The pointer to the CCTK grid hierarchy <br/> <span 
+class="cmtt-10">options</span><span 
+class="cmtt-10">_table </span>A table passed from the solver, or an
+illegal table index. If this is a table, then it may contain additional information about the solving
+process (such as the current multigrid level). This depends on the particular solver that is used. <br/>
+<span 
+class="cmtt-10">userdata </span>A pointer to arbitrary application data. This is the same pointer that was passed to
+<span 
+class="cmtt-10">TATelliptic</span><span 
+class="cmtt-10">_CallSolver</span>. The application can use this instead of global variables to pass arbitrary data.
+<br/>
+</p><!--l. 552--><p class="noindent" ><span 
+class="cmbx-10">Discussion</span>
+</p><!--l. 553--><p class="noindent" >This function has to be provided by the user. It has to apply the boundary and symmetry conditions to the
+solution.
+</p><!--l. 556--><p class="noindent" >Input to this function is the interior of the solution, output are the boundary values of the solution.
+</p><!--l. 559--><p class="noindent" >This function also has to synchronise the solution.
+</p><!--l. 562--><p class="noindent" ><span 
+class="cmbx-10">See Also</span>
+</p><!--l. 563--><p class="noindent" ><span 
+class="cmtt-10">TATelliptic</span><span 
+class="cmtt-10">_CallSolver </span>Call an elliptic solver <br/> <span 
+class="cmtt-10">calcres </span>Evaluate the residual <br/>
+</div>
+</p><!--l. 575--><p class="noindent" ><div class="functiondescription">
+</p>
+<h3 class="likesectionHead"><a 
+ id="x1-6000"></a><span 
+class="cmbx-10">TATelliptic</span><span 
+class="cmbx-10">_RegisterSolver</span></h3>
+<!--l. 575--><p class="noindent" ></div> <div class="functiondescriptioncontent">
+                                                                                       
+                                                                                       
+<a 
+ id="x1-6000doc"></a>
+</p><!--l. 577--><p class="noindent" >Register an elliptic solver
+</p><!--l. 579--><p class="noindent" ><span 
+class="cmbx-10">Synopsis</span>
+</p><!--l. 580--><p class="noindent" ><div class="codecontent"> <div class="codetype">C</div>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-6">
+#include &#x0022;cctk.h&#x0022;
+#include &#x0022;TATelliptic.h&#x0022;
+int TATelliptic_RegisterSolver (solvefunc solver,
+                                const char * solvername);
+</pre>
+<!--l. 586--><p class="nopar" > </div><br style="clear: both;"/>
+</p><!--l. 590--><p class="noindent" ><span 
+class="cmbx-10">Result</span>
+</p><!--l. 591--><p class="noindent" ><span 
+class="cmtt-10">0 </span>Success. <br/> <span 
+class="cmtt-10">-1 </span>Failure: illegal arguments. <span 
+class="cmtt-10">solver </span>or <span 
+class="cmtt-10">solvername </span>are null. <br/> <span 
+class="cmtt-10">-2 </span>Failure: a solver with this name
+has already been registered. <br/>
+</p><!--l. 603--><p class="noindent" ><span 
+class="cmbx-10">Parameters</span>
+</p><!--l. 604--><p class="noindent" ><span 
+class="cmtt-10">solver </span>A pointer to the solver’s solving function. This function has to have the following interface,
+which is the same as that of <span 
+class="cmtt-10">TATelliptic</span><span 
+class="cmtt-10">_CallSolver </span>except that the argument <span 
+class="cmtt-10">solvername </span>is
+missing:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-7">
+typedef int (* solvefunc) (cGH * cctkGH,
+                           const int * var,
+                           const int * res,
+                           int nvars,
+                           int options_table,
+                           calcfunc calcres,
+                           calcfunc applybnds,
+                           void * userdata);
+</pre>
+<!--l. 618--><p class="nopar" > <br/> <span 
+class="cmtt-10">solvername </span>The name of the solver <br/>
+</p><!--l. 625--><p class="noindent" ><span 
+class="cmbx-10">Discussion</span>
+</p><!--l. 626--><p class="noindent" >Each solver has to register its solving function with <span 
+class="cmtt-10">TATelliptic </span>at startup time.
+</p><!--l. 630--><p class="noindent" ><span 
+class="cmbx-10">See Also</span>
+</p><!--l. 631--><p class="noindent" ><span 
+class="cmtt-10">TATelliptic</span><span 
+class="cmtt-10">_CallSolver </span>Call an elliptic solver <br/>
+</div>
+</p><!--l. 640--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-70003"></a>Pseudo solver</h3>
+<!--l. 642--><p class="noindent" >This thorn provides also a pseudo solver, called <span 
+class="cmtt-10">TATmonitor</span>. This is not a real solver, although it poses as one
+and uses the <span 
+class="cmtt-10">TATelliptic</span><span 
+class="cmtt-10">_CallSolver </span>interface. It does nothing but evaluate the residual and then return
+successfully.
+</p><!--l. 647--><p class="noindent" >You will find this a useful intermediate step when debugging your residual evaluation routines.
+</p><!--l. 661--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-80004"></a>Parameters</h3>
+                                                                                       
+                                                                                       
+<!--l. 667--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-90005"></a>Interfaces</h3>
+<!--l. 672--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-10000"></a>General</h4>
+<!--l. 674--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 676--><p class="noindent" >tatelliptic
+</p><!--l. 681--><p class="noindent" ><span 
+class="cmbx-10">Adds header</span>:
+</p><!--l. 685--><p class="noindent" >TATelliptic.h
+</p><!--l. 688--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">6   </span> <a 
+ id="x1-110006"></a>Schedule</h3>
+<!--l. 694--><p class="noindent" >This section lists all the variables which are assigned storage by thorn CactusElliptic/TATelliptic. Storage can
+either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 697--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-12000"></a>Storage</h4>
+<!--l. 697--><p class="noindent" >NONE
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-13000"></a>Scheduled Functions</h4>
+<!--l. 701--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_STARTUP</span>
+</p><!--l. 703--><p class="noindent" >      tatelliptic_register_monitor
+</p><!--l. 705--><p class="noindent" >     <span 
+class="cmti-10">register the pseudo solver</span>
+</p><!--l. 708--><p class="noindent" > 
+</p><!--l. 710--><p class="noindent" ></p> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /><col 
+id="TBL-2-2" /><col 
+id="TBL-2-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-1"  
+class="td11">    </td></tr></table>
+ 
+</body></html> 
+
+                                                                                       
+
+

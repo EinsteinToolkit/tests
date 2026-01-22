@@ -1,0 +1,2567 @@
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a 
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+\title{IllinoisGRMHD}
+\author{Samuel Cupp \\ Leonardo Rosa Werneck \\ Terrence Pierre Jacques \\ Zachariah Etienne}
+\date{$ $Date$ $}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+% Add all definitions used in this documentation here
+\newcommand{\grhayl}{\texttt{GRHayL}}
+\newcommand{\glib}{\texttt{GRHayLib}}
+\newcommand{\ghd}{\texttt{GRHayLHD}}
+\newcommand{\igm}{\texttt{IllinoisGRMHD}}
+\newcommand{\hydrobase}{\texttt{HydroBase}}
+
+\begin{abstract}
+\igm{} solves the equations of general relativistic
+magneto-hydrodynamics (GRMHD) using the General Relativistic
+Hydrodynamics Library (\grhayl), which is included in the
+Einstein Toolkit via the \glib{} thorn. The core library
+inherits or adapts code from the original \igm{} thorn into a
+modular, infrastructure-agnostic library. This original thorn
+is itself a rewrite of the Illinois Numerical Relativity (ILNR)
+group's GRMHD  code (ca. 2009--2014), which was used in their
+modeling of the following systems:
+\begin{enumerate}
+\item Magnetized circumbinary disk accretion onto binary black holes
+\item Magnetized black hole--neutron star mergers
+\item Magnetized Bondi flow, Bondi-Hoyle-Littleton accretion
+\item White dwarf--neutron star mergers
+\end{enumerate}
+
+The improved \grhayl-based \igm{} incorporates more options
+for controlling the evolution, most notably the addition
+of new conservative-to-primitive solvers and nuclear equations of
+state.
+\end{abstract}
+
+\section{Introduction}
+
+This thorn provides a GRMHD evolution code built on
+the General Relativistic Hydrodynamics Library (\grhayl),
+which is included in the Einstein Toolkit via the \glib{}
+thorn. The core library inherits or adapts code from the
+original \igm{} thorn into a modular, infrastructure-agnostic
+library.
+
+The new and improved \igm{} provides support for hybrid and
+tabulated EOS, both with and without entropy. The core functions
+all come from \glib, ensuring that any improvements or updates
+to the library can be easily adopted by the thorn. The
+conservative-to-primitive solver is selected at runtime, allowing
+for users to take advantage of any Con2Prim methods provided by \grhayl.
+
+\section{Parameters}
+
+Most of the behavior of this thorn is controlled by \glib,
+the thorn that provides \grhayl{} functionality
+within the Einstein Toolkit. However, there are several
+parameters in the thorn which control diagnostic or debugging
+features. Most are self-explanatory, but some parameters deserve
+a more detailed explanation.
+
+First, many analysis or diagnostic thorns use \hydrobase{} variables.
+By default, \igm{} never copies the data back from \igm{} variables
+to \hydrobase{} variables, which would prevent the usage of these
+thorns. The \textbf{Convert\_to\_HydroBase\_every} parameter
+sets how often to copy back this data. Naturally, copying more
+frequently will slow down the simulation, so this should be set
+on the same frequency as the analysis or IO thorn that is using
+the \hydrobase{} variable. We reduced the amount of data copying in \igm{}
+by using the \hydrobase{} variables directly, which removes the need
+to copy them back and removes extra grid functions from memory.
+We still use distinct velocity variables because we use a different
+velocity than is defined in \hydrobase.
+
+Next, there are several parameters for debugging or other testing.
+The perturbing parameters give users the ability to affect either
+the initial data or evolution data at runtime without slowing down
+standard simulations. The \textbf{perturb\_initial\_data} parameter
+controls whether the initial data from \hydrobase{} is perturbed, and
+the \textbf{perturb\_every\_con2prim} parameter controls whether
+the conservative variables are perturbed before every con2prim call.
+The magnitude of these perturbations is set by \textbf{random\_pert}.
+
+\section{Updating Old Parfiles}
+
+With the many changes to improve the code and transition to using \glib,
+parfile setups have changed significantly. To this end, we provide a
+guide to updating parfiles from old \igm{} to the \grhayl-based \igm.
+Old parfiles are temporarily supported via backward compatibility
+patch, but this support ends in the ET\_2024\_11 release.
+
+First, the two thorns ID\_converter\_ILGRMHD and Convert\_to\_HydroBase
+are entirely deprecated and will be removed. As such, these thorns and
+all their parameters should be removed from the parfile. Their equivalent
+parameters are as follows:
+%
+\begin{center}
+\begin{tabular}{|l l|}
+ \multicolumn{1}{|c}{Old} & \multicolumn{1}{c|}{New} \\\hline
+ ID\_converter\_ILGRMHD::Gamma\_Initial & GRHayLib::Gamma\_ppoly\_in[0] \\ 
+ ID\_converter\_ILGRMHD::random\_seed   & IllinoisGRMHD::random\_seed \\  
+ ID\_converter\_ILGRMHD::random\_pert   & IllinoisGRMHD::random\_pert \\
+ ID\_converter\_ILGRMHD::K\_Initial     & GRHayLib::k\_ppoly0 \\
+ Convert\_to\_HydroBase::Convert\_to\_HydroBase\_every & IllinoisGRMHD::Convert\_to\_HydroBase\_every \\\hline
+\end{tabular}
+\end{center}
+%
+The parameter ID\_converter\_ILGRMHD::pure\_hydro\_run is entirely
+deprecated, as the \ghd{} thorn provides this functionaility. Additionally,
+to properly trigger the random perturbation the new parameter
+IllinoisGRMHD::perturb\_initial\_data should be set.
+
+The parameters in \igm{} have also changed significantly, with many
+moving to the \glib{} thorn. These changes are as follows:
+%
+\begin{center}
+\begin{tabular}{|l l|}
+ \multicolumn{1}{|c}{Old} & \multicolumn{1}{c|}{New} \\\hline
+ IllinoisGRMHD::GAMMA\_SPEED\_LIMIT & GRHayLib::max\_Lorentz\_factor \\
+ IllinoisGRMHD::K\_poly             & GRHayLib::k\_ppoly0 \\
+ IllinoisGRMHD::rho\_b\_atm         & GRHayLib::rho\_b\_atm \\
+ IllinoisGRMHD::rho\_b\_max         & GRHayLib::rho\_b\_max \\
+ IllinoisGRMHD::Psi6threshold       & GRHayLib::Psi6threshold \\
+ IllinoisGRMHD::neos                & GRHayLib::neos \\
+ IllinoisGRMHD::gamma\_th           & GRHayLib::Gamma\_th \\
+ IllinoisGRMHD::damp\_lorenz        & GRHayLib::Lorenz\_damping\_factor \\\hline
+\end{tabular}
+\end{center}
+%
+As seen here, the ID converter and \igm{} thorns both had a $K$ parameter.
+These are condensed into a single parameter in GRHayLib.
+
+Two parameters are deprecated and marked for removal. These are
+IllinoisGRMHD::tau\_atm and IllinoisGRMHD::conserv\_to\_prims\_debug. The former
+is now automatically computed by \glib, and the latter's feature is no
+longer available.
+
+Other \igm{} parameter names are unchanged. However, some of their options
+are deprecated and also marked for removal. These are the "essential" and
+"essential+iteration output" options for IllinoisGRMHD::verbose.
+
+Finally, note that the magnetic field quantities have been rescaled by
+$\left(4\pi\right)^{-1/2}$, as this simplifies many equations in \grhayl.
+This definition is consistent with the magnetic field defined by \hydrobase{}
+and GRHydro (which the old \igm{} did not respect). To maintain support for
+old initial data thorns, we by default assume that the \hydrobase{} $B^i$,
+$A_i$ use the old definition and rescale them when copying into the \igm{}
+variables. The parameter rescale\_magnetics controls this behavior. If
+the thorns using the old definition (i.e. thorns in wvuthorns and
+wvuthorns\_diagnostics) are updated to use the new definition, this parameter
+will be switch such that the default behaves as expected for these thorns.
+Such a change will be detailed in the Einstein Toolkit release notes prior
+to the release introducing the change.
+
+In addition to these changes, \glib{} offers new parameter options for
+controlling the simulation, such as a wider range of conservative-to-primitive
+routines, new equation of state options, and control over the PPM reconstruction
+parameters. Please see that thorn's documentation for more information about these
+features, as well as \grhayl's documentation on the library's implementation
+details.
+
+\section{Acknowledgements}
+
+Note that many codes have fed into the \grhayl{} library. The most prominent is
+the \igm{} thorn developed primarily by Zachariah Etienne, Yuk Tung Liu, and
+Vasileios Paschalidis~\cite{WVUThorns_IllinoisGRMHD_Etienne:2015cea}. This
+thorn is based on the GRMHD code of the Illinois Numerical Relativity group
+(ca. 2014), written by Matt Duez, Yuk Tung Liu, and Branson Stephens~.
+
+For the full list of contributions and related citations, please use \grhayl's
+\href{https://github.com/GRHayL/GRHayL/wiki/Citation-and-License-Guide}{citation guide}.
+
+\begin{thebibliography}{9}
+
+\bibitem{WVUThorns_IllinoisGRMHD_Etienne:2015cea}
+Z.~B.~Etienne, V.~Paschalidis, R.~Haas, P.~M\"osta and S.~L.~Shapiro,
+``IllinoisGRMHD: An Open-Source, User-Friendly GRMHD Code for Dynamical
+Spacetimes,''
+Class. Quant. Grav. \textbf{32}, 175009 (2015)
+doi:10.1088/0264-9381/32/17/175009
+[\href{https://arxiv.org/abs/1501.07276}{arXiv:1501.07276} [astro-ph.HE]].
+
+\end{thebibliography}
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{convert\_to\_hydrobase\_every}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{conserv\_to\_prims\_debug} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Deprecated.}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:1} & \multicolumn{2}{p{\paraWidth}|}{zero (no) or one (yes)} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{convert\_to\_hydrobase\_every} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How often to convert IllinoisGRMHD primitive variables to HydroBase (Valencia formulation) primitive variables? Needed for some ET-based diagnostics. NOT needed for pure IllinoisGRMHD runs.}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{zero (disable) or positive (every N iterations)} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{damp\_lorenz} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Deprecated. Please use GRHayLib.}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{em\_bc} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em EM field boundary condition}} \\
+\hline{\bf Range} & &  {\bf Default:} copy \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering copy} & \multicolumn{2}{p{\paraWidth}|}{Copy data from nearest boundary point} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering frozen} & \multicolumn{2}{p{\paraWidth}|}{Frozen boundaries} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{gamma\_speed\_limit} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Deprecated. Please use GRHayLib.}} \\
+\hline{\bf Range} & &  {\bf Default:} 10.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{Positive {\textgreater} 1, though you'll likely have troubles far above 10.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{gamma\_th} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Deprecated. Please use GRHayLib.}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Physical values} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1} & \multicolumn{2}{p{\paraWidth}|}{forbidden value to make sure it is explicitly set in the parfile} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{k\_poly} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Deprecated. Please use GRHayLib.}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Positive} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{matter\_bc} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Chosen Matter boundary condition}} \\
+\hline{\bf Range} & &  {\bf Default:} outflow \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering copy} & \multicolumn{2}{p{\paraWidth}|}{Copy BCs} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering outflow} & \multicolumn{2}{p{\paraWidth}|}{Copy BCs with additional outflow BC for velocities} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering frozen} & \multicolumn{2}{p{\paraWidth}|}{Frozen boundaries} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{neos} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Deprecated. Please use GRHayLib.}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:10} & \multicolumn{2}{p{\paraWidth}|}{Any integer between 1 and 10} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{perturb\_every\_con2prim} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Random perturbation applied every time con2prim runs}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{perturb\_initial\_data} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Random perturbation to initial data}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{psi6threshold} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Deprecated. Please use GRHayLib.}} \\
+\hline{\bf Range} & &  {\bf Default:} 1e100 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Can set to anything} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{random\_pert} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Magnitude of random perturbations}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Anything goes.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{random\_seed} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Random seed for random, generally roundoff-level perturbation on initial data. Seeds srand(), and rand() is used for the RNG.}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:99999999} & \multicolumn{2}{p{\paraWidth}|}{Anything unsigned goes.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rescale\_magnetics} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Rescale magnetic data to match original IllinoisGRMHD definitions}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rho\_b\_atm} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Deprecated. Please use GRHayLib.}} \\
+\hline{\bf Range} & &  {\bf Default:} 1e200 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Allow for negative values.  This enables us to debug the code and verify if rho\_b\_atm is properly set.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rho\_b\_max} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Deprecated. Please use GRHayLib.}} \\
+\hline{\bf Range} & &  {\bf Default:} 1e300 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Note that you will have problems unless rho\_b\_atm{\textless}rho\_b\_max} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{sym\_bz} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em In-progress equatorial symmetry support: Symmetry parameter across z axis for magnetic fields = +/- 1}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1.0:1.0} & \multicolumn{2}{p{\paraWidth}|}{Set to +1 or -1.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{symmetry} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Currently only no symmetry supported, though work has begun in adding equatorial-symmetry support.}} \\
+\hline{\bf Range} & &  {\bf Default:} none \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering none} & \multicolumn{2}{p{\paraWidth}|}{no symmetry, full 3d domain} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{tau\_atm} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Deprecated. Please use GRHayLib.}} \\
+\hline{\bf Range} & &  {\bf Default:} 1e100 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Positive} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{update\_tmunu} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Update Tmunu, for RHS of Einstein's equations?}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{verbose} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Determines how much evolution information is output}} \\
+\hline{\bf Range} & &  {\bf Default:} yes \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering no} & \multicolumn{2}{p{\paraWidth}|}{Complete silence} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering yes} & \multicolumn{2}{p{\paraWidth}|}{"Outputs information about conservative-to-prim 
+itive fixes, failures, etc."} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering essential} & \multicolumn{2}{p{\paraWidth}|}{Deprecated option.} \\\multicolumn{1}{|p{\maxVarWidth}|}{see [1] below} & \multicolumn{2}{p{\paraWidth}|}{Deprecated option.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent {\bf [1]} \noindent \begin{verbatim}essential+iteration output\end{verbatim}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{eos\_type} & {\bf Scope:} shared from GRHAYLIB & KEYWORD \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{evolve\_entropy} & {\bf Scope:} shared from GRHAYLIB & BOOLEAN \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+illinoisgrmhd
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+admbase
+
+tmunubase
+
+hydrobase
+
+grhaylib
+\vspace{2mm}
+\subsection*{Grid Variables}
+\vspace{5mm}\subsubsection{PRIVATE GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+grmhd\_velocities &  & compact & 0 \\ 
+ & vx & description & Components of primitive three velocity v\^i. Note that v\^i is defined in terms of 4-velocity as: v\^i = u\^i/u\^0. Note that this definition differs from the Valencia formalism. \\ 
+ & vy & dimensions & 3 \\ 
+ & vz & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & InterpNumTimelevels=1 prolongation="none" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+u0 & u0 & compact & 0 \\ 
+ &  & description & 4-velocity component u\^0 \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & InterpNumTimelevels=1 prolongation="none" checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+grmhd\_conservatives &  & compact & 0 \\ 
+ & rho\_star & description & Evolved hydrodynamic variables \\ 
+ & tau & dimensions & 3 \\ 
+ & Stildex & distribution & DEFAULT \\ 
+ & Stildey & group type & GF \\ 
+ & Stildez & tags & prolongation="ENO" \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+ent\_star & ent\_star & compact & 0 \\ 
+ &  & description & Evolved entropy variable \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & prolongation="ENO" \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+ye\_star & Ye\_star & compact & 0 \\ 
+ &  & description & Evolved electron fraction variable \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & prolongation="ENO" \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+ax & Ax & compact & 0 \\ 
+ &  & description & x-component of the vector potential \\ 
+& ~ & description &  evolved when constrained\_transport\_scheme==3 \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & Prolongation="STAGGER011" \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~ \\ 
+\hline 
+ay & Ay & compact & 0 \\ 
+ &  & description & y-component of the vector potential \\ 
+& ~ & description &  evolved when constrained\_transport\_scheme==3 \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & Prolongation="STAGGER101" \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+az & Az & compact & 0 \\ 
+ &  & description & z-component of the vector potential \\ 
+& ~ & description &  evolved when constrained\_transport\_scheme==3 \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & Prolongation="STAGGER110" \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+phitilde & phitilde & compact & 0 \\ 
+ &  & description & sqrt\{gamma\} Phi \\ 
+& ~ & description &  where Phi is the em scalar potential \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & Prolongation="STAGGER111" \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+grmhd\_b\_stagger &  & compact & 0 \\ 
+ & Bx\_stagger & description & Densitized B-field components defined at staggered points [Bx\_stagger at (i+1/2 \\ 
+& ~ & description & j \\ 
+ & Bx\_stagger & description & k) \\ 
+ & Bx\_stagger & description & By\_stagger at (i \\ 
+ & Bx\_stagger & description & j+1/2 \\ 
+ & Bx\_stagger & description & k) \\ 
+ & Bx\_stagger & description & Bz\_stagger at (i \\ 
+ & Bx\_stagger & description & j \\ 
+ & Bx\_stagger & description & k+1/2)]. \\ 
+ & By\_stagger & dimensions & 3 \\ 
+ & Bz\_stagger & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & InterpNumTimelevels=1 prolongation="none" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+grmhd\_b\_center &  & compact & 0 \\ 
+ & Bx\_center & description & B-field components defined at vertices. \\ 
+ & By\_center & dimensions & 3 \\ 
+ & Bz\_center & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & InterpNumTimelevels=1 prolongation="none" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+grmhd\_conservatives\_rhs &  & compact & 0 \\ 
+ & rho\_star\_rhs & description & Right-hand side for evolved conservative variables \\ 
+ & tau\_rhs & dimensions & 3 \\ 
+ & Stildex\_rhs & distribution & DEFAULT \\ 
+ & Stildey\_rhs & group type & GF \\ 
+ & Stildez\_rhs & tags & prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~ \\ 
+\hline 
+ent\_star\_rhs & ent\_star\_rhs & compact & 0 \\ 
+ &  & description & Right-hand side for ent\_star \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+ye\_star\_rhs & Ye\_star\_rhs & compact & 0 \\ 
+ &  & description & Right-hand side for Ye\_star \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+em\_rhs &  & compact & 0 \\ 
+ & Ax\_rhs & description & Storage for the right-hand side of the partial\_t A equations and partial\_t (psi\^6 Phi) equation. \\ 
+ & Ay\_rhs & dimensions & 3 \\ 
+ & Az\_rhs & distribution & DEFAULT \\ 
+ & phitilde\_rhs & group type & GF \\ 
+ &  & tags & prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+grmhd\_cmin\_cmax\_temps &  & compact & 0 \\ 
+ & cmin\_x & description & Store min and max characteristic speeds in all three directions. \\ 
+ & cmax\_x & dimensions & 3 \\ 
+ & cmin\_y & distribution & DEFAULT \\ 
+ & cmax\_y & group type & GF \\ 
+ & cmin\_z & tags & prolongation="none" Checkpoint="no" \\ 
+ & cmax\_z & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+grmhd\_flux\_temps &  & compact & 0 \\ 
+ & rho\_star\_flux & description & Flux variables for computing RHSs \\ 
+ & tau\_flux & dimensions & 3 \\ 
+ & Stildex\_flux & distribution & DEFAULT \\ 
+ & Stildey\_flux & group type & GF \\ 
+ & Stildez\_flux & tags & prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+ent\_star\_flux & ent\_star\_flux & compact & 0 \\ 
+ &  & description & Flux variable for ent\_star \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~ \\ 
+\hline 
+ye\_star\_flux & Ye\_star\_flux & compact & 0 \\ 
+ &  & description & Flux variable for Ye\_star \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+grmhd\_primitives\_reconstructed\_temps &  & compact & 0 \\ 
+ & vxr & description & Temporary variables used for primitives reconstruction \\ 
+ & vyr & dimensions & 3 \\ 
+ & vzr & distribution & DEFAULT \\ 
+ & vxl & group type & GF \\ 
+ & vyl & tags & prolongation="none" Checkpoint="no" \\ 
+ & vzl & timelevels & 1 \\ 
+ & Bx\_staggerr & variable type & REAL \\ 
+\hline 
+failure\_checker & failure\_checker & compact & 0 \\ 
+ &  & description & Gridfunction to track conservative-to-primitives solver fixes. Beware that this gridfunction is overwritten at each RK substep. \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & prolongation="none" Checkpoint="no" InterpNumTimelevels=1 \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+em\_psi6phi &  & compact & 0 \\ 
+ & psi6phi & description & Deprecated variable \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & Prolongation="STAGGER111" \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+grmhd\_primitives\_allbutbi &  & compact & 0 \\ 
+ & rho\_b & description & Deprecated variables \\ 
+ & P & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & InterpNumTimelevels=1 prolongation="none" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+grmhd\_primitives\_bi &  & compact & 0 \\ 
+ & Bx & description & Deprecated variables \\ 
+ & By & dimensions & 3 \\ 
+ & Bz & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & InterpNumTimelevels=1 prolongation="none" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+
+\noindent {\bf Uses header}: 
+
+Symmetry.h
+
+GRHayLib.h
+\vspace{2mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn GRHayLET/IllinoisGRMHD.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Always:}& {\bf Conditional:} \\ 
+ HydroBase::Bvec[1] HydroBase::Avec[1] HydroBase::Aphi[1] &  Ye\_star[3] Ye\_star\_rhs Ye\_star\_flux\\ 
+ grmhd\_conservatives[3] Ax[3] Ay[3] Az[3] phitilde[3] &  ent\_star[3] ent\_star\_rhs ent\_star\_flux\\ 
+ grmhd\_velocities u0 grmhd\_B\_center grmhd\_B\_stagger &  em\_psi6phi[3] grmhd\_primitives\_allbutBi grmhd\_primitives\_Bi\\ 
+ grmhd\_conservatives\_rhs EM\_rhs & ~\\ 
+ grmhd\_primitives\_reconstructed\_temps grmhd\_cmin\_cmax\_temps failure\_checker & ~\\ 
+ grmhd\_flux\_temps Ye\_star\_flux ent\_star\_flux & ~\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf MoL\_Register}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_registervars 
+
+\hspace{5mm}{\it register evolved, rhs variables in illinoisgrmhd for mol } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & meta \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf Driver\_BoundarySelect}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_specify\_driver\_bcs 
+
+\hspace{5mm}{\it register boundary conditions with presync } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & meta \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTPOSTINITIAL}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_set\_gz\_symmetries 
+
+\hspace{5mm}{\it compute post-initialdata quantities } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & con2prim \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & grid::coordinates \\ 
+~& ~ &grmhd\_b\_center\\ 
+~& ~ &grmhd\_b\_stagger\\ 
+~& ~ &phitilde\\ 
+~& ~ &ax\\ 
+~& ~ &ay\\ 
+~& ~ &az\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_b\_center(boundary) \\ 
+~& ~ &grmhd\_b\_stagger(boundary)\\ 
+~& ~ &phitilde(boundary)\\ 
+~& ~ &ax(boundary)\\ 
+~& ~ &ay(boundary)\\ 
+~& ~ &az(boundary)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Con2Prim}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_con2prim 
+
+\hspace{5mm}{\it compute primitive variables from conservatives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_Con2Prim}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_sync 
+
+\hspace{5mm}{\it sync conservative variable ghost zones for c2p routine } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Sync:  & grmhd\_conservatives \\ 
+~& ~ &ye\_star\\ 
+~& ~ &ent\_star\\ 
+~& ~ &ax\\ 
+~& ~ &ay\\ 
+~& ~ &az\\ 
+~& ~ &phitilde\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_Con2Prim}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_a\_i\_outer\_boundaries 
+
+\hspace{5mm}{\it apply linear extrapolation bcs on a\_\{mu\}, so that bcs are flat on b\^i } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & illinoisgrmhd\_sync \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & phitilde \\ 
+~& ~ &ax\\ 
+~& ~ &ay\\ 
+~& ~ &az\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & phitilde(boundary) \\ 
+~& ~ &ax(boundary)\\ 
+~& ~ &ay(boundary)\\ 
+~& ~ &az(boundary)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_Con2Prim}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_compute\_b\_and\_bstagger\_from\_a 
+
+\hspace{5mm}{\it compute b and b\_stagger from a sync: grmhd\_primitives\_bi,grmhd\_primitives\_bi\_stagger } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & illinoisgrmhd\_a\_i\_outer\_boundaries \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & grid::coordinates \\ 
+~& ~ &admbase::metric\\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &phitilde\\ 
+~& ~ &ax\\ 
+~& ~ &ay\\ 
+~& ~ &az\\ 
+~ & Sync:  & grmhd\_b\_center \\ 
+~& ~ &grmhd\_b\_stagger\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & phitilde(everywhere) \\ 
+~& ~ &ax(everywhere)\\ 
+~& ~ &ay(everywhere)\\ 
+~& ~ &az(everywhere)\\ 
+~& ~ &grmhd\_b\_center(everywhere)\\ 
+~& ~ &grmhd\_b\_stagger(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_Con2Prim}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_perturb\_conservatives 
+
+\hspace{5mm}{\it perturb conservatives before con2prim } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & illinoisgrmhd\_compute\_b\_and\_bstagger\_from\_a \\ 
+~ & Before:  & illinoisgrmhd\_conservs\_to\_prims \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_Con2Prim}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_conservs\_to\_prims 
+
+\hspace{5mm}{\it compute primitive variables from conservatives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & illinoisgrmhd\_compute\_b\_and\_bstagger\_from\_a \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_Con2Prim}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_hydro\_outer\_boundaries 
+
+\hspace{5mm}{\it apply selected boundary conditions to the primitive variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & illinoisgrmhd\_conservs\_to\_prims \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf AddToTmunu}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_compute\_tmunu 
+
+\hspace{5mm}{\it compute stress-energy tensor } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::eps\\ 
+~& ~ &grmhd\_velocities\\ 
+~& ~ &u0\\ 
+~& ~ &grmhd\_b\_center\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & tmunubase::stress\_energy\_scalar(everywhere) \\ 
+~& ~ &tmunubase::stress\_energy\_vector(everywhere)\\ 
+~& ~ &tmunubase::stress\_energy\_tensor(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_CalcRHS}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_rhs 
+
+\hspace{5mm}{\it evaluate rhss grhd equations } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_BASEGRID}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_initsymbound 
+
+\hspace{5mm}{\it schedule symmetries } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_RHS}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_evaluate\_sources\_rhs 
+
+\hspace{5mm}{\it evaluate source terms in grmhd rhss } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_RHS}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_evaluate\_fluxes\_rhs 
+
+\hspace{5mm}{\it evaluate flux terms in grmhd rhss } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & illinoisgrmhd\_evaluate\_sources\_rhs \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_RHS}   (conditional) 
+
+\hspace{5mm} convert\_illinoisgrmhd\_to\_hydrobase 
+
+\hspace{5mm}{\it convert needed hydrobase variables for nrpyleakage } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & illinoisgrmhd\_evaluate\_fluxes\_rhs \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::lapse \\ 
+~& ~ &admbase::shift\\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & hydrobase::vel(everywhere) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_RHS} 
+
+\hspace{5mm} illinoisgrmhd\_evaluate\_phitilde\_and\_a\_gauge\_rhs 
+
+\hspace{5mm}{\it evaluate phitilde rhs and gauge contributions to a\_i rhs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & evaluate\_fluxes\_rhs \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::lapse \\ 
+~& ~ &admbase::shift\\ 
+~& ~ &admbase::metric\\ 
+~& ~ &phitilde\\ 
+~& ~ &ax\\ 
+~& ~ &ay\\ 
+~& ~ &az\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_primitives\_reconstructed\_temps \\ 
+~& ~ &em\_rhs\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_ANALYSIS}   (conditional) 
+
+\hspace{5mm} convert\_illinoisgrmhd\_to\_hydrobase 
+
+\hspace{5mm}{\it convert illinoisgrmhd-native variables to hydrobase } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ml\_bssn\_evolcalcgroup \\ 
+~ & Before:  & compute\_bi\_b2\_poyn\_fluxet \\ 
+~& ~ &convert\_to\_mhd\_3velocity\\ 
+~& ~ &particle\_traceret\\ 
+~& ~ &volumeintegralgroup\\ 
+~ & Language:  & c \\ 
+~ & Options:  & global-early \\ 
+~& ~ &loop-local\\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &grmhd\_velocities\\ 
+~& ~ &grmhd\_b\_center\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & hydrobase::vel(everywhere) \\ 
+~& ~ &hydrobase::w\_lorentz(everywhere)\\ 
+~& ~ &hydrobase::bvec(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_prims\_to\_conservs}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_hybrid\_entropy\_prims\_to\_conservs 
+
+\hspace{5mm}{\it entropy+hybrid version of illinoisgrmhd\_prims\_to\_conservs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::eps\\ 
+~& ~ &hydrobase::entropy\\ 
+~& ~ &grmhd\_velocities\\ 
+~& ~ &grmhd\_b\_center\\ 
+~ & Sync:  & grmhd\_conservatives \\ 
+~& ~ &ent\_star\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & u0(everywhere) \\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &grmhd\_conservatives(everywhere)\\ 
+~& ~ &ent\_star(everywhere)\\ 
+~& ~ &hydrobase::rho(everywhere)\\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+~& ~ &hydrobase::entropy(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_conservs\_to\_prims}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_hybrid\_entropy\_conservs\_to\_prims 
+
+\hspace{5mm}{\it entropy+hybrid version of illinoisgrmhd\_conservs\_to\_prims } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & grid::coordinates \\ 
+~& ~ &admbase::metric\\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &grmhd\_conservatives\\ 
+~& ~ &ent\_star\\ 
+~& ~ &grmhd\_b\_center\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives(everywhere) \\ 
+~& ~ &ent\_star(everywhere)\\ 
+~& ~ &u0(everywhere)\\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &failure\_checker(everywhere)\\ 
+~& ~ &hydrobase::rho(everywhere)\\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+~& ~ &hydrobase::entropy(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_hydro\_outer\_boundaries}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_hybrid\_entropy\_hydro\_outer\_boundaries 
+
+\hspace{5mm}{\it entropy+hybrid version of illinoisgrmhd\_hydro\_outer\_boundaries } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::entropy\\ 
+~& ~ &grmhd\_velocities\\ 
+~& ~ &grmhd\_b\_center\\ 
+~ & Sync:  & grmhd\_velocities \\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::eps\\ 
+~& ~ &hydrobase::entropy\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & u0(everywhere) \\ 
+~& ~ &grmhd\_conservatives(everywhere)\\ 
+~& ~ &ent\_star(everywhere)\\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &hydrobase::rho(everywhere)\\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+~& ~ &hydrobase::entropy(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_evaluate\_sources\_rhs}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_hybrid\_entropy\_evaluate\_sources\_rhs 
+
+\hspace{5mm}{\it entropy+hybrid version of illinoisgrmhd\_evaluate\_sources\_rhs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &admbase::curv\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::entropy\\ 
+~& ~ &grmhd\_velocities\\ 
+~& ~ &grmhd\_b\_center\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives\_rhs \\ 
+~& ~ &ent\_star\_rhs\\ 
+~& ~ &em\_rhs\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_evaluate\_fluxes\_rhs}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_hybrid\_entropy\_evaluate\_fluxes\_rhs 
+
+\hspace{5mm}{\it entropy+hybrid version of illinoisgrmhd\_evaluate\_fluxes\_rhs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::entropy\\ 
+~& ~ &grmhd\_velocities\\ 
+~& ~ &grmhd\_b\_center\\ 
+~& ~ &grmhd\_b\_stagger\\ 
+~& ~ &phitilde\\ 
+~& ~ &ax\\ 
+~& ~ &ay\\ 
+~& ~ &az\\ 
+~& ~ &grmhd\_conservatives\_rhs(interior)\\ 
+~& ~ &ent\_star\_rhs(interior)\\ 
+~& ~ &em\_rhs(interior)\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_flux\_temps \\ 
+~& ~ &grmhd\_conservatives\_rhs\\ 
+~& ~ &ent\_star\_flux\\ 
+~& ~ &ent\_star\_rhs\\ 
+~& ~ &grmhd\_primitives\_reconstructed\_temps\\ 
+~& ~ &grmhd\_cmin\_cmax\_temps\\ 
+~& ~ &em\_rhs\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Prim2ConInitial}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_prim2con2prim 
+
+\hspace{5mm}{\it convert hydrobase initial data to illinoisgrmhd variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_perturb\_primitives}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_hybrid\_entropy\_perturb\_primitives 
+
+\hspace{5mm}{\it entropy+hybrid version of illinoisgrmhd\_perturb\_primitives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & hydrobase::rho \\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::eps\\ 
+~& ~ &hydrobase::entropy\\ 
+~& ~ &grmhd\_velocities\\ 
+~& ~ &phitilde\\ 
+~& ~ &ax\\ 
+~& ~ &ay\\ 
+~& ~ &az\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & hydrobase::rho(everywhere) \\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+~& ~ &hydrobase::entropy\\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &phitilde(everywhere)\\ 
+~& ~ &ax(everywhere)\\ 
+~& ~ &ay(everywhere)\\ 
+~& ~ &az(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_perturb\_conservatives}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_hybrid\_entropy\_perturb\_conservatives 
+
+\hspace{5mm}{\it entropy+hybrid version of illinoisgrmhd\_perturb\_conservatives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & grmhd\_conservatives \\ 
+~& ~ &ent\_star\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives(everywhere) \\ 
+~& ~ &ent\_star(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_prims\_to\_conservs}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_hybrid\_prims\_to\_conservs 
+
+\hspace{5mm}{\it hybrid version of illinoisgrmhd\_prims\_to\_conservs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::eps\\ 
+~& ~ &grmhd\_velocities\\ 
+~& ~ &grmhd\_b\_center\\ 
+~ & Sync:  & grmhd\_conservatives \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & u0(everywhere) \\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &grmhd\_conservatives(everywhere)\\ 
+~& ~ &hydrobase::rho(everywhere)\\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_conservs\_to\_prims}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_hybrid\_conservs\_to\_prims 
+
+\hspace{5mm}{\it hybrid version of illinoisgrmhd\_conservs\_to\_prims } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & grid::coordinates \\ 
+~& ~ &admbase::metric\\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &grmhd\_conservatives\\ 
+~& ~ &grmhd\_b\_center\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives(everywhere) \\ 
+~& ~ &failure\_checker(everywhere)\\ 
+~& ~ &u0(everywhere)\\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &hydrobase::rho(everywhere)\\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_hydro\_outer\_boundaries}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_hybrid\_hydro\_outer\_boundaries 
+
+\hspace{5mm}{\it hybrid version of illinoisgrmhd\_outer\_boundaries } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &grmhd\_velocities\\ 
+~& ~ &grmhd\_b\_center\\ 
+~ & Sync:  & grmhd\_velocities \\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::eps\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & u0(everywhere) \\ 
+~& ~ &grmhd\_conservatives(everywhere)\\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &hydrobase::rho(everywhere)\\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_evaluate\_sources\_rhs}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_hybrid\_evaluate\_sources\_rhs 
+
+\hspace{5mm}{\it hybrid version of illinoisgrmhd\_evaluate\_sources\_rhs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &admbase::curv\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &grmhd\_velocities\\ 
+~& ~ &grmhd\_b\_center\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives\_rhs \\ 
+~& ~ &em\_rhs\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_evaluate\_fluxes\_rhs}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_hybrid\_evaluate\_fluxes\_rhs 
+
+\hspace{5mm}{\it hybrid version of illinoisgrmhd\_evaluate\_fluxes\_rhs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &grmhd\_velocities\\ 
+~& ~ &grmhd\_b\_center\\ 
+~& ~ &grmhd\_b\_stagger\\ 
+~& ~ &phitilde\\ 
+~& ~ &ax\\ 
+~& ~ &ay\\ 
+~& ~ &az\\ 
+~& ~ &grmhd\_conservatives\_rhs(interior)\\ 
+~& ~ &em\_rhs(interior)\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_flux\_temps \\ 
+~& ~ &grmhd\_conservatives\_rhs\\ 
+~& ~ &grmhd\_cmin\_cmax\_temps\\ 
+~& ~ &grmhd\_primitives\_reconstructed\_temps\\ 
+~& ~ &em\_rhs\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_perturb\_primitives}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_hybrid\_perturb\_primitives 
+
+\hspace{5mm}{\it hybrid version of illinoisgrmhd\_perturb\_primitives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & hydrobase::rho \\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::eps\\ 
+~& ~ &grmhd\_velocities\\ 
+~& ~ &phitilde\\ 
+~& ~ &ax\\ 
+~& ~ &ay\\ 
+~& ~ &az\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & hydrobase::rho(everywhere) \\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &phitilde(everywhere)\\ 
+~& ~ &ax(everywhere)\\ 
+~& ~ &ay(everywhere)\\ 
+~& ~ &az(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_perturb\_conservatives}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_hybrid\_perturb\_conservatives 
+
+\hspace{5mm}{\it hybrid version of illinoisgrmhd\_perturb\_conservatives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & grmhd\_conservatives \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives(everywhere) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_prims\_to\_conservs}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_tabulated\_entropy\_prims\_to\_conservs 
+
+\hspace{5mm}{\it entropy+tabulated version of illinoisgrmhd\_prims\_to\_conservs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::eps\\ 
+~& ~ &hydrobase::entropy\\ 
+~& ~ &hydrobase::y\_e\\ 
+~& ~ &hydrobase::temperature\\ 
+~& ~ &grmhd\_velocities\\ 
+~& ~ &grmhd\_b\_center\\ 
+~ & Sync:  & grmhd\_conservatives \\ 
+~& ~ &ye\_star\\ 
+~& ~ &ent\_star\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & u0(everywhere) \\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &grmhd\_conservatives(everywhere)\\ 
+~& ~ &ent\_star(everywhere)\\ 
+~& ~ &ye\_star(everywhere)\\ 
+~& ~ &hydrobase::rho(everywhere)\\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+~& ~ &hydrobase::entropy(everywhere)\\ 
+~& ~ &hydrobase::y\_e(everywhere)\\ 
+~& ~ &hydrobase::temperature(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_Prim2Con2Prim}   (conditional) 
+
+\hspace{5mm} convert\_hydrobase\_to\_illinoisgrmhd 
+
+\hspace{5mm}{\it convert hydrobase initial data (id) to illinoisgrmhd variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::lapse \\ 
+~& ~ &admbase::shift\\ 
+~& ~ &hydrobase::vel\\ 
+~& ~ &hydrobase::avec\\ 
+~& ~ &hydrobase::aphi\\ 
+~ & Sync:  & grmhd\_velocities \\ 
+~& ~ &ax\\ 
+~& ~ &ay\\ 
+~& ~ &az\\ 
+~& ~ &phitilde\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_velocities(everywhere) \\ 
+~& ~ &phitilde(everywhere)\\ 
+~& ~ &ax(everywhere)\\ 
+~& ~ &ay(everywhere)\\ 
+~& ~ &az(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_conservs\_to\_prims}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_tabulated\_entropy\_conservs\_to\_prims 
+
+\hspace{5mm}{\it entropy+tabulated version of illinoisgrmhd\_conservs\_to\_prims } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & grid::coordinates \\ 
+~& ~ &admbase::metric\\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &grmhd\_conservatives\\ 
+~& ~ &ent\_star\\ 
+~& ~ &ye\_star\\ 
+~& ~ &grmhd\_b\_center\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives(everywhere) \\ 
+~& ~ &ent\_star(everywhere)\\ 
+~& ~ &ye\_star(everywhere)\\ 
+~& ~ &u0(everywhere)\\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &failure\_checker(everywhere)\\ 
+~& ~ &hydrobase::rho(everywhere)\\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+~& ~ &hydrobase::entropy(everywhere)\\ 
+~& ~ &hydrobase::y\_e(everywhere)\\ 
+~& ~ &hydrobase::temperature(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_hydro\_outer\_boundaries}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_tabulated\_entropy\_hydro\_outer\_boundaries 
+
+\hspace{5mm}{\it entropy+tabulated version of illinoisgrmhd\_outer\_boundaries } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::entropy\\ 
+~& ~ &hydrobase::y\_e\\ 
+~& ~ &hydrobase::temperature\\ 
+~& ~ &grmhd\_velocities\\ 
+~& ~ &grmhd\_b\_center\\ 
+~ & Sync:  & grmhd\_velocities \\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::eps\\ 
+~& ~ &hydrobase::entropy\\ 
+~& ~ &hydrobase::y\_e\\ 
+~& ~ &hydrobase::temperature\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & u0(everywhere) \\ 
+~& ~ &grmhd\_conservatives(everywhere)\\ 
+~& ~ &ent\_star(everywhere)\\ 
+~& ~ &ye\_star(everywhere)\\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &hydrobase::rho(everywhere)\\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+~& ~ &hydrobase::entropy(everywhere)\\ 
+~& ~ &hydrobase::y\_e(everywhere)\\ 
+~& ~ &hydrobase::temperature(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_evaluate\_sources\_rhs}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_tabulated\_entropy\_evaluate\_sources\_rhs 
+
+\hspace{5mm}{\it entropy+tabulated version of illinoisgrmhd\_evaluate\_sources\_rhs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &admbase::curv\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::entropy\\ 
+~& ~ &hydrobase::y\_e\\ 
+~& ~ &hydrobase::temperature\\ 
+~& ~ &grmhd\_velocities\\ 
+~& ~ &grmhd\_b\_center\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives\_rhs \\ 
+~& ~ &ent\_star\_rhs\\ 
+~& ~ &ye\_star\_rhs\\ 
+~& ~ &em\_rhs\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_evaluate\_fluxes\_rhs}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_tabulated\_entropy\_evaluate\_fluxes\_rhs 
+
+\hspace{5mm}{\it entropy+tabulated version of illinoisgrmhd\_evaluate\_fluxes\_rhs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::entropy\\ 
+~& ~ &hydrobase::y\_e\\ 
+~& ~ &hydrobase::temperature\\ 
+~& ~ &grmhd\_velocities\\ 
+~& ~ &grmhd\_b\_center\\ 
+~& ~ &grmhd\_b\_stagger\\ 
+~& ~ &phitilde\\ 
+~& ~ &ax\\ 
+~& ~ &ay\\ 
+~& ~ &az\\ 
+~& ~ &grmhd\_conservatives\_rhs(interior)\\ 
+~& ~ &em\_rhs(interior)\\ 
+~& ~ &ent\_star\_rhs(interior)\\ 
+~& ~ &ye\_star\_rhs(interior)\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_flux\_temps \\ 
+~& ~ &ent\_star\_flux\\ 
+~& ~ &ye\_star\_flux\\ 
+~& ~ &grmhd\_conservatives\_rhs\\ 
+~& ~ &ent\_star\_rhs\\ 
+~& ~ &ye\_star\_rhs\\ 
+~& ~ &grmhd\_cmin\_cmax\_temps\\ 
+~& ~ &grmhd\_primitives\_reconstructed\_temps\\ 
+~& ~ &em\_rhs\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_perturb\_primitives}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_tabulated\_entropy\_perturb\_primitives 
+
+\hspace{5mm}{\it entropy+tabulated version of illinoisgrmhd\_perturb\_primitives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & hydrobase::rho \\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::eps\\ 
+~& ~ &hydrobase::entropy\\ 
+~& ~ &hydrobase::y\_e\\ 
+~& ~ &hydrobase::temperature\\ 
+~& ~ &grmhd\_velocities\\ 
+~& ~ &phitilde\\ 
+~& ~ &ax\\ 
+~& ~ &ay\\ 
+~& ~ &az\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & hydrobase::rho(everywhere) \\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+~& ~ &hydrobase::entropy\\ 
+~& ~ &hydrobase::y\_e(everywhere)\\ 
+~& ~ &hydrobase::temperature(everywhere)\\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &phitilde(everywhere)\\ 
+~& ~ &ax(everywhere)\\ 
+~& ~ &ay(everywhere)\\ 
+~& ~ &az(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_perturb\_conservatives}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_tabulated\_entropy\_perturb\_conservatives 
+
+\hspace{5mm}{\it entropy+tabulated version of illinoisgrmhd\_perturb\_conservatives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & grmhd\_conservatives \\ 
+~& ~ &ent\_star\\ 
+~& ~ &ye\_star\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives(everywhere) \\ 
+~& ~ &ent\_star(everywhere)\\ 
+~& ~ &ye\_star(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_prims\_to\_conservs}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_tabulated\_prims\_to\_conservs 
+
+\hspace{5mm}{\it tabulated version of illinoisgrmhd\_prims\_to\_conservs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::eps\\ 
+~& ~ &hydrobase::y\_e\\ 
+~& ~ &hydrobase::temperature\\ 
+~& ~ &grmhd\_velocities\\ 
+~& ~ &grmhd\_b\_center\\ 
+~ & Sync:  & grmhd\_conservatives \\ 
+~& ~ &ye\_star\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & u0(everywhere) \\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &grmhd\_conservatives(everywhere)\\ 
+~& ~ &ye\_star(everywhere)\\ 
+~& ~ &hydrobase::rho(everywhere)\\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+~& ~ &hydrobase::y\_e(everywhere)\\ 
+~& ~ &hydrobase::temperature(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_conservs\_to\_prims}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_tabulated\_conservs\_to\_prims 
+
+\hspace{5mm}{\it tabulated version of illinoisgrmhd\_conservs\_to\_prims } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & grid::coordinates \\ 
+~& ~ &admbase::metric\\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &grmhd\_conservatives\\ 
+~& ~ &ye\_star\\ 
+~& ~ &grmhd\_b\_center\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives(everywhere) \\ 
+~& ~ &ye\_star(everywhere)\\ 
+~& ~ &u0(everywhere)\\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &failure\_checker(everywhere)\\ 
+~& ~ &hydrobase::rho(everywhere)\\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+~& ~ &hydrobase::y\_e(everywhere)\\ 
+~& ~ &hydrobase::temperature(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_hydro\_outer\_boundaries}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_tabulated\_hydro\_outer\_boundaries 
+
+\hspace{5mm}{\it tabulated version of illinoisgrmhd\_outer\_boundaries } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::y\_e\\ 
+~& ~ &hydrobase::temperature\\ 
+~& ~ &grmhd\_velocities\\ 
+~& ~ &grmhd\_b\_center\\ 
+~ & Sync:  & grmhd\_velocities \\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::eps\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::y\_e\\ 
+~& ~ &hydrobase::temperature\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & u0(everywhere) \\ 
+~& ~ &grmhd\_conservatives(everywhere)\\ 
+~& ~ &ye\_star(everywhere)\\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &hydrobase::rho(everywhere)\\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+~& ~ &hydrobase::y\_e(everywhere)\\ 
+~& ~ &hydrobase::temperature(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_evaluate\_sources\_rhs}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_tabulated\_evaluate\_sources\_rhs 
+
+\hspace{5mm}{\it tabulated version of illinoisgrmhd\_evaluate\_sources\_rhs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &admbase::curv\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::y\_e\\ 
+~& ~ &hydrobase::temperature\\ 
+~& ~ &grmhd\_velocities\\ 
+~& ~ &grmhd\_b\_center\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives\_rhs \\ 
+~& ~ &ye\_star\_rhs\\ 
+~& ~ &em\_rhs\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_Prim2Con2Prim}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_perturb\_primitives 
+
+\hspace{5mm}{\it perturb initial primitive data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & convert\_hydrobase\_to\_illinoisgrmhd \\ 
+~ & Before:  & illinoisgrmhd\_prims\_to\_conservs \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_evaluate\_fluxes\_rhs}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_tabulated\_evaluate\_fluxes\_rhs 
+
+\hspace{5mm}{\it tabulated version of illinoisgrmhd\_evaluate\_fluxes\_rhs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::y\_e\\ 
+~& ~ &hydrobase::temperature\\ 
+~& ~ &grmhd\_velocities\\ 
+~& ~ &grmhd\_b\_center\\ 
+~& ~ &grmhd\_b\_stagger\\ 
+~& ~ &phitilde\\ 
+~& ~ &ax\\ 
+~& ~ &ay\\ 
+~& ~ &az\\ 
+~& ~ &grmhd\_conservatives\_rhs(interior)\\ 
+~& ~ &ye\_star\_rhs(interior)\\ 
+~& ~ &em\_rhs(interior)\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_flux\_temps \\ 
+~& ~ &grmhd\_conservatives\_rhs\\ 
+~& ~ &ye\_star\_flux\\ 
+~& ~ &ye\_star\_rhs\\ 
+~& ~ &grmhd\_primitives\_reconstructed\_temps\\ 
+~& ~ &grmhd\_cmin\_cmax\_temps\\ 
+~& ~ &em\_rhs\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_perturb\_primitives}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_tabulated\_perturb\_primitives 
+
+\hspace{5mm}{\it tabulated version of illinoisgrmhd\_perturb\_primitives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & hydrobase::rho \\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::eps\\ 
+~& ~ &hydrobase::y\_e\\ 
+~& ~ &hydrobase::temperature\\ 
+~& ~ &grmhd\_velocities\\ 
+~& ~ &phitilde\\ 
+~& ~ &ax\\ 
+~& ~ &ay\\ 
+~& ~ &az\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_velocities(everywhere) \\ 
+~& ~ &hydrobase::rho(everywhere)\\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+~& ~ &hydrobase::y\_e(everywhere)\\ 
+~& ~ &hydrobase::temperature(everywhere)\\ 
+~& ~ &phitilde(everywhere)\\ 
+~& ~ &ax(everywhere)\\ 
+~& ~ &ay(everywhere)\\ 
+~& ~ &az(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_perturb\_conservatives}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_tabulated\_perturb\_conservatives 
+
+\hspace{5mm}{\it tabulated version of illinoisgrmhd\_perturb\_conservatives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & grmhd\_conservatives \\ 
+~& ~ &ye\_star\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives(everywhere) \\ 
+~& ~ &ye\_star(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_WRAGH}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_backward\_compatible\_initialize 
+
+\hspace{5mm}{\it set up the grhayl structs and read the table for tabulated eos. } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTINITIAL}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_backward\_compatible\_data 
+
+\hspace{5mm}{\it copy data to deprecated variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & hydrobase::rho \\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &phitilde\\ 
+~& ~ &grmhd\_b\_center\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_primitives\_allbutbi \\ 
+~& ~ &psi6phi\\ 
+~& ~ &grmhd\_primitives\_bi\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_PostRHS}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_backward\_compatible\_data 
+
+\hspace{5mm}{\it copy data to deprecated variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & hydrobase::rho \\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &phitilde\\ 
+~& ~ &grmhd\_b\_center\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_primitives\_allbutbi \\ 
+~& ~ &psi6phi\\ 
+~& ~ &grmhd\_primitives\_bi\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_Prim2Con2Prim}   (conditional) 
+
+\hspace{5mm} convert\_illinoisgrmhd\_to\_hydrobase 
+
+\hspace{5mm}{\it convert illinoisgrmhd-native variables to hydrobase } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & illinoisgrmhd\_conservs\_to\_prims \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &grmhd\_velocities\\ 
+~& ~ &grmhd\_b\_center\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & hydrobase::vel(everywhere) \\ 
+~& ~ &hydrobase::w\_lorentz(everywhere)\\ 
+~& ~ &hydrobase::bvec(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_ANALYSIS}   (conditional) 
+
+\hspace{5mm} convert\_illinoisgrmhd\_to\_hydrobase 
+
+\hspace{5mm}{\it convert illinoisgrmhd-native variables to hydrobase } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ml\_bssn\_evolcalcgroup \\ 
+~ & Before:  & compute\_bi\_b2\_poyn\_fluxet \\ 
+~& ~ &convert\_to\_mhd\_3velocity\\ 
+~& ~ &particle\_traceret\\ 
+~& ~ &volumeintegralgroup\\ 
+~ & Language:  & c \\ 
+~ & Options:  & global-early \\ 
+~& ~ &loop-local\\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &grmhd\_velocities\\ 
+~& ~ &grmhd\_b\_center\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & hydrobase::vel(everywhere) \\ 
+~& ~ &hydrobase::w\_lorentz(everywhere)\\ 
+~& ~ &hydrobase::bvec(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_prims\_to\_conservs}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_hybrid\_prims\_to\_conservs 
+
+\hspace{5mm}{\it hybrid version of illinoisgrmhd\_prims\_to\_conservs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::eps\\ 
+~& ~ &grmhd\_b\_center\\ 
+~ & Sync:  & grmhd\_conservatives \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & u0(everywhere) \\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &grmhd\_conservatives(everywhere)\\ 
+~& ~ &hydrobase::rho(everywhere)\\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_conservs\_to\_prims}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_hybrid\_conservs\_to\_prims 
+
+\hspace{5mm}{\it hybrid version of illinoisgrmhd\_conservs\_to\_prims } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & grid::coordinates \\ 
+~& ~ &admbase::metric\\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &grmhd\_conservatives\\ 
+~& ~ &grmhd\_b\_center\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives(everywhere) \\ 
+~& ~ &failure\_checker(everywhere)\\ 
+~& ~ &u0(everywhere)\\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &hydrobase::rho(everywhere)\\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_Prim2Con2Prim}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_compute\_b\_and\_bstagger\_from\_a 
+
+\hspace{5mm}{\it compute b and b\_stagger from a } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & convert\_hydrobase\_to\_illinoisgrmhd \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & grid::coordinates \\ 
+~& ~ &admbase::metric\\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &phitilde\\ 
+~& ~ &ax\\ 
+~& ~ &ay\\ 
+~& ~ &az\\ 
+~ & Sync:  & grmhd\_b\_center \\ 
+~& ~ &grmhd\_b\_stagger\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & phitilde(everywhere) \\ 
+~& ~ &ax(everywhere)\\ 
+~& ~ &ay(everywhere)\\ 
+~& ~ &az(everywhere)\\ 
+~& ~ &grmhd\_b\_center(everywhere)\\ 
+~& ~ &grmhd\_b\_stagger(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_hydro\_outer\_boundaries}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_hybrid\_hydro\_outer\_boundaries 
+
+\hspace{5mm}{\it hybrid version of illinoisgrmhd\_outer\_boundaries } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &grmhd\_velocities\\ 
+~& ~ &grmhd\_b\_center\\ 
+~ & Sync:  & grmhd\_velocities \\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::eps\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & u0(everywhere) \\ 
+~& ~ &grmhd\_conservatives(everywhere)\\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &hydrobase::rho(everywhere)\\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_evaluate\_sources\_rhs}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_hybrid\_evaluate\_sources\_rhs 
+
+\hspace{5mm}{\it hybrid version of illinoisgrmhd\_evaluate\_sources\_rhs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &admbase::curv\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &grmhd\_velocities\\ 
+~& ~ &grmhd\_b\_center\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives\_rhs \\ 
+~& ~ &em\_rhs\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_evaluate\_fluxes\_rhs}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_hybrid\_evaluate\_fluxes\_rhs 
+
+\hspace{5mm}{\it hybrid version of illinoisgrmhd\_evaluate\_fluxes\_rhs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &hydrobase::rho\\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &grmhd\_velocities\\ 
+~& ~ &grmhd\_b\_center\\ 
+~& ~ &grmhd\_b\_stagger\\ 
+~& ~ &phitilde\\ 
+~& ~ &ax\\ 
+~& ~ &ay\\ 
+~& ~ &az\\ 
+~& ~ &grmhd\_conservatives\_rhs(interior)\\ 
+~& ~ &em\_rhs(interior)\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_flux\_temps \\ 
+~& ~ &grmhd\_conservatives\_rhs\\ 
+~& ~ &grmhd\_cmin\_cmax\_temps\\ 
+~& ~ &grmhd\_primitives\_reconstructed\_temps\\ 
+~& ~ &em\_rhs\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_perturb\_primitives}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_hybrid\_perturb\_primitives 
+
+\hspace{5mm}{\it hybrid version of illinoisgrmhd\_perturb\_primitives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & hydrobase::rho \\ 
+~& ~ &hydrobase::press\\ 
+~& ~ &hydrobase::eps\\ 
+~& ~ &grmhd\_velocities\\ 
+~& ~ &phitilde\\ 
+~& ~ &ax\\ 
+~& ~ &ay\\ 
+~& ~ &az\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & hydrobase::rho(everywhere) \\ 
+~& ~ &hydrobase::press(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &phitilde(everywhere)\\ 
+~& ~ &ax(everywhere)\\ 
+~& ~ &ay(everywhere)\\ 
+~& ~ &az(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_perturb\_conservatives}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_hybrid\_perturb\_conservatives 
+
+\hspace{5mm}{\it hybrid version of illinoisgrmhd\_perturb\_conservatives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & grmhd\_conservatives \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives(everywhere) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_Prim2Con2Prim}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_prims\_to\_conservs 
+
+\hspace{5mm}{\it compute conservative variables from primitives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & illinoisgrmhd\_compute\_b\_and\_bstagger\_from\_a \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_Prim2Con2Prim}   (conditional) 
+
+\hspace{5mm} illinoisgrmhd\_conservs\_to\_prims 
+
+\hspace{5mm}{\it compute primitive variables from conservatives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & illinoisgrmhd\_prims\_to\_conservs \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf IllinoisGRMHD\_Prim2Con2Prim}   (conditional) 
+
+\hspace{5mm} convert\_illinoisgrmhd\_to\_hydrobase 
+
+\hspace{5mm}{\it convert illinoisgrmhd-native variables to hydrobase } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & illinoisgrmhd\_conservs\_to\_prims \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & admbase::metric \\ 
+~& ~ &admbase::lapse\\ 
+~& ~ &admbase::shift\\ 
+~& ~ &grmhd\_velocities\\ 
+~& ~ &grmhd\_b\_center\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & hydrobase::vel(everywhere) \\ 
+~& ~ &hydrobase::w\_lorentz(everywhere)\\ 
+~& ~ &hydrobase::bvec(everywhere)\\ 
+\end{tabular*} 
+
+
+\subsection*{Aliased Functions}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Alias Name:} ~~~~~~~ & {\bf Function Name:} \\ 
+IllinoisGRMHD\_sync & IllinoisGRMHD\_sync\_conservatives \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

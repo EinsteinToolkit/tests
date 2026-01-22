@@ -1,0 +1,278 @@
+% *======================================================================*
+%  Cactus Thorn template for ThornGuide documentation
+%  Author: Ian Kelley
+%  Date: Sun Jun 02, 2002
+%  $Header$
+%
+%  Thorn documentation in the latex file doc/documentation.tex
+%  will be included in ThornGuides built with the Cactus make system.
+%  The scripts employed by the make system automatically include
+%  pages about variables, parameters and scheduling parsed from the
+%  relevant thorn CCL files.
+%
+%  This template contains guidelines which help to assure that your
+%  documentation will be correctly added to ThornGuides. More
+%  information is available in the Cactus UsersGuide.
+%
+%  Guidelines:
+%   - Do not change anything before the line
+%       % START CACTUS THORNGUIDE",
+%     except for filling in the title, author, date, etc. fields.
+%        - Each of these fields should only be on ONE line.
+%        - Author names should be separated with a \\ or a comma.
+%   - You can define your own macros, but they must appear after
+%     the START CACTUS THORNGUIDE line, and must not redefine standard
+%     latex commands.
+%   - To avoid name clashes with other thorns, 'labels', 'citations',
+%     'references', and 'image' names should conform to the following
+%     convention:
+%       ARRANGEMENT_THORN_LABEL
+%     For example, an image wave.eps in the arrangement CactusWave and
+%     thorn WaveToyC should be renamed to CactusWave_WaveToyC_wave.eps
+%   - Graphics should only be included using the graphicx package.
+%     More specifically, with the "\includegraphics" command.  Do
+%     not specify any graphic file extensions in your .tex file. This
+%     will allow us to create a PDF version of the ThornGuide
+%     via pdflatex.
+%   - References should be included with the latex "\bibitem" command.
+%   - Use \begin{abstract}...\end{abstract} instead of \abstract{...}
+%   - Do not use \appendix, instead include any appendices you need as
+%     standard sections.
+%   - For the benefit of our Perl scripts, and for future extensions,
+%     please use simple latex.
+%
+% *======================================================================*
+%
+% Example of including a graphic image:
+%    \begin{figure}[ht]
+% 	\begin{center}
+%    	   \includegraphics[width=6cm]{/home/runner/work/tests/tests/arrangements/CactusNumerical/LocalReduce/doc/MyArrangement_MyThorn_MyFigure}
+% 	\end{center}
+% 	\caption{Illustration of this and that}
+% 	\label{MyArrangement_MyThorn_MyLabel}
+%    \end{figure}
+%
+% Example of using a label:
+%   \label{MyArrangement_MyThorn_MyLabel}
+%
+% Example of a citation:
+%    \cite{MyArrangement_MyThorn_Author99}
+%
+% Example of including a reference
+%   \bibitem{MyArrangement_MyThorn_Author99}
+%   {J. Author, {\em The Title of the Book, Journal, or periodical}, 1 (1999),
+%   1--16. {\tt http://www.nowhere.com/}}
+%
+% *======================================================================*
+
+% If you are using CVS use this line to give version information
+% $Header$
+
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+% The author of the documentation
+\author{Yaakoub Y El Khamra \textless yye00@cct.lsu.edu\textgreater}
+
+% The title of the document (not necessarily the name of the Thorn)
+\title{LocalReduce}
+
+% the date your document was last changed, if your document is in CVS,
+% please use:
+\date{$ $Date$ $}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+% Add all definitions used in this documentation here
+%   \def\mydef etc
+
+% Add an abstract for this thorn's documentation
+\begin{abstract}
+  This thorn implement processor-local reduction operations.
+\end{abstract}
+
+% The following sections are suggestive only.
+% Remove them or add your own.
+
+\section{Introduction}
+A reduction operation can be defined as an operation on arrays
+(tuples) of variables resulting in a single number.  Typical reduction
+operations are sum, minimum/maximum value, and boolean operations.  A
+typical application is, for example, finding the minimum value in an
+$n$-dimensional array.
+
+This thorn provides processor-local reduction operations only.  Global
+reduction operations can make use of these local reduction operations
+by providing the necessary inter-processor communication.
+
+\section{Numerical Implementation}
+The new local reduce thorn has several new features including index
+strides and offsets for array indexing and full complex number
+support.  Pending request, weight support can be enabled (there are
+some issues that a mask is essentially a weight with 1 or 0 value).
+
+Modifying or extending this thorn is quite a simple matter.  The heart
+of all the reduction operations is the large iterator macro in
+local\_reductions.h.  This iterator supports n-dimensional arrays with
+offsets and strides.  The iterator is used in all local reduction
+operators in this thorn.  To add a reduction operator, or change an
+existing one, all that needs to be done is to change the actual
+reduction operation definition which is called from within the
+iterator to perform the reduction.
+
+To use a custom local reduction operator from the new global reduction
+implementation, some values must be returned to the global reduction
+implementation, such as the type of MPI reduction operation that needs
+to be performed (MPI\_SUM, MPI\_MIN, MPI\_MAX) and if the final result
+should include a division by the total number of points used in the
+reduction.  These are set in the parameter table with keys:
+mpi\_operation and perform\_division.
+
+\section{Using This Thorn}
+Please refer to the TestLocalReduce thorn in the CactusTest
+arrangement.
+
+\section{Reduction Operations}
+
+\subsection{Basic Reduction Operations}
+The following reduction operations are imlemented.  $a_i$ are the
+values that are reduced, $i \in [1 \ldots n]$.
+\begin{description}
+\item[count:] The number of values
+$$ \mathrm{count} := n $$
+\item[sum:] The sum of the values
+$$ \mathrm{sum} := \sum_i a_i $$
+\item[product:] The product of the values
+$$ \mathrm{product} := \prod_i a_i $$
+\item[sum2:] The sum of the squares of the values
+$$ \mathrm{sum2} := \sum_i a_i^2 $$
+\item[sumabs:] The sum of the absolute values
+$$ \mathrm{sum2} := \sum_i |a_i| $$
+\item[sumabs2:] The sum of the squares of the absolute values
+$$ \mathrm{sumabs2} := \sum_i |a_i|^2 $$
+\item[min:] The minimum of the values
+$$ \mathrm{min} := \min_i a_i $$
+\item[max:] The maximum of the values
+$$ \mathrm{max} := \max_i a_i $$
+\item[maxabs:] The maximum of the absolute values
+$$ \mathrm{maxabs} := \max_i |a_i| $$
+\end{description}
+Note that the above definitions are for both real and complex values.
+For $n=0$, the result of the reduction operation is $0$, except for
+$\mathrm{product}$, which is $1$, $\mathrm{min}$, which is $+\infty$,
+and $\mathrm{max}$, which is $-\infty$.  We define the minimum of
+complex values by
+$$
+\min \left( a+ib, x+iy \right) := \min \left( a,x \right) + i \min
+\left (b,y \right)
+$$
+and define the maximum equivalently.
+
+\subsection{High-level Reduction Operations}
+The following high-level reduction operations are also implemented.
+They can be defined in terms of the basic reduction operations above.
+\begin{description}
+\item[average:] The algebraic mean of the values
+$$ \mathrm{average} := \mathrm{sum} / \mathrm{count} $$
+\item[norm1:] The $L_1$ norm, i.e., the sum of the absolute values
+$$ \mathrm{norm1} := \mathrm{sumabs} / \mathrm{count} $$
+\item[norm2:] The $L_2$ norm, i.e., the Pythagorean norm
+$$ \mathrm{norm2} := \sqrt{\mathrm{sumabs2} / \mathrm{count}} $$
+\item[norm\_inf:] The $L_\infty$ norm
+$$ \mathrm{norm\_inf} := \mathrm{maxabs} $$
+\end{description}
+
+\subsection{Weighted Reduction Operations}
+It is often convenient to assign a weight $w_i$ to each value $a_i$.
+In this case, the basic reduction operations are redefined as follows.
+\begin{description}
+\item[count:] The number of values
+$$ \mathrm{count} := \sum_i w_i $$
+\item[sum:] The sum of the values
+$$ \mathrm{sum} := \sum_i w_i a_i $$
+\item[product:] The product of the values
+$$ \mathrm{product} := \exp \sum_i w_i \log a_i $$
+\item[sum2:] The sum of the squares of the values
+$$ \mathrm{sum2} := \sum_i w_i a_i^2 $$
+\item[sumabs:] The sum of the absolute values
+$$ \mathrm{sum2} := \sum_i w_i |a_i| $$
+\item[sumabs2:] The sum of the squares of the absolute values
+$$ \mathrm{sumabs2} := \sum_i w_i |a_i|^2 $$
+\item[min:] The minimum of the values
+$$ \mathrm{min} := \min_i w_i \ne 0: a_i $$
+\item[max:] The maximum of the values
+$$ \mathrm{max} := \max_i w_i \ne 0: a_i $$
+\item[maxabs:] The maximum of the absolute values
+$$ \mathrm{maxabs} := \max_i w_i \ne 0: |a_i| $$
+\end{description}
+The notation $\min_i w_i \ne 0: a_i$ means: ``The minimum of $a_i$
+where $i$ runs over all values where $w_i \ne 0$''.  The definition of
+the high-level reduction operations does not change when weights are
+present.
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+localreduce
+\vspace{2mm}
+
+\vspace{5mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn CactusNumerical/LocalReduce.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}NONE
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_STARTUP} 
+
+\hspace{5mm} localreduce\_startup 
+
+\hspace{5mm}{\it startup routine } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

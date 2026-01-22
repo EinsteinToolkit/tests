@@ -1,0 +1,516 @@
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a 
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+\title{GRHayLib}
+\author{Samuel Cupp \\ Leonardo Rosa Werneck \\ Terrence Pierre Jacques \\ Zachariah Etienne}
+\date{$ $Date$ $}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+% Add all definitions used in this documentation here
+\newcommand{\grhayl}{\texttt{GRHayL}}
+\newcommand{\glib}{\texttt{GRHayLib}}
+\newcommand{\igm}{\texttt{IllinoisGRMHD}}
+\newcommand{\hydrobase}{\texttt{HydroBase}}
+
+\begin{abstract}
+Provides access to the General Relativistic Hydrodynamics
+Library (\grhayl). This library provides a suite of functions
+for GRMHD evolution codes based on the \igm{} code.
+\end{abstract}
+
+\section{Introduction}
+
+This thorn provides access to the General Relativistic
+Hydrodynamics Library (\grhayl) through the GRHayLib.h
+header file. The library contains all the core components
+necessary to produce an \igm-like code in a modular,
+infrastructure-agnostic form. These functions are tested
+via unit tests using GitHub Actions in the
+\href{https://github.com/GRHayL/GRHayL}{GRHayL repository}.
+
+For comprehensive documentation of \grhayl's features, please
+visit the \href{https://github.com/GRHayL/GRHayL/wiki}{GitHub wiki}.
+As a brief overview, the library is split into several `gems'
+which are entirely self-contained. These are Atmosphere, Con2Prim,
+EOS, Flux\_Source, Induction, Neutrinos, and Reconstruction.
+The \glib{} implementation provides access to all these gems in its
+header file. Additionally, the thorn automatically initializes an
+instance of the \texttt{ghl\_parameters} and \texttt{ghl\_eos\_parameters}
+structs. The instances are named \texttt{ghl\_params} and \texttt{ghl\_eos},
+and the pointers to these structs are provided by the GRHayLib.h
+header.
+
+\section{Equation of State}
+
+One of the more complicated part of GRMHD simulations is properly
+setting up the equation of state (EOS), especially for tabulated EOS.
+\grhayl{} provides both hybrid and tabulated EOS, and this information
+is passed to the library functions through \texttt{ghl\_eos}. \glib's
+parameters control the initialization of this struct, so the user does
+not need to set any of the struct's values unless they plan to manually
+adjust these parameters during the simulation. The \texttt{EOS\_type}
+parameter chooses the type of EOS, and the thorn then sets up the struct
+using the other parameters associated with this choice.
+
+For several variables, there are minimum, atmosphere, and maximum parameters.
+We will refer to these as collectively limit parameters. For the limit
+parameters a given EOS uses, the atmosphere parameter is required. The other
+parameters either have defaults or are ignored if unset.
+
+\subsection{Hybrid EOS}
+
+The hybrid EOS requires several parameters to function properly.
+First, it needs the number of elements in the polytropic approximation.
+This is currently limited by \grhayl{} to 10 pieces. The transition values
+of rho\_b are set by \texttt{rho\_ppoly\_in}, and the associated Gamma
+values are stored in \texttt{Gamma\_ppoly\_in}. Note that for neos=1,
+only a single Gamma is necessary. Additionally, the parameter \texttt{k\_ppoly0}
+sets the polytropic constant for the first piece of the piecewise polytrope.
+The rest of the constanst are computed automatically.
+
+In addition to the polytropic setup above, the value of the thermal Gamma
+\texttt{Gamma\_th} must be set.
+
+The hybrid EOS only uses the rho\_b limit parameters. If unset, the
+minimum is set to 0, and the maximum is set to 1e300, effectively turning
+off both of these features.
+
+\subsection{Tabulated EOS}
+
+To properly configure for tabulated EOS, the most important parameter is
+the path to the EOS table, given by the \texttt{EOS\_tablepath} parameter.
+\glib{} automatically reads this table and makes it accessible to \grhayl{}
+functions through \texttt{ghl\_eos}.
+
+The tabulated EOS uses all the limit parameters (rho\_b, Y\_e, and T).
+If unset, the mimima and maxima are set to table bounds.
+
+\section{Conservative-to-Primitive Routines}
+
+\grhayl{} provides a selection of con2prim routines along with automated
+backup methods. \texttt{ghl\_params} passes the information from the
+thorn parameters texttt{con2prim\_routine} and texttt{con2prim\_backup\_routines}
+to the library's multi-method functions. Of course, any of the routines
+can be called manually with logic dictated by the user. However, we
+provide functions for automatically calling the selected routine,
+as well as triggering the backup routines in the case of failure.
+The ghl\_con2prim\_hybrid\_multi\_method() and
+ghl\_con2prim\_tabulated\_multi\_method() functions implement this
+feature, and the ghl\_con2prim\_hybrid\_select\_method() and
+ghl\_con2prim\_tabulated\_select\_method() functions directly select
+a single method based on an input value. \grhayl{} supports up to three
+backups, but more complex behavior can be designed by the user using
+the core con2prim functions. Since the individual con2prim routines
+and the multi-method functions have identical argument lists, swapping
+routines is straightforward and requires little work from the user.
+
+These routines are iterative solvers, so they require an initial guess.
+\igm{} used always used default guess, which is also provided in \grhayl.
+The \texttt{calc\_primitive\_guess} parameter automatically sets the
+guess to this default in the multi-method function, so set this to
+"no" to use a user-defined guess. Manual use of the con2prim
+routines require the user to either provide a guess or use the
+ghl\_guess\_primitives() function.
+
+\section{Changing parameters during a run}
+
+Cactus allows for changing parameters during a run using CCTK\_ParameterSet().
+However, this is only allowed for those with "STEERABLE=ALWAYS" in the parfile.
+Those without this tag aren't able to be steered during a run. Because \glib{}
+stores this information inside \grhayl{} structs, the actual parameters are not
+steerable during a simulation. However, the parameters can be effectively steered
+by changing the values inside the structs. For the EOS struct, this can be
+dangerous since some elements are computed from the other parameters. To remedy
+this, the derived values need to also be recomputed. For the hybrid and simple EOS,
+we recommend running the appropriate ghl\_initialize\_EOSTYPE\_eos() function
+to ensure that the elements are properly reinitialized. For tabulated EOS,
+initializing the struct involves allocating memory for the table. As such,
+just re-running the initialize function will not behave as desired. The simplest
+solution is to copy the needed code from the \grhayl{} function into a scheduled
+function and manage the elements values manually.
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{con2prim\_backup\_routines}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{calc\_primitive\_guess} & {\bf Scope:} restricted & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Do we want to calculate estimates for the primitives in Con2Prim?}} \\
+\hline{\bf Range} & &  {\bf Default:} yes \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering no} & \multicolumn{2}{p{\paraWidth}|}{Uses the data currently in the primitive variables as the guess.} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering yes} & \multicolumn{2}{p{\paraWidth}|}{Calculates primitive guesses from the current conservatives.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{con2prim\_backup\_routines} & {\bf Scope:} restricted & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em We allow up to 3 backup routines}} \\
+\hline{\bf Range} & &  {\bf Default:} None \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering None} & \multicolumn{2}{p{\paraWidth}|}{Don't use backup routines} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Noble2D} & \multicolumn{2}{p{\paraWidth}|}{"2D  routine in https://arxiv.org/pd 
+f/astro-ph/0512420.p 
+df"} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Noble1D} & \multicolumn{2}{p{\paraWidth}|}{"1Dw routine in https://arxiv.org/pd 
+f/astro-ph/0512420.p 
+df"} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Noble1D\_entropy} & \multicolumn{2}{p{\paraWidth}|}{"1Dw routine in https://arxiv.org/pd 
+f/astro-ph/0512420.p 
+df, but uses the entropy"} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Font1D} & \multicolumn{2}{p{\paraWidth}|}{TODO} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Palenzuela1D} & \multicolumn{2}{p{\paraWidth}|}{"https://arxiv.org/p 
+df/1505.01607.pdf (see also https://arxiv.org/pd 
+f/1712.07538.pdf)"} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Newman1D} & \multicolumn{2}{p{\paraWidth}|}{"https://escholarshi 
+p.org/content/qt0s53 
+f84b/qt0s53f84b.pdf (see also https://arxiv.org/pd 
+f/1712.07538.pdf)"} \\\multicolumn{1}{|p{\maxVarWidth}|}{see [1] below} & \multicolumn{2}{p{\paraWidth}|}{"https://arxiv.org/p 
+df/1505.01607.pdf (see also https://arxiv.org/pd 
+f/1712.07538.pdf)"} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Newman1D\_entropy} & \multicolumn{2}{p{\paraWidth}|}{"https://escholarshi 
+p.org/content/qt0s53 
+f84b/qt0s53f84b.pdf (see also https://arxiv.org/pd 
+f/1712.07538.pdf)"} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent {\bf [1]} \noindent \begin{verbatim}Palenzuela1D\_entropy\end{verbatim}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{con2prim\_routine} & {\bf Scope:} restricted & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em What con2prim routine is used}} \\
+\hline{\bf Range} & &  {\bf Default:} Noble2D \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Noble2D} & \multicolumn{2}{p{\paraWidth}|}{"2D  routine in https://arxiv.org/pd 
+f/astro-ph/0512420.p 
+df"} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Noble1D} & \multicolumn{2}{p{\paraWidth}|}{"1Dw routine in https://arxiv.org/pd 
+f/astro-ph/0512420.p 
+df"} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Noble1D\_entropy} & \multicolumn{2}{p{\paraWidth}|}{"1Dw routine in https://arxiv.org/pd 
+f/astro-ph/0512420.p 
+df, but uses the entropy"} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Font1D} & \multicolumn{2}{p{\paraWidth}|}{TODO} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Palenzuela1D} & \multicolumn{2}{p{\paraWidth}|}{"https://arxiv.org/p 
+df/1505.01607.pdf (see also https://arxiv.org/pd 
+f/1712.07538.pdf)"} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Newman1D} & \multicolumn{2}{p{\paraWidth}|}{"https://escholarshi 
+p.org/content/qt0s53 
+f84b/qt0s53f84b.pdf (see also https://arxiv.org/pd 
+f/1712.07538.pdf)"} \\\multicolumn{1}{|p{\maxVarWidth}|}{see [1] below} & \multicolumn{2}{p{\paraWidth}|}{"https://arxiv.org/p 
+df/1505.01607.pdf (see also https://arxiv.org/pd 
+f/1712.07538.pdf)"} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Newman1D\_entropy} & \multicolumn{2}{p{\paraWidth}|}{"https://escholarshi 
+p.org/content/qt0s53 
+f84b/qt0s53f84b.pdf (see also https://arxiv.org/pd 
+f/1712.07538.pdf)"} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent {\bf [1]} \noindent \begin{verbatim}Palenzuela1D\_entropy\end{verbatim}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{eos\_tablepath} & {\bf Scope:} restricted & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Path to the EOS table}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering } & \multicolumn{2}{p{\paraWidth}|}{Forbidden, will error out} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .+?} & \multicolumn{2}{p{\paraWidth}|}{Any string} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{eos\_type} & {\bf Scope:} restricted & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em The type of EOS for the simulation}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering } & \multicolumn{2}{p{\paraWidth}|}{Forbidden default; an EOS type must be specified} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Simple} & \multicolumn{2}{p{\paraWidth}|}{Simple EOS (often referred to as 'ideal fluid' in literature)} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Hybrid} & \multicolumn{2}{p{\paraWidth}|}{Hybrid EOS} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Tabulated} & \multicolumn{2}{p{\paraWidth}|}{Tabulated EOS} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{evolve\_entropy} & {\bf Scope:} restricted & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Do we want to evolve the entropy?}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{evolve\_temperature} & {\bf Scope:} restricted & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Do we want to evolve the temperature?}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{gamma} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Gamma parameter}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Physical values} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1} & \multicolumn{2}{p{\paraWidth}|}{forbidden value to make sure it is explicitly set in the parfile} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{gamma\_ppoly\_in} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Set polytropic Gamma parameters. Gamma\_ppoly\_in[0] goes from rho=0 to rho=rho\_ppoly\_in[0].}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{value of Gamma for the polytropic rho in the bounds rho\_ppoly[i-1] to rho\_ppoly[i]} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1} & \multicolumn{2}{p{\paraWidth}|}{forbidden value to make sure it is explicitly set in the parfile} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{gamma\_th} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em thermal Gamma parameter}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Physical values} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1} & \multicolumn{2}{p{\paraWidth}|}{forbidden value to make sure it is explicitly set in the parfile} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{k\_ppoly0} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Also known as k\_ppoly[0], this is the polytropic constant for the lowest density piece of the piecewise polytrope. All other k\_ppoly elements are set using rho\_ppoly\_in and enforcing continuity in the equation of state.}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Physical values} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1} & \multicolumn{2}{p{\paraWidth}|}{forbidden value to make sure it is explicitly set in the parfile} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{lorenz\_damping\_factor} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Damping factor for the generalized Lorenz gauge. Has units of 1/length = 1/M. Typically set this parameter to 1.5/(maximum Delta t on AMR grids).}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{max\_lorentz\_factor} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Maximum Lorentz factor.}} \\
+\hline{\bf Range} & &  {\bf Default:} 10.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{Positive {\textgreater} 1, though you'll likely have troubles far above 10.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{neos} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em number of parameters in EOS table}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:10} & \multicolumn{2}{p{\paraWidth}|}{Any integer between 1 and 10} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{p\_atm} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Atmospheric pressure (required)}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Should be non-negative} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1} & \multicolumn{2}{p{\paraWidth}|}{Used to check if anything was given} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{p\_max} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Maximum temperature allowed (disabled by default)}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Should be non-negative} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1} & \multicolumn{2}{p{\paraWidth}|}{Used to check if anything was given} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{p\_min} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Minimum temperature allowed (disabled by default)}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Should be non-negative} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1} & \multicolumn{2}{p{\paraWidth}|}{Used to check if anything was given} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{ppm\_flattening\_epsilon} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Epsilon used for flattening in PPM algorithm}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.33 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{Anything goes. Default is from Colella \& Woodward} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{ppm\_flattening\_omega1} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Omega1 used for flattening in PPM algorithm}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.75 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{Anything goes. Default is from Colella \& Woodward} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{ppm\_flattening\_omega2} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Omega2 used for flattening in PPM algorithm}} \\
+\hline{\bf Range} & &  {\bf Default:} 10.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{Anything goes. Default is from Colella \& Woodward} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{ppm\_shock\_epsilon} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Epsilon used for shock detection in steepen\_rho algorithm}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.01 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{Anything goes. Default is from Colella \& Woodward} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{ppm\_shock\_eta1} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Eta1 used for shock detection in steepen\_rho algorithm}} \\
+\hline{\bf Range} & &  {\bf Default:} 20.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{Anything goes. Default is from Colella \& Woodward} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{ppm\_shock\_eta2} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Eta2 used for shock detection in steepen\_rho algorithm}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.05 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{Anything goes. Default is from Colella \& Woodward} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{ppm\_shock\_k0} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em K0 used for shock detection in steepen\_rho algorithm}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{Anything goes. Default suggested by Colella \& Woodward is: (polytropic constant)/10.0} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{psi6threshold} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Where Psi\^6 {\textgreater} Psi6threshold, we assume we're inside the horizon in the primitives solver, and certain limits are relaxed or imposed}} \\
+\hline{\bf Range} & &  {\bf Default:} 1e100 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Can set to anything} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rho\_b\_atm} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Atmosphere value on the baryonic rest mass density rho\_b (required). If this is unset, the run will die.}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Atmosphere density; must be positive} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1} & \multicolumn{2}{p{\paraWidth}|}{Used to check if anything was given} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rho\_b\_max} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Ceiling value on the baryonic rest mass density rho\_b (disabled by default). Can help with stability to limit densities inside the BH after black hole formation.}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Maximum density; must be positive} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1} & \multicolumn{2}{p{\paraWidth}|}{Used to check if anything was given} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rho\_b\_min} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Floor value on the baryonic rest mass density rho\_b (disabled by default).}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Minimum density; must be positive} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1} & \multicolumn{2}{p{\paraWidth}|}{Used to check if anything was given} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rho\_ppoly\_in} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Set polytropic rho parameters}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{value of the density delimiters for the pieces of the piecewise polytrope} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1} & \multicolumn{2}{p{\paraWidth}|}{forbidden value to make sure it is explicitly set in the parfile (only checked for neos {\textgreater} 1)} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{t\_atm} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Atmospheric temperature (required)}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Should be non-negative} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1} & \multicolumn{2}{p{\paraWidth}|}{Used to check if anything was given} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{t\_max} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Maximum temperature allowed (optional; table bounds used by default)}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Should be non-negative} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1} & \multicolumn{2}{p{\paraWidth}|}{Used to check if anything was given} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{t\_min} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Minimum temperature allowed (optional; table bounds used by default)}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Should be non-negative} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1} & \multicolumn{2}{p{\paraWidth}|}{Used to check if anything was given} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{y\_e\_atm} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Atmospheric electron fraction (required)}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:1} & \multicolumn{2}{p{\paraWidth}|}{Only makes sense if set to something between 0 and 1} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1} & \multicolumn{2}{p{\paraWidth}|}{Used to check if anything was given} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{y\_e\_max} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Atmospheric electron fraction (optional; table bounds used by default)}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:1} & \multicolumn{2}{p{\paraWidth}|}{Only makes sense if set to something between 0 and 1} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1} & \multicolumn{2}{p{\paraWidth}|}{Used to check if anything was given} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{y\_e\_min} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Atmospheric electron fraction (optional; table bounds used by default)}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:1} & \multicolumn{2}{p{\paraWidth}|}{Only makes sense if set to something between 0 and 1} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1} & \multicolumn{2}{p{\paraWidth}|}{Used to check if anything was given} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+grhaylib
+\vspace{2mm}
+
+\vspace{5mm}
+
+\noindent {\bf Adds header}: 
+
+
+
+GRHayLib.h
+\vspace{2mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn GRHayL/GRHayLib.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}NONE
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_WRAGH}   (conditional) 
+
+\hspace{5mm} grhaylib\_initialize 
+
+\hspace{5mm}{\it set up the grhayl structs and read the table for tabulated eos. } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_TERMINATE} 
+
+\hspace{5mm} grhaylib\_terminate 
+
+\hspace{5mm}{\it free memory allocated for the grhayl structs. } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}
