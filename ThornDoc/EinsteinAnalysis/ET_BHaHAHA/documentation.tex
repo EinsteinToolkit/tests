@@ -1,0 +1,1033 @@
+\documentclass[a4paper,11pt]{article}
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{graphicx}
+\usepackage{url}
+%% \usepackage{verbatim} % For verbatim environment
+%% \usepackage{caption}  % For table captions
+%% \usepackage{etoolbox} % For \robustify
+%% \usepackage{array}   % For better table column definitions
+%% \usepackage{booktabs} % For professional quality tables
+\usepackage{geometry} % For page layout
+\geometry{margin=1in}
+%% \usepackage[utf8]{inputenc}
+\usepackage{hyperref} % For hyperlinks
+% \hypersetup{
+%     colorlinks=true,
+%     linkcolor=blue,
+%     filecolor=magenta,
+%     urlcolor=cyan,
+%     pdftitle={ET_BHaHAHA Thorn Guide},
+%     pdfpagemode=FullScreen,
+%     }
+
+% Define common macros
+% \newcommand{\texttt}[1]{{\tt #1}}
+\newcommand{\thorn}[1]{{\tt #1}}
+\newcommand{\arrangement}[1]{{\sc #1}}
+\newcommand{\program}[1]{{\bf #1}}
+\newcommand{\file}[1]{{\tt #1}}
+% \newcommand{\parm}[1]{\texttt{#1}} % Using \texttt for parameters for consistency
+% \newcommand{\var}[1]{\texttt{#1}}   % Using \texttt for variables for consistency
+
+% Specific thorn names
+\newcommand{\ETBHaHAHA}{\arrangement{ET\_BHaHAHA}}
+\newcommand{\BHaHAHA}{\thorn{ET\_BHaHAHA}} % Thorn name for this document
+\newcommand{\bhahlib}{\texttt{BHaHAHA}} % The library name
+
+% Ensure \url is robust in captions and section titles
+\robustify{\url}
+
+\title{\ETBHaHAHA: Einstein Toolkit Interface to the \bhahlib\ Apparent Horizon Finder Library}
+\author{ET\_BHaHAHA Maintainers}
+\date{\today}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+\maketitle
+\tableofcontents
+\clearpage
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+\begin{abstract}
+The \BHaHAHA\ thorn provides an Einstein Toolkit interface to the \bhahlib\ (BlackHoles@Home Apparent Horizon Algorithm) library for finding apparent horizons in numerical relativity simulations. \bhahlib\ implements a hyperbolic flow-based approach, recasting the elliptic partial differential equation (PDE) for a marginally outer trapped surface (MOTS) as a damped nonlinear wave equation. This method is robust, versatile, and performant, leveraging a multigrid-inspired refinement strategy, an over-relaxation technique, and OpenMP parallelization. The Einstein Toolkit interface thorn, \BHaHAHA, allows Cactus-based simulations to utilize these capabilities for black hole identification and characterization. It manages metric data interpolation, MPI synchronization of persistent horizon data using a pack/unpack strategy for Cactus global variables, and diagnostic output.
+\end{abstract}
+
+\section{Introduction}
+\label{sec:introduction}
+
+Apparent horizons (AHs) are crucial for characterizing black holes and excising their interiors in numerical relativity (NR) simulations \cite{Thornburg07LR}. Connecting observational signatures to black hole physical parameters necessitates robust methods for identifying and tracking the BHs themselves within NR simulations. This is primarily accomplished using apparent horizon (AH) finding algorithms. An AH corresponds to the outermost marginally outer trapped surface (MOTS) of a BH, defined as a surface on which the expansion of outgoing null geodesics vanishes \cite{Penrose65, Senovilla11, Thornburg04AHF}.
+
+The \bhahlib\ library \cite{Etienne2025etal} introduces the first open-source, infrastructure-agnostic library for AH finding in NR. It implements a hyperbolic flow-based approach, recasting the elliptic PDE for a MOTS as a damped nonlinear wave equation. This method preserves the full nonlinearity of the expansion equation $\Theta=0$, avoiding the need for linearization or high-quality initial guesses, and is thus robust in practice.
+
+The \ETBHaHAHA\ arrangement hosts the \BHaHAHA\ thorn, which serves as the Einstein Toolkit (ETK) \cite{Loffler2011} interface to the standalone \bhahlib\ C library. Key responsibilities of \BHaHAHA\ include:
+\begin{itemize}
+    \item Interpolating spacetime metric data (components of the 3-metric $\gamma_{ij}$ and extrinsic curvature $K_{ij}$) from the host NR code's grid (typically Cartesian and managed by \thorn{Carpet} \cite{Schnetter04,CarpetWeb}) onto a spherical grid suitable for \bhahlib.
+    \item Managing persistent data for each horizon, such as previous horizon shapes, centroid locations, and search radii. This data is crucial for efficient tracking and for making good initial guesses for subsequent horizon finds.
+    \item Orchestrating the horizon finding process on distributed memory architectures, handling MPI synchronization of persistent data. Due to ETK's Fortran legacy, C structures cannot be directly synchronized via MPI. \BHaHAHA\ circumvents this by packing scalar horizon data into global \texttt{CCTK\_REAL} variables, indexed by an enumeration, and then using Cactus reduction operations for synchronization. Horizon shape data (arrays) are also synchronized via reductions.
+    \item Providing user-configurable parameters to control the behavior of the \bhahlib\ solver and the \BHaHAHA\ interface.
+    \item Outputting diagnostic information, similar in style to \thorn{AHFinderDirect}, such as horizon area, irreducible mass, centroid coordinates, and spin estimates derived from proper circumferences.
+\end{itemize}
+The \bhahlib\ library itself incorporates several features to enhance performance and robustness, such as a multigrid-inspired refinement strategy, an over-relaxation technique, and OpenMP parallelization for the core computations. These features are leveraged by \BHaHAHA. An experimental "BBH mode" is also available for automatically triggering common horizon searches during binary black hole merger simulations.
+
+The hyperbolic relaxation system, central to \bhahlib, evolves the horizon shape $h(\theta, \phi)$ and an auxiliary "velocity" $v(\theta, \phi)$ in pseudo-time $\tau$:
+\begin{eqnarray}
+\partial_\tau h &=& v - \eta h \label{eq:hr_h_intro} \\
+\partial_\tau v &=& -c^2 \Theta \label{eq:hr_v_intro}
+\end{eqnarray}
+where $\eta$ is a damping coefficient and $c$ is the relaxation wave speed (set to 1 in \bhahlib). The system relaxes towards a steady state where $\Theta = 0$, the condition for a MOTS.
+
+This thorn is inspired by \thorn{AHFinderDirect} \cite{Thornburg04AHF, Thornburg07LR} and aims to provide a similarly robust and efficient tool for the numerical relativity community.
+
+\section{What \BHaHAHA\ Needs}
+\label{sec:needs}
+
+The \BHaHAHA\ thorn requires a 3+1 decomposed spacetime, providing components of the 3-metric $\gamma_{ij}$ and extrinsic curvature $K_{ij}$. These are typically provided by any ADM evolution thorn that populates the corresponding \thorn{ADMBase} grid functions.
+
+\BHaHAHA\ inherits from and depends on several other Einstein Toolkit thorns and arrangements for its operation, summarized in Table \ref{tab:inherits_needs}.
+\begin{table}[htbp]
+\centering
+\caption[Thorns and capabilities typically required by \BHaHAHA.]
+         {Implementations and Thorns typically inherited by \BHaHAHA.}
+\label{tab:inherits_needs}
+\vspace{0.5em}
+\begin{tabular}{ll}
+\hfill
+Functionality / Data           & Typically Provided by Thorn(s) or Arrangement \\
+\hfill
+ADM 3-metric, Extrinsic Curvature & \thorn{ADMBase} (\arrangement{EinsteinBase}) \\
+Boundary Conditions                & \thorn{Boundary} (\arrangement{CactusBase}) \\
+Grid Information                   & \thorn{Grid} (\arrangement{CactusBase}), \thorn{Carpet}, \thorn{CartGrid3D}, \thorn{CoordBase} \\
+Output Directory (\texttt{IO::out\_dir})  & \thorn{IOUtil} (\arrangement{CactusBase}) via shares \\
+Shared Parameters (maxntheta, etc.)& \thorn{SphericalSurface} (\arrangement{EinsteinAnalysis}) via shares \\
+Metric Data Interpolation        & e.g., \thorn{AEILocalInterp}, \thorn{LocalInterp}, \thorn{CarpetInterp} \\
+Driver / Parallel Grid Management  & e.g., \thorn{Carpet} (\arrangement{CarpetCode}) \\
+MPI Reductions                     & e.g., \thorn{CarpetReduce} (\arrangement{CarpetCode}), \thorn{PUGHReduce} (\arrangement{CactusPUGH}) \\
+\hfill
+\end{tabular}
+\end{table}
+The metric data is expected to be provided on a Cartesian grid, potentially with adaptive mesh refinement (AMR) as managed by \thorn{Carpet}. \BHaHAHA\ then interpolates this data onto its internal spherical grid.
+
+\section{Obtaining and Compiling \BHaHAHA}
+\label{sec:obtaining}
+
+The \BHaHAHA\ thorn is part of the \ETBHaHAHA\ arrangement for the Einstein Toolkit. The core apparent horizon finding capabilities are provided by the \bhahlib\ library, which is generated using NRPy+ \cite{NRPyWWW, NRPyGit} and is included within the thorn's source tree (\file{src/BHaHAHA/}).
+The thorn \BHaHAHA\ itself is written in C.
+
+To compile \BHaHAHA, ensure that the \ETBHaHAHA\ arrangement is part of your Cactus checkout. The compilation process is standard for Einstein Toolkit thorns and uses the main Cactus make system.
+The \file{README} file within the thorn's main directory provides instructions for regenerating the \bhahlib\ library if needed.
+The \bhahlib\ library components and the ETK interface code are compiled using \texttt{gcc} by default, as specified in the Makefiles (\file{src/BHaHAHA/Makefile} and \file{src/make.code.defn}). These files also indicate support for OpenMP (CFLAGS include \texttt{-fopenmp -std=gnu99 -O2 -march=native}), which is enabled if detected by the compiler.
+No special external libraries beyond a C compiler supporting C99 (GNU extensions are used, e.g. \texttt{\_\_typeof\_\_}) and OpenMP are strictly required by \BHaHAHA\ itself, as its core dependencies (like GSL for table utilities or ADMBase functionality) are handled by the Einstein Toolkit's build system when those thorns are active.
+
+\section{\BHaHAHA\ Parameters}
+\label{sec:params}
+The behavior of the \BHaHAHA\ thorn is controlled by several parameters defined in its \file{param.ccl} file. These parameters can be broadly categorized. Parameters are referred to by their \texttt{param.ccl} names.
+
+\subsection{Overall Thorn Parameters}
+\label{ssec:params_overall}
+
+\begin{description}
+    \item[\texttt{max\_num\_horizons}] (Type: \texttt{CCTK\_INT}, Default: \texttt{3}) \\
+        Specifies the maximum number of apparent horizons that the thorn will attempt to find and track. This determines the size of various internal arrays. This parameter must be set to be at least as large as the number of horizons you intend to find. In BBH mode, it must be 3. The hardcoded limit is 100 (\texttt{BHAHAHA\_MAX\_HORIZONS\_SUPPORTED}).
+        \textit{Range:} \texttt{0:100}
+
+    \item[\texttt{find\_every}] (Type: \texttt{CCTK\_INT}, Default: \texttt{1}, Steerable: ALWAYS) \\
+        This integer parameter controls the execution frequency of the main horizon finding routine \texttt{BHaHAHA\_find\_horizons}. The finder will run when the current Cactus iteration \texttt{cctk\_iteration} is an integer multiple of \texttt{find\_every}. If set to 0, \BHaHAHA\ will be disabled globally. Individual horizon search cadences can override this via \texttt{find\_every\_individual}.
+        \textit{Range:} \texttt{0:*}
+
+    \item[\texttt{bah\_verbosity\_level}] (Type: \texttt{CCTK\_INT}, Default: \texttt{1}, Steerable: ALWAYS) \\
+        Controls the amount of diagnostic information printed to standard output during the horizon search.
+        \begin{itemize}
+            \item \texttt{0}: Essential output only (e.g., major errors, final timing).
+            \item \texttt{1}: Physical summary of found horizons (default). This includes basic information about each horizon found, like its area and centroid, and BBH mode logging.
+            \item \texttt{2}: Full algorithmic details. This includes verbose information about the convergence process for each multigrid level, iteration counts, internal timings, MPI sync messages, and possibly debugging information.
+        \end{itemize}
+        \textit{Range:} \texttt{0:2}
+
+    \item[\texttt{max\_Ntheta}] (Type: \texttt{CCTK\_INT}, Default: \texttt{32}) \\
+        The maximum number of grid points used to sample the $\theta$ (polar) direction on \BHaHAHA's internal spherical surfaces. This corresponds to the highest resolution in the multigrid hierarchy if multigrid is enabled. It must match the last entry in \texttt{bah\_Ntheta\_array\_multigrid}.
+        \textit{Range:} \texttt{2:128} (even values only)
+
+    \item[\texttt{max\_Nphi}] (Type: \texttt{CCTK\_INT}, Default: \texttt{64}) \\
+        The maximum number of grid points used to sample the $\phi$ (azimuthal) direction on \BHaHAHA's internal spherical surfaces. This corresponds to the highest resolution in the multigrid hierarchy. It must match the last entry in \texttt{bah\_Nphi\_array\_multigrid}.
+        \textit{Range:} \texttt{2:256} (even values only)
+
+    \item[\texttt{bah\_num\_resolutions\_multigrid}] (Type: \texttt{CCTK\_INT}, Default: \texttt{3}) \\
+        Specifies the number of multigrid levels used in the horizon search. The actual resolutions for each level are defined in \texttt{bah\_Ntheta\_array\_multigrid} and \texttt{bah\_Nphi\_array\_multigrid}.
+        \textit{Range:} \texttt{1:16} (practical limit related to array sizes of \texttt{bah\_Ntheta\_array\_multigrid})
+
+    \item[\texttt{bah\_Ntheta\_array\_multigrid[16]}] (Type: \texttt{CCTK\_INT ARRAY}, Default: \texttt{-100} for all, Steerable: ALWAYS) \\
+        An array defining the number of $\theta$ points for each multigrid level, starting from the coarsest. The number of entries actually used is determined by \texttt{bah\_num\_resolutions\_multigrid}. Example: \texttt{[8, 16, 32]}. The last entry must equal \texttt{max\_Ntheta}. Poison value -100 indicates an unset entry.
+        \textit{Range (for each element used):} \texttt{2: *} (even values only, up to \texttt{max\_Ntheta})
+
+    \item[\texttt{bah\_Nphi\_array\_multigrid[16]}] (Type: \texttt{CCTK\_INT ARRAY}, Default: \texttt{-100} for all, Steerable: ALWAYS) \\
+        An array defining the number of $\phi$ points for each multigrid level, starting from the coarsest. The number of entries used is determined by \texttt{bah\_num\_resolutions\_multigrid}. Example: \texttt{[16, 32, 64]}. The last entry must equal \texttt{max\_Nphi}. Poison value -100 indicates an unset entry.
+        \textit{Range (for each element used):} \texttt{2: *} (even values only, up to \texttt{max\_Nphi})
+
+    \item[\texttt{bah\_enable\_eta\_varying\_alg\_for\_precision\_common\_horizon}] (Type: \texttt{CCTK\_INT}, Default: \texttt{0}) \\
+        Enables a specialized algorithm where the damping parameter $\eta$ varies to achieve high precision, particularly for common horizon finding. For general-purpose use, this should be disabled (0).
+        \textit{Range:} \texttt{0:1}
+
+    \item[\texttt{sync\_data\_across\_ranks\_after\_each\_search\_\_warning\_slow}] (Type: \texttt{CCTK\_INT}, Default: \texttt{0}) \\
+        If set to 1, all persistent horizon data (centers, radii, shapes) will be synchronized across all MPI ranks after each horizon search sequence using MPI reductions. This allows for restarting a simulation with a different number of MPI ranks while maintaining consistent horizon history. However, this can significantly slow down the simulation (potentially by a factor of $>$2x for \BHaHAHA) as all ranks must wait for the slowest horizon search. If 0 (default), only minimal synchronization required for the thorn's logic (e.g., for BBH mode) is performed at the beginning of a find, and rank 0 might have stale data for horizons owned by other ranks for checkpointing purposes. \bhahlib\ is generally robust enough to recover from a lost horizon if this is disabled.
+        \textit{Range:} \texttt{0:1}
+
+    \item[\texttt{interpolator\_name}] (Type: \texttt{CCTK\_STRING}, Default: \texttt{"Hermite polynomial interpolation"}) \\
+        Specifies the name of the Cactus interpolator to be used for interpolating metric data from the simulation grid to \BHaHAHA's internal spherical grid. "Hermite polynomial interpolation" is highly recommended as it often leads to faster overall convergence in \bhahlib\ for comparable accuracy. "Lagrange polynomial interpolation" is an alternative.
+        \textit{Range:} Any valid Cactus interpolator name.
+
+    \item[\texttt{interpolator\_pars}] (Type: \texttt{CCTK\_STRING}, Default: \texttt{"order=3"}) \\
+        A string containing parameters for the chosen interpolator, passed to \texttt{Util\_TableCreateFromString()}. For "Hermite polynomial interpolation", "order=3" is recommended. For "Lagrange polynomial interpolation", "order=4" is recommended.
+        \textit{Range:} Any string accepted by the selected interpolator's parameter table creation.
+\end{description}
+
+\subsection{Per-Horizon Parameters}
+\label{ssec:params_perhorizon}
+These parameters are arrays, indexed from 0 to \texttt{max\_num\_horizons-1}.
+\begin{description}
+    \item[\texttt{find\_every\_individual[101]}] (Type: \texttt{CCTK\_INT ARRAY}, Default: \texttt{-1} for all, Steerable: ALWAYS) \\
+        Allows overriding the global \texttt{find\_every} for individual horizon \texttt{i}. If set to -1, uses global \texttt{find\_every}. If $\ge 1$, specifies the search cadence for this horizon. If 0, finding for this horizon is disabled.
+        \textit{Range (for each element):} \texttt{-1, 0, 1:*}
+
+    \item[\texttt{bah\_max\_search\_radius[101]}] (Type: \texttt{CCTK\_REAL ARRAY}, Default: \texttt{1.5} for all, Steerable: ALWAYS) \\
+        The maximum coordinate radius of the spherical shell where \BHaHAHA\ will search for horizon \texttt{i}, relative to its current guessed center. This defines the outer boundary of the interpolation region for metric data. This parameter persists throughout the simulation for each horizon.
+        \textit{Range (for each element):} \texttt{0:*} (must be positive)
+
+    \item[\texttt{bah\_Nr\_interp\_max[101]}] (Type: \texttt{CCTK\_INT ARRAY}, Default: \texttt{48} for all, Steerable: ALWAYS) \\
+        Maximum number of radial points on \BHaHAHA's internal 3D spherical grid for interpolating metric components for horizon \texttt{i}. The actual number of points used will be determined adaptively by \texttt{bah\_radial\_grid\_cell\_centered\_set\_up} based on the current search radii, but will not exceed this value. Recommended range is 48-64. Increasing this value mainly increases the cost of the initial interpolation from the ETK grid.
+        \textit{Range (for each element):} \texttt{4:*}
+
+    \item[\texttt{bah\_M\_scale[101]}] (Type: \texttt{CCTK\_REAL ARRAY}, Default: \texttt{1.0} for all, Steerable: ALWAYS) \\
+        Characteristic mass scale for horizon \texttt{i}, in code units. Used to make tolerances and damping dimensionless. Use puncture bare masses or expected irreducible masses.
+        \textit{Range (for each element):} \texttt{0:*} (must be positive)
+
+    \item[\texttt{bah\_cfl\_factor[101]}] (Type: \texttt{CCTK\_REAL ARRAY}, Default: \texttt{0.98} for all, Steerable: ALWAYS) \\
+        CFL factor for the hyperbolic relaxation solver for horizon \texttt{i}. This controls the pseudo-timestep. A value of 0.98 is robust.
+        \textit{Range (for each element):} \texttt{0:1.0} (must be positive, $\le 1.05$ technically for SSPRK3 but $\le 1.0$ is safer)
+
+    \item[\texttt{bah\_max\_iterations[101]}] (Type: \texttt{CCTK\_INT ARRAY}, Default: \texttt{10000} for all, Steerable: ALWAYS) \\
+        Maximum hyperbolic relaxation steps before the horizon search for horizon \texttt{i} is terminated, even if convergence criteria are not met. For typical tracking, 1000-10000 is sufficient.
+        \textit{Range (for each element):} \texttt{0:*}
+
+    \item[\texttt{bah\_Theta\_L2\_times\_M\_tolerance[101]}]
+    (Type: \texttt{CCTK\_REAL ARRAY}, Default: \texttt{1e-2} for all, Steerable: ALWAYS) \\
+        Convergence criterion based on the area-weighted $L_2$ norm of $\Theta \times M_{scale}$ for horizon \texttt{i}. A value of $10^{-2}$ is recommended to balance speed and accuracy for typical horizon tracking, often deferring to the $L_{\infty}$ norm. Convergence requires both L2 and Linf criteria to be met.
+        \textit{Range (for each element):} \texttt{0:*}
+
+    \item[\texttt{bah\_Theta\_Linf\_times\_M\_tolerance[101]}] (Type: \texttt{CCTK\_REAL ARRAY}, Default: \texttt{1e-5} for all, Steerable: ALWAYS) \\
+        Convergence criterion based on the $L_{\infty}$ norm (maximum absolute value) of $\Theta \times M_{scale}$ for horizon \texttt{i}. A value of $10^{-5}$ is recommended as a typical target for accuracy.
+        \textit{Range (for each element):} \texttt{0:*}
+
+    \item[\texttt{bah\_eta\_damping\_times\_M[101]}] (Type: \texttt{CCTK\_REAL ARRAY}, Default: \texttt{7.0} for all, Steerable: ALWAYS) \\
+        The dimensionless damping parameter $\eta \times M_{scale}$ for the hyperbolic relaxation for horizon \texttt{i}. A value of 7.0 is highly recommended.
+        \textit{Range (for each element):} \texttt{0:*}
+
+    \item[\texttt{bah\_KO\_strength[101]}] (Type: \texttt{CCTK\_REAL ARRAY}, Default: \texttt{0.0} for all, Steerable: ALWAYS) \\
+        Strength of the Kreiss-Oliger dissipation applied during the hyperbolic relaxation for horizon \texttt{i}. This usually hinders convergence or accuracy for apparent horizon finding, so it is disabled (0.0) by default.
+        \textit{Range (for each element):} \texttt{0:*}
+
+    \item[\texttt{bah\_initial\_grid\_x\_center[101]}] (Type: \texttt{CCTK\_REAL ARRAY}, Default: \texttt{0.0} for all, Steerable: ALWAYS) \\
+        The initial x-coordinate for the center of \BHaHAHA's spherical search grid for horizon \texttt{i}. This is used at $t=0$ or if a horizon is lost and needs a reset. Subsequently, the center is extrapolated.
+        \textit{Range (for each element):} \texttt{*:*}
+
+    \item[\texttt{bah\_initial\_grid\_y\_center[101]}] (Type: \texttt{CCTK\_REAL ARRAY}, Default: \texttt{0.0} for all, Steerable: ALWAYS) \\
+        The initial y-coordinate for the center of \BHaHAHA's spherical search grid for horizon \texttt{i}.
+        \textit{Range (for each element):} \texttt{*:*}
+
+    \item[\texttt{bah\_initial\_grid\_z\_center[101]}] (Type: \texttt{CCTK\_REAL ARRAY}, Default: \texttt{0.0} for all, Steerable: ALWAYS) \\
+        The initial z-coordinate for the center of \BHaHAHA's spherical search grid for horizon \texttt{i}.
+        \textit{Range (for each element):} \texttt{*:*}
+\end{description}
+
+\subsection{BBH Mode Parameters}
+\label{ssec:params_bbh_mode}
+These parameters control the behavior when \BHaHAHA\ is run in its experimental Binary Black Hole (BBH) mode.
+\begin{description}
+    \item[\texttt{bah\_BBH\_mode\_enable}] (Type: \texttt{CCTK\_INT}, Default: \texttt{0}) \\
+        Enable (1) or disable (0) the BBH mode. When enabled, \BHaHAHA\ will manage the activation/deactivation of searches for two individual inspiralling black holes and a common horizon.
+        Requires \texttt{max\_num\_horizons = 3}.
+        \textit{Range:} \texttt{0:1}
+
+    \item[\texttt{bah\_BBH\_mode\_inspiral\_BH\_idxs[2]}] (Type: \texttt{CCTK\_INT ARRAY}, Default: \texttt{[0,0]}) \\
+        An array of two integers specifying the zero-offset horizon indices for the two inspiralling black holes. Example: \texttt{[0,1]}. These indices must be unique and different from \texttt{bah\_BBH\_mode\_common\_horizon\_idx}.
+        \textit{Range (for each element):} \texttt{0:2} (Indices must be distinct and within $0 \dots \text{\texttt{max\_num\_horizons}}-1$; typically $0,1,2$ if $\text{\texttt{max\_num\_horizons}}=3$)
+
+    \item[\texttt{bah\_BBH\_mode\_common\_horizon\_idx}] (Type: \texttt{CCTK\_INT}, Default: \texttt{2}) \\
+        The zero-offset horizon index for the common (merged) horizon. Example: \texttt{2}. This index must be unique and different from those in \texttt{bah\_BBH\_mode\_inspiral\_BH\_idxs}.
+        \textit{Range:} \texttt{0:2} (Index must be distinct and within $0 \dots \text{\texttt{max\_num\_horizons}}-1$)
+\end{description}
+
+\section{Provided Variables}
+\label{sec:variables}
+The \BHaHAHA\ thorn declares several variables in its \file{interface.ccl} to store persistent horizon data. These variables are primarily used internally for tracking horizon evolution across time steps and for MPI synchronization, but advanced users or other thorns might find them useful. All variables are public. The index for horizon-specific variables (e.g., \texttt{x\_center\_m1[h]}) is 0-based in C, ranging from \texttt{0} to \texttt{max\_num\_horizons-1}.
+
+\begin{description}
+    \item[\texttt{bah\_prev\_horizons} (Group)] (Type: \texttt{CCTK\_REAL ARRAY}, Size: \texttt{max\_num\_horizons*max\_Ntheta*max\_Nphi}, Distribution: \texttt{CONSTANT}) \\
+        This group holds the shapes $h(\theta, \phi)$ of previously found horizons. It is a single flat 1D array, but logically contains three sets of surfaces for each of the \texttt{max\_num\_horizons}. For a given horizon index \texttt{hidx} (0 to \texttt{max\_num\_horizons-1}), the shape data for $h(\theta\_j, \phi\_k)$ is accessed with an offset: \texttt{hidx * max\_Ntheta * max\_Nphi + itheta * max\_Nphi + iphi} (assuming $\phi$ varies fastest, though the actual C indexing macro \texttt{IDX2} uses \texttt{itheta + NUM\_THETA * iphi}).
+        \begin{itemize}
+            \item \texttt{prev\_horizon\_m1}: Surface shape $h(\theta, \phi)$ of the most recently found horizon (time $t-\delta t$).
+            \item \texttt{prev\_horizon\_m2}: Surface shape $h(\theta, \phi)$ of the second most recently found horizon (time $t-2\delta t$).
+            \item \texttt{prev\_horizon\_m3}: Surface shape $h(\theta, \phi)$ of the third most recently found horizon (time $t-3\delta t$).
+        \end{itemize}
+        These are used for extrapolating an initial guess for the current time step. All ranks maintain a copy, synchronized by \texttt{BHaHAHA\_sync\_persistent\_across\_ranks}.
+
+    \item[\texttt{bah\_coord\_info} (Group)] (Type: \texttt{CCTK\_REAL SCALAR}, Distribution: \texttt{CONSTANT}, Effectively arrays of size \texttt{max\_num\_horizons}) \\
+        Stores scalar information from previous horizon finds for each horizon. Each member is a Cactus scalar grid function that behaves as an array of size \texttt{max\_num\_horizons}.
+        \begin{itemize}
+            \item \texttt{t\_m1[h]}, \texttt{t\_m2[h]}, \texttt{t\_m3[h]}: Simulation times of the last three successful finds for horizon \texttt{h}. Initialized to -1.0 if not found.
+            \item \texttt{r\_min\_m1[h]}, \texttt{r\_max\_m1[h]}, ... \texttt{r\_min\_m3[h]}, \texttt{r\_max\_m3[h]}: Min/max coordinate radii (centroid-based) for horizon \texttt{h} from the last three finds.
+            \item \texttt{x\_center\_m1[h]}, \texttt{y\_center\_m1[h]}, \texttt{z\_center\_m1[h]}, ... \texttt{x\_center\_m3[h]}, \texttt{y\_center\_m3[h]}, \texttt{z\_center\_m3[h]}: Cartesian coordinates of the horizon's centroid for horizon \texttt{h} from the last three finds. These are global Cactus coordinates.
+        \end{itemize}
+        Synchronized by \texttt{BHaHAHA\_sync\_persistent\_across\_ranks}.
+
+    \item[\texttt{bah\_guess} (Group)] (Type: \texttt{CCTK\_INT SCALAR}, Distribution: \texttt{CONSTANT}, Effectively an array of size \texttt{max\_num\_horizons}) \\
+        \begin{itemize}
+            \item \texttt{use\_fixed\_radius\_guess\_on\_full\_sphere[h]}: Flag (0 or 1) for horizon \texttt{h}. If 1, \BHaHAHA\ uses a simple spherical initial guess. If 0, it uses an extrapolated shape. Updated based on solver success.
+        \end{itemize}
+        Synchronized by \texttt{BHaHAHA\_sync\_persistent\_across\_ranks}.
+
+    \item[\texttt{bah\_is\_horizon\_active} (Group)] (Type: \texttt{CCTK\_INT SCALAR}, Distribution: \texttt{CONSTANT}, Effectively an array of size \texttt{max\_num\_horizons}) \\
+        \begin{itemize}
+            \item \texttt{bah\_horizon\_active[h]}: Flag (0 or 1) for horizon \texttt{h}. If 1, a search is attempted. If 0, the search is skipped. Primarily managed by BBH mode.
+        \end{itemize}
+        Synchronized by \texttt{BHaHAHA\_sync\_persistent\_across\_ranks}.
+\end{description}
+
+\section{Scheduling and MPI Synchronization}
+\label{sec:scheduling_mpi}
+The \BHaHAHA\ thorn schedules its main driver function and manages storage for its \texttt{interface.ccl} variables as defined in \file{schedule.ccl}.
+
+\subsection{Storage}
+The following grid function groups are declared for storage:
+\begin{itemize}
+    \item \texttt{bah\_prev\_horizons}
+    \item \texttt{bah\_coord\_info}
+    \item \texttt{bah\_guess}
+    \item \texttt{bah\_is\_horizon\_active}
+\end{itemize}
+Memory for these variables is allocated by the Cactus framework.
+
+\subsection{Scheduled Functions}
+\begin{description}
+    \item[\texttt{BHaHAHA\_find\_horizons}]
+    Scheduled at \texttt{CCTK\_ANALYSIS} with \texttt{options: global-early}.
+    \mbox{}\\ This is the main C language driver function for \BHaHAHA. It is responsible for:
+    \begin{enumerate}
+        \item Checking if a horizon search is due based on \texttt{find\_every} and \texttt{find\_every\_individual}.
+        \item Performing initial setup at \texttt{cctk\_iteration == 0}, including initializing persistent variables and BBH mode flags.
+        \item Synchronizing persistent data across MPI ranks using \texttt{BHaHAHA\_sync\_persistent\_across\_ranks} (see Section \ref{ssec:mpi_sync_detail} below).
+        \item Populating the \bhahlib\ parameter structure (\texttt{bhahaha\_params\_and\_data\_struct}) for each active horizon, including reading persistent data from Cactus GFs (via \texttt{read\_persistent\_data\_store\_to\_bhahaha\_params\_and\_data}).
+        \item Applying robustness improvements (e.g., adjusting CFL, multigrid resolutions for first finds).
+        \item Extrapolating initial guesses for horizon centers and search radii using \texttt{bah\_xyz\_center\_r\_minmax}.
+        \item Executing BBH mode logic for activating/deactivating common and individual horizon searches.
+        \item For each active horizon:
+            \begin{itemize}
+                \item Setting up the radial interpolation grid using \texttt{bah\_radial\_grid\_cell\_centered\_set\_up}.
+                \item Calling \texttt{BHaHAHA\_interpolate\_metric\_data} to interpolate ADM metric components from the ETK grid to the \bhahlib\ spherical grid. This is done only on the MPI rank owning the horizon.
+                \item Invoking the core \bhahlib\ solver (\texttt{bah\_find\_horizon}) on the owning MPI rank.
+                \item Processing results: if successful, updating persistent Cactus GFs using \texttt{write\_persistent\_from\_bhahaha\_params\_and\_data} and outputting diagnostics using \texttt{bah\_diagnostics\_file\_output}. If failed, setting flags to ensure a robust guess next time.
+            \end{itemize}
+        \item Optionally, performing a final synchronization of all persistent data if \texttt{sync\_data\_across\_ranks\_after\_each\_search\_\_warning\_slow} is enabled.
+    \end{enumerate}
+    The \texttt{global-early} option is chosen to be consistent with \thorn{AHFinderDirect}, aiming to find horizons early in the analysis phase.
+\end{description}
+
+\subsection{MPI Synchronization Details}
+\label{ssec:mpi_sync_detail}
+Persistent horizon data (previous shapes, centers, radii, active flags) needs to be consistent across all MPI ranks for robust tracking and BBH mode operation. \BHaHAHA\ employs a custom MPI synchronization strategy implemented in \texttt{BHaHAHA\_sync\_persistent\_across\_ranks.c}:
+\begin{itemize}
+    \item \textbf{Data Ownership}: Each horizon is "owned" by a specific MPI rank (typically $h \pmod{\text{num\_ranks}}$). This rank is responsible for performing the horizon find and updating its primary data.
+    \item \textbf{Packing/Unpacking and Reduction}:
+        Scalar data for each horizon (from groups \texttt{bah\_coord\_info}, \texttt{bah\_guess}, \texttt{bah\_is\_horizon\_active}) are packed by the owner rank into a local \texttt{CCTK\_REAL} buffer. Non-owner ranks contribute zeros. A global sum reduction (\texttt{CCTK\_ReduceLocArrayToArray1D}) broadcasts the owner's data to all ranks. The \texttt{BHaHAHA\_PackedScalarFields} enum (defined in \file{ET\_BHaHAHA.h}) ensures consistent indexing into this buffer. Horizon shape arrays (from \texttt{bah\_prev\_horizons}) are also synchronized segment by segment using sum reductions.
+\end{itemize}
+This synchronization occurs at the beginning of \texttt{BHaHAHA\_find\_horizons} (if running in parallel) and optionally at the end if \texttt{sync\_data\_across\_ranks\_after\_each\_search\_\_warning\_slow} is enabled.
+
+\section{Physics Background and Numerical Methods}
+\label{sec:physics_numerics}
+The \BHaHAHA\ thorn interfaces with the \bhahlib\ library, which implements a specific set of methods for finding apparent horizons. The core physics and numerics are detailed in \cite{Etienne2025etal}.
+
+\subsection{Apparent Horizons and MOTS}
+An apparent horizon is defined as the outermost marginally outer trapped surface (MOTS). A MOTS is a 2-surface where the expansion $\Theta$ of outgoing null geodesics vanishes. In the ADM 3+1 formalism \cite{ADM62}, where the line element is
+\begin{equation}
+ds^2 = -\alpha^2 dt^2 + \gamma_{ij} (dx^i + \beta^i dt) (dx^j + \beta^j dt),
+\label{eq:adm_line_element}
+\end{equation}
+with $\alpha$ the lapse, $\beta^i$ the shift, and $\gamma_{ij}$ the spatial 3-metric, the expansion for a surface $F(x^k)=r-h(\theta,\phi)=0$ is \cite{Etienne2025etal}:
+\begin{equation}
+\Theta = \frac{1}{\lambda} (\partial_i F \partial_j \gamma^{ij} + \gamma^{ij} \partial_i \partial_j F) - \frac{1}{\lambda^3} \partial_k \lambda \gamma^{kj} \partial_j F + s^k \partial_k (\ln \sqrt{\gamma}) - K + s^i s^j K_{ij} = 0,
+\label{eq:MOTS_expansion_detail}
+\end{equation}
+where $s\_i = \partial_i F / \lambda$ is the unit normal, $\lambda = \sqrt{\gamma^{kl}\partial_k F \partial_l F}$, $\gamma = \det(\gamma_{ij})$, $K_{ij}$ is the extrinsic curvature, and $K = \gamma^{ij}K_{ij}$.
+
+\subsection{Hyperbolic Relaxation}
+\bhahlib\ recasts the elliptic PDE (\ref{eq:MOTS_expansion_detail}) into a hyperbolic system by introducing a pseudo-time $\tau$ evolution for the surface shape $h(\theta, \phi)$ and an auxiliary "velocity" field $v(\theta, \phi)$:
+\begin{eqnarray}
+\partial_\tau h &=& v - \eta h \label{eq:hr_h_detail_main} \\
+\partial_\tau v &=& -c^2 \Theta \label{eq:hr_v_detail_main}
+\end{eqnarray}
+where $\eta$ is a damping coefficient (units of $1/M$, related to \texttt{bah\_eta\_damping\_times\_M}), and $c$ is the relaxation wave speed (dimensionless, set to 1 in \bhahlib). As $\tau \rightarrow \infty$, the system is driven towards a steady state where $\partial_\tau v = 0 \implies \Theta = 0$.
+
+\subsection{Numerical Implementation Details within \bhahlib}
+The \bhahlib\ library's numerical implementation, leveraged by \BHaHAHA, involves several key steps:
+
+\subsubsection{Metric Data Handling and Interpolation}
+\begin{itemize}
+    \item \textbf{Input Data and Transformation}: \BHaHAHA\ interpolates the ADM 3-metric $\gamma_{ij}$ and extrinsic curvature $K_{ij}$ (Cartesian basis) from the host Cactus grid onto a 3D cell-centered spherical grid used by \bhahlib\ (via \texttt{BHaHAHA\_interpolate\_metric\_data.c}). Internally, \bhahlib\ (in \texttt{bah\_numgrid\_\_external\_input\_set\_up.c}) converts these to conformal BSSN-like variables in a spherical basis using a reference-metric formalism \cite{Brown2009, Montero2012, Baumgarte2013} to analytically handle coordinate singularities at the poles.
+    \item \textbf{Precomputation of Metric Derivatives}: First spatial derivatives of these BSSN-like variables (both angular and radial) are precomputed on the 3D spherical \bhahlib\ "interpolation source" grid (\texttt{interp\_src\_gfs} in \texttt{bah\_numgrid\_\_interp\_src\_set\_up.c}) using sixth-order finite differencing. This is done once per multigrid level. Angular derivatives are computed in \texttt{bah\_hDD\_dD\_and\_W\_dD\_in\_interp\_src\_grid\_interior.c}, and radial derivatives at boundaries in \texttt{bah\_apply\_bcs\_r\_maxmin\_partial\_r\_hDD\_upwinding.c}.
+    \item \textbf{Interpolation to Trial Surface}: During the pseudo-time evolution, metric quantities and their derivatives on the current trial surface $r=h(\tau, \theta, \phi)$ are obtained via 1D Lagrange interpolation along radial spokes from the precomputed 3D \bhahlib\ grid data using \texttt{bah\_interpolation\_1d\_radial\_spokes\_on\_3d\_src\_grid.c}. This is a crucial performance optimization.
+\end{itemize}
+
+\subsubsection{Initial Data for Hyperbolic Relaxation}
+The initial guess $h(0, \theta, \phi)$ for the hyperbolic relaxation is determined by \BHaHAHA\ (within \texttt{BHaHAHA\_find\_horizons.c} before calling the library's \texttt{bah\_initial\_data.c}):
+\begin{itemize}
+    \item If no prior horizon information is available (e.g., first timestep, or after a find failure indicated by \texttt{use\_fixed\_radius\_guess\_on\_full\_sphere=1}), a simple spherical guess $h = 0.8 \times R\_{\text{search\_max}}$ is used, with metric data interpolated onto a full spherical volume.
+    \item Otherwise, $h(0, \theta, \phi)$, the grid center $(x\_c, y\_c, z\_c)$, and search radii $(r\_{\min}, r\_{\max})$ are extrapolated (up to quadratic order via \texttt{bah\_xyz\_center\_r\_minmax.c}) from up to three previous successful finds. This allows the metric interpolation to be restricted to a potentially much smaller spherical shell.
+\end{itemize}
+The initial auxiliary field is set to $v(0, \theta, \phi) = \eta h(0, \theta, \phi)$ by \texttt{bah\_initial\_data.c} to start near the $\partial_\tau h = 0$ condition.
+
+\subsubsection{Pseudo-Time Evolution}
+The hyperbolic system (Eqs. \ref{eq:hr_h_detail_main}-\ref{eq:hr_v_detail_main}) is evolved using a third-order Strong Stability Preserving Runge-Kutta (SSPRK3) scheme \cite{Gottlieb2001} by \texttt{bah\_MoL\_step\_forward\_in\_time.c}. The pseudo-timestep $\Delta \tau$ is determined by a CFL condition (via \texttt{bah\_cfl\_limited\_timestep\_based\_on\_h\_equals\_r.c}) based on the wave speed $c=1$ and the proper grid spacings on the evolving surface $h$. Angular derivatives of $h$ (via \texttt{bah\_rhs\_eval.c}) needed for $\Theta$ are recomputed at each SSPRK3 substep.
+
+\subsubsection{Convergence and Stopping Conditions}
+The pseudo-time evolution stops when the dimensionless expansion $M\_{\text{scale}}\Theta$ satisfies user-defined tolerances for both its $L_\infty$ and area-weighted $L_2$ norms (controlled by parameters \texttt{bah\_Theta\_Linf\_times\_M\_tolerance} and \texttt{bah\_Theta\_L2\_times\_M\_tolerance}), or when \texttt{bah\_max\_iterations} is reached. $M\_{\text{scale}}$ is a user-provided characteristic mass for the horizon.
+
+\subsubsection{Convergence Acceleration Techniques}
+\begin{itemize}
+    \item \textbf{Multigrid-Inspired Refinement}: The system is first solved on a coarse angular grid. The solution is then prolonged (interpolated) to serve as the initial guess for a finer grid, and so on, up to the target resolution specified by \texttt{bah\_Ntheta\_array\_multigrid} and \texttt{bah\_Nphi\_array\_multigrid}.
+    \item \textbf{Over-Relaxation}: Periodically, an over-relaxation step (\texttt{bah\_over\_relaxation.c}) attempts to accelerate convergence by extrapolating the horizon shape based on its recent evolution: $h\_{\text{trial}}(\alpha) = h\_c + \alpha(h\_c - h\_p)$, where $h\_c$ is the current shape, $h\_p$ is a prior shape, and $\alpha > 1$ is an extrapolation factor. The $h\_{\text{trial}}$ that minimizes $\|M\_{\text{scale}}\Theta\|_{L_\infty}$ is adopted if it offers significant improvement.
+\end{itemize}
+
+\subsection{Binary Black Hole (BBH) Mode in \BHaHAHA}
+\label{ssec:physics_bbh_mode}
+When the parameter \texttt{bah\_BBH\_mode\_enable = 1}, \BHaHAHA\ activates specialized logic for binary black hole merger simulations, typically requiring \texttt{max\_num\_horizons = 3}.
+\begin{enumerate}
+    \item \textbf{Initial Phase}: Horizon searches are active for two individual inspiralling BHs (whose indices are given by \texttt{bah\_BBH\_mode\_inspiral\_BH\_idxs}). The search for a common horizon (index \texttt{bah\_BBH\_mode\_common\_horizon\_idx}) is initially inactive.
+    \item \textbf{Common Horizon Activation}: The thorn monitors the separation distance between the centroids of the two inspiral BHs and their last known maximum radii. If the condition $(\text{distance}(BH\_1, BH\_2) + r\_{\text{max},1} + r\_{\text{max},2}) \le (2.0 \times \text{\texttt{bah\_max\_search\_radius}}[\text{common\_idx}])$ is met, and both individual BHs have been successfully found previously, the common horizon search is activated. The initial guess for the common horizon's center is set to the center-of-mass of the two inspiral BHs (weighted by their respective \texttt{bah\_M\_scale} values). A full sphere guess is forced for its first few attempts.
+    \item \textbf{Deactivation of Individual BHs}: Once the common horizon is consistently found (i.e., \texttt{use\_fixed\_radius\_guess\_on\_full\_sphere[common\_idx] == 0}) and remains active, searches for the individual inspiral BHs are deactivated.
+\end{enumerate}
+To improve robustness for initial common horizon finds, if the common horizon has not been found successfully for three consecutive attempts, \BHaHAHA\ adjusts parameters for the common horizon search: the CFL factor is reduced by 10\%, a fixed-radius guess is enforced, and if at least two multigrid levels are used, the coarsest multigrid resolution is temporarily increased to match that of the second level, with the maximum iterations doubled.
+
+\subsection{Diagnostics Computation}
+Upon convergence, various physical diagnostics are computed by the \bhahlib\ library from the found MOTS $h(\theta, \phi)$, including:
+\begin{itemize}
+    \item Area $A$ and irreducible mass $M\_{\text{irr}} = \sqrt{A / (16\pi)}$.
+    \item Coordinate centroid $x\_c^i$ (area-weighted).
+    \item Minimum, maximum, and mean coordinate radii relative to the centroid.
+    \item Proper circumferences ($C\_{xy}, C\_{xz}, C\_{yz}$) in coordinate planes through the centroid.
+    \item Dimensionless spin estimates $|a^i/M|$ from ratios of these circumferences, by inverting Kerr metric relations \cite{Alcubierre2005}.
+\end{itemize}
+These are handled by functions such as \texttt{bah\_diagnostics\_area\_centroid\_and\_Theta\_norms.c}, \texttt{bah\_diagnostics\_min\_max\_mean\_radii\_wrt\_centroid.c}, and \texttt{bah\_diagnostics\_proper\_circumferences.c}.
+
+\section{Output Data}
+\label{sec:output}
+The \BHaHAHA\ thorn, through the \bhahlib\ library function \texttt{bah\_diagnostics\_file\_output.c}, produces two main types of ASCII output files per found horizon, stored in the directory specified by the Cactus parameter \texttt{IO::out\_dir}. These files are designed to be gnuplot-friendly.
+
+\subsection{Horizon Diagnostics File}
+\label{ssec:output_diag}
+\begin{itemize}
+    \item \textbf{Filename Convention:} \file{[IO::out\_dir]/BHaHAHA\_diagnostics.ah[H].gp}, where \texttt{[H]} is the 1-based horizon number (from \texttt{bhahaha\_params\_and\_data.which\_horizon}).
+    \item \textbf{Content:} This file contains a time series of diagnostic quantities for the specified horizon. The file is appended to at each successful find. A header is written if the file is new.
+    \item \textbf{Columns:}
+    \begin{enumerate}
+        \item Current simulation iteration (\texttt{cctk\_iteration})
+        \item Current simulation time (\texttt{cctk\_time})
+        \item x-coordinate of the horizon centroid (global grid coordinates)
+        \item y-coordinate of the horizon centroid
+        \item z-coordinate of the horizon centroid
+        \item Minimum coordinate radius of the horizon surface, relative to its centroid
+        \item Maximum coordinate radius of the horizon surface, relative to its centroid
+        \item Mean coordinate radius of the horizon surface, relative to its centroid (area-weighted)
+        \item Proper circumference in the xy-plane (at centroid's z-height)
+        \item Proper circumference in the xz-plane (at centroid's y-height)
+        \item Proper circumference in the yz-plane (at centroid's x-height)
+        \item Apparent horizon area
+        \item Irreducible mass $M\_{\text{irr}} = \sqrt{A / (16\pi)}$
+        \item $M\_{\text{scale}} \times ||\Theta||_{L_\infty}$ (max norm of expansion)
+        \item $M\_{\text{scale}} \times ||\Theta||_{L_2}$ (L2 norm of expansion)
+        \item Spin x-component estimate from $C\_{xy}/C\_{yz}$ ratio (or NaN if not applicable)
+        \item Spin x-component estimate from $C\_{xz}/C\_{yz}$ ratio (or NaN)
+        \item Spin y-component estimate from $C\_{yz}/C\_{xz}$ ratio (or NaN)
+        \item Spin y-component estimate from $C\_{xy}/C\_{xz}$ ratio (or NaN)
+        \item Spin z-component estimate from $C\_{xz}/C\_{xy}$ ratio (or NaN)
+        \item Spin z-component estimate from $C\_{yz}/C\_{xy}$ ratio (or NaN)
+    \end{enumerate}
+\end{itemize}
+
+\subsection{Horizon Surface Shape File}
+\label{ssec:output_shape}
+\begin{itemize}
+    \item \textbf{Filename Convention:} \file{[IO::out\_dir]/h.t[ITER].ah[H].gp}, where \texttt{[ITER]} is the 7-digit zero-padded Cactus iteration number, and \texttt{[H]} is the 1-based horizon number.
+    \item \textbf{Content:} This file contains the Cartesian coordinates $(x,y,z)$ of points on the found apparent horizon surface. The coordinates are relative to the global grid origin (i.e., the input center for \bhahlib\ plus the found shape $h(\theta,\phi)$ transformed to Cartesian). Data is organized for easy plotting with gnuplot's \texttt{splot} command using \texttt{set pm3d map}. Theta rings are separated by blank lines.
+    \item \textbf{Columns:}
+    \begin{enumerate}
+        \item x-coordinate
+        \item y-coordinate
+        \item z-coordinate
+    \end{enumerate}
+\end{itemize}
+
+\section{Monitoring \BHaHAHA's Status}
+\label{sec:monitoring}
+The verbosity of \BHaHAHA\ is controlled by the \texttt{bah\_verbosity\_level} parameter:
+\begin{itemize}
+    \item \textbf{\texttt{bah\_verbosity\_level = 0}:} Only essential messages are printed, primarily error messages via \texttt{CCTK\_VError} or \texttt{CCTK\_VWarn}, and a summary message upon successful completion of all horizon finds for an iteration (e.g., \texttt{ET\_BHaHAHA total elapsed time...}).
+    \item \textbf{\texttt{bah\_verbosity\_level = 1}} (Default): Prints a summary for each horizon found by the \bhahlib\ library after its final multigrid level. This includes information about final expansion norms, area, irreducible mass, centroid location (global), mean/min/max radii, and estimated spin components. Also includes timing information for the \bhahlib\ search for each horizon. For BBH mode, it logs activation/deactivation of horizon searches.
+    \item \textbf{\texttt{bah\_verbosity\_level = 2}}: Provides the most detailed output. This includes everything from level 1, plus:
+        \begin{itemize}
+            \item Detailed convergence information from the \bhahlib\ library for each multigrid resolution level (iteration number, norms of $\Theta$, etc., printed every \texttt{output\_diagnostics\_every\_nn} internal iterations of \bhahlib).
+            \item Timings for various sub-stages within \texttt{BHaHAHA\_find\_horizons} and \texttt{BHaHAHA\_interpolate\_metric\_data}, such as time spent in MPI synchronization or metric interpolation for each horizon.
+            \item Information printed by \texttt{read\_persistent\_data\_store\_to\_bhahaha\_params\_and\_data} when \texttt{DEBUG\_MODE} is enabled in \BHaHAHA\ C code.
+            \item Pre-interpolation state information: guess coordinates, active flags, etc.
+        \end{itemize}
+        This level is primarily intended for debugging or detailed performance analysis.
+\end{itemize}
+Error messages from \bhahlib\ are converted to descriptive strings by \texttt{bah\_error\_message()} and reported via \texttt{CCTK\_VWarn} or \texttt{CCTK\_VInfo}, often indicating failure to find a horizon and the reason.
+
+\section{Visualization}
+\label{sec:visualization}
+The output files from \BHaHAHA\ are formatted for easy visualization, primarily with \program{gnuplot}.
+\begin{itemize}
+    \item \textbf{Diagnostic Time Series:} Files named \file{BHaHAHA\_diagnostics.ah[H].gp} contain time series data. For example, to plot the irreducible mass of horizon 1 over time:
+    \begin{verbatim}
+    gnuplot> plot "BHaHAHA_diagnostics.ah1.gp" using 2:13 with lines title "M_{irr} H1"
+    \end{verbatim}
+    Refer to Section \ref{ssec:output_diag} for column definitions.
+    \item \textbf{Horizon Shapes:} Files named \file{h.t[ITER].ah[H].gp} contain the (x,y,z) coordinates of the horizon surface at a specific iteration. These can be plotted as a 3D surface in gnuplot:
+    \begin{verbatim}
+    gnuplot> splot "h.t0000000.ah1.gp" with lines title "AH1 at t=0"
+    # For a color map view
+    gnuplot> set view map
+    gnuplot> splot "h.t0000000.ah1.gp" with pm3d title "AH1 at t=0"
+    \end{verbatim}
+    Other 3D visualization tools like \program{VisIt} or \program{ParaView} can also be used by importing the ASCII data.
+\end{itemize}
+
+\section{Accuracy and Testing}
+\label{sec:accuracy}
+The \bhahlib\ library and its \BHaHAHA\ interface have undergone several tests to assess accuracy and robustness, as detailed in \cite{Etienne2025etal}.
+\begin{itemize}
+    \item \textbf{Comparison with \thorn{AHFinderDirect}:} For dynamical binary black hole spacetimes (e.g., GW150914-like inspiral and merger), \BHaHAHA\ with default tolerances ($L_\infty(\Theta \cdot M\_{\text{scale}}) \sim 10^{-5}$) achieves results (horizon area, centroid trajectories) consistent with \thorn{AHFinderDirect}. The dominant source of discrepancy at these tolerance levels is typically the error from interpolating metric data from the host NR code's grid to the horizon finder's internal grid (around $10^{-5}$ for typical ETK setups). \BHaHAHA\ tends to be significantly faster (approx. 2.1x) than \thorn{AHFinderDirect} when achieving comparable (interpolation-limited) accuracy in such dynamical scenarios.
+    \item \textbf{Scale Invariance:} \bhahlib\ is designed with scale-invariant convergence criteria (tolerances are relative to \texttt{bah\_M\_scale}). Tests on Brill-Lindquist two black hole initial data, where the total mass was varied over 16 orders of magnitude while keeping dimensionless quantities fixed, showed that \bhahlib\ maintained consistent accuracy in normalized horizon areas ($A/M^2$). In contrast, \thorn{AHFinderDirect} (with absolute tolerances) showed deviations at very small or very large mass scales.
+    \item \textbf{Precision Tests (Three-BH Critical Radius):} For the demanding Thornburg three-black-hole "critical radius" test \cite{Thornburg04AHF}, \bhahlib\ (when run within its native BlackHoles@Home environment with high-order finite differencing/interpolation and strict tolerances, e.g., $M_{scale}||\Theta||_{L_\infty} < 3 \times 10^{-8}$) reproduces $R\_{\text{crit}} \approx 1.1954995$ to at least 8 significant digits, matching results from \thorn{AHFinderDirect} and other specialized solvers \cite{HuiLin2025}. This demonstrates the intrinsic accuracy of the underlying hyperbolic relaxation algorithm.
+\end{itemize}
+The default tolerance for \BHaHAHA\ (\texttt{bah\_Theta\_Linf\_times\_M\_tolerance = 1e-5}) is typically sufficient for most production NR simulations, as accuracy is often limited by metric interpolation error rather than the horizon finder's intrinsic precision.
+
+\section{Examples}
+\label{sec:examples}
+Example parameter files for using \BHaHAHA\ can be found in the \file{ET\_BHaHAHA/par/} directory.
+
+\subsection{Single Shifted Kerr Black Hole}
+The parameter file \file{shifted\_kerr\_schild.par} sets up a single, spinning Kerr black hole using the \thorn{ShiftedKerrSchild} initial data thorn.
+Key \BHaHAHA\ parameters in this file:
+\begin{verbatim}
+ActiveThorns = "ET_BHaHAHA"
+ET_BHaHAHA::max_num_horizons = 1
+ET_BHaHAHA::bah_verbosity_level = 2
+ET_BHaHAHA::bah_max_search_radius[0] = 1.5
+# BHaHAHA::bah_M_scale[0] = 1.0 (Matches ShiftedKerrSchild::BH_mass)
+\end{verbatim}
+
+\subsection{Binary Black Hole Inspiral and Merger (BBH Mode)}
+The parameter file \file{GW150914\_baikalvacuum.par} simulates a GW150914-like binary black hole system using \thorn{TwoPunctures} initial data and evolved with \thorn{BaikalVacuum}. This example demonstrates the BBH mode of \BHaHAHA.
+Key \BHaHAHA\ parameters for BBH mode:
+\begin{verbatim}
+ActiveThorns = "ET_BHaHAHA"
+BHaHAHA::max_num_horizons = 3
+BHaHAHA::bah_BBH_mode_enable = 1
+BHaHAHA::bah_BBH_mode_common_horizon_idx = 2
+BHaHAHA::bah_BBH_mode_inspiral_BH_idxs = [0, 1]
+BHaHAHA::find_every = 44 # Search cadence
+# Per-horizon parameters (indices 0, 1 for inspiral; 2 for common)
+BHaHAHA::bah_M_scale = [0.5538, 0.4461, 1.0]
+BHaHAHA::bah_initial_grid_x_center[0] =  4.461538
+BHaHAHA::bah_initial_grid_x_center[1] = -5.538461
+BHaHAHA::bah_max_search_radius = [0.6, 0.5, 1.4]
+\end{verbatim}
+This setup tracks the two inspiralling black holes. When they get close enough, \BHaHAHA\ automatically starts searching for the common horizon.
+
+\subsection{Brill-Lindquist Distorted Horizons}
+Files like \file{brill\_lindquist\_highly\_distorted\_horizon.par} (and variants with different mass scales, e.g., \file{-1e-5.par}, \file{-1e8.par}) set up two Brill-Lindquist punctures with a small separation, resulting in a highly distorted common apparent horizon. These test robustness and scale invariance. BBH mode is disabled, so three horizons (common, and two small individual ones near punctures) are sought independently.
+
+\section{Acknowledgements}
+\label{sec:acknowledgements}
+The \BHaHAHA\ thorn was developed by Zachariah B. Etienne.
+The underlying \bhahlib\ library, also primarily developed by Zachariah B. Etienne, benefitted from input and contributions from Thiago Assump\c{c}\~{a}o, Leonardo Rosa Werneck, and Samuel D. Tootle, as detailed in \cite{Etienne2025etal}.
+Special thanks to Jonathan Thornburg, whose \thorn{AHFinderDirect} thorn has been a cornerstone of apparent horizon finding in the numerical relativity community and served as a template and high standard for \bhahlib\ and \BHaHAHA. Thanks also to Roland Haas for valuable input during the development of the \bhahlib\ library.
+
+This research made use of the resources of the High Performance Computing Center at Idaho National Laboratory, which is supported by the Office of Nuclear Energy of the U.S. Department of Energy and the Nuclear Science User Facilities under Contract No. DE-AC07-05ID14517. In addition, it made use of the Falcon supercomputer, operated by the Idaho C3+3 Collaboration.
+Z.B.E. gratefully acknowledges support from NSF awards PHY-2110352/2508377, PHY-2409654, OAC-2004311/2227105, OAC-2411068, and AST-2108072/2227080, as well as NASA awards ISFM-80NSSC18K0538, TCAN-80NSSC18K1488, and ATP-80NSSC22K1898. TA is thankful for support from NSF grants OAC-2229652 and AST-2108269. L.R.W. gratefully acknowledges support from NASA award LPS-80NSSC24K0360. Z.B.E. and ST received additional support from NASA award ATP-80NSSC22K1898 and the University of Idaho P3-R1 Initiative.
+
+\section{License}
+\label{sec:license}
+The \BHaHAHA\ thorn is licensed under the BSD 2-Clause License:
+\begin{verbatim}
+BSD 2-Clause License
+
+Copyright (c) 2025, Zachariah Etienne
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+\end{verbatim}
+
+\begin{thebibliography}{99} % Increased bibliography capacity
+
+\bibitem{Etienne2025etal}
+    {Z. B. Etienne, T. Assump\c{c}\~{a}o, L. R. Werneck, S. D. Tootle,
+    {\em BHAHAHA: A Fast, Robust Apparent Horizon Finder Library for Numerical Relativity},
+    arXiv:2505.15912 [gr-qc] (2025).}
+
+\bibitem{Penrose65}
+    {R. Penrose,
+    {\em Gravitational Collapse and Space-Time Singularities},
+    Phys. Rev. Lett., 14 (1965), 57--59.}
+
+\bibitem{Senovilla11}
+    {J. M. M. Senovilla,
+    {\em Trapped Surfaces},
+    Int. J. Mod. Phys. D, 20 (2011), 2139. \texttt{arXiv:1107.1344 [gr-qc]}}
+
+\bibitem{Thornburg04AHF}
+    {J. Thornburg,
+    {\em A Fast Apparent-Horizon Finder for 3-Dimensional Cartesian Grids in Numerical Relativity},
+    Class. Quantum Grav., 21 (2004), 743--766. \texttt{arXiv:gr-qc/0306056}}
+
+\bibitem{ADM62}
+    {R. Arnowitt, S. Deser, C. W. Misner,
+    {\em The Dynamics of General Relativity},
+    In: Witten L. (eds) Gravitation: An Introduction to Current Research. John Wiley \& Sons, New York (1962).
+    Reprinted in Gen. Rel. Grav. 40 (2008), 1997--2027. \texttt{arXiv:gr-qc/0405109}}
+
+\bibitem{Thornburg07LR}
+    {J. Thornburg,
+    {\em Event and Apparent Horizon Finders for 3+1 Numerical Relativity},
+    Living Rev. Relativ., 10 (2007), 3. \texttt{arXiv:gr-qc/0512169}}
+
+\bibitem{CactusWeb}
+    {{\em The Cactus Code}, \url{http://cactuscode.org/}.}
+
+\bibitem{Loffler2011}
+    {F. L{\"o}ffler, J. Faber, E. Bentivegna, T. Bode, P. Diener, R. Haas, I. Hinder, B. C. Mundim, C. D. Ott, E. Schnetter, G. Allen, M. Campanelli, and P. Laguna,
+    {\em The Einstein Toolkit: A community computational infrastructure for relativistic astrophysics},
+    Class. Quantum Grav., 29 (2012), 115001. \texttt{arXiv:1111.3344 [gr-qc]}.}
+
+\bibitem{NRPyWWW}
+    {\em NRPy: Numerical Relativity in Python}, \url{https://nrpyplus.net/}.
+
+\bibitem{NRPyGit}
+    {Z. B. Etienne, et al.,
+    {\em NRPy+ GitHub Repository},
+    \url{https://github.com/nrpy/nrpy}.}
+
+\bibitem{Schnetter04}
+    {E. Schnetter, S. H. Hawley, I. Hawke,
+    {\em Evolutions in 3D numerical relativity using fixed mesh refinement},
+    Class. Quantum Grav., 21 (2004), 1465. \texttt{arXiv:gr-qc/0310042}}
+
+\bibitem{CarpetWeb}
+    {{\em Carpet: Adaptive Mesh Refinement for the Cactus Framework},
+    \url{http://www.carpetcode.org/}.}
+
+\bibitem{Brown2009}
+    {J. D. Brown,
+    {\em Covariant formulations of spherical harmonic P N formalisms in numerical relativity},
+    Phys. Rev. D, 80 (2009), 084042. \texttt{arXiv:0908.3814 [gr-qc]}.}
+
+\bibitem{Montero2012}
+    {P. J. Montero and I. Cordero-Carri{\'o}n,
+    {\em Reference-metric subsystem for BSSN-inspired equations in spherical coordinates},
+    Phys. Rev. D, 85 (2012), 124037. \texttt{arXiv:1204.5377 [gr-qc]}.}
+
+\bibitem{Baumgarte2013}
+    {T. W. Baumgarte, P. J. Montero, I. Cordero-Carri{\'o}n, and E. M{\"u}ller,
+    {\em Numerical relativity in spherical coordinates: A new reference-metric BSSN formulation},
+    Phys. Rev. D, 87 (2013), 044026. \texttt{arXiv:1211.6632 [gr-qc]}.}
+
+\bibitem{Gottlieb2001}
+    {S. Gottlieb, C.-W. Shu, and E. Tadmor,
+    {\em Strong Stability-Preserving High-Order Time Discretization Methods},
+    SIAM Review, 43 (2001), 89--112.}
+
+\bibitem{Alcubierre2005}
+    {M. Alcubierre, J. A. Gonz{\'a}lez, D. N{\'u}{\~n}ez, and J. A. Percival,
+    {\em Quasi-local characterization of a Kerr black hole's spin},
+    Phys. Rev. D, 72 (2005), 044004. \texttt{arXiv:gr-qc/0411149}.}
+
+\bibitem{HuiLin2025}
+    {H. K. Hui and L.-M. Lin,
+    {\em A multigrid apparent horizon solver for binary black hole spacetimes},
+    Class. Quantum Grav., 42 (2025), 055008. \texttt{arXiv:2404.16511 [gr-qc]}.}
+
+\end{thebibliography}
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{bah\_enable\_eta\_varying\_alg\_for\_precision\_common\_horizon}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bah\_bbh\_mode\_common\_horizon\_idx} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em BBH mode: Horizon indices (zero-offset) for two inspiralling BHs. E.g., if the common horizon has index 2, then set bah\_BBH\_mode\_common\_horizon\_idx=2}} \\
+\hline{\bf Range} & &  {\bf Default:} 2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:2} & \multicolumn{2}{p{\paraWidth}|}{0, 1, or 2.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bah\_bbh\_mode\_enable} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em 0 = disable; 1 = enable}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:1} & \multicolumn{2}{p{\paraWidth}|}{0=disable, 1=enable} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bah\_bbh\_mode\_inspiral\_bh\_idxs} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em BBH mode: Horizon indices (zero-offset) for two inspiralling BHs. E.g., if the inspiralling BHs have indices 0,1 then set BHaHAHA::bah\_BBH\_mode\_inspiral\_BH\_idxs = [0,1]}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:2} & \multicolumn{2}{p{\paraWidth}|}{0, 1, or 2.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bah\_cfl\_factor} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Courant-Friedrichs-Lewy (CFL) factor to set timestep within BHaHAHA hyperbolic relaxation. 0.98 robust default, even for new horizon formation (e.g., common horizons).}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.98 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:1.0} & \multicolumn{2}{p{\paraWidth}|}{Positive values up to 1.0 accepted.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bah\_enable\_eta\_varying\_alg\_for\_precision\_common\_horizon} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Enable eta-varying algorithm for high-precision common horizon finding. For general-purpose horizon finding, leave this disabled.}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:1} & \multicolumn{2}{p{\paraWidth}|}{0=disable; 1=enable} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bah\_eta\_damping\_times\_m} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Hyperbolic relaxation exponential damping parameter.}} \\
+\hline{\bf Range} & &  {\bf Default:} 7.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{7.0 highly recommended, seems best in GW150914 gallery example.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bah\_initial\_grid\_x\_center} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial x locations of horizon grid centers}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Any value allowed} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bah\_initial\_grid\_y\_center} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial y locations of horizon grid centers}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Any value allowed} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bah\_initial\_grid\_z\_center} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial z locations of horizon grid centers}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Any value allowed} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bah\_ko\_strength} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Hyperbolic relaxation Kreiss-Oliger dissipation parameter. This usually hurts more than it helps, so is disabled (0.0) by default.}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{0.0 strongly recommended} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bah\_m\_scale} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Mass scale for each horizon.}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{"Estimate of the mass of each horizon, used for bah\_Theta\_Linf\_times 
+\_M\_tolerance AND bah\_eta\_damping\_time 
+s\_M. I would use e.g., the puncture bare masses or expected irreducible masses here."} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bah\_max\_iterations} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Maximum hyperbolic relaxation steps before ending the horizon search.}} \\
+\hline{\bf Range} & &  {\bf Default:} 10000 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Zero (disable) or positive integer; recommended: 1000--10000. Once horizon found, shouldn't need more than {\textasciitilde}100 at lowest resolution. For precision horizon finding (3-horizon Brill-Lindquist for example), this parameter might need to be set in the 1e9 range} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bah\_max\_search\_radius} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Input spherical grid(s): maximum radius to search, for all time.}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.5 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{All positive values accepted.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bah\_nphi\_array\_multigrid} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Multigrid Nphi array.}} \\
+\hline{\bf Range} & &  {\bf Default:} -100 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -100} & \multicolumn{2}{p{\paraWidth}|}{poison value} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 2:*:2} & \multicolumn{2}{p{\paraWidth}|}{only allow even values {\textgreater}=2} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bah\_nr\_interp\_max} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Maximum number of radial points for  grid(s): Number of points sampling radial direction.}} \\
+\hline{\bf Range} & &  {\bf Default:} 48 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 4:*} & \multicolumn{2}{p{\paraWidth}|}{All values {\textgreater} 4 accepted. Recommended: 48 -- 64. Increasing this will increase ET interpolation overhead (usually the largest cost), but BHaHAHA itself will remain about the same speed.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bah\_ntheta\_array\_multigrid} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Multigrid Ntheta array.}} \\
+\hline{\bf Range} & &  {\bf Default:} -100 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -100} & \multicolumn{2}{p{\paraWidth}|}{poison value} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 2:*:2} & \multicolumn{2}{p{\paraWidth}|}{only allow even values {\textgreater}=2} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bah\_num\_resolutions\_multigrid} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Number of resolutions provided in bah\_N\{theta,phi\}\_array\_multigrid[] arrays}} \\
+\hline{\bf Range} & &  {\bf Default:} 3 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -100} & \multicolumn{2}{p{\paraWidth}|}{poison value} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{anything else} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bah\_theta\_l2\_times\_m\_tolerance} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Primary convergence criterion: area-weighted L2 norm of residual function Theta on horizon.}} \\
+\hline{\bf Range} & &  {\bf Default:} 1e-2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{1e-2 recommended, for speed vs accuracy balance} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bah\_theta\_linf\_times\_m\_tolerance} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Secondary convergence criterion: L-infinity norm of Theta, time mass scale.}} \\
+\hline{\bf Range} & &  {\bf Default:} 1e-5 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{1e-5 recommended} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bah\_verbosity\_level} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em 0 = essential only; 1 = physical summary of found horizon; 2 = full algorithmic details}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:2} & \multicolumn{2}{p{\paraWidth}|}{0, 1, or 2.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{find\_every} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Search cadence for all horizons.}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering } & \multicolumn{2}{p{\paraWidth}|}{disable BHaHAHA} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{any integer {\textgreater}= 1} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{find\_every\_individual} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Search cadence for individual apparent horizons. (overrides find\_every if {\textgreater}= 1).}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1} & \multicolumn{2}{p{\paraWidth}|}{use find\_every} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering } & \multicolumn{2}{p{\paraWidth}|}{disable BHaHAHA on this horizon} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{any integer {\textgreater}= 1} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{interpolator\_name} & {\bf Scope:} restricted & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Which interpolator should I use}} \\
+\hline{\bf Range} & &  {\bf Default:} Hermite polynomial interpolation \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .+} & \multicolumn{2}{p{\paraWidth}|}{Any nonempty string} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{interpolator\_pars} & {\bf Scope:} restricted & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Parameters for the interpolator}} \\
+\hline{\bf Range} & &  {\bf Default:} order=3 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{"Any string that Util\_TableSetFromStr 
+ing() will take"} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{max\_nphi} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Maximum number of points that will sample the phi direction. For typical horizon finding, leave this to default value of 64.}} \\
+\hline{\bf Range} & &  {\bf Default:} 64 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 2:256:2} & \multicolumn{2}{p{\paraWidth}|}{only allow even values between 2 and 256} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{max\_ntheta} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Maximum number of points that will sample the theta direction. For typical horizon finding, leave this to default value of 32.}} \\
+\hline{\bf Range} & &  {\bf Default:} 32 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 2:128:2} & \multicolumn{2}{p{\paraWidth}|}{only allow even values between 2 and 128} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{max\_num\_horizons} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Maximum number of horizons for this simulation.}} \\
+\hline{\bf Range} & &  {\bf Default:} 3 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Zero or any positive number.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{sync\_data\_across\_ranks\_after\_each\_search\_\_warning\_slow} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Enables restart from a different number of MPI ranks. WARNING: Slows BHaHAHA by {\textgreater}2x}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:1} & \multicolumn{2}{p{\paraWidth}|}{Zero (no) or one (yes).} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{maxnphi} & {\bf Scope:} shared from SPHERICALSURFACE & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{maxntheta} & {\bf Scope:} shared from SPHERICALSURFACE & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{nsurfaces} & {\bf Scope:} shared from SPHERICALSURFACE & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+bhahaha
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+admbase
+
+boundary
+
+grid
+\vspace{2mm}
+\subsection*{Grid Variables}
+\vspace{5mm}\subsubsection{PUBLIC GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+bah\_prev\_horizons &  & compact & 0 \\ 
+ & prev\_horizon\_m1 & dimensions & 1 \\ 
+ & prev\_horizon\_m2 & distribution & CONSTANT \\ 
+ & prev\_horizon\_m3 & group type & ARRAY \\ 
+ &  & size & MAX\_NUM\_HORIZONS*MAX\_NTHETA*MAX\_NPHI \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & max\_num\_horizons \\ 
+ &  & variable type & REAL \\ 
+\hline 
+bah\_coord\_info &  & compact & 0 \\ 
+ & t\_m1 & dimensions & 0 \\ 
+ & r\_min\_m1 & distribution & CONSTANT \\ 
+ & r\_max\_m1 & group type & SCALAR \\ 
+ & x\_center\_m1 & timelevels & 1 \\ 
+ & y\_center\_m1 & vararray\_size & max\_num\_horizons \\ 
+ & z\_center\_m1 & variable type & REAL \\ 
+\hline 
+bah\_guess &  & compact & 0 \\ 
+ & use\_fixed\_radius\_guess\_on\_full\_sphere & dimensions & 0 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & max\_num\_horizons \\ 
+ &  & variable type & INT \\ 
+\hline 
+bah\_is\_horizon\_active &  & compact & 0 \\ 
+ & bah\_horizon\_active & dimensions & 0 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & max\_num\_horizons \\ 
+ &  & variable type & INT \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn EinsteinAnalysis/ET\_BHaHAHA.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Always:}&  ~ \\ 
+ bah\_prev\_horizons & ~\\ 
+ bah\_coord\_info & ~\\ 
+ bah\_guess & ~\\ 
+ bah\_is\_horizon\_active & ~\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_ANALYSIS} 
+
+\hspace{5mm} bhahaha\_find\_horizons 
+
+\hspace{5mm}{\it driver function for bhahaha } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & global-early \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}
