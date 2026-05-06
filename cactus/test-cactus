@@ -61,17 +61,16 @@ fi
 
 for nprocs in 1 2; do
     simname=${JOB_NAME}_${GIT_COMMIT}_${nprocs}
-    rm -rf $simdir/$simname
+rm -rf $simdir/$simname
 
     cores=$(mdbentry $machine ppn)
-    threads=$((cores/nprocs))
 
     common_args="--testsuite $tests --procs $cores --num-threads $((cores/nprocs)) $simname"
     # Ideally, this condition would come from whether there was a
     # submit command defined, but simfactory thinks that all machines
     # have submit commands
     if [ "${SIMFACTORY_FOREGROUND}" = "1" ]; then
-        simfactory/bin/sim create-run $common_args 2>&1 | tee build__${nprocs}_${threads}.log
+        simfactory/bin/sim create-run $common_args
     else
         simfactory/bin/sim create-submit --walltime 1:00:00 $common_args
     fi
@@ -79,9 +78,6 @@ done
 
 for nprocs in 1 2; do
     simname=${JOB_NAME}_${GIT_COMMIT}_${nprocs}
-
-    cores=$(mdbentry $machine ppn)
-    threads=$((cores/nprocs))
 
     if [ "${SIMFACTORY_FOREGROUND}" -ne "1" ]; then
         echo "Waiting for ${simname}" >&2
@@ -102,7 +98,6 @@ for nprocs in 1 2; do
                     break
             esac
         done
-        cat $simdir/$simname/output-0000/${simname}.out $simdir/$simname/output-0000/${simname}.err >build__${nprocs}_${threads}.log
     fi
 
     testdir=$simdir/$simname/output-0000/TEST
@@ -113,6 +108,10 @@ for nprocs in 1 2; do
         cat $simdir/$simname/output-0000/${simname}.err
         exit 1
     fi
+
+    cores=$(mdbentry $machine ppn)
+    threads=$((cores/nprocs))
+    cat $simdir/$simname/output-0000/${simname}.out $simdir/$simname/output-0000/${simname}.err >build__${nprocs}_${threads}.log
 
     # check for a failure in tests
     if [ -n "$GITHUB_ENV" ] ; then
