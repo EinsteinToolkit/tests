@@ -72,15 +72,14 @@ def copy_logs(test_dir,version):
     '''
         This copies the test logs for future use
     '''
+    dst=f"{gh_pages}/records/version_{version}/"
+    log=f"{test_dir}/summary.log"
     # TODO: move into separate function and return Python object
     config=configparser.ConfigParser()
     config.read(f"{test_dir}/../../SIMFACTORY/properties.ini")
     procs=config['properties']['procs']
     numthreads=config['properties']['numthreads']
     build=f"build__{procs}_{numthreads}_{version}.log"
-
-    dst=f"{gh_pages}/records/version_{version}/"
-    log=f"{master}/{build}"
     shutil.copy(log,dst+build)
 
 
