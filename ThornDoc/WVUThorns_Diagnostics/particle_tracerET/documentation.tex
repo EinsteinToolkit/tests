@@ -1,0 +1,783 @@
+% *======================================================================*
+%  Cactus Thorn template for ThornGuide documentation
+%  Author: Ian Kelley
+%  Date: Sun Jun 02, 2002
+%  $Header$
+%
+%  Thorn documentation in the latex file doc/documentation.tex
+%  will be included in ThornGuides built with the Cactus make system.
+%  The scripts employed by the make system automatically include
+%  pages about variables, parameters and scheduling parsed from the
+%  relevant thorn CCL files.
+%
+%  This template contains guidelines which help to assure that your
+%  documentation will be correctly added to ThornGuides. More
+%  information is available in the Cactus UsersGuide.
+%
+%  Guidelines:
+%   - Do not change anything before the line
+%       % START CACTUS THORNGUIDE",
+%     except for filling in the title, author, date, etc. fields.
+%        - Each of these fields should only be on ONE line.
+%        - Author names should be separated with a \\ or a comma.
+%   - You can define your own macros, but they must appear after
+%     the START CACTUS THORNGUIDE line, and must not redefine standard
+%     latex commands.
+%   - To avoid name clashes with other thorns, 'labels', 'citations',
+%     'references', and 'image' names should conform to the following
+%     convention:
+%       ARRANGEMENT_THORN_LABEL
+%     For example, an image wave.eps in the arrangement CactusWave and
+%     thorn WaveToyC should be renamed to CactusWave_WaveToyC_wave.eps
+%   - Graphics should only be included using the graphicx package.
+%     More specifically, with the "\includegraphics" command.  Do
+%     not specify any graphic file extensions in your .tex file. This
+%     will allow us to create a PDF version of the ThornGuide
+%     via pdflatex.
+%   - References should be included with the latex "\bibitem" command.
+%   - Use \begin{abstract}...\end{abstract} instead of \abstract{...}
+%   - Do not use \appendix, instead include any appendices you need as
+%     standard sections.
+%   - For the benefit of our Perl scripts, and for future extensions,
+%     please use simple latex.
+%
+% *======================================================================*
+%
+% Example of including a graphic image:
+%    \begin{figure}[ht]
+% 	\begin{center}
+%    	   \includegraphics[width=6cm]{/home/runner/work/tests/tests/arrangements/WVUThorns_Diagnostics/particle_tracerET/doc/MyArrangement_MyThorn_MyFigure}
+% 	\end{center}
+% 	\caption{Illustration of this and that}
+% 	\label{MyArrangement_MyThorn_MyLabel}
+%    \end{figure}
+%
+% Example of using a label:
+%   \label{MyArrangement_MyThorn_MyLabel}
+%
+% Example of a citation:
+%    \cite{MyArrangement_MyThorn_Author99}
+%
+% Example of including a reference
+%   \bibitem{MyArrangement_MyThorn_Author99}
+%   {J. Author, {\em The Title of the Book, Journal, or periodical}, 1 (1999),
+%   1--16. {\tt http://www.nowhere.com/}}
+%
+% *======================================================================*
+
+% If you are using CVS use this line to give version information
+% $Header$
+
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+%% \usepackage{cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+% The author of the documentation
+\author{Zachariah B.~Etienne \textless zachetie *at* gmail *dot* com \textgreater\\
+  Documentation by Leonardo R.~Werneck \textless wernecklr *at* gmail *dot* com \textgreater
+}
+
+% The title of the document (not necessarily the name of the Thorn)
+\title{\texttt{particle\_tracerET}}
+
+% the date your document was last changed, if your document is in CVS,
+% please use:
+\date{October 4, 2024}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+% Add all definitions used in this documentation here
+%   \def\mydef etc
+\newcommand{\beq}{\begin{equation}}
+\newcommand{\eeq}{\end{equation}}
+\newcommand{\beqn}{\begin{eqnarray}}
+\newcommand{\eeqn}{\end{eqnarray}}
+\newcommand{\half} {{1\over 2}}
+\newcommand{\sgam} {\sqrt{\gamma}}
+\newcommand{\tB}{\tilde{B}}
+\newcommand{\tS}{\tilde{S}}
+\newcommand{\tF}{\tilde{F}}
+\newcommand{\tf}{\tilde{f}}
+\newcommand{\tT}{\tilde{T}}
+\newcommand{\sg}{\sqrt{\gamma}\,}
+\newcommand{\ve}[1]{\mbox{\boldmath $#1$}}
+\newcommand{\Madm}{M_{\rm ADM}}
+\newcommand{\Padm}{P_{\rm ADM}}
+\newcommand{\Jadm}{J_{\rm ADM}}
+\newcommand{\norm}[1]{\left\lVert#1\right\rVert}
+\newcommand{\rhob}{\rho_{\rm b}}
+\newcommand{\rhostar}{\rho_{\star}}
+
+\newcommand{\thornname}{\texttt{particle\_tracerET}}
+\newcommand{\GiR}{{\texttt{GiRaFFE}}}
+\newcommand{\IGM}{{\texttt{IllinoisGRMHD}}}
+
+\linespread{1.0}
+
+\newenvironment{packed_itemize}{
+\begin{itemize}
+  \setlength{\itemsep}{0.0pt}
+  \setlength{\parskip}{0.0pt}
+  \setlength{\parsep}{ 0.0pt}
+}{\end{itemize}}
+
+\newenvironment{packed_enumerate}{
+\begin{enumerate}
+  \setlength{\itemsep}{0.0pt}
+  \setlength{\parskip}{0.0pt}
+  \setlength{\parsep}{ 0.0pt}
+}{\end{enumerate}}
+
+% Add an abstract for this thorn's documentation
+\begin{abstract}
+  \thornname{} is used to track the motion of test particles that comove
+  with fluid flows. With this data once can generate accurate,
+  self-consistent visualizations of magnetic field lines over
+  the course of e.g., a binary neutron star simulation.
+\end{abstract}
+
+\section{Overview}
+\label{sec:overview}
+
+\thornname{} tracks the motion of test particles that comove with fluid
+flows. As magnetic field lines remain attached to the fluid elements
+they thread in the MHD approximation, this thorn provides essential
+functionality for self-consistent visualizations of the dynamics of
+magnetic field lines (i.e., magnetic field vector streamlines) over time
+in a GRMHD simulation.
+
+Magnetic field lines can be visualized by first picking a fluid element
+(i.e., a point in space at which the fluid density and magnetic fields
+are nonzero), and then generating the vector field streamline according
+to the magnetic field vector.
+
+The instantaneous velocity of these test particles is given by the
+velocity in the induction equation $v^{i} = u^{i}/u^{0}$ at the location
+of each test particle, so this thorn tracks particle dynamics by solving
+the ordinary differential equations (ODEs):
+%%
+\begin{equation}
+  \frac{dx}{dt} = v^{x}\;,\quad\frac{dy}{dt} = v^{y}\;,\quad\frac{dz}{dt} = v^{z}\;,
+\end{equation}
+%%
+subject to the initial conditions
+%%
+\begin{equation}
+  x(0) = x_{0}\;,\quad y(0) = y_{0}\;,\quad z(0) = z_{0}\;.
+\end{equation}
+%%
+The above initial value problem is solved for each particle using an RK4
+ODE integration, interpolating the velocity vector at each particle
+position, at each RK4 substep. The frequency of RK4 substeps generally
+can be far lower than that of the global simulation RK substepping, and
+is set to be every ``\verb|update_RK4_freq|'' \verb|cctk_iteration|'s.
+
+The velocities $v^{i} = u^{i}/u^{0}$ are computed using as inputs the
+\texttt{HydroBase} velocity and \texttt{ADMBase} spacetime metric
+variables. \thornname{} stores $v^{i}$ to \texttt{MHDvx}, \texttt{MHDvy},
+and \texttt{MHDvz}.
+
+Note that the velocities above differ from the \texttt{HydroBase}
+velocities, the so-called Valencia three-velocity, $v^{i}_{(n)}$. The
+relationship between $v^{i}$ and $v^{i}_{(n)}$ is given by (see
+e.g.,~\cite{etienne2015illinoisgrmhd})
+%%
+\begin{equation}
+  v^{i} = \alpha v^{i}_{(n)} - \beta^{i}\;.
+\end{equation}
+%%
+
+Initially, particles are seeded inside a sphere of radius $R$ located at
+position $(X,Y,Z)$. The parameters that correspond to $R$, $X$, $Y$, and
+$Z$ are given in Table 1.
+
+\begin{table}
+  \centering
+  \begin{tabular}{c c}
+    \hline
+    \hline
+    Variable & Thorn parameter\\
+    \hline
+    $R$ & \verb|seed_particles_inside_sphere__radius|\\
+    $X$ & \verb|seed_particles_inside_sphere__x_coord|\\
+    $Y$ & \verb|seed_particles_inside_sphere__y_coord|\\
+    $Z$ & \verb|seed_particles_inside_sphere__z_coord|\\
+    \hline
+    \hline
+  \end{tabular}
+\end{table}
+
+Once the position of the particle is known, it is accepted by the
+algorithm with probability
+%%
+\begin{equation}
+  P = \left[\frac{\rho(\vec{x}_{\rm p})}{\rho_{\rm max}}\right]^{C}\;,
+\end{equation}
+%%
+where $\rho(\vec{x}_{\rm p})$ is the density interpolated at the
+particle position $\vec{x}_{\rm p}$, $\rho_{\rm max}$ is the maximum
+density on the computational domain, and $C$ is the central condensation
+parameter.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% Basic usage %%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Basic usage}
+\label{sec:basic_usage}
+
+The following snippet shows what to add to your parfile in order to
+setup the thorn to seed 5000 particles inside a sphere of radius $R=50$
+centered at $(X,Y,Z)=(0,0,0)$ (default). The maximum density is
+specified as well, which will affect the probability $P$ with which the
+particles are accepted by the algorithm. The particle positions are then
+updated once every 16 time steps by solving the ODEs above.
+
+\begin{verbatim}
+ActiveThorns = "particle_tracerET"
+particle_tracerET::num_particles                        = 5000
+particle_tracerET::density_max                          = 0.000959482674936154
+particle_tracerET::seed_particles_inside_sphere__radius = 50
+particle_tracerET::update_RK4_freq                      = 16
+\end{verbatim}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%% References %%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{thebibliography}{1}
+
+\bibitem{etienne2015illinoisgrmhd}
+
+  Z.~B.~Etienne, V.~Paschalidis, R.~Haas, P.~Mösta, \& S.~L.~Shapiro,
+  \newblock {\em IllinoisGRMHD: an open-source, user-friendly GRMHD code for dynamical spacetimes},
+  Classical and Quantum Gravity, 32(17), 175009 (2015).
+
+\end{thebibliography}
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{seed\_particles\_inside\_sphere\_\_x\_coord}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{central\_condensation\_parameter} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Probability of accepting random point x,y,z = (density(x,y,z)/density\_max)\^central\_condensation\_paramter}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Any number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{debug} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Evolve analytic velocity data and verify that the RK4 solution is consistent to 4th order.}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:1} & \multicolumn{2}{p{\paraWidth}|}{0 = disable; 1=enable debug} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{density\_max} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Maximum density within sphere.}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Any number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{interpolator\_name} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Which interpolator should I use}} \\
+\hline{\bf Range} & &  {\bf Default:} Lagrange polynomial interpolation \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .+} & \multicolumn{2}{p{\paraWidth}|}{Any nonempty string} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{interpolator\_pars} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Parameters for the interpolator}} \\
+\hline{\bf Range} & &  {\bf Default:} order=4 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{"Any string that Util\_TableSetFromStr 
+ing() will take"} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{num\_particles} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Number of particles}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{zero (disable particle generation), or some other number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_of\_bounds\_xyz} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em fabs(x) {\textgreater} out\_of\_bounds\_xyz || fabs(y) {\textgreater} out\_of\_bounds\_xyz || fabs(z) {\textgreater} out\_of\_bounds\_xyz -{\textgreater} OUT OF BOUNDS.}} \\
+\hline{\bf Range} & &  {\bf Default:} 800.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Any number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{outdir} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Directory for particle tracerET output files, overrides IO::out\_dir}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering \^\$} & \multicolumn{2}{p{\paraWidth}|}{An empty string to choose the default from IO::out\_dir} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .+} & \multicolumn{2}{p{\paraWidth}|}{A valid directory name} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{output\_file\_format} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em File format (ASCII or Binary)}} \\
+\hline{\bf Range} & &  {\bf Default:} ascii \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering ascii} & \multicolumn{2}{p{\paraWidth}|}{ASCII format} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering binary} & \multicolumn{2}{p{\paraWidth}|}{Binary format} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{output\_format} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Output format}} \\
+\hline{\bf Range} & &  {\bf Default:} default \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering default} & \multicolumn{2}{p{\paraWidth}|}{First column is time then particles positions.} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering with\_iterations} & \multicolumn{2}{p{\paraWidth}|}{First column is iteration, second column is time, then particles positions.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{output\_four\_velocity\_u4d} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Whether or not to output the particles' covariant four-velocity}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{output\_four\_velocity\_u4u} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Whether or not to output the particles' contravariant four-velocity}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{output\_freq} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How often to do particle tracer output, overrides IO::out\_every}} \\
+\hline{\bf Range} & &  {\bf Default:} -3 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -3} & \multicolumn{2}{p{\paraWidth}|}{Default value: 2*update\_RK4\_freq} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -2} & \multicolumn{2}{p{\paraWidth}|}{Use IO::out\_every} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{Output every so many time steps} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1:0} & \multicolumn{2}{p{\paraWidth}|}{No output} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{seed\_particles\_inside\_sphere\_\_radius} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em radius of sphere within which to seed particles}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Any number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{seed\_particles\_inside\_sphere\_\_x\_coord} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em x-coord of sphere center, within which to seed particles}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Any number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{seed\_particles\_inside\_sphere\_\_y\_coord} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em y-coord of sphere center, within which to seed particles}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Any number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{seed\_particles\_inside\_sphere\_\_z\_coord} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em z-coord of sphere center, within which to seed particles}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Any number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{start\_tracing\_particles\_iteration} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Iteration at which to start tracing particles}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{zero or some positive number.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{update\_rk4\_freq} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How often (in units of cctk\_iteration) to perform an RK4 substep? Usually 4--8 works best. Definitely choose a power of 2.}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:4096} & \multicolumn{2}{p{\paraWidth}|}{zero (disable integration) or some other number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{verbose} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Set verbosity level: 1=useful info; 2=moderately annoying (though useful for debugging)}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:2} & \multicolumn{2}{p{\paraWidth}|}{0 = no output; 1=useful info; 2=moderately annoying (though useful for debugging)} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_dir} & {\bf Scope:} shared from IO & STRING \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_every} & {\bf Scope:} shared from IO & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+particle\_traceret
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+grid
+
+hydrobase
+
+admbase
+\vspace{2mm}
+\subsection*{Grid Variables}
+\vspace{5mm}\subsubsection{PRIVATE GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+rk4iterationcountervar &  & compact & 0 \\ 
+ & RK4IterationCounter & description & Counter that keeps track of which RK4 iteration we are on. \\ 
+ &  & dimensions & 0 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & INT \\ 
+\hline 
+auxiterationcountervars &  & compact & 0 \\ 
+ & file\_output\_freq & description & Auxiliary variables \\ 
+ & initial\_number\_of\_active\_refinement\_levels & dimensions & 0 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & INT \\ 
+\hline 
+rk4\_delta\_time & RK4\_delta\_time & compact & 0 \\ 
+ &  & dimensions & 0 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+particle\_position\_arrays &  & compact & 0 \\ 
+ & particle\_position\_x & description & Position of each particle \\ 
+ & particle\_position\_y & dimensions & 1 \\ 
+ & particle\_position\_z & distribution & CONSTANT \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & NUM\_PARTICLES \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+particle\_velocity\_arrays &  & compact & 0 \\ 
+ & particle\_velx & description & Three-velocity of each particle \\ 
+ & particle\_vely & dimensions & 1 \\ 
+ & particle\_velz & distribution & CONSTANT \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & NUM\_PARTICLES \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+particle\_position\_aux\_arrays &  & compact & 0 \\ 
+ & particle\_position\_x\_k1 & description & RK4 coefficients k1 \\ 
+& ~ & description & k2 \\ 
+ & particle\_position\_x\_k1 & description & k3 \\ 
+ & particle\_position\_x\_k1 & description & k4 of each particle \\ 
+ & particle\_position\_y\_k1 & dimensions & 1 \\ 
+ & particle\_position\_z\_k1 & distribution & CONSTANT \\ 
+ & particle\_position\_x\_k2 & group type & ARRAY \\ 
+ & particle\_position\_y\_k2 & size & NUM\_PARTICLES \\ 
+ & particle\_position\_z\_k2 & timelevels & 1 \\ 
+ & particle\_position\_x\_k3 & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~ \\ 
+\hline 
+velocity\_consistent\_with\_mhd\_induction\_equations &  & compact & 0 \\ 
+ & MHDvx & dimensions & 3 \\ 
+ & MHDvy & distribution & DEFAULT \\ 
+ & MHDvz & group type & GF \\ 
+ &  & tags & InterpNumTimelevels=1 prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+particle\_four\_velocity\_u4u\_arrays &  & compact & 0 \\ 
+ & particle\_u4U0 & description & Particle contravariant four-velocity arrays \\ 
+ & particle\_u4U1 & dimensions & 1 \\ 
+ & particle\_u4U2 & distribution & CONSTANT \\ 
+ & particle\_u4U3 & group type & ARRAY \\ 
+ &  & size & NUM\_PARTICLES \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+particle\_four\_velocity\_u4d\_arrays &  & compact & 0 \\ 
+ & particle\_u4D0 & description & Particle covariant four-velocity arrays \\ 
+ & particle\_u4D1 & dimensions & 1 \\ 
+ & particle\_u4D2 & distribution & CONSTANT \\ 
+ & particle\_u4D3 & group type & ARRAY \\ 
+ &  & size & NUM\_PARTICLES \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+particle\_four\_velocity\_u4u\_gridfunctions &  & compact & 0 \\ 
+ & u4U0GF & description & Particle contravariant four-velocity gridfunctions \\ 
+ & u4U1GF & dimensions & 3 \\ 
+ & u4U2GF & distribution & DEFAULT \\ 
+ & u4U3GF & group type & GF \\ 
+ &  & tags & InterpNumTimelevels=1 prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+particle\_four\_velocity\_u4d\_gridfunctions &  & compact & 0 \\ 
+ & u4D0GF & description & Particle covariant four-velocity gridfunctions \\ 
+ & u4D1GF & dimensions & 3 \\ 
+ & u4D2GF & distribution & DEFAULT \\ 
+ & u4D3GF & group type & GF \\ 
+ &  & tags & InterpNumTimelevels=1 prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn WVUThorns\_Diagnostics/particle\_tracerET.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Always:}& {\bf Conditional:} \\ 
+ RK4IterationCounterVar AuxIterationCounterVars RK4\_delta\_time &  particle\_four\_velocity\_u4D\_arrays particle\_four\_velocity\_u4D\_gridfunctions\\ 
+ particle\_position\_arrays &  particle\_four\_velocity\_u4U\_arrays particle\_four\_velocity\_u4U\_gridfunctions\\ 
+ particle\_velocity\_arrays & ~\\ 
+ particle\_position\_aux\_arrays & ~\\ 
+ velocity\_consistent\_with\_MHD\_induction\_equations & ~\\ 
+ ADMBase::metric[metric\_timelevels] ADMBase::curv[metric\_timelevels] ADMBase::lapse[lapse\_timelevels] ADMBase::shift[shift\_timelevels] & ~\\ 
+ HydroBase::rho[timelevels] HydroBase::press[timelevels] HydroBase::eps[timelevels] HydroBase::vel[timelevels] HydroBase::Bvec[timelevels] & ~\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_INITIAL}   (conditional) 
+
+\hspace{5mm} particle\_traceret\_initial 
+
+\hspace{5mm}{\it initialization routines of the particle\_traceret thorn } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & admbase\_initialdata \\ 
+~& ~ &hydrobase\_initial\\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf particle\_tracerET\_Initial}   (conditional) 
+
+\hspace{5mm} initializeallparticletracerethelpervars 
+
+\hspace{5mm}{\it check all parameters have been set correctly; initialize particle tracer rk4 iteration counter } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf particle\_tracerET\_Initial}   (conditional) 
+
+\hspace{5mm} particle\_traceret\_file\_output\_routine\_startup 
+
+\hspace{5mm}{\it create directory for file output. } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & initializeallparticletracerethelpervars \\ 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_ANALYSIS}   (conditional) 
+
+\hspace{5mm} convert\_to\_mhd\_3velocity 
+
+\hspace{5mm}{\it convert to mhd 3 velocity } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & particle\_traceret \\ 
+~ & Language:  & c \\ 
+~ & Options:  & global-early \\ 
+~& ~ &loop-local\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_ANALYSIS}   (conditional) 
+
+\hspace{5mm} particle\_traceret 
+
+\hspace{5mm}{\it particle traceret subroutines } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf particle\_tracerET}   (conditional) 
+
+\hspace{5mm} initializeparticlepositions 
+
+\hspace{5mm}{\it initialize particle positions } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & global-early \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf particle\_tracerET}   (conditional) 
+
+\hspace{5mm} doonerk4stepforparticletraceret 
+
+\hspace{5mm}{\it do one rk4 step for particle traceret } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & initializeparticlepositions \\ 
+~ & Language:  & c \\ 
+~ & Options:  & global-early \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf particle\_tracerET}   (conditional) 
+
+\hspace{5mm} compute\_particles\_four\_velocities 
+
+\hspace{5mm}{\it compute particles four velocities } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & doonerk4stepforparticletraceret \\ 
+~ & Before:  & particle\_traceret\_file\_output \\ 
+~ & Language:  & c \\ 
+~ & Options:  & global-early \\ 
+~& ~ &loop-local\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf particle\_tracerET} 
+
+\hspace{5mm} particle\_traceret\_file\_output 
+
+\hspace{5mm}{\it output particle traceret data to disk } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & doonerk4stepforparticletraceret \\ 
+~ & Language:  & c \\ 
+~ & Options:  & global-early \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

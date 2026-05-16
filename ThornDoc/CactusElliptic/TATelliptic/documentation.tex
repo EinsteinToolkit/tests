@@ -1,0 +1,718 @@
+% *======================================================================*
+%  Cactus Thorn template for ThornGuide documentation
+%  Author: Ian Kelley
+%  Date: Sun Jun 02, 2002
+%  $Header$                                                             
+%
+%  Thorn documentation in the latex file doc/documentation.tex 
+%  will be included in ThornGuides built with the Cactus make system.
+%  The scripts employed by the make system automatically include 
+%  pages about variables, parameters and scheduling parsed from the 
+%  relevent thorn CCL files.
+%  
+%  This template contains guidelines which help to assure that your     
+%  documentation will be correctly added to ThornGuides. More 
+%  information is available in the Cactus UsersGuide.
+%                                                    
+%  Guidelines:
+%   - Do not change anything before the line
+%       % BEGIN CACTUS THORNGUIDE",
+%     except for filling in the title, author, date etc. fields.
+%        - Each of these fields should only be on ONE line.
+%        - Author names should be sparated with a \\ or a comma
+%   - You can define your own macros are OK, but they must appear after
+%     the BEGIN CACTUS THORNGUIDE line, and do not redefine standard 
+%     latex commands.
+%   - To avoid name clashes with other thorns, 'labels', 'citations', 
+%     'references', and 'image' names should conform to the following 
+%     convention:          
+%       ARRANGEMENT_THORN_LABEL
+%     For example, an image wave.eps in the arrangement CactusWave and 
+%     thorn WaveToyC should be renamed to CactusWave_WaveToyC_wave.eps
+%   - Graphics should only be included using the graphix package. 
+%     More specifically, with the "includegraphics" command. Do
+%     not specify any graphic file extensions in your .tex file. This 
+%     will allow us (later) to create a PDF version of the ThornGuide
+%     via pdflatex. |
+%   - References should be included with the latex "bibitem" command. 
+%   - use \begin{abstract}...\end{abstract} instead of \abstract{...}
+%   - For the benefit of our Perl scripts, and for future extensions, 
+%     please use simple latex.     
+%
+% *======================================================================* 
+% 
+% Example of including a graphic image:
+%    \begin{figure}[ht]
+% 	\begin{center}
+%    	   \includegraphics[width=6cm]{/home/runner/work/tests/tests/arrangements/CactusElliptic/TATelliptic/doc/MyArrangement_MyThorn_MyFigure}
+% 	\end{center}
+% 	\caption{Illustration of this and that}
+% 	\label{MyArrangement_MyThorn_MyLabel}
+%    \end{figure}
+%
+% Example of using a label:
+%   \label{MyArrangement_MyThorn_MyLabel}
+%
+% Example of a citation:
+%    \cite{MyArrangement_MyThorn_Author99}
+%
+% Example of including a reference
+%   \bibitem{MyArrangement_MyThorn_Author99}
+%   {J. Author, {\em The Title of the Book, Journal, or periodical}, 1 (1999), 
+%   1--16. {\tt http://www.nowhere.com/}}
+%
+% *======================================================================* 
+
+% If you are using CVS use this line to give version information
+% $Header$
+
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a 
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+% The author of the documentation
+\author{Erik Schnetter $<$schnetter@uni-tuebingen.de$>$}
+
+% The title of the document (not necessarily the name of the Thorn)
+\title{Generic nonlinear elliptic solver interface}
+
+% the date your document was last changed, if your document is in CVS, 
+% please use:
+%    \date{$ $Date$ $}
+\date{$ $Date$ $}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+% Add all definitions used in this documentation here 
+%   \def\mydef etc
+
+
+
+% Add an abstract for this thorn's documentation
+\begin{abstract}
+This thorn is a generic interface to nonlinear elliptic solvers.  It
+provides a uniform calling conventions to elliptic solvers.  Elliptic
+solvers can register themselves with this thorn.  Thorns requiring
+elliptic solvers can use this interface to call the solvers, and can
+choose between different solvers at run time.
+\end{abstract}
+
+% The following sections are suggestive only.
+% Remove them or add your own.
+
+%% \section{Introduction}
+%% 
+%% \section{Physical System}
+%% 
+%% \section{Numerical Implementation}
+%% 
+%% \section{Using This Thorn}
+%% 
+%% \subsection{Obtaining This Thorn}
+%% 
+%% \subsection{Basic Usage}
+%% 
+%% \subsection{Special Behaviour}
+%% 
+%% \subsection{Interaction With Other Thorns}
+%% 
+%% \subsection{Support and Feedback}
+%% 
+%% \section{History}
+%% 
+%% \subsection{Thorn Source Code}
+%% 
+%% \subsection{Thorn Documentation}
+%% 
+%% \subsection{Acknowledgements}
+
+\section{Elliptic equations}
+
+This thorn is a generic interface to nonlinear elliptic solvers.  It
+provides a uniform calling conventions to elliptic solvers, but does
+not contain any actual solvers.  Solvers are supposed to be
+implemented in other thorns, and then register with this thorn.  A
+generic interface has the advantage that it decouples the thorns
+calling the solvers, and the solvers themselves.  Thorns using
+elliptic solvers can choose among the available solvers at run time.
+
+For the discussion below, I write elliptic equations as
+%
+\begin{eqnarray}
+   F(u) & = & 0
+\end{eqnarray}
+%
+where $u$ is the \emph{unknown}, which is also known as
+\emph{variable}, or in a sloppy terminology as \emph{solution}.  $F$
+is the elliptic operator.  All elliptic equations can be written in
+the above form.
+
+If $u^{(n)}$ is an approximation to a solution $u$, then
+%
+\begin{eqnarray}
+   r^{(n)} & := & F(u^{(n)})
+\end{eqnarray}
+%
+is called the corresponding \emph{residual}.  An approximation
+$u^{(n)}$ is a solution if the residual is zero.
+
+The interface provided by this thorn allows for coupled sets of
+elliptic equations to be solved at the same time.  The elliptic
+operator is allowed to be nonlinear.
+
+A solution $u$ is defined by the combination of
+%
+\begin{enumerate}
+\item the elliptic operator $F$
+\item a set of initial data $u^{(0)}$
+\item boundary conditions for the solution $u$.
+\end{enumerate}
+
+Note that periodicity is usually not a boundary condition that leads
+to a well-posed problem.  It fails already for the Laplace ($\Delta u
+= 0$) and the Poisson ($\Delta u = \rho$) equations.
+
+In Cactus, $u^{(n)}$ and $r^{(n)}$ are represented by grid functions,
+while $F$ and the boundary conditions to $u$ are functions or
+subroutines written in C or Fortran.
+
+
+
+\section{Solver Interface}
+
+\begin{FunctionDescription}{TATelliptic\_CallSolver}
+\label{TATelliptic-CallSolver}
+Call an elliptic solver
+
+\begin{SynopsisSection}
+\begin{Synopsis}{C}
+\begin{verbatim}
+#include "cctk.h"
+#include "TATelliptic.h"
+int TATelliptic_CallSolver (cGH * cctkGH,
+                            const int * var,
+                            const int * res,
+                            int nvars,
+                            int options_table,
+                            calcfunc calcres,
+                            calcfunc applybnds,
+                            void * userdata,
+                            const char * solvername);
+\end{verbatim}
+\end{Synopsis}
+\begin{Synopsis}{Fortran}
+\begin{verbatim}
+#include "cctk.h"
+interface
+   subroutine TATelliptic_CallSolver (ierr, cctkGH, var, res, nvars, &
+                                      options_table, &
+                                      calcres, applybnds, userdata, &
+                                      solvername)
+      integer        ierr
+      CCTK_POINTER   cctkGH
+      integer        nvars
+      integer        var(nvars)
+      integer        res(nvars)
+      integer        options_table
+      CCTK_FNPOINTER calcres
+      CCTK_FNPOINTER applybnds
+      CCTK_POINTER   userdata
+      character      solvername*(*)
+   end subroutine TATelliptic_CallSolver
+end interface
+\end{verbatim}
+\end{Synopsis}
+\end{SynopsisSection}
+
+\begin{ResultSection}
+\begin{Result}{0}
+Success.
+\end{Result}
+\begin{Result}{nonzero}
+Failure.  Error codes are $-1$ if there are illegal arguments to the
+solver interface, and $-2$ if the requested solver does not exist.
+Otherwise, the error code from the solver is returned.
+\end{Result}
+\end{ResultSection}
+
+\begin{ParameterSection}
+\begin{Parameter}{cctkGH}
+The pointer to the CCTK grid hierarchy
+\end{Parameter}
+\begin{Parameter}{var}
+Array with \texttt{nvars} grid function indices for the variables.
+The variables are also called ``unknowns'', or ``solution''.
+\end{Parameter}
+\begin{Parameter}{res}
+Array with \texttt{nvars} grid function indices for the residuals.
+These grid functions store the residuals corresponding to the
+variables above.
+\end{Parameter}
+\begin{Parameter}{nvars}
+Number of variables.  This is also the number of residuals.
+\end{Parameter}
+\begin{Parameter}{options\_table}
+Further options to and return values from the solver.  Different
+solvers will take different additional arguments.  The interface
+\texttt{TATelliptic} does not look at these options, but passes this
+table on to the real solver.  This must be a table handle created with
+the table utility functions.
+
+Below is a list of some commonly accepted options.  See the individual
+solver documentations for details:
+\begin{description}
+\item[\texttt{CCTK\_REAL minerror}:] The desired solver accuracy.
+\item[\texttt{CCTK\_REAL factor}:] A factor with which all residuals
+are multiplied.  This factor can be used to scale the residuals.
+\item[\texttt{CCTK\_REAL factors[nvars]}:] An array of factors with
+which the residuals are multiplied.  These factors can be used to
+handle inconvenient sign conventions for the residuals.
+\item[\texttt{CCTK\_INT maxiters}:] Maximum number of iterations.
+\item[\texttt{CCTK\_INT nboundaryzones[2*dim]}:] Number of boundary points
+for each face.  If not given, this is the same as the number of ghost
+points.
+\end{description}
+
+The following values are often returned.  Again, see the individual
+solver documentations for details:
+\begin{description}
+\item[\texttt{CCTK\_INT iters}:] Number of iterations taken
+\item[\texttt{CCTK\_REAL error}:] Norm of the final residual
+\end{description}
+\end{Parameter}
+\begin{Parameter}{calcres}
+Pointer to a C function that evaluates the residual.  This function is
+passed in a solution, and has to evaluate the residual.  See below.
+\end{Parameter}
+\begin{Parameter}{applybnds}
+Pointer to a C function that applies the boundary condition to the
+variables.  This function is passed in a solution, and has to apply
+the boundary conditions to it.
+\end{Parameter}
+\begin{Parameter}{userdata}
+A pointer to arbitrary application data.  This pointer is passed
+through the solver unchanged on to \texttt{calcres} and
+\texttt{applybnds}.  The application can use this instead of global
+variables to pass arbitrary data.  If in doubt, pass a null pointer.
+\end{Parameter}
+\begin{Parameter}{solvername}
+The name of a registered solver.
+\end{Parameter}
+\end{ParameterSection}
+
+\begin{Discussion}
+The function \texttt{TATelliptic\_CallSolver} is the the interface to
+solve an elliptic equation.
+
+Input arguments are the arrays \texttt{var} and \texttt{res},
+containing the grid function indices for the solution and the
+residual, as well as functions \texttt{calcres} and \texttt{applybnds}
+to evaluate the residual and apply boundary conditions.
+\texttt{solvername} selects the solver.
+
+\begin{quote}
+Hint: It is convenient to make the solver name a string parameter.
+This allows the solver to be selected at run time from the parameter
+file.
+\end{quote}
+
+On entry, the grid functions listed in \texttt{var} have to contain an
+initial guess for the solution.  This is necessary because the
+equations can be nonlinear.  An initial guess of zero has to be set
+explicitly.
+
+On exit, if the solver was successul, these grid functions contain an
+approximation to a solution.  The grid functions listed in
+\texttt{res} contain the corresponding residual.
+
+Additional solver options are passed in a table with the table index
+\texttt{options\_table}.  This table must have been created with one
+of the table utility functions.  The set of accepted options depends
+on the particular solver that is called.  Do not forget to free the
+table after you are done with it.
+
+\begin{quote}
+Hint: It is convenient to create the table from a string parameter
+with a call to \texttt{Util\_TableCreateFromString}.  This allows the
+solver parameters to be set in the parameter file.
+\end{quote}
+
+In order to be able to call this function in the thorn
+\texttt{TATelliptic}, your thorn has to inherit from
+\texttt{TATelliptic} in your \texttt{interface.ccl}:
+\begin{quote}
+\texttt{INHERITS: TATelliptic}
+\end{quote}
+
+In order to be able to include the file \texttt{TATelliptic.h} into
+your source files, your thorn has to use the header file
+\texttt{TATelliptic.h} in your \texttt{interface.ccl}:
+\begin{quote}
+\texttt{USES INCLUDE: TATelliptic.h}
+\end{quote}
+
+Currently, only three-dimensional elliptic equations can be solved.
+\end{Discussion}
+
+\begin{SeeAlsoSection}
+\begin{SeeAlso}{calcres}
+Evaluate the residual
+\end{SeeAlso}
+\begin{SeeAlso}{applybnds}
+Apply the boundary conditions
+\end{SeeAlso}
+\end{SeeAlsoSection}
+
+\begin{ExampleSection}
+\begin{Example}{C}
+\begin{verbatim}
+  DECLARE_CCTK_PARAMETERS;
+  /* options and solver are string parameters */
+  
+  int varind;			/* index of variable */
+  int resind;			/* index of residual */
+  
+  int options_table;		/* table for additional solver options */
+  
+  int i,j,k;
+  int ipos;			/* position in 3D array */
+  
+  int ierr;
+  
+  static int calc_residual (cGH * cctkGH, int options_table, void * userdata);
+  static int apply_bounds (cGH * cctkGH, int options_table, void * userdata);
+  
+  /* Initial data for the solver */
+  for (k=0; k<cctk_lsh[2]; ++k) {
+    for (j=0; j<cctk_lsh[1]; ++j) {
+      for (i=0; i<cctk_lsh[0]; ++i) {
+        ipos = CCTK_GFINDEX3D(cctkGH,i,j,k);
+        phi[ipos] = 0;
+      }
+    }
+  }
+  
+  /* Options for the solver */
+  options_table = Util_TableCreateFromString (options);
+  assert (options_table>=0);
+  
+  /* Grid variables for the solver */
+  varind = CCTK_VarIndex ("wavetoy::phi");
+  assert (varind>=0);
+  resind = CCTK_VarIndex ("IDSWTE::residual");
+  assert (varind>=0);
+  
+  /* Call solver */
+  ierr = TATelliptic_CallSolver (cctkGH, &varind, &resind, 1,
+                                 options_table,
+                                 calc_residual, apply_bounds, 0,
+                                 solver);
+  if (ierr!=0) {
+    CCTK_WARN (1, "Failed to solve elliptic equation");
+  }
+  
+  ierr = Util_TableDestroy (options_table);
+  assert (!ierr);
+\end{verbatim}
+\end{Example}
+\end{ExampleSection}
+
+\end{FunctionDescription}
+
+
+
+\begin{FunctionDescription}{calcres}{}
+\label{TATelliptic-calcres}
+Evaluate the residual.  This function is written by the user.  The
+name of this function does not matter (and should likely not be
+\texttt{calcres}).  This function is passed as a pointer to
+\texttt{TATelliptic\_CallSolver}.
+
+\begin{SynopsisSection}
+\begin{Synopsis}{C}
+\begin{verbatim}
+#include "cctk.h"
+#include "TATelliptic.h"
+int calcres (cGH * cctkGH,
+             int options_table,
+             void * userdata);
+\end{verbatim}
+\end{Synopsis}
+\begin{Synopsis}{Fortran}
+No Fortran equivalent.
+\end{Synopsis}
+\end{SynopsisSection}
+
+\begin{ResultSection}
+\begin{Result}{0}
+Success; continue solving
+\end{Result}
+\begin{Result}{nonzero}
+Failure; abort solving
+\end{Result}
+\end{ResultSection}
+
+\begin{ParameterSection}
+\begin{Parameter}{cctkGH}
+The pointer to the CCTK grid hierarchy
+\end{Parameter}
+\begin{Parameter}{options\_table}
+A table passed from the solver, or an illegal table index.  If this is
+a table, then it may contain additional information about the solving
+process (such as the current multigrid level).  This depends on the
+particular solver that is used.
+\end{Parameter}
+\begin{Parameter}{userdata}
+A pointer to arbitrary application data.  This is the same pointer
+that was passed to \texttt{TATelliptic\_CallSolver}.  The application
+can use this instead of global variables to pass arbitrary data.
+\end{Parameter}
+\end{ParameterSection}
+
+\begin{Discussion}
+This function has to be provided by the user.  It has to calculate the
+residual corresponding to the current (approximation of the) solution.
+
+Input to this function are the unknowns, output are the residuals.
+
+The residuals need not be synchronised.  The boundary values of the
+residuals are not used, and hence do not have to be set.
+\end{Discussion}
+
+\begin{SeeAlsoSection}
+\begin{SeeAlso}{TATelliptic\_CallSolver}
+Call an elliptic solver
+\end{SeeAlso}
+\begin{SeeAlso}{applybnds}
+Apply the boundary conditions
+\end{SeeAlso}
+\end{SeeAlsoSection}
+
+\end{FunctionDescription}
+
+
+
+\begin{FunctionDescription}{applybnds}{}
+\label{TATelliptic-applybnds}
+Apply the boundary conditions to the solution.  This function is
+written by the user.  The name of this function does not matter (and
+should likely not be \texttt{applybnds}).  This function is passed as
+a pointer to \texttt{TATelliptic\_CallSolver}.
+
+\begin{SynopsisSection}
+\begin{Synopsis}{C}
+\begin{verbatim}
+#include "cctk.h"
+#include "TATelliptic.h"
+int applybnds (cGH * cctkGH,
+               int options_table,
+               void * userdata);
+\end{verbatim}
+\end{Synopsis}
+\begin{Synopsis}{Fortran}
+No Fortran equivalent.
+\end{Synopsis}
+\end{SynopsisSection}
+
+\begin{ResultSection}
+\begin{Result}{0}
+Success; continue solving
+\end{Result}
+\begin{Result}{nonzero}
+Failure; abort solving
+\end{Result}
+\end{ResultSection}
+
+\begin{ParameterSection}
+\begin{Parameter}{cctkGH}
+The pointer to the CCTK grid hierarchy
+\end{Parameter}
+\begin{Parameter}{options\_table}
+A table passed from the solver, or an illegal table index.  If this is
+a table, then it may contain additional information about the solving
+process (such as the current multigrid level).  This depends on the
+particular solver that is used.
+\end{Parameter}
+\begin{Parameter}{userdata}
+A pointer to arbitrary application data.  This is the same pointer
+that was passed to \texttt{TATelliptic\_CallSolver}.  The application
+can use this instead of global variables to pass arbitrary data.
+\end{Parameter}
+\end{ParameterSection}
+
+\begin{Discussion}
+This function has to be provided by the user.  It has to apply the
+boundary and symmetry conditions to the solution.
+
+Input to this function is the interior of the solution, output are the
+boundary values of the solution.
+
+This function also has to synchronise the solution.
+\end{Discussion}
+
+\begin{SeeAlsoSection}
+\begin{SeeAlso}{TATelliptic\_CallSolver}
+Call an elliptic solver
+\end{SeeAlso}
+\begin{SeeAlso}{calcres}
+Evaluate the residual
+\end{SeeAlso}
+\end{SeeAlsoSection}
+
+\end{FunctionDescription}
+
+
+
+\begin{FunctionDescription}{TATelliptic\_RegisterSolver}{}
+\label{TATelliptic-RegisterSolver}
+Register an elliptic solver
+
+\begin{SynopsisSection}
+\begin{Synopsis}{C}
+\begin{verbatim}
+#include "cctk.h"
+#include "TATelliptic.h"
+int TATelliptic_RegisterSolver (solvefunc solver,
+                                const char * solvername);
+\end{verbatim}
+\end{Synopsis}
+\end{SynopsisSection}
+
+\begin{ResultSection}
+\begin{Result}{0}
+Success.
+\end{Result}
+\begin{Result}{-1}
+Failure: illegal arguments.  \texttt{solver} or \texttt{solvername}
+are null.
+\end{Result}
+\begin{Result}{-2}
+Failure: a solver with this name has already been registered.
+\end{Result}
+\end{ResultSection}
+
+\begin{ParameterSection}
+\begin{Parameter}{solver}
+A pointer to the solver's solving function.  This function has to have
+the following interface, which is the same as that of
+\texttt{TATelliptic\_CallSolver} except that the argument
+\texttt{solvername} is missing:
+\begin{verbatim}
+typedef int (* solvefunc) (cGH * cctkGH,
+                           const int * var,
+                           const int * res,
+                           int nvars,
+                           int options_table,
+                           calcfunc calcres,
+                           calcfunc applybnds,
+                           void * userdata);
+\end{verbatim}
+\end{Parameter}
+\begin{Parameter}{solvername}
+The name of the solver
+\end{Parameter}
+\end{ParameterSection}
+
+\begin{Discussion}
+Each solver has to register its solving function with
+\texttt{TATelliptic} at startup time.
+\end{Discussion}
+
+\begin{SeeAlsoSection}
+\begin{SeeAlso}{TATelliptic\_CallSolver}
+Call an elliptic solver
+\end{SeeAlso}
+\end{SeeAlsoSection}
+
+\end{FunctionDescription}
+
+
+
+\section{Pseudo solver}
+
+This thorn provides also a pseudo solver, called \texttt{TATmonitor}.
+This is not a real solver, although it poses as one and uses the
+\texttt{TATelliptic\_CallSolver} interface.  It does nothing but
+evaluate the residual and then return successfully.
+
+You will find this a useful intermediate step when debugging your
+residual evaluation routines.
+
+
+
+%% \begin{thebibliography}{9}
+%% 
+%% \end{thebibliography}
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+tatelliptic
+\vspace{2mm}
+
+\vspace{5mm}
+
+\noindent {\bf Adds header}: 
+
+
+
+TATelliptic.h
+\vspace{2mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn CactusElliptic/TATelliptic.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}NONE
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_STARTUP} 
+
+\hspace{5mm} tatelliptic\_register\_monitor 
+
+\hspace{5mm}{\it register the pseudo solver } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

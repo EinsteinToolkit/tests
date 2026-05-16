@@ -1,0 +1,2187 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>CartGrid3D</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">CartGrid3D</h2>
+    <div class="author" ><span 
+class="cmr-12">Gabrielle Allen</span>
+<br />   <span 
+class="cmr-12">Gerd Lanfermann</span>
+<br />      <span 
+class="cmr-12">Joan Masso</span>
+<br /> <span 
+class="cmr-12">Jonathan Thornburg</span></div>
+<br />
+<div class="date" >\( \)<span 
+class="cmr-12">Date</span>\( \)</div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 21--><p class="noindent" ><span 
+class="cmtt-9">CartGrid3D </span><span 
+class="cmr-9">allows you to set up coordinates on a 3D Cartesian grid in a flexible manner. You can</span>
+     <span 
+class="cmr-9">choose different grid domains (</span><span 
+class="cmti-9">eg </span><span 
+class="cmr-9">octant) to allow you to exploit any symmetry in your problem.</span>
+     <span 
+class="cmtt-9">CartGrid3D </span><span 
+class="cmr-9">also provides routines for registering symmetries of grid functions and applying symmetry</span>
+     <span 
+class="cmr-9">conditions across the coordinate axes.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Specifying the Grid Symmetry</h3>
+<!--l. 33--><p class="noindent" >CartGrid3D allows you to specify the grid symmetry (or lack thereof) with the <span class="obeylines-h"><code class="verb">grid::domain</code></span>
+parameter:
+     </p><dl class="description"><dt class="description">
+<span 
+class="cmtt-10">grid::domain = &#x0022;full&#x0022;</span> </dt><dd 
+class="description">
+                                                                                       
+                                                                                       
+     <!--l. 36--><p class="noindent" ><br 
+class="newline" />There are no symmetries.
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">grid::domain = &#x0022;bitant&#x0022;</span> </dt><dd 
+class="description">
+     <!--l. 38--><p class="noindent" ><br 
+class="newline" />The grid includes only the \(z \ge 0\) half-space (plus symmetry zones); there is a reflection symmetry across
+     the \(z=0\) plane.
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">grid::domain = &#x0022;quadrant&#x0022;</span> </dt><dd 
+class="description">
+     <!--l. 42--><p class="noindent" ><br 
+class="newline" />The grid includes only the \(\{x \ge 0, y \ge 0\}\) quadrant (plus symmetry zones); there is a reflection symmetry across
+     both the \(x=0\) plane and the \(y=0\) plane.
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">grid::domain = &#x0022;octant&#x0022;</span> </dt><dd 
+class="description">
+     <!--l. 46--><p class="noindent" ><br 
+class="newline" />The grid includes only the \(\{x \ge 0, y \ge 0, z \ge 0\}\) octant (plus symmetry zones); there is a reflection symmetry across
+     each of the \(x=0\) plane, the \(y=0\) plane, and the \(z=0\) plane.</p></dd></dl>
+<!--l. 53--><p class="noindent" >Note that the implementation of symmetries in CartGrid3D is deprecated, and the SymBase infrastructure
+should be used instead. The above symmetries can be implemented using SymBase and the ReflectionSymmetry
+thorn. Additionally, there are rotational symmetries provided by the RotatingSymmetry180 and
+RotatingSymmetry90 thorns.
+</p><!--l. 60--><p class="noindent" >In each case except <span class="obeylines-h"><code class="verb">grid::domain = &#x0022;full&#x0022;</code></span>, symmetry zones are introduced just on the “other side” of
+each symmetry grid boundary. Each symmetry zone has a width (perpendicular to the boundary)
+of <span class="obeylines-h"><code class="verb">driver::ghost_size</code></span> extra grid points. For centered 2nd order finite differencing, a width of
+<span class="obeylines-h"><code class="verb">driver::ghost_size = 1</code></span> should be sufficient, but for (centered) 4th order finite differencing, or for upwinded
+2nd order, a width of <span class="obeylines-h"><code class="verb">driver::ghost_size = 2</code></span> is needed. Making <span class="obeylines-h"><code class="verb">driver::ghost_size</code></span> too large is fairly
+harmless (it just slightly reduces performance), but making it too small will almost certainly result in horribly
+wrong finite differencing near the symmetry boundaries, and may also result in core dumps from out-of-range
+array accessing.
+</p><!--l. 73--><p class="noindent" >Note that the symmetry zones must be explicitly included in <span class="obeylines-h"><code class="verb">driver::global_nx</code></span>, <span class="obeylines-h"><code class="verb">driver::global_ny</code></span>, and
+<span class="obeylines-h"><code class="verb">driver::global_nz</code></span>, but should <span 
+class="cmti-10">not </span>be included in any of the <span class="obeylines-h"><code class="verb">grid::type = &#x0022;byrange&#x0022;</code></span> parameters
+<span class="obeylines-h"><code class="verb">grid::xmin</code></span>, <span class="obeylines-h"><code class="verb">grid::xmax</code></span>, <span class="obeylines-h"><code class="verb">grid::ymin</code></span>, <span class="obeylines-h"><code class="verb">grid::ymax</code></span>, <span class="obeylines-h"><code class="verb">grid::zmin</code></span>, <span class="obeylines-h"><code class="verb">grid::zmax</code></span>, <span class="obeylines-h"><code class="verb">grid::xyzmin</code></span>, and/or
+<span class="obeylines-h"><code class="verb">grid::xyzmax</code></span> described in the next section.
+</p><!--l. 81--><p class="noindent" >Note also that <span class="obeylines-h"><code class="verb">driver::global_nx</code></span>, <span class="obeylines-h"><code class="verb">driver::global_ny</code></span>, and <span class="obeylines-h"><code class="verb">driver::global_nz</code></span> do <span 
+class="cmti-10">not </span>include any ghost
+zones introduced for multiprocessor synchronization. (For more information on ghost zones, see the section
+“Ghost Size” in the “Cactus Variables” chapter of the Cactus Users’ Guide.)
+</p><!--l. 89--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a>Specifying the Grid Size, Range, and Spacing</h3>
+                                                                                       
+                                                                                       
+<!--l. 91--><p class="noindent" ><span class="obeylines-h"><code class="verb">CartGrid3D</code></span> provides several different methods for setting up the integer <span 
+class="cmti-10">grid size</span>
+(<span 
+class="cmti-10">eg </span>128), floating-point <span 
+class="cmti-10">grid spacing </span>(<span 
+class="cmti-10">eg </span>0.1), and floating-point <span 
+class="cmti-10">grid range </span>(<span 
+class="cmti-10">eg</span>
+12.8).<span class="footnote-mark"><a 
+href="documentation2.html#fn1x0"><sup class="textsuperscript">1</sup></a></span><a 
+ id="x1-2001f1"></a> 
+You specify which method to use, with the <span class="obeylines-h"><code class="verb">grid::type</code></span> parameter:
+     </p><dl class="description"><dt class="description">
+<span 
+class="cmtt-10">grid::type = &#x0022;byrange&#x0022;</span> </dt><dd 
+class="description">
+     <!--l. 101--><p class="noindent" ><br 
+class="newline" />You   specify   the   \(x\),   \(y\),   and   \(z\)   grid   ranges,   either   with   separate   <span class="obeylines-h"><code class="verb">grid::xmin</code></span>,   <span class="obeylines-h"><code class="verb">grid::xmax</code></span>,
+     <span class="obeylines-h"><code class="verb">grid::ymin</code></span>, <span class="obeylines-h"><code class="verb">grid::ymax</code></span>, <span class="obeylines-h"><code class="verb">grid::zmin</code></span>, and <span class="obeylines-h"><code class="verb">grid::zmax</code></span> parameters, or with the <span class="obeylines-h"><code class="verb">grid::xyzmin</code></span>
+     and <span class="obeylines-h"><code class="verb">grid::xyzmax</code></span> parameters. The grid spacings are then determined automagically from this
+     information and the <span class="obeylines-h"><code class="verb">driver::global_nx</code></span>, <span class="obeylines-h"><code class="verb">driver::global_ny</code></span>, and <span class="obeylines-h"><code class="verb">driver::global_nz</code></span> grid-size
+     parameters. You should also choose the <span class="obeylines-h"><code class="verb">grid::domain</code></span> parameter consistent with all these other
+     parameters. (It’s not clear whether or not the code ever explicitly checks this.)
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">grid::type = &#x0022;box&#x0022;</span> </dt><dd 
+class="description">
+     <!--l. 113--><p class="noindent" ><br 
+class="newline" />This  is  a  special  case  of  <span class="obeylines-h"><code class="verb">grid::type = &#x0022;byrange&#x0022;</code></span> with  the  grid  ranges  hard-wired  to
+     <span class="obeylines-h"><code class="verb">grid::xyzmin = -0.5</code></span> and <span class="obeylines-h"><code class="verb">grid::xyzmax = +0.5</code></span>.
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">grid::type = &#x0022;byspacing&#x0022;</span> </dt><dd 
+class="description">
+     <!--l. 117--><p class="noindent" ><br 
+class="newline" />You specify the \(x\), \(y\), and \(z\) grid spacings, either with separate <span class="obeylines-h"><code class="verb">grid::dx</code></span>, <span class="obeylines-h"><code class="verb">grid::dy</code></span>, and <span class="obeylines-h"><code class="verb">grid::dz</code></span>
+     parameters,  or  with  the  <span class="obeylines-h"><code class="verb">grid::dxyz</code></span> parameter.  You  also  specify  the  grid  symmetry  with  the
+     <span class="obeylines-h"><code class="verb">grid::domain</code></span> parameter. The \(x\), \(y\), and \(z\) grid ranges are then determined automagically from this
+     information and the <span class="obeylines-h"><code class="verb">driver::global_nx</code></span>, <span class="obeylines-h"><code class="verb">driver::global_ny</code></span>, and <span class="obeylines-h"><code class="verb">driver::global_nz</code></span> grid-size
+     parameters: Each coordinate’s range is chosen to be either symmetric about zero, or to extend from
+     0 up to a maximum value.</p></dd></dl>
+<!--l. 130--><p class="noindent" >There are also a number of optional parameters which can be used to specify whether or not it’s ok to have a
+grid point with an \(x\), \(y\), and/or \(z\) coordinate exactly equal to 0:
+     </p><dl class="description"><dt class="description">
+<span 
+class="cmtt-10">grid::no</span><span 
+class="cmtt-10">_originx</span><span 
+class="cmbx-10">, </span><span 
+class="cmtt-10">grid::no</span><span 
+class="cmtt-10">_originy</span><span 
+class="cmbx-10">, </span><span 
+class="cmtt-10">grid::no</span><span 
+class="cmtt-10">_originz</span><span 
+class="cmbx-10">, </span><span 
+class="cmtt-10">grid::no</span><span 
+class="cmtt-10">_origin</span> </dt><dd 
+class="description">
+     <!--l. 135--><p class="noindent" ><br 
+class="newline" />These parameters are all deprecated — don’t use them!
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">grid::avoid</span><span 
+class="cmtt-10">_originx</span> </dt><dd 
+class="description">
+     <!--l. 137--><p class="noindent" ><br 
+class="newline" />This                                    is                                    a                                    Boolean
+     parameter; if set to true (<span class="obeylines-h"><code class="verb">grid::avoid_originx = &#x0022;true&#x0022;</code></span> or <span class="obeylines-h"><code class="verb">grid::avoid_originx = &#x0022;yes&#x0022;</code></span> or
+     <span class="obeylines-h"><code class="verb">grid::avoid_originx = 1</code></span>) then the grid will be “half-centered” across \(x=0\), <span 
+class="cmti-10">ie </span>there will be grid points
+     at …, \(x = - \frac {3}{2} \Delta x\), \(x = - \frac {1}{2} \Delta x\), \(x = + \frac {1}{2} \Delta x\), \(x = + \frac {3}{2} \Delta x\), …, but not at \(x=0\).
+                                                                                       
+                                                                                       
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">grid::avoid</span><span 
+class="cmtt-10">_originy</span> </dt><dd 
+class="description">
+     <!--l. 151--><p class="noindent" ><br 
+class="newline" />Same thing for \(y\).
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">grid::avoid</span><span 
+class="cmtt-10">_originz</span> </dt><dd 
+class="description">
+     <!--l. 153--><p class="noindent" ><br 
+class="newline" />Same thing for \(z\).
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">grid::avoid</span><span 
+class="cmtt-10">_origin</span> </dt><dd 
+class="description">
+     <!--l. 155--><p class="noindent" ><br 
+class="newline" />Same thing for all 3 axes \(x\) and \(y\) and \(z\), <span 
+class="cmti-10">ie </span>no grid point will have \(x=0\) or \(y=0\) or \(z=0\).</p></dd></dl>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-30003"></a>An Example</h3>
+<!--l. 164--><p class="noindent" >Here is an example of setting up a grid using the <span 
+class="cmtt-10">PUGH </span>unigrid driver. The relevant parts of the parameter file are
+as follows:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-1">
+# PUGH
+driver::ghost_size = 2
+driver::global_nx = 61
+driver::global_ny = 61
+driver::global_nz = 33
+
+# CartGrid3D
+grid::avoid_origin = &#x0022;no&#x0022;
+grid::domain = &#x0022;bitant&#x0022;
+grid::type = &#x0022;byrange&#x0022;
+grid::xmin = -3.0
+grid::xmax = +3.0
+grid::ymin = -3.0
+grid::ymax = +3.0
+grid::zmin =  0.0
+grid::zmax = +3.0
+</pre>
+<!--l. 183--><p class="nopar" >
+</p><!--l. 185--><p class="noindent" >The resulting Cactus output (describing the grid) is as follows:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-2">
+INFO (CartGrid3D): Grid Spacings:
+INFO (CartGrid3D):  dx=&#x003E;1.0000000e-01  dy=&#x003E;1.0000000e-01  dz=&#x003E;1.0000000e-01
+INFO (CartGrid3D): Computational Coordinates:
+INFO (CartGrid3D):  x=&#x003E;[-3.000, 3.000]  y=&#x003E;[-3.000, 3.000]  z=&#x003E;[-0.200, 3.000]
+INFO (CartGrid3D): Indices of Physical Coordinates:
+INFO (CartGrid3D):  x=&#x003E;[0,60]  y=&#x003E;[0,60]  z=&#x003E;[2,32]
+INFO (PUGH): Single processor evolution
+INFO (PUGH): 3-dimensional grid functions
+INFO (PUGH):   Size: 61 61 33
+</pre>
+<!--l. 196--><p class="nopar" >
+</p><!--l. 198--><p class="noindent" >Since there’s no symmetry in the \(x\) and \(y\) directions, the grid is set up just as specified, with floating-point
+coordinates running from \(-3.0\) to \(3.0\) inclusive, and 61 grid points with integer grid indices \([0,60]\) (C) or \([1,61]\) (Fortran).
+</p><!--l. 203--><p class="noindent" >However, in the \(z\) direction there’s a reflection symmetry across the \(z=0\) plane, so the specified range of the grid, \(z \in [0.0,3.0]\), is
+automagically widened to include the symmetry zone of <span class="obeylines-h"><code class="verb">driver::ghost_size = 2</code></span> grid points. The grid thus
+actually includes the range of floating-point coordinates \(z \in [-0.2,3.0]\). The original specification of 33 grid points is left
+alone, however, so the grid points have integer array indices \([0,32]\) (C) or \([1,33]\) (Fortran). The “physical” (<span 
+class="cmti-10">ie</span>
+non-symmetry-zone) part of the grid is precisely the originally-specified range, \(z \in [0.0,3.0]\), and has the integer array indices
+\([2,32]\) (C) or \([3,33]\) (Fortran).
+</p><!--l. 217--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-40004"></a>Coordinates</h3>
+<!--l. 219--><p class="noindent" ><span class="obeylines-h"><code class="verb">CartGrid3D</code></span> defines (registers) four coordinate systems: <span class="obeylines-h"><code class="verb">cart3d</code></span>, <span class="obeylines-h"><code class="verb">cart2d</code></span>, <span class="obeylines-h"><code class="verb">cart1d</code></span>, and <span class="obeylines-h"><code class="verb">spher3d</code></span>.
+</p><!--l. 222--><p class="noindent" >The Cartesian coordinates supplied by this thorn are grid functions with the standard names <span class="obeylines-h"><code class="verb">x</code></span>, <span class="obeylines-h"><code class="verb">y</code></span>, and <span class="obeylines-h"><code class="verb">z</code></span>. To use
+these coordinates you need to inherit from <span class="obeylines-h"><code class="verb">grid</code></span>, <span 
+class="cmti-10">ie </span>you need to have an
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-3">
+inherits: grid
+</pre>
+<!--l. 228--><p class="nopar" > line in your <span class="obeylines-h"><code class="verb">interface.ccl</code></span> file. In addition a grid function <span class="obeylines-h"><code class="verb">r</code></span> is provided, containing the radial coordinate from
+the origin where
+                                           \[ r = \sqrt {x^2+y^2+z^2} \]
+</p><!--l. 236--><p class="noindent" ><span class="obeylines-h"><code class="verb">CartGrid3D</code></span> registers the lower and upper range of each coordinate with the flesh.
+</p><!--l. 241--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-50005"></a>Symmetries for Grid Functions</h3>
+<!--l. 243--><p class="noindent" >If your problem and initial data allow it, <span class="obeylines-h"><code class="verb">CartGrid3D</code></span> allows you to enforce even or odd parity for any
+grid function at (across) each coordinate axis. For a function \(\phi (x,y,z)\), even parity symmetry on the \(x\)-axis
+means
+                                           \[ \phi (-x,y,z) = \phi (x,y,z) \]
+ while odd parity symmetry means
+                                                                                       
+                                                                                       
+                                           \[ \phi (-x,y,z) = -\phi (x,y,z) \]
+</p><!--l. 255--><p class="noindent" >Note that the symmetries will only be enforced if a symmetry domain is chosen (that is, if <span class="obeylines-h"><code class="verb">grid::domain</code></span> is set
+to something other than <span class="obeylines-h"><code class="verb">grid::domain = &#x0022;full&#x0022;</code></span>.
+</p><!--l. 261--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">5.1   </span> <a 
+ id="x1-60005.1"></a>Registering Symmetry Behaviour</h4>
+<!--l. 263--><p class="noindent" >Each grid function can register how it behaves under a coordinate change using function calls in <span 
+class="cmtt-10">CartGrid3D</span>.
+These symmetry properties can then be used by other thorns, for example <span 
+class="cmtt-10">CactusBase/Boundary </span>uses them to
+enforce symmetry boundary conditions across coordinate axes. Symmetries should obviously be registered
+before they are used, but since they can be different for different grids, they must be registered
+<span 
+class="cmti-10">after </span>the <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_STARTUP </span>timebin. The usual place to register symmetries is in the <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_BASEGRID</span>
+timebin.
+</p><!--l. 273--><p class="noindent" >For example, to register the symmetries of the <span 
+class="cmti-10">xy </span>component of the metric tensor from C, you first need to get
+access to the include file by putting the line
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-4">
+uses include: Symmetry.h
+</pre>
+<!--l. 278--><p class="nopar" > in your <span class="obeylines-h"><code class="verb">interface.ccl</code></span> file. Then in your thorn you can write (C)
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-5">
+#include &#x0022;Symmetry.h&#x0022;
+static int one=1;
+int sym[3];
+sym[0] = -one;
+sym[1] = -one;
+sym[2] =  one;
+SetCartSymVN(cctkGH, sym,&#x0022;ADMBase::gxy&#x0022;);
+</pre>
+<!--l. 288--><p class="nopar" >
+</p><!--l. 292--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">5.2   </span> <a 
+ id="x1-70005.2"></a>Calling Symmetry Boundary Conditions</h4>
+<!--l. 294--><p class="noindent" ><span class="obeylines-h"><code class="verb">CartGrid3D</code></span> provides the following two routines to apply symmetry boundary conditions to a variable
+group:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-6">
+CartSymGI(cGH *GH, int *gi)
+CartSymGN(cGH *GH, const char *gn)
+</pre>
+<!--l. 300--><p class="nopar" >
+</p><!--l. 302--><p class="noindent" >and for a specific variable it provides:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-7">
+CartSymVI(cGH *GH, int *vi)
+CartSymVN(cGH *GH, const char *gn)
+</pre>
+<!--l. 307--><p class="nopar" >
+</p><!--l. 309--><p class="noindent" >A group or variable can be specified by its index value or name (use the ’I’ or ’N’ version respectively). The
+Fortran versions of these functions take an additional first argument, which is an integer which will hold the
+return value.
+</p><!--l. 322--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">6   </span> <a 
+ id="x1-80006"></a>Parameters</h3>
+<!--l. 341--><p class="noindent" ></p> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /></colgroup><colgroup id="TBL-2-2g"><col 
+id="TBL-2-2" /><col 
+id="TBL-2-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:normal; text-align:left;" id="TBL-2-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">avoid_origin</div>                            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-1-3"  
+class="td01">                              BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-2-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Don’t place grid points on the coordinate origin/axes</span></div>                                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-1"  
+class="td11">            <span 
+class="cmbx-10">Range                </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-3-3"  
+class="td01">                            <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-4-"><td  style="white-space:normal; text-align:left;" id="TBL-2-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">:</div>                                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-2-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-5-1"  
+class="td11">                              </td></tr></table>
+<!--l. 348--><p class="noindent" ></p> <table id="TBL-3" class="tabular" 
+ 
+><colgroup id="TBL-3-1g"><col 
+id="TBL-3-1" /></colgroup><colgroup id="TBL-3-2g"><col 
+id="TBL-3-2" /><col 
+id="TBL-3-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-1-"><td  style="white-space:normal; text-align:left;" id="TBL-3-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">avoid_originx</div>                           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-1-3"  
+class="td01">                              BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-3-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Don’t place grid points on the x-coordinate origin/axes</span></div>                                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-3-1"  
+class="td11">            <span 
+class="cmbx-10">Range                </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-3-3"  
+class="td01">                            <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-4-"><td  style="white-space:normal; text-align:left;" id="TBL-3-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">:</div>                                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-3-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-5-1"  
+class="td11">                              </td></tr></table>
+<!--l. 355--><p class="noindent" ></p> <table id="TBL-4" class="tabular" 
+ 
+><colgroup id="TBL-4-1g"><col 
+id="TBL-4-1" /></colgroup><colgroup id="TBL-4-2g"><col 
+id="TBL-4-2" /><col 
+id="TBL-4-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-1-"><td  style="white-space:normal; text-align:left;" id="TBL-4-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">avoid_originy</div>                           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-1-3"  
+class="td01">                              BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-4-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Don’t place grid points on the y-coordinate origin/axes</span></div>                                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-3-1"  
+class="td11">            <span 
+class="cmbx-10">Range                </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-3-3"  
+class="td01">                            <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-4-"><td  style="white-space:normal; text-align:left;" id="TBL-4-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">:</div>                                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-5-1"  
+class="td11">                              </td></tr></table>
+<!--l. 362--><p class="noindent" ></p> <table id="TBL-5" class="tabular" 
+ 
+><colgroup id="TBL-5-1g"><col 
+id="TBL-5-1" /></colgroup><colgroup id="TBL-5-2g"><col 
+id="TBL-5-2" /><col 
+id="TBL-5-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-1-"><td  style="white-space:normal; text-align:left;" id="TBL-5-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">avoid_originz</div>                           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-1-3"  
+class="td01">                              BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-5-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Don’t place grid points on the z-coordinate origin/axes</span></div>                                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-3-1"  
+class="td11">            <span 
+class="cmbx-10">Range                </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-3-3"  
+class="td01">                            <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-4-"><td  style="white-space:normal; text-align:left;" id="TBL-5-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">:</div>                                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-5-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-5-1"  
+class="td11">                              </td></tr></table>
+<!--l. 369--><p class="noindent" ></p> <table id="TBL-6" class="tabular" 
+ 
+><colgroup id="TBL-6-1g"><col 
+id="TBL-6-1" /></colgroup><colgroup id="TBL-6-2g"><col 
+id="TBL-6-2" /><col 
+id="TBL-6-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-1-"><td  style="white-space:normal; text-align:left;" id="TBL-6-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">no_origin</div>                                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-1-3"  
+class="td01">                              BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-6-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">DEPRECATED: Don’t place grid points on the coordinate origin/axes</span></div>                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-3-1"  
+class="td11">            <span 
+class="cmbx-10">Range                </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-3-3"  
+class="td01">                            <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-4-"><td  style="white-space:normal; text-align:left;" id="TBL-6-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">:</div>                                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-6-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-5-1"  
+class="td11">                              </td></tr></table>
+<!--l. 376--><p class="noindent" ></p> <table id="TBL-7" class="tabular" 
+ 
+><colgroup id="TBL-7-1g"><col 
+id="TBL-7-1" /></colgroup><colgroup id="TBL-7-2g"><col 
+id="TBL-7-2" /><col 
+id="TBL-7-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-1-"><td  style="white-space:normal; text-align:left;" id="TBL-7-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">no_originx</div>                               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-1-3"  
+class="td01">                              BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-7-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">DEPRECATED: Don’t place grid points on the x-coordinate origin/axes</span></div>                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-3-1"  
+class="td11">            <span 
+class="cmbx-10">Range                </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-3-3"  
+class="td01">                            <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-4-"><td  style="white-space:normal; text-align:left;" id="TBL-7-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">:</div>                                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-7-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-5-1"  
+class="td11">                              </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 383--><p class="noindent" ></p> <table id="TBL-8" class="tabular" 
+ 
+><colgroup id="TBL-8-1g"><col 
+id="TBL-8-1" /></colgroup><colgroup id="TBL-8-2g"><col 
+id="TBL-8-2" /><col 
+id="TBL-8-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-1-"><td  style="white-space:normal; text-align:left;" id="TBL-8-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">no_originy</div>                               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-1-3"  
+class="td01">                              BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-8-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">DEPRECATED: Don’t place grid points on the y-coordinate origin/axes</span></div>                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-3-1"  
+class="td11">            <span 
+class="cmbx-10">Range                </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-3-3"  
+class="td01">                            <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-4-"><td  style="white-space:normal; text-align:left;" id="TBL-8-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">:</div>                                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-8-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-5-1"  
+class="td11">                              </td></tr></table>
+<!--l. 390--><p class="noindent" ></p> <table id="TBL-9" class="tabular" 
+ 
+><colgroup id="TBL-9-1g"><col 
+id="TBL-9-1" /></colgroup><colgroup id="TBL-9-2g"><col 
+id="TBL-9-2" /><col 
+id="TBL-9-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-1-"><td  style="white-space:normal; text-align:left;" id="TBL-9-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">no_originz</div>                               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-1-3"  
+class="td01">                              BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-9-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">DEPRECATED: Don’t place grid points on the z-coordinate origin/axes</span></div>                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-3-1"  
+class="td11">            <span 
+class="cmbx-10">Range                </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-3-3"  
+class="td01">                            <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-4-"><td  style="white-space:normal; text-align:left;" id="TBL-9-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">:</div>                                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-9-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-5-1"  
+class="td11">                              </td></tr></table>
+<!--l. 397--><p class="noindent" ></p> <table id="TBL-10" class="tabular" 
+ 
+><colgroup id="TBL-10-1g"><col 
+id="TBL-10-1" /></colgroup><colgroup id="TBL-10-2g"><col 
+id="TBL-10-2" /><col 
+id="TBL-10-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-1-"><td  style="white-space:normal; text-align:left;" id="TBL-10-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">register_default_coordinate_systems</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-1-3"  
+class="td01">                         BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-10-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">register cartnd as the default coordinate systems</span></div>                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-3-1"  
+class="td11">                              </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-3-3"  
+class="td01">                        <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-4-1"  
+class="td11">                              </td></tr></table>
+<!--l. 404--><p class="noindent" ></p> <table id="TBL-11" class="tabular" 
+ 
+><colgroup id="TBL-11-1g"><col 
+id="TBL-11-1" /></colgroup><colgroup id="TBL-11-2g"><col 
+id="TBL-11-2" /><col 
+id="TBL-11-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-1-"><td  style="white-space:normal; text-align:left;" id="TBL-11-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">set_coordinate_ranges_on</div>           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-1-3"  
+class="td01">                             KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-11-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">On which grids to set the coordinate ranges</span></div>                                                         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-3-1"  
+class="td11">            <span 
+class="cmbx-10">Range                </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-3-3"  
+class="td01">                        <span 
+class="cmbx-10">Default: </span>all grids  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-4-"><td  style="white-space:normal; text-align:left;" id="TBL-11-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">all grids</div>                                   </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-11-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">set ranges in local mode, on the coarsest level</div>                           
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-5-"><td  style="white-space:normal; text-align:left;" id="TBL-11-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">all maps</div>                                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-11-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">set ranges in singlemap mode, on the coarsest level</div>                    
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-6-"><td  style="white-space:normal; text-align:left;" id="TBL-11-6-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">first level</div>                                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-11-6-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">set ranges in level mode, on the first level</div>                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-7-1"  
+class="td11">                              </td></tr></table>
+<!--l. 411--><p class="noindent" ></p> <table id="TBL-12" class="tabular" 
+ 
+><colgroup id="TBL-12-1g"><col 
+id="TBL-12-1" /></colgroup><colgroup id="TBL-12-2g"><col 
+id="TBL-12-2" /><col 
+id="TBL-12-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-1-"><td  style="white-space:normal; text-align:left;" id="TBL-12-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">bitant_plane</div>                            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-1-3"  
+class="td01">                           KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-12-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Plane defining bitant domain</span></div>                                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-3-1"  
+class="td11">            <span 
+class="cmbx-10">Range                </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-3-3"  
+class="td01">                           <span 
+class="cmbx-10">Default: </span>xy  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-4-"><td  style="white-space:normal; text-align:left;" id="TBL-12-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">xy</div>                                          </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-12-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">xy-plane</div>                                                                            
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-5-"><td  style="white-space:normal; text-align:left;" id="TBL-12-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">xz</div>                                          </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-12-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">xz-plane</div>                                                                            
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-6-"><td  style="white-space:normal; text-align:left;" id="TBL-12-6-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">yz</div>                                          </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-12-6-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">yz-plane</div>                                                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-7-1"  
+class="td11">                              </td></tr></table>
+<!--l. 418--><p class="noindent" ></p> <table id="TBL-13" class="tabular" 
+ 
+><colgroup id="TBL-13-1g"><col 
+id="TBL-13-1" /></colgroup><colgroup id="TBL-13-2g"><col 
+id="TBL-13-2" /><col 
+id="TBL-13-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-1-"><td  style="white-space:normal; text-align:left;" id="TBL-13-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">domain</div>                                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-1-3"  
+class="td01">                           KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-13-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Domain type</span></div>                                                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-3-1"  
+class="td11">            <span 
+class="cmbx-10">Range                </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-3-3"  
+class="td01">                          <span 
+class="cmbx-10">Default: </span>full  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-4-"><td  style="white-space:normal; text-align:left;" id="TBL-13-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">octant</div>                                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-13-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Use an octant about the origin</div>                                              
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-5-"><td  style="white-space:normal; text-align:left;" id="TBL-13-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">quadrant</div>                                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-13-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Use a quadrant in x-y plane</div>                                                  
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-6-"><td  style="white-space:normal; text-align:left;" id="TBL-13-6-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">see [1] below</div>                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-13-6-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Use a quadrant with rotation symmetry about an axis</div>               
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-7-"><td  style="white-space:normal; text-align:left;" id="TBL-13-7-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">bitant</div>                                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-13-7-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Use a bitant about the x-y plane</div>                                            
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-8-"><td  style="white-space:normal; text-align:left;" id="TBL-13-8-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">bitant_rotate</div>                            </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-13-8-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Use a bitant with rotation symmetry about an axis</div>                   
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-9-"><td  style="white-space:normal; text-align:left;" id="TBL-13-9-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">full</div>                                         </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-13-9-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Use the full domain</div>                                                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-10-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-10-1"  
+class="td11">                              </td></tr></table>
+<!--l. 425--><p class="noindent" ><span 
+class="cmbx-10">[1]</span>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-8">
+quadrant\_reflect\_rotate
+</pre>
+<!--l. 425--><p class="nopar" ></p> <table id="TBL-14" class="tabular" 
+ 
+><colgroup id="TBL-14-1g"><col 
+id="TBL-14-1" /></colgroup><colgroup id="TBL-14-2g"><col 
+id="TBL-14-2" /><col 
+id="TBL-14-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-1-"><td  style="white-space:normal; text-align:left;" id="TBL-14-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">dx</div>                                         </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-1-3"  
+class="td01">                                REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-14-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Coarse grid spacing in x-direction</span></div>                                                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-3-1"  
+class="td11">            <span 
+class="cmbx-10">Range                </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-3-3"  
+class="td01">                          <span 
+class="cmbx-10">Default: </span>0.3  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-4-"><td  style="white-space:normal; text-align:left;" id="TBL-14-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                          </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-14-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Positive</div>                                                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-5-1"  
+class="td11">                              </td></tr></table>
+<!--l. 432--><p class="noindent" ></p> <table id="TBL-15" class="tabular" 
+ 
+><colgroup id="TBL-15-1g"><col 
+id="TBL-15-1" /></colgroup><colgroup id="TBL-15-2g"><col 
+id="TBL-15-2" /><col 
+id="TBL-15-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-1-"><td  style="white-space:normal; text-align:left;" id="TBL-15-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">dxyz</div>                                      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-15-1-3"  
+class="td01">                                REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-15-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Coarse grid spacing in x,y,z-directions</span></div>                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-3-1"  
+class="td11">            <span 
+class="cmbx-10">Range                </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-15-3-3"  
+class="td01">                          <span 
+class="cmbx-10">Default: </span>0.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-4-"><td  style="white-space:normal; text-align:left;" id="TBL-15-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                          </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-15-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Positive</div>                                                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-5-1"  
+class="td11">                              </td></tr></table>
+<!--l. 439--><p class="noindent" ></p> <table id="TBL-16" class="tabular" 
+ 
+><colgroup id="TBL-16-1g"><col 
+id="TBL-16-1" /></colgroup><colgroup id="TBL-16-2g"><col 
+id="TBL-16-2" /><col 
+id="TBL-16-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-1-"><td  style="white-space:normal; text-align:left;" id="TBL-16-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">dy</div>                                         </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-16-1-3"  
+class="td01">                                REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-16-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Coarse grid spacing in y-direction</span></div>                                                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-3-1"  
+class="td11">            <span 
+class="cmbx-10">Range                </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-16-3-3"  
+class="td01">                          <span 
+class="cmbx-10">Default: </span>0.3  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-4-"><td  style="white-space:normal; text-align:left;" id="TBL-16-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                          </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-16-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Positive</div>                                                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-5-1"  
+class="td11">                              </td></tr></table>
+<!--l. 446--><p class="noindent" ></p> <table id="TBL-17" class="tabular" 
+ 
+><colgroup id="TBL-17-1g"><col 
+id="TBL-17-1" /></colgroup><colgroup id="TBL-17-2g"><col 
+id="TBL-17-2" /><col 
+id="TBL-17-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-1-"><td  style="white-space:normal; text-align:left;" id="TBL-17-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">dz</div>                                         </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-1-3"  
+class="td01">                                REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-17-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Coarse grid spacing in z-direction</span></div>                                                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-3-1"  
+class="td11">            <span 
+class="cmbx-10">Range                </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-3-3"  
+class="td01">                          <span 
+class="cmbx-10">Default: </span>0.3  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-4-"><td  style="white-space:normal; text-align:left;" id="TBL-17-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                          </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-17-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Positive</div>                                                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-5-1"  
+class="td11">                              </td></tr></table>
+<!--l. 453--><p class="noindent" ></p> <table id="TBL-18" class="tabular" 
+ 
+><colgroup id="TBL-18-1g"><col 
+id="TBL-18-1" /></colgroup><colgroup id="TBL-18-2g"><col 
+id="TBL-18-2" /><col 
+id="TBL-18-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-1-"><td  style="white-space:normal; text-align:left;" id="TBL-18-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">quadrant_direction</div>                    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-18-1-3"  
+class="td01">                           KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-18-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Direction defining quadrant domain</span></div>                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-3-1"  
+class="td11">            <span 
+class="cmbx-10">Range                </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-18-3-3"  
+class="td01">                            <span 
+class="cmbx-10">Default: </span>z  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-4-"><td  style="white-space:normal; text-align:left;" id="TBL-18-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">x</div>                                            </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-18-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">x-direction</div>                                                                         
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-5-"><td  style="white-space:normal; text-align:left;" id="TBL-18-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">y</div>                                            </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-18-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">y-direction</div>                                                                         
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-6-"><td  style="white-space:normal; text-align:left;" id="TBL-18-6-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">z</div>                                            </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-18-6-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">z-direction</div>                                                                         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-7-1"  
+class="td11">                              </td></tr></table>
+<!--l. 460--><p class="noindent" ></p> <table id="TBL-19" class="tabular" 
+ 
+><colgroup id="TBL-19-1g"><col 
+id="TBL-19-1" /></colgroup><colgroup id="TBL-19-2g"><col 
+id="TBL-19-2" /><col 
+id="TBL-19-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-1-"><td  style="white-space:normal; text-align:left;" id="TBL-19-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">rotation_axis</div>                           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-1-3"  
+class="td01">                           KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-19-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Axis about which the rotation symmetry is to be applied</span></div>                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-3-1"  
+class="td11">            <span 
+class="cmbx-10">Range                </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-3-3"  
+class="td01">                            <span 
+class="cmbx-10">Default: </span>z  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-4-"><td  style="white-space:normal; text-align:left;" id="TBL-19-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">x</div>                                            </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-19-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">x-axis</div>                                                                               
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-5-"><td  style="white-space:normal; text-align:left;" id="TBL-19-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">y</div>                                            </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-19-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">y-axis</div>                                                                               
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-6-"><td  style="white-space:normal; text-align:left;" id="TBL-19-6-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">z</div>                                            </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-19-6-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">z-axis</div>                                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-7-1"  
+class="td11">                              </td></tr></table>
+<!--l. 467--><p class="noindent" ></p> <table id="TBL-20" class="tabular" 
+ 
+><colgroup id="TBL-20-1g"><col 
+id="TBL-20-1" /></colgroup><colgroup id="TBL-20-2g"><col 
+id="TBL-20-2" /><col 
+id="TBL-20-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-1-"><td  style="white-space:normal; text-align:left;" id="TBL-20-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">symmetry_xmax</div>                       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-20-1-3"  
+class="td01">                            BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-20-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Symmetry boundary condition on upper x boundary</span></div>                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-3-1"  
+class="td11">            <span 
+class="cmbx-10">Range                </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-20-3-3"  
+class="td01">                           <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-4-"><td  style="white-space:normal; text-align:left;" id="TBL-20-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">:</div>                                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-20-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Logical</div>                                                                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-5-1"  
+class="td11">                              </td></tr></table>
+<!--l. 474--><p class="noindent" ></p> <table id="TBL-21" class="tabular" 
+ 
+><colgroup id="TBL-21-1g"><col 
+id="TBL-21-1" /></colgroup><colgroup id="TBL-21-2g"><col 
+id="TBL-21-2" /><col 
+id="TBL-21-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-1-"><td  style="white-space:normal; text-align:left;" id="TBL-21-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">symmetry_xmin</div>                       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-21-1-3"  
+class="td01">                            BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-21-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Symmetry boundary condition on lower x boundary</span></div>                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-3-1"  
+class="td11">            <span 
+class="cmbx-10">Range                </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-21-3-3"  
+class="td01">                           <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-4-"><td  style="white-space:normal; text-align:left;" id="TBL-21-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">:</div>                                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-21-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Logical</div>                                                                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-5-1"  
+class="td11">                              </td></tr></table>
+<!--l. 481--><p class="noindent" ></p> <table id="TBL-22" class="tabular" 
+ 
+><colgroup id="TBL-22-1g"><col 
+id="TBL-22-1" /></colgroup><colgroup id="TBL-22-2g"><col 
+id="TBL-22-2" /><col 
+id="TBL-22-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-1-"><td  style="white-space:normal; text-align:left;" id="TBL-22-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">symmetry_ymax</div>                       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-22-1-3"  
+class="td01">                            BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-22-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Symmetry boundary condition on upper y boundary</span></div>                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-3-1"  
+class="td11">            <span 
+class="cmbx-10">Range                </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-22-3-3"  
+class="td01">                           <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-4-"><td  style="white-space:normal; text-align:left;" id="TBL-22-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">:</div>                                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-22-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Logical</div>                                                                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-5-1"  
+class="td11">                              </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 488--><p class="noindent" ></p> <table id="TBL-23" class="tabular" 
+ 
+><colgroup id="TBL-23-1g"><col 
+id="TBL-23-1" /></colgroup><colgroup id="TBL-23-2g"><col 
+id="TBL-23-2" /><col 
+id="TBL-23-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-1-"><td  style="white-space:normal; text-align:left;" id="TBL-23-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">symmetry_ymin</div>                       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-1-3"  
+class="td01">                            BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-23-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Symmetry boundary condition on lower y boundary</span></div>                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-3-1"  
+class="td11">            <span 
+class="cmbx-10">Range                </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-3-3"  
+class="td01">                           <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-4-"><td  style="white-space:normal; text-align:left;" id="TBL-23-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">:</div>                                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-23-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Logical</div>                                                                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-5-1"  
+class="td11">                              </td></tr></table>
+<!--l. 495--><p class="noindent" ></p> <table id="TBL-24" class="tabular" 
+ 
+><colgroup id="TBL-24-1g"><col 
+id="TBL-24-1" /></colgroup><colgroup id="TBL-24-2g"><col 
+id="TBL-24-2" /><col 
+id="TBL-24-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-1-"><td  style="white-space:normal; text-align:left;" id="TBL-24-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">symmetry_zmax</div>                       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-24-1-3"  
+class="td01">                            BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-24-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Symmetry boundary condition on upper z boundary</span></div>                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-3-1"  
+class="td11">            <span 
+class="cmbx-10">Range                </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-24-3-3"  
+class="td01">                           <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-4-"><td  style="white-space:normal; text-align:left;" id="TBL-24-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">:</div>                                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-24-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Logical</div>                                                                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-5-1"  
+class="td11">                              </td></tr></table>
+<!--l. 502--><p class="noindent" ></p> <table id="TBL-25" class="tabular" 
+ 
+><colgroup id="TBL-25-1g"><col 
+id="TBL-25-1" /></colgroup><colgroup id="TBL-25-2g"><col 
+id="TBL-25-2" /><col 
+id="TBL-25-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-1-"><td  style="white-space:normal; text-align:left;" id="TBL-25-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">symmetry_zmin</div>                        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-25-1-3"  
+class="td01">                            BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-25-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Symmetry boundary condition on lower z boundary</span></div>                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-3-1"  
+class="td11">            <span 
+class="cmbx-10">Range                </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-25-3-3"  
+class="td01">                           <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-4-"><td  style="white-space:normal; text-align:left;" id="TBL-25-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">:</div>                                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-25-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Logical</div>                                                                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-5-1"  
+class="td11">                              </td></tr></table>
+<!--l. 509--><p class="noindent" ></p> <table id="TBL-26" class="tabular" 
+ 
+><colgroup id="TBL-26-1g"><col 
+id="TBL-26-1" /></colgroup><colgroup id="TBL-26-2g"><col 
+id="TBL-26-2" /><col 
+id="TBL-26-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-1-"><td  style="white-space:normal; text-align:left;" id="TBL-26-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">type</div>                                       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-1-3"  
+class="td01">                           KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-26-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Grid type</span></div>                                                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-3-1"  
+class="td11">            <span 
+class="cmbx-10">Range                </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-3-3"  
+class="td01">                          <span 
+class="cmbx-10">Default: </span>box  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-4-"><td  style="white-space:normal; text-align:left;" id="TBL-26-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">box</div>                                         </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-26-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Box grid from -0.5 to 0.5</div>                                                      
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-5-"><td  style="white-space:normal; text-align:left;" id="TBL-26-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">byrange</div>                                   </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-26-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Specify min and max values</div>                                                  
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-6-"><td  style="white-space:normal; text-align:left;" id="TBL-26-6-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">byspacing</div>                                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-26-6-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Specify grid spacings</div>                                                           
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-7-"><td  style="white-space:normal; text-align:left;" id="TBL-26-7-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">coordbase</div>                                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-26-7-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Get specification from CoordBase</div>                                          
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-8-"><td  style="white-space:normal; text-align:left;" id="TBL-26-8-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">multipatch</div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-26-8-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Get specification from MultiPatch</div>                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-9-1"  
+class="td11">                              </td></tr></table>
+<!--l. 516--><p class="noindent" ></p> <table id="TBL-27" class="tabular" 
+ 
+><colgroup id="TBL-27-1g"><col 
+id="TBL-27-1" /></colgroup><colgroup id="TBL-27-2g"><col 
+id="TBL-27-2" /><col 
+id="TBL-27-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-1-"><td  style="white-space:normal; text-align:left;" id="TBL-27-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">xmax</div>                                     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-27-1-3"  
+class="td01">                                REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-27-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Coordinate maximum in x-direction</span></div>                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-3-1"  
+class="td11">            <span 
+class="cmbx-10">Range                </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-27-3-3"  
+class="td01">                          <span 
+class="cmbx-10">Default: </span>1.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-4-"><td  style="white-space:normal; text-align:left;" id="TBL-27-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">:</div>                                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-27-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Anything</div>                                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-5-1"  
+class="td11">                              </td></tr></table>
+<!--l. 523--><p class="noindent" ></p> <table id="TBL-28" class="tabular" 
+ 
+><colgroup id="TBL-28-1g"><col 
+id="TBL-28-1" /></colgroup><colgroup id="TBL-28-2g"><col 
+id="TBL-28-2" /><col 
+id="TBL-28-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-1-"><td  style="white-space:normal; text-align:left;" id="TBL-28-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">xmin</div>                                      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-28-1-3"  
+class="td01">                                REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-28-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Coordinate minimum in x-direction</span></div>                                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-3-1"  
+class="td11">            <span 
+class="cmbx-10">Range                </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-28-3-3"  
+class="td01">                          <span 
+class="cmbx-10">Default: </span>-1.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-4-"><td  style="white-space:normal; text-align:left;" id="TBL-28-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">:</div>                                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-28-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Anything</div>                                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-5-1"  
+class="td11">                              </td></tr></table>
+<!--l. 530--><p class="noindent" ></p> <table id="TBL-29" class="tabular" 
+ 
+><colgroup id="TBL-29-1g"><col 
+id="TBL-29-1" /></colgroup><colgroup id="TBL-29-2g"><col 
+id="TBL-29-2" /><col 
+id="TBL-29-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-1-"><td  style="white-space:normal; text-align:left;" id="TBL-29-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">xyzmax</div>                                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-29-1-3"  
+class="td01">                                REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-29-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Coordinate maximum in xyz-directions</span></div>                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-29-3-1"  
+class="td11">            <span 
+class="cmbx-10">Range                </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-29-3-3"  
+class="td01">                       <span 
+class="cmbx-10">Default: </span>-424242  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-4-"><td  style="white-space:normal; text-align:left;" id="TBL-29-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">:</div>                                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-29-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Anything</div>                                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-29-5-1"  
+class="td11">                              </td></tr></table>
+<!--l. 537--><p class="noindent" ></p> <table id="TBL-30" class="tabular" 
+ 
+><colgroup id="TBL-30-1g"><col 
+id="TBL-30-1" /></colgroup><colgroup id="TBL-30-2g"><col 
+id="TBL-30-2" /><col 
+id="TBL-30-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-1-"><td  style="white-space:normal; text-align:left;" id="TBL-30-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">xyzmin</div>                                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-30-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-30-1-3"  
+class="td01">                                REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-30-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Coordinate minimum in x,y,z-directions</span></div>                                                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-30-3-1"  
+class="td11">            <span 
+class="cmbx-10">Range                </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-30-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-30-3-3"  
+class="td01">                       <span 
+class="cmbx-10">Default: </span>-424242  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-4-"><td  style="white-space:normal; text-align:left;" id="TBL-30-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">:</div>                                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-30-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Anything</div>                                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-30-5-1"  
+class="td11">                              </td></tr></table>
+<!--l. 544--><p class="noindent" ></p> <table id="TBL-31" class="tabular" 
+ 
+><colgroup id="TBL-31-1g"><col 
+id="TBL-31-1" /></colgroup><colgroup id="TBL-31-2g"><col 
+id="TBL-31-2" /><col 
+id="TBL-31-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-1-"><td  style="white-space:normal; text-align:left;" id="TBL-31-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">ymax</div>                                     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-31-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-31-1-3"  
+class="td01">                                REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-31-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Coordinate maximum in y-direction</span></div>                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-31-3-1"  
+class="td11">            <span 
+class="cmbx-10">Range                </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-31-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-31-3-3"  
+class="td01">                          <span 
+class="cmbx-10">Default: </span>1.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-4-"><td  style="white-space:normal; text-align:left;" id="TBL-31-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">:</div>                                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-31-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Anything</div>                                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-31-5-1"  
+class="td11">                              </td></tr></table>
+<!--l. 551--><p class="noindent" ></p> <table id="TBL-32" class="tabular" 
+ 
+><colgroup id="TBL-32-1g"><col 
+id="TBL-32-1" /></colgroup><colgroup id="TBL-32-2g"><col 
+id="TBL-32-2" /><col 
+id="TBL-32-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-1-"><td  style="white-space:normal; text-align:left;" id="TBL-32-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">ymin</div>                                      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-32-1-3"  
+class="td01">                                REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-32-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Coordinate minimum in y-direction</span></div>                                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-32-3-1"  
+class="td11">            <span 
+class="cmbx-10">Range                </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-32-3-3"  
+class="td01">                          <span 
+class="cmbx-10">Default: </span>-1.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-4-"><td  style="white-space:normal; text-align:left;" id="TBL-32-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">:</div>                                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-32-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Anything</div>                                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-32-5-1"  
+class="td11">                              </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 558--><p class="noindent" ></p> <table id="TBL-33" class="tabular" 
+ 
+><colgroup id="TBL-33-1g"><col 
+id="TBL-33-1" /></colgroup><colgroup id="TBL-33-2g"><col 
+id="TBL-33-2" /><col 
+id="TBL-33-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-1-"><td  style="white-space:normal; text-align:left;" id="TBL-33-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">zmax</div>                                      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-33-1-3"  
+class="td01">                                REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-33-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Coordinate maximum in z-direction</span></div>                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-33-3-1"  
+class="td11">            <span 
+class="cmbx-10">Range                </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-33-3-3"  
+class="td01">                          <span 
+class="cmbx-10">Default: </span>1.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-4-"><td  style="white-space:normal; text-align:left;" id="TBL-33-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">:</div>                                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-33-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Anything</div>                                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-33-5-1"  
+class="td11">                              </td></tr></table>
+<!--l. 565--><p class="noindent" ></p> <table id="TBL-34" class="tabular" 
+ 
+><colgroup id="TBL-34-1g"><col 
+id="TBL-34-1" /></colgroup><colgroup id="TBL-34-2g"><col 
+id="TBL-34-2" /><col 
+id="TBL-34-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-1-"><td  style="white-space:normal; text-align:left;" id="TBL-34-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">zmin</div>                                      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-34-1-3"  
+class="td01">                                REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-34-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Coordinate minimum in z-direction</span></div>                                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-34-3-1"  
+class="td11">            <span 
+class="cmbx-10">Range                </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-34-3-3"  
+class="td01">                          <span 
+class="cmbx-10">Default: </span>-1.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-4-"><td  style="white-space:normal; text-align:left;" id="TBL-34-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">:</div>                                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-34-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Anything</div>                                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-34-5-1"  
+class="td11">                              </td></tr></table>
+<!--l. 572--><p class="noindent" ></p> <table id="TBL-35" class="tabular" 
+ 
+><colgroup id="TBL-35-1g"><col 
+id="TBL-35-1" /></colgroup><colgroup id="TBL-35-2g"><col 
+id="TBL-35-2" /><col 
+id="TBL-35-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-1-"><td  style="white-space:normal; text-align:left;" id="TBL-35-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">periodic</div>                                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from DRIVER</td><td  style="white-space:nowrap; text-align:right;" id="TBL-35-1-3"  
+class="td01">BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-2-1"  
+class="td11">                              </td></tr></table>
+<!--l. 577--><p class="noindent" ></p> <table id="TBL-36" class="tabular" 
+ 
+><colgroup id="TBL-36-1g"><col 
+id="TBL-36-1" /></colgroup><colgroup id="TBL-36-2g"><col 
+id="TBL-36-2" /><col 
+id="TBL-36-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-1-"><td  style="white-space:normal; text-align:left;" id="TBL-36-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">periodic_x</div>                               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from DRIVER</td><td  style="white-space:nowrap; text-align:right;" id="TBL-36-1-3"  
+class="td01">BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-36-2-1"  
+class="td11">                              </td></tr></table>
+<!--l. 582--><p class="noindent" ></p> <table id="TBL-37" class="tabular" 
+ 
+><colgroup id="TBL-37-1g"><col 
+id="TBL-37-1" /></colgroup><colgroup id="TBL-37-2g"><col 
+id="TBL-37-2" /><col 
+id="TBL-37-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-1-"><td  style="white-space:normal; text-align:left;" id="TBL-37-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">periodic_y</div>                               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from DRIVER</td><td  style="white-space:nowrap; text-align:right;" id="TBL-37-1-3"  
+class="td01">BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-2-1"  
+class="td11">                              </td></tr></table>
+<!--l. 587--><p class="noindent" ></p> <table id="TBL-38" class="tabular" 
+ 
+><colgroup id="TBL-38-1g"><col 
+id="TBL-38-1" /></colgroup><colgroup id="TBL-38-2g"><col 
+id="TBL-38-2" /><col 
+id="TBL-38-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-38-1-"><td  style="white-space:normal; text-align:left;" id="TBL-38-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">periodic_z</div>                               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-38-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from DRIVER</td><td  style="white-space:nowrap; text-align:right;" id="TBL-38-1-3"  
+class="td01">BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-38-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-38-2-1"  
+class="td11">                              </td></tr></table>
+<!--l. 594--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">7   </span> <a 
+ id="x1-90007"></a>Interfaces</h3>
+<!--l. 599--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-10000"></a>General</h4>
+<!--l. 601--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 603--><p class="noindent" >grid
+</p><!--l. 606--><p class="noindent" ><span 
+class="cmbx-10">Inherits</span>:
+</p><!--l. 608--><p class="noindent" >coordbase
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-11000"></a>Grid Variables</h4>
+<!--l. 611--><p class="noindent" >
+</p>
+<h5 class="subsubsectionHead"><span class="titlemark">7.0.1   </span> <a 
+ id="x1-120007.0.1"></a>PUBLIC GROUPS</h5>
+                                                                                       
+                                                                                       
+<!--l. 615--><p class="noindent" ></p> <table id="TBL-39" class="tabular" 
+ 
+><colgroup id="TBL-39-1g"><col 
+id="TBL-39-1" /></colgroup><colgroup id="TBL-39-2g"><col 
+id="TBL-39-2" /></colgroup><colgroup id="TBL-39-3g"><col 
+id="TBL-39-3" /><col 
+id="TBL-39-4" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-1-1"  
+class="td11">   <span 
+class="cmbx-10">Group Names </span>   </td><td  style="white-space:nowrap; text-align:center;" id="TBL-39-1-2"  
+class="td10">   <span 
+class="cmbx-10">Variable Names </span> </td><td  style="white-space:nowrap; text-align:right;" id="TBL-39-1-3"  
+class="td01">    <span 
+class="cmbx-10">Details </span>   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-1-4"  
+class="td11">                                                        </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-2-1"  
+class="td11">     gridspacings       </td><td  style="white-space:nowrap; text-align:center;" id="TBL-39-2-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-39-2-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-2-4"  
+class="td11"> 0                                                      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-3-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-39-3-2"  
+class="td10">      coarse_dx        </td><td  style="white-space:nowrap; text-align:right;" id="TBL-39-3-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-3-4"  
+class="td11"> 3D Cartesian grid spacings                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-4-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-39-4-2"  
+class="td10">      coarse_dy        </td><td  style="white-space:nowrap; text-align:right;" id="TBL-39-4-3"  
+class="td01">   dimensions  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-4-4"  
+class="td11"> 0                                                      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-5-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-39-5-2"  
+class="td10">      coarse_dz        </td><td  style="white-space:nowrap; text-align:right;" id="TBL-39-5-3"  
+class="td01">  distribution  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-5-4"  
+class="td11"> CONSTANT                                      </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-6-1"  
+class="td11">
+                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-39-6-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-39-6-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-6-4"  
+class="td11"> SCALAR                                           </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-7-1"  
+class="td11">
+                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-39-7-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-39-7-3"  
+class="td01">         tags  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-7-4"  
+class="td11"> Checkpoint=”no”                                </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-8-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:center;" id="TBL-39-8-2"  
+class="td10"> </td><td  style="white-space:nowrap; text-align:right;" id="TBL-39-8-3"  
+class="td01"> timelevels </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-8-4"  
+class="td11"> 1 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-9-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-39-9-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-39-9-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-9-4"  
+class="td11"> REAL                                               </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-10-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-10-1"  
+class="td11">     coordinates        </td><td  style="white-space:nowrap; text-align:center;" id="TBL-39-10-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-39-10-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-10-4"  
+class="td11"> 0                                                      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-11-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-11-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-39-11-2"  
+class="td10">          x              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-39-11-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-11-4"  
+class="td11"> 3D Cartesian grid coordinates                </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-12-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-12-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-39-12-2"  
+class="td10">          y              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-39-12-3"  
+class="td01">   dimensions  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-12-4"  
+class="td11"> 3                                                      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-13-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-13-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-39-13-2"  
+class="td10">          z              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-39-13-3"  
+class="td01">  distribution  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-13-4"  
+class="td11"> DEFAULT                                         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-14-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-14-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-39-14-2"  
+class="td10">          r              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-39-14-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-14-4"  
+class="td11"> GF                                                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-15-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-15-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-39-15-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-39-15-3"  
+class="td01">         tags  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-15-4"  
+class="td11"> Prolongation=”None” Checkpoint=”no”  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-16-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-16-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-39-16-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-39-16-3"  
+class="td01">    timelevels  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-16-4"  
+class="td11"> 1                                                      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-17-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-17-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-39-17-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-39-17-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-17-4"  
+class="td11"> REAL                                               </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-18-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-18-1"  
+class="td11">                    </td></tr></table>
+<!--l. 642--><p class="noindent" ><span 
+class="cmbx-10">Adds header</span>:
+</p><!--l. 646--><p class="noindent" >Symmetry.h
+</p><!--l. 649--><p class="noindent" ><span 
+class="cmbx-10">Uses header</span>:
+</p><!--l. 651--><p class="noindent" >CoordBase.h
+</p><!--l. 654--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">8   </span> <a 
+ id="x1-130008"></a>Schedule</h3>
+<!--l. 660--><p class="noindent" >This section lists all the variables which are assigned storage by thorn CactusBase/CartGrid3D. Storage can
+either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 663--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-14000"></a>Storage</h4>
+<!--l. 665--><p class="noindent" > 
+</p><!--l. 667--><p class="noindent" ></p> <table id="TBL-40" class="tabular" 
+ 
+><colgroup id="TBL-40-1g"><col 
+id="TBL-40-1" /><col 
+id="TBL-40-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-40-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-40-1-1"  
+class="td11"> <span 
+class="cmbx-10">Always:                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-40-1-2"  
+class="td11">    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-40-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-40-2-1"  
+class="td11"> coordinates gridspacings  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-40-2-2"  
+class="td11">    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-40-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-40-3-1"  
+class="td11">                                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-40-3-2"  
+class="td11">    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-40-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-40-4-1"  
+class="td11">                       </td></tr></table>
+<!--l. 675--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-15000"></a>Scheduled Functions</h4>
+<!--l. 678--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_STARTUP</span>
+</p><!--l. 680--><p class="noindent" >      symmetrystartup
+</p><!--l. 682--><p class="noindent" >     <span 
+class="cmti-10">register gh extension for gridsymmetry</span>
+</p><!--l. 685--><p class="noindent" > 
+</p><!--l. 687--><p class="noindent" ></p> <table id="TBL-41" class="tabular" 
+ 
+><colgroup id="TBL-41-1g"><col 
+id="TBL-41-1" /><col 
+id="TBL-41-2" /><col 
+id="TBL-41-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-41-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-41-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-41-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-41-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-41-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-41-3-1"  
+class="td11">    </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 695--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_WRAGH</span>
+</p><!--l. 697--><p class="noindent" >      registercartgrid3dcoords
+</p><!--l. 699--><p class="noindent" >     <span 
+class="cmti-10">register coordinates for the cartesian grid</span>
+</p><!--l. 702--><p class="noindent" > 
+</p><!--l. 704--><p class="noindent" ></p> <table id="TBL-42" class="tabular" 
+ 
+><colgroup id="TBL-42-1g"><col 
+id="TBL-42-1" /><col 
+id="TBL-42-2" /><col 
+id="TBL-42-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-42-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-42-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-42-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-42-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-42-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-42-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-42-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-42-2-3"  
+class="td11"> meta      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-42-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-42-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-42-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-42-3-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-42-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-42-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 713--><p class="noindent" ><span 
+class="cmbx-10">BoundaryConditions</span>
+</p><!--l. 715--><p class="noindent" >      cartgrid3d_applybc
+</p><!--l. 717--><p class="noindent" >     <span 
+class="cmti-10">apply symmetry boundary conditions</span>
+</p><!--l. 720--><p class="noindent" > 
+</p><!--l. 722--><p class="noindent" ></p> <table id="TBL-43" class="tabular" 
+ 
+><colgroup id="TBL-43-1g"><col 
+id="TBL-43-1" /><col 
+id="TBL-43-2" /><col 
+id="TBL-43-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-43-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-43-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-43-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-43-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-43-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-43-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-43-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-43-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-43-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-43-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 730--><p class="noindent" ><span 
+class="cmbx-10">SymmetryRegister</span>
+</p><!--l. 732--><p class="noindent" >      cartgrid3d_registersymmetryboundaries
+</p><!--l. 734--><p class="noindent" >     <span 
+class="cmti-10">register symmetry boundaries</span>
+</p><!--l. 737--><p class="noindent" > 
+</p><!--l. 739--><p class="noindent" ></p> <table id="TBL-44" class="tabular" 
+ 
+><colgroup id="TBL-44-1g"><col 
+id="TBL-44-1" /><col 
+id="TBL-44-2" /><col 
+id="TBL-44-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-44-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-44-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-44-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-44-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-44-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-44-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-44-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-44-2-3"  
+class="td11"> meta      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-44-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-44-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-44-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-44-3-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-44-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-44-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 748--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_PARAMCHECK</span>
+</p><!--l. 750--><p class="noindent" >      paramcheck_cartgrid3d
+</p><!--l. 752--><p class="noindent" >     <span 
+class="cmti-10">check coordinates for cartgrid3d</span>
+</p><!--l. 755--><p class="noindent" > 
+</p><!--l. 757--><p class="noindent" ></p> <table id="TBL-45" class="tabular" 
+ 
+><colgroup id="TBL-45-1g"><col 
+id="TBL-45-1" /><col 
+id="TBL-45-2" /><col 
+id="TBL-45-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-45-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-45-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-45-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-45-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-45-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-45-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-45-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-45-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-45-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-45-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 765--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_BASEGRID </span>(conditional)
+</p><!--l. 767--><p class="noindent" >      cartgrid3d_setranges
+</p><!--l. 769--><p class="noindent" >     <span 
+class="cmti-10">set up ranges for spatial 3d cartesian coordinates (on all grids)</span>
+</p><!--l. 772--><p class="noindent" > 
+</p><!--l. 774--><p class="noindent" ></p> <table id="TBL-46" class="tabular" 
+ 
+><colgroup id="TBL-46-1g"><col 
+id="TBL-46-1" /><col 
+id="TBL-46-2" /><col 
+id="TBL-46-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-46-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-46-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-46-1-2"  
+class="td11"> Before:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-46-1-3"  
+class="td11"> spatialcoordinates                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-46-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-46-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-46-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-46-2-3"  
+class="td11"> c                                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-46-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-46-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-46-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-46-3-3"  
+class="td11"> function                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-46-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-46-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-46-4-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-46-4-3"  
+class="td11"> grid::gridspacings(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-46-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-46-5-1"  
+class="td11">    </td></tr></table>
+<!--l. 784--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_BASEGRID </span>(conditional)
+</p><!--l. 786--><p class="noindent" >      cartgrid3d_setranges
+</p><!--l. 788--><p class="noindent" >     <span 
+class="cmti-10">set up ranges for spatial 3d cartesian coordinates (on all maps)</span>
+</p><!--l. 791--><p class="noindent" > 
+</p><!--l. 793--><p class="noindent" ></p> <table id="TBL-47" class="tabular" 
+ 
+><colgroup id="TBL-47-1g"><col 
+id="TBL-47-1" /><col 
+id="TBL-47-2" /><col 
+id="TBL-47-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-47-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-47-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-47-1-2"  
+class="td11"> Before:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-47-1-3"  
+class="td11"> spatialcoordinates                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-47-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-47-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-47-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-47-2-3"  
+class="td11"> c                                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-47-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-47-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-47-3-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-47-3-3"  
+class="td11"> singlemap                             </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-47-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-47-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-47-4-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-47-4-3"  
+class="td11"> function                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-47-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-47-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-47-5-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-47-5-3"  
+class="td11"> grid::gridspacings(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-47-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-47-6-1"  
+class="td11">    </td></tr></table>
+<!--l. 804--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_BASEGRID </span>(conditional)
+</p><!--l. 806--><p class="noindent" >      cartgrid3d_setranges
+</p><!--l. 808--><p class="noindent" >     <span 
+class="cmti-10">set up ranges for spatial 3d cartesian coordinates (on first level)</span>
+</p><!--l. 811--><p class="noindent" > 
+                                                                                       
+                                                                                       
+</p><!--l. 813--><p class="noindent" ></p> <table id="TBL-48" class="tabular" 
+ 
+><colgroup id="TBL-48-1g"><col 
+id="TBL-48-1" /><col 
+id="TBL-48-2" /><col 
+id="TBL-48-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-48-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-48-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-48-1-2"  
+class="td11"> Before:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-48-1-3"  
+class="td11"> spatialcoordinates                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-48-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-48-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-48-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-48-2-3"  
+class="td11"> c                                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-48-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-48-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-48-3-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-48-3-3"  
+class="td11"> level                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-48-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-48-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-48-4-2"  
+class="td11"> Reads:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-48-4-3"  
+class="td11"> grid::gridspacings(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-48-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-48-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-48-5-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-48-5-3"  
+class="td11"> function                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-48-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-48-6-1"  
+class="td11">    </td></tr></table>
+<!--l. 824--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_BASEGRID</span>
+</p><!--l. 826--><p class="noindent" >      cartgrid3d_setcoordinates
+</p><!--l. 828--><p class="noindent" >     <span 
+class="cmti-10">set up spatial 3d cartesian coordinates on the gh</span>
+</p><!--l. 831--><p class="noindent" > 
+</p><!--l. 833--><p class="noindent" ></p> <table id="TBL-49" class="tabular" 
+ 
+><colgroup id="TBL-49-1g"><col 
+id="TBL-49-1" /><col 
+id="TBL-49-2" /><col 
+id="TBL-49-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-49-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-49-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-49-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-49-1-3"  
+class="td11"> c                                       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-49-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-49-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-49-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-49-2-3"  
+class="td11"> function                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-49-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-49-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-49-3-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-49-3-3"  
+class="td11"> grid::coordinates(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-49-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-49-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 842--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_POSTREGRIDINITIAL</span>
+</p><!--l. 844--><p class="noindent" >      cartgrid3d_setcoordinates
+</p><!--l. 846--><p class="noindent" >     <span 
+class="cmti-10">set coordinates after regridding</span>
+</p><!--l. 849--><p class="noindent" > 
+</p><!--l. 851--><p class="noindent" ></p> <table id="TBL-50" class="tabular" 
+ 
+><colgroup id="TBL-50-1g"><col 
+id="TBL-50-1" /><col 
+id="TBL-50-2" /><col 
+id="TBL-50-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-50-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-50-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-50-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-50-1-3"  
+class="td11"> c                                       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-50-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-50-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-50-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-50-2-3"  
+class="td11"> function                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-50-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-50-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-50-3-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-50-3-3"  
+class="td11"> grid::coordinates(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-50-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-50-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 860--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_POSTREGRID</span>
+</p><!--l. 862--><p class="noindent" >      cartgrid3d_setcoordinates
+</p><!--l. 864--><p class="noindent" >     <span 
+class="cmti-10">set coordinates after regridding</span>
+</p><!--l. 867--><p class="noindent" > 
+</p><!--l. 869--><p class="noindent" ></p> <table id="TBL-51" class="tabular" 
+ 
+><colgroup id="TBL-51-1g"><col 
+id="TBL-51-1" /><col 
+id="TBL-51-2" /><col 
+id="TBL-51-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-51-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-51-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-51-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-51-1-3"  
+class="td11"> c                                       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-51-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-51-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-51-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-51-2-3"  
+class="td11"> function                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-51-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-51-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-51-3-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-51-3-3"  
+class="td11"> grid::coordinates(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-51-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-51-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 876--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-16000"></a>Aliased Functions</h4>
+<!--l. 878--><p class="noindent" > 
+</p><!--l. 880--><p class="noindent" ></p> <table id="TBL-52" class="tabular" 
+ 
+><colgroup id="TBL-52-1g"><col 
+id="TBL-52-1" /><col 
+id="TBL-52-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-52-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-52-1-1"  
+class="td11"> <span 
+class="cmbx-10">Alias Name: </span>               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-52-1-2"  
+class="td11"> <span 
+class="cmbx-10">Function Name:  </span></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-52-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-52-2-1"  
+class="td11"> CartGrid3D_SetCoordinates </td><td  style="white-space:nowrap; text-align:left;" id="TBL-52-2-2"  
+class="td11"> SpatialCoordinates</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-52-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-52-3-1"  
+class="td11"> CartGrid3D_SetRanges        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-52-3-2"  
+class="td11"> SpatialSpacings      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-52-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-52-4-1"  
+class="td11">                          </td></tr></table>
+ 
+</body></html> 
+
+                                                                                       
+
+

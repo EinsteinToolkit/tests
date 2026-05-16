@@ -1,0 +1,1077 @@
+% *======================================================================*
+%  Cactus Thorn template for ThornGuide documentation
+%  Author: Ian Kelley
+%  Date: Sun Jun 02, 2002
+%
+%  Thorn documentation in the latex file doc/documentation.tex
+%  will be included in ThornGuides built with the Cactus make system.
+%  The scripts employed by the make system automatically include
+%  pages about variables, parameters and scheduling parsed from the
+%  relevant thorn CCL files.
+%
+%  This template contains guidelines which help to assure that your
+%  documentation will be correctly added to ThornGuides. More
+%  information is available in the Cactus UsersGuide.
+%
+%  Guidelines:
+%   - Do not change anything before the line
+%       % START CACTUS THORNGUIDE",
+%     except for filling in the title, author, date, etc. fields.
+%        - Each of these fields should only be on ONE line.
+%        - Author names should be separated with a \\ or a comma.
+%   - You can define your own macros, but they must appear after
+%     the START CACTUS THORNGUIDE line, and must not redefine standard
+%     latex commands.
+%   - To avoid name clashes with other thorns, 'labels', 'citations',
+%     'references', and 'image' names should conform to the following
+%     convention:
+%       ARRANGEMENT_THORN_LABEL
+%     For example, an image wave.eps in the arrangement CactusWave and
+%     thorn WaveToyC should be renamed to CactusWave_WaveToyC_wave.eps
+%   - Graphics should only be included using the graphicx package.
+%     More specifically, with the "\includegraphics" command.  Do
+%     not specify any graphic file extensions in your .tex file. This
+%     will allow us to create a PDF version of the ThornGuide
+%     via pdflatex.
+%   - References should be included with the latex "\bibitem" command.
+%   - Use \begin{abstract}...\end{abstract} instead of \abstract{...}
+%   - Do not use \appendix, instead include any appendices you need as
+%     standard sections.
+%   - For the benefit of our Perl scripts, and for future extensions,
+%     please use simple latex.
+%
+% *======================================================================*
+%
+% Example of including a graphic image:
+%    \begin{figure}[ht]
+% 	\begin{center}
+%    	   \includegraphics[width=6cm]{/home/runner/work/tests/tests/arrangements/EinsteinAnalysis/QuasiLocalMeasures/doc/MyArrangement_MyThorn_MyFigure}
+% 	\end{center}
+% 	\caption{Illustration of this and that}
+% 	\label{MyArrangement_MyThorn_MyLabel}
+%    \end{figure}
+%
+% Example of using a label:
+%   \label{MyArrangement_MyThorn_MyLabel}
+%
+% Example of a citation:
+%    \cite{MyArrangement_MyThorn_Author99}
+%
+% Example of including a reference
+%   \bibitem{MyArrangement_MyThorn_Author99}
+%   {J. Author, {\em The Title of the Book, Journal, or periodical}, 1 (1999),
+%   1--16. {\tt http://www.nowhere.com/}}
+%
+% *======================================================================*
+
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+% The author of the documentation
+\author{Erik Schnetter \textless schnetter@cct.lsu.edu\textgreater\\
+        Roland Haas \textless rhaas@ncsa.illinois.edu\textgreater}
+
+% The title of the document (not necessarily the name of the Thorn)
+\title{QuasiLocalMeasures}
+
+% the date your document was last changed
+\date{2017-03-21}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+% Add all definitions used in this documentation here
+%   \def\mydef etc
+
+% Add an abstract for this thorn's documentation
+\begin{abstract}
+  Calculate quasi-local measures such as masses, momenta, or angular
+  momenta and related quantities on closed two-dimentional surfaces,
+  including on horizons.
+\end{abstract}
+
+% The following sections are suggestive only.
+% Remove them or add your own.
+
+\section{Introduction}
+% copied from the ET paper arXiv:1111.3344 Loeffler et al.
+The module QuasiLocalMeasures implements the calculation of mass and
+spin multipoles from the isolated and dynamical horizon formalism
+\cite{EinsteinAnalysis_QuasiLocalMeasures_Dreyer:2002mx,
+EinsteinAnalysis_QuasiLocalMeasures_Schnetter:2006yt}, as well as a
+number of other proposed formulæ for quasilocal mass, linear momentum
+and angular momentum that have been advanced over the years
+\cite{EinsteinAnalysis_QuasiLocalMeasures_Szabados:2004vb}. Even though
+there are only a few rigorous proofs that establish the properties of
+these latter quantities, they have been demonstrated to be surprisingly
+helpful in numerical simulations (see, e.g.,
+\cite{EinsteinAnalysis_QuasiLocalMeasures_Lovelace:2009dg}), and are
+therefore an indispensable tool in numerical relativity.
+QuasiLocalMeasures takes as input a horizon surface, or any other
+surface that the user specifies (like a large coordinate sphere) and can
+calculate useful quantities such as the Weyl or Ricci scalars or the
+three-volume element of the horizon world tube in addition to physical
+observables such as mass and momenta.
+
+\section{Physical System}
+
+The Weyl tensor $C_{\alpha\beta\gamma\delta}$ is defined as the traceless part
+of the Riemann tensor $R_{\alpha\beta\gamma\delta}$
+\begin{eqnarray}
+{\Gamma^{\alpha}}_{\beta\gamma} &=& \frac12 g^{\alpha\mu} \left(
+g_{\mu\beta,\gamma}+g_{\mu\gamma,\beta} - g_{\beta\gamma,\mu}
+\right), \\
+{R^\alpha}_{\beta\gamma\delta} &=&
+{\Gamma^\alpha}_{\beta\delta,\gamma} -
+{\Gamma^\alpha}_{\beta\gamma,\delta} +
+{\Gamma^\alpha}_{\mu\gamma} {\Gamma^\mu}_{\beta\delta} -
+{\Gamma^\alpha}_{\mu\delta} {\Gamma^\mu}_{\beta\gamma},
+\\
+{R^\beta}_\delta &=& {R^{\mu\beta}}_{\mu\delta}, \\
+R &=& {R^\mu}_\mu, \\
+C_{\alpha\beta\gamma\delta} &=&
+R_{\alpha\beta\gamma\delta}+
+{\frac {1}{2}}\left(R_{\alpha\delta}g_{\beta\gamma}-R_{\alpha\gamma}g_{\beta\delta}+R_{\beta\gamma}g_{\alpha\delta}-R_{\beta\delta}g_{\alpha\gamma}\right)+
+{\frac {1}{6}}R\left(g_{\alpha\gamma}g_{\beta\delta}-g_{\alpha\delta}g_{\beta\gamma}\right),
+\end{eqnarray}
+where ${\Gamma^{\alpha}}_{\beta\gamma}$, ${R^\beta}_\delta$ and $R$ are the
+Christoffel symbols, Ricci tensor and Riemann scalar
+respectively~\cite{EinsteinAnalysis_QuasiLocalMeasures_Misner:1974qy}. Its
+self-dual is
+\begin{equation}
+\tilde C_{\alpha\beta\gamma\delta} =
+C_{\alpha\beta\gamma\delta} +
+(i/2)\epsilon_{\alpha\beta\mu\nu} {C^{\mu\nu}}_{\gamma\delta}.
+\end{equation}
+
+The curvature invariants $\mathcal{I}$ (\texttt{qlm\_i}) and $\mathcal{J}$
+(\texttt{qlm\_j}) are defined in terms of the self-dual of the Weyl
+tensor~\cite{EinsteinAnalysis_QuasiLocalMeasures_Baker:2001sf}
+\begin{equation}
+\mathcal{I} = \tilde C_{\alpha\beta\gamma\delta}
+\tilde C^{\alpha\beta\gamma\delta}
+\qquad\mbox{and}\qquad
+\mathcal{J} = \tilde C_{\alpha\beta\gamma\delta}
+{\tilde C^{\gamma\delta}}_{\mu\nu}
+\tilde C^{\mu\nu\alpha\beta}.
+\end{equation}
+
+\section{A note on evaluating 3D integrals on the horizon world tube}
+
+[NOTE: Ignore the stuff below.  You can do that much easier.]
+
+\subsection{Integral transformation}
+
+The papers about dynamical horizons contain integrals over the 3D
+horizon world tube, expressed e.g.\ as
+\begin{eqnarray}
+   \int X\; d^3V
+\end{eqnarray}
+where $X$ is some quantity that lives on the horizon.  These integrals
+have to be transformed into a $2+1$ form so that they can be
+conveniently evaluated, e.g.\ as
+\begin{eqnarray}
+   \int X\; A\, d^2S\, dt
+\end{eqnarray}
+where $d^2S$ is the area element on the horizon cross section
+contained in $\Sigma$, and $dt$ is the coordinate time differential.
+The factor $A$ should contain the extra terms due to this coordinate
+transformation.
+
+Starting from the $3$-volume element $d^3V$, let us first decompose
+it into the $2$-volume element $d^2S$ and a ``time'' coordinate on the
+horizon, which we call $\sigma$.  Note that $\sigma$ will generally be
+a spacelike coordinate for dynamical horizons.  Let $\mathbf{Q}$ be
+the induced $3$-metric on the horizon, and $\mathbf{q}$ be the induced
+$2$-metric on the cross section.
+Then it is
+\begin{eqnarray}
+   d^3V & = & \sqrt{\det Q}\; d\theta\, d\phi\, d\sigma
+\\
+   & = & \frac{\sqrt{\det Q}}{\sqrt{\det q}}\; d^2S\, d\sigma
+\end{eqnarray}
+because $d^2S = \sqrt{\det q}\, d\theta\, d\phi$.
+
+The coordinate time differential $dt$ and the differential $d\sigma$
+will in general not be aligned because the horizon world tube will in
+general not have a static coordinate shape.  It is
+\begin{eqnarray}
+   d\tau   & = & (\cosh \alpha)\, dt + (\sinh \alpha)\, ds
+\\
+   d\sigma & = & (\cosh \alpha)\, ds + (\sinh \alpha)\, dt
+\end{eqnarray}
+where $s$ is a radial coordinate perpendicular to the horizon and also
+perpendicular to $t$, and $\tau$ is perpendicular to $\sigma$ and lies
+in the plan spanned by $t$ and $s$.  $\tau$ and $\sigma$ are depend on
+$t$ and $s$ via a Lorentz boost.  Thus we have
+\begin{eqnarray}
+   \frac{d\sigma}{dt} & = & (\cosh \alpha)\, \frac{ds}{dt} + (\sinh
+   \alpha)\, \frac{dt}{dt}
+\\
+   & = & \sinh \alpha \quad\text{.}
+\end{eqnarray}
+
+Putting everything together we arrive at
+\begin{eqnarray}
+   \int X\; \frac{\sqrt{\det Q}}{\sqrt{\det q}}\; (\sinh \alpha)\,
+   d^2S\, dt \quad\text{.}
+\end{eqnarray}
+
+
+
+\subsection{The ``lapse'' function $N_R$}
+
+Starting from
+\begin{eqnarray}
+   N_R & = & | \partial R |
+\end{eqnarray}
+we find, since the radius $R$ changes only in the $\sigma$ direction,
+\begin{eqnarray}
+   N_R^2 & = & g^{\sigma\sigma}\, (\partial_\sigma R)\,
+   (\partial_\sigma R) \quad\text{.}
+\end{eqnarray}
+
+If we assume $\partial_\tau R = 0$ and write $\partial_t R = \dot R$,
+and use the relations between $\sigma$ and $t$ from above, we get
+\begin{eqnarray}
+   \dot R & = & \partial_t R
+\\
+   & = & \frac{\partial \tau}{\partial t} \partial_\tau R +
+   \frac{\partial \sigma}{\partial t} \partial_\sigma R
+\\
+   & = & \sinh \alpha\, \partial_\sigma R
+\end{eqnarray}
+[NOTE: but $\partial_t \alpha \ne 0$.]
+and therefore
+\begin{eqnarray}
+   \partial_\sigma R & = & \frac{1}{\sinh \alpha}\; \dot R
+   \quad\text{.}
+\end{eqnarray}
+
+Additionally we have $g^{\sigma\sigma} = g^{ab} \sigma_a \sigma_b =
+g_{ab} \sigma^a \sigma^b$ where $\sigma^a$ is the unit vector in the
+$\sigma$ direction, i.e.\
+\begin{eqnarray}
+   \tau^a   & = & (\cosh \alpha)\, t^a + (\sinh \alpha)\, s^a
+\\
+   \sigma^a & = & (\cosh \alpha)\, s^a + (\sinh \alpha)\, t^a
+\end{eqnarray}
+
+
+
+\subsection{Special Behaviour}
+
+In order to use the QuasiLocalMeasures thorn on existing data
+(postprocessing), the following procedure is necessary.
+
+\begin{itemize}
+
+\item
+
+Computing time-independent quantities.\\
+
+The 3-metric and the extrinsic curvature must be available in HDF5
+files.
+
+\begin{itemize}
+
+\item Set up a parameter file for a grid structure that contains the
+  region around the horizon.  The refinement level structure and grid
+  spacing etc. needs to be the same as in the HDF5 files, but the
+  grids can be much smaller.  You can also leave out some finer grids,
+  i.e., reduce the number of levels.  However, the coarse grid spacing
+  must remain the same.  The symmetries must also be the same.
+
+\item Use the file reader and thorn AEIThorns/IDFileADM to read in the
+  ADM variables from the files.  The parameter file does not need to
+  activate BSSN\_MoL or any time evolution mechanism.  IDFileADM acts
+  as provider for initial data, so you don't need any other initial
+  data either.
+
+\item Set up your parameter file so that the AH finder runs, stores
+  the horizon shape in SphericalSurface,
+  and QuasiLocalMeasures accesses these data.\\
+
+\end{itemize}
+
+This gives you the time-independent variables on the horizon, i.e.,
+mostly the spin.  It also allows you to look for apparent horizons if
+you don't know where they are.
+
+
+\item
+  Computing time-independent quantities, e.g.\ 3-determinant of the horizon\\
+
+\begin{itemize}
+
+\item Performing some time steps is necessary. Either read in lapse
+  and shift from files, or set them arbitrarily (e.g.\ lapse one,
+  shift zero).
+
+\item Activate a time evolution thorn, i.e., BSSN\_MoL, MoL, Time,
+  etc.  In order to fill the past time levels, just choose
+  MoL::initial\_data\_is\_crap.  If you have hydrodynamics, read in
+  the hydro variables as well.
+
+\item Only two time steps are required. Remember that the output of
+  QuasiLocalMeasures for iteration 0 and 1 are incorrect or very
+  inaccurate, since the past time levels are not correct, and hence
+  the time derivatives that QuasiLocalMeasures calculates are wrong.
+  However, iteration 2 should be good.  (One could also perform 5
+  iterations and cross-check.)
+
+\end{itemize}
+
+
+\item
+
+  If data for the extrinsic curvature is not available, but those for
+  the 3-metric, lapse, and shift for consecutive time steps are (that
+  is, if you have data suitable for finding event horizons), then one
+  needs to reconstruct the extrinsic curvature first.  There is a
+  thorn AEIThorns/CalcK that helps with that.  It reads the data for
+  the 4-metric timestep after timestep, calculates the time derivative
+  of the 3-metric through finite differencing in time, and then
+  determines the extrinsic curvature from that, and writes it to a
+  file.  Once you have it, you can go on as above.  CalcK has a small
+  shell script that tells you what to do.
+
+
+\item
+
+  In general, things become more interesting if a static conformal
+  factor is involved (since more variables are present), especially if
+  it is output only once (since it is static), which means that one
+  has to mix variables from different time steps.
+
+\end{itemize}
+
+The thorns involved in this procedure have some examples.  In general,
+this is NOT a ``just do it'' action; you have to know what you are
+doing, since you have to put the pieces together in your parameter
+file and make sure that everything is consistent.  We may have a
+vision that you just call a script in a directory that contains output
+files and the script figures out everything else, but we're not there
+yet.  All the ingredients are there, but you'll have to put them
+together in the right way.  Think Lego.
+
+
+
+\section{Interpreting 2D output}
+
+2D output is given on a rectangular grid.  This grid has coordinates
+which are regular and have a constant spacing in the $\theta$ and
+$\phi$ directions.  Cactus output has only grid point indices, but
+does not contain the coordinates $\theta$ and $\phi$ themselves.
+
+In gnuplot, one can define functions to convert indices to
+coordinates:
+\begin{eqnarray}
+  \theta(i) & = & (i - g\theta + 0.5) * \pi   / n\theta
+  \\
+  \phi(j)   & = & (j - g\phi        ) * 2*\pi / n\phi
+\end{eqnarray}
+where $g\theta$ and $g\phi$ is the number of ghost points in the
+corresponding direction, and $n\theta$ and $n\phi$ the number of
+interior points.  Here are the same equations in gnuplot syntax:
+\begin{verbatim}
+theta(i) = (i - nghosts + 0.5) * pi / ntheta
+phi(j) = (j - nghosts) * 2*pi / nphi
+\end{verbatim}
+
+Usually, \verb|nghosts=2|, \verb|ntheta=35|, and \verb|nphi=72|.
+\verb|i| and \verb|j| are is the integer grid point indices.  Note
+that \verb|ntheta| and \verb|nphi| in the parameter file include ghost
+zones, while their definitions here do not include them.  In general,
+\verb|nphi| is even and \verb|ntheta| is odd, because the points are
+staggered about the poles.
+
+A test plot shows whether the plot is symmetric about $\pi/2$ in the
+$\theta$ and $\pi$ in the $\phi$ direction.  Also, plotting something
+axisymmetric with bitant symmetry vs.\ $\theta$ and vs.\ $\pi-\theta$,
+and vs.\ $\phi$ and $2\pi-\phi$, should lie exactly on top of each
+other.
+
+There are also scalars \verb|origin/delta_theta/phi| which one can use
+in the above equations.  Then the equations read
+\begin{verbatim}
+theta(i) = (i + origin_theta) * delta_theta
+phi(j) = (j + origin_phi) * delta_phi
+\end{verbatim}
+but, of course, these four quantities are all irrational and don't
+look nice.
+
+
+
+\begin{thebibliography}{9}
+\bibitem{EinsteinAnalysis_QuasiLocalMeasures_Dreyer:2002mx}
+O.~Dreyer, B.~Krishnan, D.~Shoemaker and E.~Schnetter,
+  %``Introduction to isolated horizons in numerical relativity,''
+  Phys.\ Rev.\ D {\bf 67}, 024018 (2003)
+  doi:10.1103/PhysRevD.67.024018
+  [gr-qc/0206008].
+  %%CITATION = doi:10.1103/PhysRevD.67.024018;%%
+  %158 citations counted in INSPIRE as of 21 Mar 2017
+\bibitem{EinsteinAnalysis_QuasiLocalMeasures_Schnetter:2006yt}
+  E.~Schnetter, B.~Krishnan and F.~Beyer,
+  %``Introduction to dynamical horizons in numerical relativity,''
+  Phys.\ Rev.\ D {\bf 74}, 024028 (2006)
+  doi:10.1103/PhysRevD.74.024028
+  [gr-qc/0604015].
+  %%CITATION = doi:10.1103/PhysRevD.74.024028;%%
+  %70 citations counted in INSPIRE as of 21 Mar 2017
+\bibitem{EinsteinAnalysis_QuasiLocalMeasures_Szabados:2004vb}
+  L.~B.~Szabados,
+  %``Quasi-Local Energy-Momentum and Angular Momentum in GR: A Review Article,''
+  Living Rev.\ Rel.\  {\bf 7}, 4 (2004).
+  %%CITATION = 00222,7,4;%%
+  %149 citations counted in INSPIRE as of 21 Mar 2017
+\bibitem{EinsteinAnalysis_QuasiLocalMeasures_Lovelace:2009dg}
+  G.~Lovelace {\it et al.},
+  %``Momentum flow in black-hole binaries. II. Numerical simulations of equal-mass, head-on mergers with antiparallel spins,''
+  Phys.\ Rev.\ D {\bf 82}, 064031 (2010)
+  doi:10.1103/PhysRevD.82.064031
+  [arXiv:0907.0869 [gr-qc]].
+  %%CITATION = doi:10.1103/PhysRevD.82.064031;%%
+  %36 citations counted in INSPIRE as of 21 Mar 2017
+\bibitem{EinsteinAnalysis_QuasiLocalMeasures_Baker:2001sf}
+  J.~G.~Baker, M.~Campanelli and C.~O.~Lousto,
+  %``The Lazarus project: A Pragmatic approach to binary black hole evolutions,''
+  Phys.\ Rev.\ D {\bf 65}, 044001 (2002)
+  doi:10.1103/PhysRevD.65.044001
+  [gr-qc/0104063].
+  %%CITATION = doi:10.1103/PhysRevD.65.044001;%%
+  %106 citations counted in INSPIRE as of 05 Apr 2017
+\bibitem{EinsteinAnalysis_QuasiLocalMeasures_Misner:1974qy}
+  C.~W.~Misner, K.~S.~Thorne and J.~A.~Wheeler,
+  %``Gravitation,''
+  San Francisco 1973, 1279p
+  %248 citations counted in INSPIRE as of 05 Apr 2017
+
+
+\end{thebibliography}
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{begin\_qlm\_calculations\_after}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{begin\_qlm\_calculations\_after} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em when should we start calculations?}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{at/after this time (inclusively)} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{coordsystem} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em The coordinate system to use}} \\
+\hline{\bf Range} & &  {\bf Default:} cart3d \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering } & \multicolumn{2}{p{\paraWidth}|}{must be a registered coordinate system} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{interpolator} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em The interpolator to use}} \\
+\hline{\bf Range} & &  {\bf Default:} Lagrange polynomial interpolation \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering } & \multicolumn{2}{p{\paraWidth}|}{must be a registered interpolator} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{interpolator\_options} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Options for the interpolator}} \\
+\hline{\bf Range} & &  {\bf Default:} order=2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering } & \multicolumn{2}{p{\paraWidth}|}{must be a valid options specification} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{killing\_vector\_method} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Method for finding the Killing vector field}} \\
+\hline{\bf Range} & &  {\bf Default:} eigenvector \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering axial} & \multicolumn{2}{p{\paraWidth}|}{Assume that d/dphi is a Killing vector} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering eigenvector} & \multicolumn{2}{p{\paraWidth}|}{Solve the Killing vector equation as eigenvector equation} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering gradient} & \multicolumn{2}{p{\paraWidth}|}{Calculate the normal to the gradient of a scalar} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{killing\_vector\_normalisation} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Method for normalising the Killing vector field}} \\
+\hline{\bf Range} & &  {\bf Default:} average \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering average} & \multicolumn{2}{p{\paraWidth}|}{Average several integral lines} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering median} & \multicolumn{2}{p{\paraWidth}|}{Use the median integral line} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{num\_surfaces} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Number of surfaces}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:100} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{output\_vtk\_every} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Output a VTK file with the main 2D}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering } & \multicolumn{2}{p{\paraWidth}|}{don't output VTK file} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{output every so many iterations} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{spatial\_order} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Order of spatial differencing}} \\
+\hline{\bf Range} & &  {\bf Default:} 2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 2} & \multicolumn{2}{p{\paraWidth}|}{second order} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 4} & \multicolumn{2}{p{\paraWidth}|}{fourth order} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{surface\_index} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Spherical surface that contains the surface shape}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1} & \multicolumn{2}{p{\paraWidth}|}{do not calculate} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{surface index} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{surface\_name} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Spherical surface that contains the surface shape}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering } & \multicolumn{2}{p{\paraWidth}|}{use surface\_index} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{surface name} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{verbose} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Produce log output while running}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{veryverbose} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Produce much log output while running}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{auto\_res} & {\bf Scope:} shared from SPHERICALSURFACE & BOOLEAN \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{maxnphi} & {\bf Scope:} shared from SPHERICALSURFACE & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{maxntheta} & {\bf Scope:} shared from SPHERICALSURFACE & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{nghostsphi} & {\bf Scope:} shared from SPHERICALSURFACE & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{nghoststheta} & {\bf Scope:} shared from SPHERICALSURFACE & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{nphi} & {\bf Scope:} shared from SPHERICALSURFACE & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{nsurfaces} & {\bf Scope:} shared from SPHERICALSURFACE & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{ntheta} & {\bf Scope:} shared from SPHERICALSURFACE & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{symmetric\_x} & {\bf Scope:} shared from SPHERICALSURFACE & BOOLEAN \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{symmetric\_y} & {\bf Scope:} shared from SPHERICALSURFACE & BOOLEAN \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{symmetric\_z} & {\bf Scope:} shared from SPHERICALSURFACE & BOOLEAN \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+quasilocalmeasures
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+admbase
+
+sphericalsurface
+
+tmunubase
+\vspace{2mm}
+\subsection*{Grid Variables}
+\vspace{5mm}\subsubsection{PRIVATE GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+qlm\_state &  & compact & 0 \\ 
+ & qlm\_calc\_error & description & Status information \\ 
+ & qlm\_have\_valid\_data & dimensions & 0 \\ 
+ & qlm\_have\_killing\_vector & distribution & CONSTANT \\ 
+ & qlm\_timederiv\_order & group type & SCALAR \\ 
+ & qlm\_iteration & timelevels & 1 \\ 
+ &  & vararray\_size & num\_surfaces \\ 
+ &  & variable type & INT \\ 
+\hline 
+qlm\_state\_p &  & compact & 0 \\ 
+ & qlm\_have\_valid\_data\_p & description & Previous status information \\ 
+ & qlm\_have\_valid\_data\_p\_p & dimensions & 0 \\ 
+ & qlm\_have\_killing\_vector\_p & distribution & CONSTANT \\ 
+ & qlm\_have\_killing\_vector\_p\_p & group type & SCALAR \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & num\_surfaces \\ 
+ &  & variable type & INT \\ 
+\hline 
+qlm\_grid\_int &  & compact & 0 \\ 
+ & qlm\_nghoststheta & description & Grid description \\ 
+ & qlm\_nghostsphi & dimensions & 0 \\ 
+ & qlm\_ntheta & distribution & CONSTANT \\ 
+ & qlm\_nphi & group type & SCALAR \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & num\_surfaces \\ 
+ &  & variable type & INT \\ 
+\hline 
+qlm\_grid\_real &  & compact & 0 \\ 
+ & qlm\_origin\_x & description & Grid description \\ 
+ & qlm\_origin\_y & dimensions & 0 \\ 
+ & qlm\_origin\_z & distribution & CONSTANT \\ 
+ & qlm\_origin\_theta & group type & SCALAR \\ 
+ & qlm\_origin\_phi & timelevels & 1 \\ 
+ & qlm\_delta\_theta & vararray\_size & num\_surfaces \\ 
+ & qlm\_delta\_phi & variable type & REAL \\ 
+\hline 
+qlm\_grid\_real\_p &  & compact & 0 \\ 
+ & qlm\_origin\_x\_p & description & Previous grid description \\ 
+ & qlm\_origin\_y\_p & dimensions & 0 \\ 
+ & qlm\_origin\_z\_p & distribution & CONSTANT \\ 
+ & qlm\_origin\_x\_p\_p & group type & SCALAR \\ 
+ & qlm\_origin\_y\_p\_p & timelevels & 1 \\ 
+ & qlm\_origin\_z\_p\_p & vararray\_size & num\_surfaces \\ 
+ &  & variable type & REAL \\ 
+\hline 
+qlm\_shapes &  & compact & 0 \\ 
+ & qlm\_shape & description & Shape of the surface \\ 
+ &  & dimensions & 2 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & SPHERICALSURFACE::MAXNTHETA \\ 
+& ~ & size & SPHERICALSURFACE::MAXNPHI \\ 
+ &  & tags & convergence\_power=1 \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & num\_surfaces \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~ \\ 
+\hline 
+qlm\_shapes\_p &  & compact & 0 \\ 
+ & qlm\_shape\_p & description & Previous shapes of the surface \\ 
+ & qlm\_shape\_p\_p & dimensions & 2 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & SPHERICALSURFACE::MAXNTHETA \\ 
+& ~ & size & SPHERICALSURFACE::MAXNPHI \\ 
+ &  & tags & convergence\_power=1 \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & num\_surfaces \\ 
+ &  & variable type & REAL \\ 
+\hline 
+qlm\_coordinates &  & compact & 0 \\ 
+ & qlm\_x & description & Cartesian coordinates of the grid points on the surface \\ 
+ & qlm\_y & dimensions & 2 \\ 
+ & qlm\_z & distribution & CONSTANT \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & SPHERICALSURFACE::MAXNTHETA \\ 
+& ~ & size & SPHERICALSURFACE::MAXNPHI \\ 
+ &  & tags & convergence\_power=1 \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & num\_surfaces \\ 
+ &  & variable type & REAL \\ 
+\hline 
+qlm\_coordinates\_p &  & compact & 0 \\ 
+ & qlm\_x\_p & description & Past Cartesian coordinates of the grid points on the surface \\ 
+ & qlm\_y\_p & dimensions & 2 \\ 
+ & qlm\_z\_p & distribution & CONSTANT \\ 
+ & qlm\_x\_p\_p & group type & ARRAY \\ 
+ & qlm\_y\_p\_p & size & SPHERICALSURFACE::MAXNTHETA \\ 
+& ~ & size & SPHERICALSURFACE::MAXNPHI \\ 
+ & qlm\_z\_p\_p & tags & convergence\_power=1 \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & num\_surfaces \\ 
+ &  & variable type & REAL \\ 
+\hline 
+qlm\_tetrad\_l &  & compact & 0 \\ 
+ & qlm\_l0 & description & Tetrad vector l\^mu \\ 
+ & qlm\_l1 & dimensions & 2 \\ 
+ & qlm\_l2 & distribution & CONSTANT \\ 
+ & qlm\_l3 & group type & ARRAY \\ 
+ &  & size & SPHERICALSURFACE::MAXNTHETA \\ 
+& ~ & size & SPHERICALSURFACE::MAXNPHI \\ 
+ &  & tags & convergence\_power=1 \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & num\_surfaces \\ 
+ &  & variable type & REAL \\ 
+\hline 
+qlm\_tetrad\_n &  & compact & 0 \\ 
+ & qlm\_n0 & description & Tetrad vector n\^mu \\ 
+ & qlm\_n1 & dimensions & 2 \\ 
+ & qlm\_n2 & distribution & CONSTANT \\ 
+ & qlm\_n3 & group type & ARRAY \\ 
+ &  & size & SPHERICALSURFACE::MAXNTHETA \\ 
+& ~ & size & SPHERICALSURFACE::MAXNPHI \\ 
+ &  & tags & convergence\_power=1 \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & num\_surfaces \\ 
+ &  & variable type & REAL \\ 
+\hline 
+qlm\_tetrad\_m &  & compact & 0 \\ 
+ & qlm\_m0 & description & Tetrad vector m\^mu \\ 
+ & qlm\_m1 & dimensions & 2 \\ 
+ & qlm\_m2 & distribution & CONSTANT \\ 
+ & qlm\_m3 & group type & ARRAY \\ 
+ &  & size & SPHERICALSURFACE::MAXNTHETA \\ 
+& ~ & size & SPHERICALSURFACE::MAXNPHI \\ 
+ &  & tags & convergence\_power=1 \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & num\_surfaces \\ 
+ &  & variable type & COMPLEX \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~ \\ 
+\hline 
+qlm\_newman\_penrose &  & compact & 0 \\ 
+ & qlm\_npkappa & description & Newman-Penrose quantities \\ 
+ & qlm\_nptau & dimensions & 2 \\ 
+ & qlm\_npsigma & distribution & CONSTANT \\ 
+ & qlm\_nprho & group type & ARRAY \\ 
+ & qlm\_npepsilon & size & SPHERICALSURFACE::MAXNTHETA \\ 
+& ~ & size & SPHERICALSURFACE::MAXNPHI \\ 
+ & qlm\_npgamma & tags & Checkpoint="no" \\ 
+& ~ & tags & convergence\_power=1 \\ 
+ & qlm\_npbeta & timelevels & 1 \\ 
+ & qlm\_npalpha & vararray\_size & num\_surfaces \\ 
+ & qlm\_nppi & variable type & COMPLEX \\ 
+\hline 
+qlm\_weyl\_scalars &  & compact & 0 \\ 
+ & qlm\_psi0 & description & Weyl scalars (aka Newman-Penrose spin coefficients) \\ 
+ & qlm\_psi1 & dimensions & 2 \\ 
+ & qlm\_psi2 & distribution & CONSTANT \\ 
+ & qlm\_psi3 & group type & ARRAY \\ 
+ & qlm\_psi4 & size & SPHERICALSURFACE::MAXNTHETA \\ 
+& ~ & size & SPHERICALSURFACE::MAXNPHI \\ 
+ & qlm\_i & tags & Checkpoint="no" \\ 
+& ~ & tags & convergence\_power=1 \\ 
+ & qlm\_j & timelevels & 1 \\ 
+ & qlm\_s & vararray\_size & num\_surfaces \\ 
+ & qlm\_sdiff & variable type & COMPLEX \\ 
+\hline 
+qlm\_ricci\_scalars &  & compact & 0 \\ 
+ & qlm\_phi00 & description & Ricci scalars \\ 
+ & qlm\_phi11 & dimensions & 2 \\ 
+ & qlm\_phi01 & distribution & CONSTANT \\ 
+ & qlm\_phi12 & group type & ARRAY \\ 
+ & qlm\_phi10 & size & SPHERICALSURFACE::MAXNTHETA \\ 
+& ~ & size & SPHERICALSURFACE::MAXNPHI \\ 
+ & qlm\_phi21 & tags & Checkpoint="no" \\ 
+& ~ & tags & convergence\_power=1 \\ 
+ & qlm\_phi02 & timelevels & 1 \\ 
+ & qlm\_phi22 & vararray\_size & num\_surfaces \\ 
+ & qlm\_phi20 & variable type & REAL \\ 
+\hline 
+qlm\_twometric &  & compact & 0 \\ 
+ & qlm\_qtt & description & 2-metric \\ 
+ & qlm\_qtp & dimensions & 2 \\ 
+ & qlm\_qpp & distribution & CONSTANT \\ 
+ & qlm\_rsc & group type & ARRAY \\ 
+ &  & size & SPHERICALSURFACE::MAXNTHETA \\ 
+& ~ & size & SPHERICALSURFACE::MAXNPHI \\ 
+ &  & tags & Checkpoint="no" \\ 
+& ~ & tags & convergence\_power=1 \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & num\_surfaces \\ 
+ &  & variable type & REAL \\ 
+\hline 
+qlm\_killing\_vector &  & compact & 0 \\ 
+ & qlm\_xi\_t & description & Killing vector field \\ 
+ & qlm\_xi\_p & dimensions & 2 \\ 
+ & qlm\_chi & distribution & CONSTANT \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & SPHERICALSURFACE::MAXNTHETA \\ 
+& ~ & size & SPHERICALSURFACE::MAXNPHI \\ 
+ &  & tags & convergence\_power=1 \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & num\_surfaces \\ 
+ &  & variable type & REAL \\ 
+\hline 
+qlm\_killed\_twometric &  & compact & 0 \\ 
+ & qlm\_lqtt & description & Lie derivative of the 2-metric along the Killing vector field \\ 
+ & qlm\_lqtp & dimensions & 2 \\ 
+ & qlm\_lqpp & distribution & CONSTANT \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & SPHERICALSURFACE::MAXNTHETA \\ 
+& ~ & size & SPHERICALSURFACE::MAXNPHI \\ 
+ &  & tags & Checkpoint="no" \\ 
+& ~ & tags & convergence\_power=1 \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & num\_surfaces \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~ \\ 
+\hline 
+qlm\_invariant\_coordinates &  & compact & 0 \\ 
+ & qlm\_inv\_z & description & Invariant coordinates on the surface \\ 
+& ~ & description &  assuming axisymmetry \\ 
+ &  & dimensions & 2 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & SPHERICALSURFACE::MAXNTHETA \\ 
+& ~ & size & SPHERICALSURFACE::MAXNPHI \\ 
+ &  & tags & Checkpoint="no" \\ 
+& ~ & tags & convergence\_power=1 \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & num\_surfaces \\ 
+ &  & variable type & REAL \\ 
+\hline 
+qlm\_multipole\_moments &  & compact & 0 \\ 
+ & qlm\_mp\_m0 & description & Mass and spin multipole moments \\ 
+ & qlm\_mp\_m1 & dimensions & 0 \\ 
+ & qlm\_mp\_m2 & distribution & CONSTANT \\ 
+ & qlm\_mp\_m3 & group type & SCALAR \\ 
+ & qlm\_mp\_m4 & tags & Checkpoint="no" \\ 
+ & qlm\_mp\_m5 & timelevels & 1 \\ 
+ & qlm\_mp\_m6 & vararray\_size & num\_surfaces \\ 
+ & qlm\_mp\_m7 & variable type & REAL \\ 
+\hline 
+qlm\_3determinant &  & compact & 0 \\ 
+ & qlm\_3det & description & 3-Determinant of H for a special choice of the triad \\ 
+ &  & dimensions & 2 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & SPHERICALSURFACE::MAXNTHETA \\ 
+& ~ & size & SPHERICALSURFACE::MAXNPHI \\ 
+ &  & tags & Checkpoint="no" \\ 
+& ~ & tags & convergence\_power=1 \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & num\_surfaces \\ 
+ &  & variable type & REAL \\ 
+\hline 
+qlm\_scalars &  & compact & 0 \\ 
+ & qlm\_time & description & Scalar quantities on the surface \\ 
+ & qlm\_equatorial\_circumference & dimensions & 0 \\ 
+ & qlm\_polar\_circumference\_0 & distribution & CONSTANT \\ 
+ & qlm\_polar\_circumference\_pi\_2 & group type & SCALAR \\ 
+ & qlm\_area & timelevels & 1 \\ 
+ & qlm\_irreducible\_mass & vararray\_size & num\_surfaces \\ 
+ & qlm\_radius & variable type & REAL \\ 
+\hline 
+qlm\_scalars\_p &  & compact & 0 \\ 
+ & qlm\_time\_p & description & Some scalar quantities on the surface at previous times \\ 
+ & qlm\_time\_p\_p & dimensions & 0 \\ 
+ & qlm\_radius\_p & distribution & CONSTANT \\ 
+ & qlm\_radius\_p\_p & group type & SCALAR \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & num\_surfaces \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn EinsteinAnalysis/QuasiLocalMeasures.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Always:}&  ~ \\ 
+ qlm\_state qlm\_scalars & ~\\ 
+ qlm\_state\_p qlm\_scalars\_p & ~\\ 
+ qlm\_grid\_int qlm\_grid\_real qlm\_grid\_real\_p & ~\\ 
+ qlm\_shapes qlm\_tetrad\_l qlm\_tetrad\_n qlm\_tetrad\_m & ~\\ 
+ qlm\_shapes\_p & ~\\ 
+ qlm\_killing\_vector & ~\\ 
+ qlm\_coordinates qlm\_coordinates\_p & ~\\ 
+ qlm\_newman\_penrose qlm\_weyl\_scalars & ~\\ 
+ qlm\_ricci\_scalars qlm\_twometric qlm\_killed\_twometric & ~\\ 
+ qlm\_invariant\_coordinates qlm\_multipole\_moments qlm\_3determinant & ~\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PARAMCHECK} 
+
+\hspace{5mm} qlm\_paramcheck 
+
+\hspace{5mm}{\it check quasi-local parameter settings } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_INITIAL} 
+
+\hspace{5mm} qlm\_init 
+
+\hspace{5mm}{\it initialise quasi-local calculations } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_ANALYSIS} 
+
+\hspace{5mm} qlm\_calculate 
+
+\hspace{5mm}{\it calculate quasi-local quantities } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & sphericalsurface\_hasbeenset \\ 
+~& ~ &settmunu\\ 
+~ & Language:  & fortran \\ 
+~ & Options:  & global \\ 
+~ & Storage:  & qlm\_coordinates \\ 
+~& ~ &qlm\_coordinates\_p\\ 
+~& ~ &qlm\_newman\_penrose\\ 
+~& ~ &qlm\_weyl\_scalars\\ 
+~& ~ &qlm\_ricci\_scalars\\ 
+~& ~ &qlm\_twometric\\ 
+~& ~ &qlm\_killed\_twometric\\ 
+~& ~ &qlm\_invariant\_coordinates\\ 
+~& ~ &qlm\_multipole\_moments\\ 
+~& ~ &qlm\_3determinant\\ 
+~ & Triggers:  & qlm\_state \\ 
+~& ~ &qlm\_grid\_int\\ 
+~& ~ &qlm\_grid\_real\\ 
+~& ~ &qlm\_shapes\\ 
+~& ~ &qlm\_tetrad\_l\\ 
+~& ~ &qlm\_tetrad\_n\\ 
+~& ~ &qlm\_tetrad\_m\\ 
+~& ~ &qlm\_coordinates\\ 
+~& ~ &qlm\_newman\_penrose\\ 
+~& ~ &qlm\_weyl\_scalars\\ 
+~& ~ &qlm\_ricci\_scalars\\ 
+~& ~ &qlm\_twometric\\ 
+~& ~ &qlm\_killing\_vector\\ 
+~& ~ &qlm\_killed\_twometric\\ 
+~& ~ &qlm\_invariant\_coordinates\\ 
+~& ~ &qlm\_multipole\_moments\\ 
+~& ~ &qlm\_3determinant\\ 
+~& ~ &qlm\_scalars\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

@@ -1,0 +1,511 @@
+% *======================================================================*
+%  Cactus Thorn template for ThornGuide documentation
+%  Author: Ian Kelley
+%  Date: Sun Jun 02, 2002
+%  $Header: /cactusdevcvs/Cactus/doc/ThornGuide/template.tex,v 1.12 2004/01/07 20:12:39 rideout Exp $
+%
+%  Thorn documentation in the latex file doc/documentation.tex
+%  will be included in ThornGuides built with the Cactus make system.
+%  The scripts employed by the make system automatically include
+%  pages about variables, parameters and scheduling parsed from the
+%  relevant thorn CCL files.
+%
+%  This template contains guidelines which help to assure that your
+%  documentation will be correctly added to ThornGuides. More
+%  information is available in the Cactus UsersGuide.
+%
+%  Guidelines:
+%   - Do not change anything before the line
+%       % START CACTUS THORNGUIDE",
+%     except for filling in the title, author, date, etc. fields.
+%        - Each of these fields should only be on ONE line.
+%        - Author names should be separated with a \\ or a comma.
+%   - You can define your own macros, but they must appear after
+%     the START CACTUS THORNGUIDE line, and must not redefine standard
+%     latex commands.
+%   - To avoid name clashes with other thorns, 'labels', 'citations',
+%     'references', and 'image' names should conform to the following
+%     convention:
+%       ARRANGEMENT_THORN_LABEL
+%     For example, an image wave.eps in the arrangement CactusWave and
+%     thorn WaveToyC should be renamed to CactusWave_WaveToyC_wave.eps
+%   - Graphics should only be included using the graphicx package.
+%     More specifically, with the "\includegraphics" command.  Do
+%     not specify any graphic file extensions in your .tex file. This
+%     will allow us to create a PDF version of the ThornGuide
+%     via pdflatex.
+%   - References should be included with the latex "\bibitem" command.
+%   - Use \begin{abstract}...\end{abstract} instead of \abstract{...}
+%   - Do not use \appendix, instead include any appendices you need as
+%     standard sections.
+%   - For the benefit of our Perl scripts, and for future extensions,
+%     please use simple latex.
+%
+% *======================================================================*
+%
+% Example of including a graphic image:
+%    \begin{figure}[ht]
+% 	\begin{center}
+%    	   \includegraphics[width=6cm]{/home/runner/work/tests/tests/arrangements/PITTNullCode/SphericalHarmonicRecon/doc/MyArrangement_MyThorn_MyFigure}
+% 	\end{center}
+% 	\caption{Illustration of this and that}
+% 	\label{MyArrangement_MyThorn_MyLabel}
+%    \end{figure}
+%
+% Example of using a label:
+%   \label{MyArrangement_MyThorn_MyLabel}
+%
+% Example of a citation:
+%    \cite{MyArrangement_MyThorn_Author99}
+%
+% Example of including a reference
+%   \bibitem{MyArrangement_MyThorn_Author99}
+%   {J. Author, {\em The Title of the Book, Journal, or periodical}, 1 (1999),
+%   1--16. {\tt http://www.nowhere.com/}}
+%
+% *======================================================================*
+
+% If you are using CVS use this line to give version information
+% $Header: /cactusdevcvs/Cactus/doc/ThornGuide/template.tex,v 1.12 2004/01/07 20:12:39 rideout Exp $
+
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+% The author of the documentation
+\author{Yosef Zlochower \textless yosef@astro.rit.edu\textgreater}
+
+% The title of the document (not necessarily the name of the Thorn)
+\title{SphericalHarmonicRecon}
+
+% the date your document was last changed, if your document is in CVS,
+% please use:
+%    \date{$ $Date: 2004/01/07 20:12:39 $ $}
+\date{June 18 2009}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+% Add all definitions used in this documentation here
+%   \def\mydef etc
+
+% Add an abstract for this thorn's documentation
+\begin{abstract}
+This thorn is used to reconstruct the metric data saved by
+SphericalHarmonicDecomp. It also provides aliased functions
+that are used by NullSHRExtract to construct the boundary data
+for CCE.
+\end{abstract}
+
+% The following sections are suggestive only.
+% Remove them or add your own.
+
+\section{Introduction}
+ 
+\section{Using and Filtering Cauchy data from SphericalHarmonicDecomp}
+The thorn SphericalHarmonicDecomp uses a least-squares fit of the metric
+data in some spherical shell to a set of spectral functions (Chebyshev in
+R and Ylm in angle). These data are dumped into files with names
+metric\_obs\_0\_Decomp.h5, metric\_obs\_1\_Decomp.h5, etc., where
+the 0,1,etc. refer to the spherical shell (several are allowed).
+
+This thorn takes the data in one of these files and passes it to
+NullSHRExtract, which uses them to construct the null boundary data.
+Several utilities are provided in order to view and modify these data
+files. These include a program to filter the data via an FFT and
+calculate a smooth time derivative, which may be important in order
+to obtain accurate waveforms.
+
+These utilities require the HDF5 and FFTW3 libraries and are  
+compiled using the gamke CONFIGNAME-utils mechanism.
+
+To filter the Cauchy data:
+
+  In general a simulation will be run over multiple jobs, each one
+producing an individual metric\_decomp.h5 file. You will need to
+combine these files using hdf5\_merge.
+
+\begin{verbatim}
+For example
+  hdf5\_merge Run1/metric_obs\_0\_Decomp.h5 \
+             Run2/metric\_obs\_0\_Decomp.h5 \
+             metric\_obs\_0\_Decomp.h5
+\end{verbatim}
+
+Once the files are merged, you will need to find the last timestep
+using the "findlast" command
+
+\begin{verbatim}
+./findlast  metric\_obs\_0\_Decomp.h5
+   8086: 4.010913e+02
+\end{verbatim}
+
+Here 8086 is the last timestep, which corresponds to a time of 401.0913.
+
+Next it is a good idea to examine the data in one of the higher modes
+you will use. In this case we will examine the n=1, l=4,m=4 mode
+of gxx (the 0 below corresponds to gxx, see the source)
+
+\begin{verbatim}
+./ascii\_output 8086 1 4 4 0 metric\_obs\_0\_Decomp.h5  > test\_out
+\end{verbatim}
+
+We will use this data to ensure that only high-frequency junk is
+filtered. In this case it was found that the true signal frequency
+is smaller than 0.5 (omega). To be safe, we'll set the maximum
+allowed frequency to 2.
+
+\begin{verbatim}
+./fftwfilter 8086 2 1 metric\_obs\_0\_Decomp.h5
+\end{verbatim}
+
+Here the "2" corresponds to the maximum frequency, while the "1"
+corresponds to the damping length. Note that the maximum frequency is
+in units of 2*pi/(physical time), while the damping length is units of
+integer frequency. Choosing a large damping length can lead to suppression
+of the true signal.
+
+The output file is metric\_obs\_0\_Decomp\_ft.h5, which contains the
+filtered metric data and the time derivatives of these data (which the
+original file did not contain). The filtered data can now be used in a
+Characteristic evolution.
+
+In order to use the Cauchy extraction data in a subsequent Characteristic
+evolution, you need to know the timestep in the Cauchy data and
+the region in radius that the data cover. The program "readmeta" will
+give you this region.
+
+\begin{verbatim}
+./readmeta metric\_obs\_0\_Decomp\_ft.h5 
+Run Parameters
+... nn = 7
+... na = 49
+... Rin = 1.800000e+01
+... Rout = 2.200000e+01
+\end{verbatim}
+
+Here we see that the data covers the interval 18<r<22. In this case,
+we would choose an extraction radius of 20 and set the following
+parameters in the parfile
+
+\begin{verbatim}
+ #Extraction radius---------------
+ SphericalHarmonicRecon::r\_extract=20.0
+ NullSHRExtract::cr = 20.0
+ NullGrid::null\_rwt = 20.0
+
+ SphericalHarmonicRecon::time\_derivative\_in\_file = "yes" 
+ SphericalHarmonicRecon::metric\_data\_filename = "metric\_obs\_0\_Decomp\_ft.h5"
+\end{verbatim}
+
+Choosing a timestep for the characteristic evolution that is an integer
+multiple of the Cauchy dump times will remove time interpolation
+errors and can lead to smoother signals. To find these dump time,
+use the "printtime" command. The syntax is "printtime iteration file"
+
+\begin{verbatim}
+./printtime 1 metric\_obs\_0\_Decomp\_ft.h5 
+1: 4.960317e-02
+\end{verbatim}
+
+In this case the dump times are separated by 0.04960317.
+
+For complete example parfiles for both the initial Cauchy evolution,
+and subsequent null evolution, see SphericalHarmonicDecomp/par/
+and SphericalHarmonicRecon/par/
+
+\subsection{Parameters}
+
+\begin{verbatim}
+SphericalHarmonicRecon::order order used in time interpolation /
+         differentiation. Options are 2 or 4.
+
+SphericalHarmonicRecon::r_extract the radius of the worldtube. This
+        must be consistent with the setup of the null grid
+
+SphericalHarmonicRecon::metric_data_filename filename for the cauchy 
+            metric data
+
+SphericalHarmonicRecon::time_derivative_in_file flag that indicates if
+        the  time derivative of the metric is in the cauchy file. The
+        time derivative may be generated via the fftwfilter program mentioned
+        above.
+
+# the following parameters should only be used if the
+# hdf5 was corrupted and extraction parameters
+# are not recoverable. Of course, we should actually
+# fix the extraction code so that this does not happen
+BOOLEAN override_extraction_parameters "never set this"
+{
+} no
+
+CCTK_INT override_spin "spin: never set this"
+{
+ *:* :: "anything, but you probably want 0"
+} 0
+
+CCTK_INT override_nn "number of Chabyshev coefficients: never use this"
+{
+  1:* :: "positive: must actualy match the extraction run"
+} 1
+
+CCTK_INT override_na "number of angular coefficients: never use this"
+{
+  1:* :: "positive: must actualy match the extraction run"
+} 1
+
+CCTK_REAL override_Rin "inner radius of extraction zone: ..."
+{
+  (0:* :: "positive"
+} 1
+
+CCTK_REAL override_Rout "outer radius of extraction zone: ..."
+{
+  (0:* :: "positive"
+} 1
+\end{verbatim}
+
+\section{Physical System}
+
+\section{Numerical Implementation}
+
+\section{Using This Thorn}
+
+\subsection{Obtaining This Thorn}
+
+\subsection{Basic Usage}
+
+\subsection{Special Behaviour}
+
+\subsection{Interaction With Other Thorns}
+
+\subsection{Examples}
+
+\subsection{Support and Feedback}
+
+\section{History}
+
+\subsection{Thorn Source Code}
+
+\subsection{Thorn Documentation}
+
+\subsection{Acknowledgements}
+
+
+\begin{thebibliography}{9}
+
+\end{thebibliography}
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{override\_extraction\_parameters}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{metric\_data\_filename} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em filename for the cauchy metric data}} \\
+\hline{\bf Range} & &  {\bf Default:} metric\_Decomp.h5 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{the Cauchy metric data} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{order} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em order used in time interpolation / differentiation}} \\
+\hline{\bf Range} & &  {\bf Default:} 4 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 2} & \multicolumn{2}{p{\paraWidth}|}{two or four} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 4} & \multicolumn{2}{p{\paraWidth}|}{two or four} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{override\_extraction\_parameters} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em never set this}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{override\_na} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em number of angular coefficition: never use this}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{positive: must actualy match the extraction run} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{override\_nn} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em number of Chabyshev coefficition: never use this}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{positive: must actualy match the extraction run} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{override\_rin} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em inner radius of extraction zone: ...}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{positive} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{override\_rout} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em outer radius of extraction zone: ...}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{positive} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{override\_spin} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em spin: never set this}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{anything, but you probably want 0} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{r\_extract} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em the radius of the worldtube}} \\
+\hline{\bf Range} & &  {\bf Default:} 50.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{positive} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{time\_derivative\_in\_file} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em is the time derivative of the metric in the cauchy file}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+sphericalharmonicrecon
+\vspace{2mm}
+
+\vspace{5mm}
+
+\noindent {\bf Provides}: 
+
+
+
+GetCurrentExtractionCoefs to 
+
+GetExtractionParameters to 
+\vspace{2mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn PITTNullCode/SphericalHarmonicRecon.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}NONE
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf SphericalHarmonicReconRead} 
+
+\hspace{5mm} metricreconstruction 
+
+\hspace{5mm}{\it group for use by external thorns to use the metric } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & sphericalharmonicrecon\_readdata \\ 
+~ & Before:  & sphericalharmonicrecon\_poststep \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf SphericalHarmonicReconRead} 
+
+\hspace{5mm} sphericalharmonicrecon\_readdata 
+
+\hspace{5mm}{\it read the world tube data and set the data flag to read } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf SphericalHarmonicReconRead} 
+
+\hspace{5mm} sphericalharmonicrecon\_poststep 
+
+\hspace{5mm}{\it set data flag to unread } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & sphericalharmonicrecon\_readdata \\ 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_WRAGH} 
+
+\hspace{5mm} sphericalharmonicrecon\_startup 
+
+\hspace{5mm}{\it startup } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

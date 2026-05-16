@@ -1,0 +1,205 @@
+\documentclass{article}
+
+\usepackage{../../../../doc/latex/cactus}
+
+\begin{document}
+
+\title{The {\tt Llama} multipatch infrastructure}
+\author{Original authors: Denis Pollney, Christian Reisswig, Erik Schnetter, Nils Dorband, Peter Diener}
+
+\date{\today}
+
+\maketitle
+
+% START CACTUS THORNGUIDE
+
+\begin{abstract}
+  {\tt Llama} is a collection of thorns that defines a set of curvilinear multipatch grids in Cactus.
+  The grids are allowed to overlap. Interpatch boundary data is exchanged via interpolation.
+\end{abstract}
+
+\section{Introduction}
+\label{sec:intro}
+
+The {\tt Llama}\footnote{The name Llama originated from our affinity to the animal (not really).
+Others remember the computer game {\tt SimCity 2000}, where Llamas regularly appeared throughout the game.
+Llamas are funny creatures.}
+code was implemented to allow one to use multiple curvilinear grid patches within {\tt Cactus}.
+The ability to have multiple grid ``maps'' is provided by {\tt Carpet}. 
+Patch systems, and their coordinate systems and transformations are defined in {\tt Llama}.
+
+The core of {\tt Llama} consists of the following core thorns:
+\begin{itemize}
+ \item {\tt Coordinates}: Provides patch systems, coordinate mappings, and transformations.
+ \item {\tt Interpolate2}: Sets up inter-patch interpolation. The interpolation itself is carried out using {\tt CarpetInterp2}.
+\end{itemize}
+
+In addition, there are a number of optional thorns:
+\begin{itemize}
+ \item {\tt GlobalDerivatives}: Provides inlined pointwise finite difference operators in the global Cartesian tensor basis. 
+       The differencing is carried out in the local basis. Jacobians are applied to transform to the global basis.
+\end{itemize}
+
+
+
+
+\section{Using Llama}
+\label{sec:use}
+
+What follows is a brief introduction to using {\tt Llama}. It assumes that
+you are familiar with the two papers describing Llama \cite{Llama_Pollney:2009yz,Llama_Reisswig:2012nc}.
+
+{\tt Llama: Coordinates} provides grid functions for Jacobians, inverse Jacobians, and the derivitives
+of the Jacobian between the local coordinates of a given patch and the global Cartesian coordinates.
+It also provides a volume form to compute volume integrals in the global frame, taking into account the non-trivial
+overlap between patches.
+
+
+\subsection{Obtaining This Thorn}
+
+The public version of {\tt Llama} can be found on the
+website {\tt http://www.llama-code.org}. 
+
+\subsection{Basic Usage}
+
+% Describe basic parameters: overlap, interpolation order/type, ghostsize width, 
+% storage for Jacobians / volume form.
+
+Here, we describe the basic parameter settings for {\tt Coordinates} and {\tt Interpolate2}.
+Parameters that are specific to a given patch system are described in the sections below.
+
+The following parameters must be set for multipatch evolution:
+\begin{itemize}
+ \item {\verb|Carpet::domain_from_multipatch|} must be set to {\tt yes} for multipatch.
+  \item {\verb|CartGrid3D::type|} must be set to {\tt multipatch} for multipatch.
+  \item {\verb|CartGrid3D::set_coordinate_ranges_on|} must be set to {\tt "all maps"} for multipatch.
+\end{itemize}
+
+The following basic parameters need to be set 
+ \begin{itemize}
+ \item {\verb|Coordinates::coordinate_system|}. This selects a particular patch system defined in Llama.
+ \item {\verb|Coordinates::patch_boundary_size|}. Sets the ghost size of the interpatch boundary. This depends, e.g., on the finite difference stencil that is used.
+       This parameter should be equal to {\verb|Driver::ghost_size|}.
+ \item {\verb|Coordinates::additional_overlap_size|}. Sets the number of additional overlap points. The size of this parameter depends on the interpolation order and type that is used,
+       and on the patch system. One wants this parameters to be as small as possible. {\tt Llama} will complain if the overlap size is not sufficient for a given patch system
+       and interpolation setup.
+ \item {\verb|Coordinates::outer_boundary_size|}. Sets the number of ghost zones at \textit{outer} boundaries (i.e., ghost data is not obtained from inter-patch interpolation)
+       where evolution specific outer boundary conditions must be applied.
+ \item {\verb|Coordinates::store_jacobian|}. Activate/deactivate storage for Jacobian grid function. Whether storage is required depends on other thorns that may use this function.
+ \item {\verb|Coordinates::store_inverse_jacobian|}. Activate/deactive storage for inverse Jacobian grid function. Whether storage is required depends on other thorns that may use this function.
+ \item {\verb|Coordinates::store_volume_form|}. Activate/deactive storage for volume form grid function. Whether storage is required depends on other thorns that may use this function.
+ \item {\verb|Interpolate::interpolator_order|}. Selects the order of Lagrange inter-patch interpolation.
+ \item {\verb|Interpolate::interpolator_order_matter|}. Selects the order of ENO interpolation for those variables that contain the ``matter'' tag.
+       If the default value {\tt -1} is used, this tag will be ignored and Lagrange interpolation is used also for ``matter'' variables.
+\end{itemize}
+  
+With cell-centered AMR, the following parameters must be set:
+\begin{itemize}
+ \item {\verb|Coordinates::stagger_outer_boundaries = yes|}.
+ \item {\verb|Coordinates::stagger_patch_boundaries = yes|}.
+\end{itemize}
+
+
+\subsection{Patch systems}
+
+Currently, we support the following patch systems:
+\begin{itemize}
+ \item {\tt Cartesian}: This is standard Cartesian coordinates.
+ \item {\tt TwoPatchCartesian}: This is two Cartesian patches, with one common face.
+ \item {\tt TwoPatchDistorted}: This is one Cartesian patch and a second patch with distortion. It is useful for testing code.
+ \item {\tt Thornburg04}: This is a 7-patch system consisting of 1 central Cartesian cube capable of AMR which is surrounded by 6 ``inflated-cube'' spherical grids. 
+ \item {\tt Thornburg04nc}: This is a 6-patch system suitable for excision. It consists of 6 ``inflated-cube'' spherical grids which together cover a spherical shell.
+ \item {\tt Thornburg13}: This is similar to the 7 patch system {\tt Thornburg04}, but with 13 patches.
+ \item {\tt CylinderInBox}: This is a hollow (spherical) cylinder in a (Cartesian) box.
+ \item {\tt Sphere+Column}: This is another system suitable for excision. It has an excision-type overlapping sphere and column grid.
+ \item {\tt Cylinder+Column}: This is similar to the {\tt Sphere+Column} system, but with a central cylindrical grid instead of a spherical one.
+\end{itemize}
+
+\subsubsection{Thornburg04: 7-patch system}
+
+The following basic parameters need to be set for this patch system: 
+ \begin{itemize}
+ \item {\verb|Coordinates::sphere_outer_radius|}. The physical radius of the outer boundary defined by the ``inflated-cube'' spherical grids.
+ \item {\verb|Coordinates::sphere_inner_radius|}. The radius of the inner boundary of the ``inflated-cube'' spherical grids to the central cartesian cube.
+       The size of the central Cartesian cube is controlled by this parameter.
+ \item {\verb|Coordinates::h_cartesian|}. The coarse grid resolution $\Delta x$ of the central Cartesian patch.
+ \item {\verb|Coordinates::h_radial|}. The radial resolution $\Delta r$ of the ``inflated-cube'' spherical grids.
+ \item {\verb|Coordinates::n_angular|}. The number of grid cells per angular direction per patch of the ``inflated-cube'' spherical grids.
+ \item {\verb|Coordinates::radial_stretch|}. Use radial stretching on the spherical inflated-cube grids {\tt yes/no}.
+ \item {\verb|Coordinates::stretch_rmin_1|}. Radius from which we start to decrease radial resolution.
+ \item {\verb|Coordinates::stretch_rmax_1|}. Radius at which radial resolution becomes {\verb|Coordinates::h_radial_1|} and remains constant again
+ \item {\verb|Coordinates::h_radial_1|}. Radial stretched target resolution.
+\end{itemize}
+
+\subsubsection{Thornburg04nc: 6-patch system}
+
+This has the same parameters as the Thornburg04 patch system, with the
+exception of {\verb|Coordinates::h_cartesian|}, which has no meaning.
+
+%\subsubsection{13-patch system}
+
+
+\subsection{Visualizing multi-patch data}
+The \texttt{CarpetHDF5} plugin for \texttt{VisIt}~\cite{Llama_VisIt:web}
+supports reading multi-patch
+HDF5 files out of the box. It does however require that coordinates were
+output along with the actual data files. Assuming that your current options
+for HDF5 output look like this
+\begin{verbatim}
+IOHDF5::out_vars = "HydroBase::rho"
+\end{verbatim}
+it is sufficient to change them to
+\begin{verbatim}
+CarpetIOHDF5::one_file_per_group = "no" # this is required by multipatch
+IOHDF5::out_vars = "HydroBase::rho grid::coordinates"
+\end{verbatim}
+\texttt{VisIt} will present the Cartesian and curvilinear parts of the grid as
+two different meshes and two different variables.
+
+
+% \subsection{Support and Feedback}
+
+
+
+\section{History}
+
+The approximate time line is something like this:
+\begin{itemize}
+\item ~2009: First version of Llama: Ability to simulate vacuum binary black hole mergers.
+\item ~2012: Second version of Llama: Ability to simulate general-relativistic hydrodynamics.
+\end{itemize}
+
+
+% \subsection{Thorn Source Code}
+
+
+% \subsection{Thorn Documentation}
+
+
+% \subsection{Acknowledgements}
+
+\begin{thebibliography}{20}
+%\cite{Pollney:2009yz}
+\bibitem{Llama_Pollney:2009yz}
+  D.~Pollney, C.~Reisswig, E.~Schnetter, N.~Dorband and P.~Diener,
+  %``High accuracy binary black hole simulations with an extended wave zone,''
+  Phys.\ Rev.\ D {\bf 83}, 044045 (2011), arXiv:0910.3803.
+  %%CITATION = doi:10.1103/PhysRevD.83.044045;%%
+  %82 citations counted in INSPIRE as of 22 Nov 2016
+
+%\cite{Reisswig:2012nc}
+\bibitem{Llama_Reisswig:2012nc}
+  C.~Reisswig, R.~Haas, C.~D.~Ott, E.~Abdikamalov, P.~Mösta, D.~Pollney and E.~Schnetter,
+  %``Three-Dimensional General-Relativistic Hydrodynamic Simulations of Binary Neutron Star Coalescence and Stellar Collapse with Multipatch Grids,''
+  Phys.\ Rev.\ D {\bf 87}, 064023 (2013), arXiv:1212.1191.
+  %%CITATION = doi:10.1103/PhysRevD.87.064023;%%
+  %20 citations counted in INSPIRE as of 22 Nov 2016
+
+\bibitem{Llama_VisIt:web}
+{VisIt} visualization tool \url{https://wci.llnl.gov/codes/visit/}
+
+\end{thebibliography}
+
+% END CACTUS THORNGUIDE
+
+\end{document}

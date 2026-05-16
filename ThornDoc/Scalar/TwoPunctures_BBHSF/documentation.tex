@@ -1,0 +1,1002 @@
+% *======================================================================*
+%  Cactus Thorn template for ThornGuide documentation
+%  Author: Ian Kelley
+%  Date: Sun Jun 02, 2002
+%
+%  Thorn documentation in the latex file doc/documentation.tex
+%  will be included in ThornGuides built with the Cactus make system.
+%  The scripts employed by the make system automatically include
+%  pages about variables, parameters and scheduling parsed from the
+%  relevant thorn CCL files.
+%
+%  This template contains guidelines which help to assure that your
+%  documentation will be correctly added to ThornGuides. More
+%  information is available in the Cactus UsersGuide.
+%
+%  Guidelines:
+%   - Do not change anything before the line
+%       % START CACTUS THORNGUIDE",
+%     except for filling in the title, author, date, etc. fields.
+%        - Each of these fields should only be on ONE line.
+%        - Author names should be separated with a \\ or a comma.
+%   - You can define your own macros, but they must appear after
+%     the START CACTUS THORNGUIDE line, and must not redefine standard
+%     latex commands.
+%   - To avoid name clashes with other thorns, 'labels', 'citations',
+%     'references', and 'image' names should conform to the following
+%     convention:
+%       ARRANGEMENT_THORN_LABEL
+%     For example, an image wave.eps in the arrangement CactusWave and
+%     thorn WaveToyC should be renamed to CactusWave_WaveToyC_wave.eps
+%   - Graphics should only be included using the graphicx package.
+%     More specifically, with the "\includegraphics" command.  Do
+%     not specify any graphic file extensions in your .tex file. This
+%     will allow us to create a PDF version of the ThornGuide
+%     via pdflatex.
+%   - References should be included with the latex "\bibitem" command.
+%   - Use \begin{abstract}...\end{abstract} instead of \abstract{...}
+%   - Do not use \appendix, instead include any appendices you need as
+%     standard sections.
+%   - For the benefit of our Perl scripts, and for future extensions,
+%     please use simple latex.
+%
+% *======================================================================*
+%
+% Example of including a graphic image:
+%    \begin{figure}[ht]
+% 	\begin{center}
+%    	   \includegraphics[width=6cm]{/home/runner/work/tests/tests/arrangements/Scalar/TwoPunctures_BBHSF/doc/MyArrangement_MyThorn_MyFigure}
+% 	\end{center}
+% 	\caption{Illustration of this and that}
+% 	\label{MyArrangement_MyThorn_MyLabel}
+%    \end{figure}
+%
+% Example of using a label:
+%   \label{MyArrangement_MyThorn_MyLabel}
+%
+% Example of a citation:
+%    \cite{MyArrangement_MyThorn_Author99}
+%
+% Example of including a reference
+%   \bibitem{MyArrangement_MyThorn_Author99}
+%   {J. Author, {\em The Title of the Book, Journal, or periodical}, 1 (1999),
+%   1--16. {\tt http://www.nowhere.com/}}
+%
+% *======================================================================*
+
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+% The author of the documentation
+\author{Cheng-Hsin Cheng, Giuseppe Ficarra, Helvi Witek}
+
+% The title of the document (not necessarily the name of the Thorn)
+\title{TwoPunctures\_BBHSF}
+
+% the date your document was last changed:
+\date{January 11, 2023}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+% Add all definitions used in this documentation here
+%   \def\mydef etc
+
+\newcommand{\bracket}[1]{\left( #1 \right)}
+
+% Add an abstract for this thorn's documentation
+\begin{abstract}
+We extend the \texttt{TwoPunctures} thorn to generate initial data for black hole
+binaries taking into account back-reaction from a massive, complex scalar field
+minimally-coupled to gravity.
+\end{abstract}
+
+% The following sections are suggestive only.
+% Remove them or add your own.
+
+
+\section{Scalar field source terms}
+
+We consider a complex scalar field $\Phi$ of mass $m_S$ minimally coupled to gravity,
+which is described by the action
+\begin{equation}
+    S = \int \mathrm{d}^4 x \sqrt{-g}
+    \bracket{ \frac{^{(4)}R}{16\pi} - \frac{1}{2} g^{\mu\nu}
+        \nabla_{(\mu} \Phi^*
+        \nabla_{\nu)} \Phi
+        - \frac{\mu_S^2}{2} \Phi^* \Phi
+    }.
+\end{equation}
+Here, $\Phi$ is the scalar field and $\Phi^*$ its complex conjugate,
+$g_{\mu\nu}$ is the spacetime metric with $g=\det(g_{\mu\nu})$,
+$\nabla_\mu$ is the covariant derivative,
+and $^{(4)}R$ is the Ricci scalar in four dimensions.
+The mass parameter $\mu_S$ of the scalar field is related to $m_S$ through $m_S = \mu_S\hbar$.
+This action leads to the equations of motion
+\begin{align}
+    & G_{\mu\nu} = 8\pi T_{\mu\nu},
+    \\
+    & (\Box -\mu_S^2) \Phi = 0,
+\end{align}
+where the stress-energy tensor is given by
+\begin{equation}
+    T_{\mu\nu} =
+    \nabla_{(\mu} \Phi^*
+    \nabla_{\nu)} \Phi
+    - \frac{1}{2} g_{\mu\nu} \Big[
+    g^{\alpha\beta}
+    \nabla_{(\alpha} \Phi^*
+    \nabla_{\beta)} \Phi
++ \mu_S^2 \Phi^*\Phi \Big],
+\end{equation}
+and the d'Alembertian is
+\begin{equation}
+    \Box = 
+    \frac{1}{\sqrt{-g}}
+    \partial_\mu (
+        \sqrt{-g} g^{\mu\nu} \partial_\nu
+    ).
+\end{equation}
+
+% \begin{verbatim}
+% [ Switch source term expressions from real scalar field to complex scalar field ]
+% \end{verbatim}
+
+Under the 3+1 formalism,
+the scalar field contributes to the spacetime through the energy density $\rho$,
+energy-momentum flux $j_i$,
+and the purely spatial stress tensor $S_{ij}$, given respectively by
+\begin{align}
+    \rho = n^\mu n^\nu T_{\mu\nu}
+    &= 2 \Pi^* \Pi + \frac{\mu_S^2}{2} \Phi^* \Phi
+    + \frac{1}{2} D_k\Phi^* D^k \Phi,
+    \\
+    j_i = -\gamma_i^\mu n^\nu T_{\mu\nu}
+    &= \Pi^* D_i\Phi + \Pi D_i\Phi^*,
+    \\
+    S_{ij} = \gamma_i ^\mu \gamma_j^\nu T_{\mu\nu}
+    &= D_{(i}\Phi^* D_{j)}\Phi
+    + \frac{1}{2} \gamma_{ij}
+    (4\Pi^* \Pi - \mu_S^2 \Phi^* \Phi - D^k\Phi^* D_k\Phi),
+\end{align}
+where $D_i$ is the spatial covariant derivative with respect to the 3-metric $\gamma_{ij}$.
+Here, the scalar field momentum $\Pi$ is defined using the Lie derivative
+along the normal vector $n^\mu$ as
+\begin{equation}
+    \Pi \equiv - \frac{1}{2} \mathcal{L}_n \Phi.
+\end{equation}
+For us to use the Bowen-York solution to the momentum constraint equation as in \texttt{TwoPunctures},
+we need to specify the scalar field such that the momentum constraint reduces to its vacuum counterpart.
+To this end, we limit ourselves to initial configurations of the scalar field for which the scalar field momentum vanishes: $\Pi(t=0)=0$.
+This requirement can be satisfied under the condition that the scalar field is time-independent, along with a shift vector that vanishesat the initial time.
+
+\section{Constraint equations in the puncture method}
+To construct the initial data, we solve the Hamiltonian constraint equation
+describing black holes with linear momenta $\vec{P}_a$ and spins $\vec{S}_a$.
+
+Let us perform a conformal decomposition of the physical metric as
+$\gamma_{ij}=\psi^4\bar{\gamma}_{ij}$,
+where $\psi$ is the conformal factor and $\bar{\gamma}_{ij}$ is the conformal metric.
+Then, the Hamiltonian constraint equation takes the form
+\begin{equation}
+    \bar{D}^2 \psi - \frac{1}{8} \psi \bar{R}
+    + \frac{1}{8} \psi^5 (K_{ij}K^{ij} - K^2 )
+    + 2\pi\psi^5 \rho = 0,
+\end{equation}
+where $\bar{D}^2$ is the conformal Laplacian operator,
+$\bar{R}$ is the conformal Ricci scalar, and $K_{ij}$ is the extrinsic curvature.
+Further decomposing $K_{ij}$ into its trace $K$ and trace-free parts $A_{ij}$,
+and performing a conformal decomposition as
+\begin{equation}
+    A_{ij} = \psi^{-2}\bar{A}_{ij},
+    \quad \quad
+    A^{ij} = \psi^{-10}\bar{A}^{ij},
+\end{equation}
+we obtain the general form of the Hamiltonian constraint in the York-Lichnerowicz approach
+\begin{equation}
+    \bar{D}^2 \psi
+    - \frac{1}{8} \psi \bar{R}
+    + \frac{1}{8} \psi^{-7} \bar{A}_{ij}\bar{A}^{ij}
+    - \frac{1}{12} \psi^5 K^2
+    + 2\pi\psi^5 \rho = 0.
+\end{equation}
+
+Now let us introduce a series of assumptions for the puncture method
+\cite{scalar_TwoPunctures_BBHSF_Brandt:1997tf}.
+Assuming asymptotic flatness, the conformal factor has the behavior
+$\psi \simeq 1 + \psi_{\rm BL}$ at large $r$,
+where the $\psi_{\rm BL}$ is the Brill-Lindquist solution
+\begin{equation}
+    \psi_{\rm BL} \equiv \sum_{a=1}^2 \frac{m_a}{2|\vec{r} - \vec{r}_a|},
+\end{equation}
+with $m_a$ and $\vec{r}_a$ denoting the bare mass and location of the $a$-th black hole.
+Now, the main idea behind the puncture method is to separate the singular piece of the conformal factor by writing
+$ \psi = \psi_{\rm BL} + u $,
+where $u$ is the function to be solved.
+It follows that the flat Laplacian of $\psi$ reduces to $\bar{D}^2 u$ in the punctured domain
+$\mathbb{R}^3\setminus\{\vec{r}_i\}$.
+To satisfy the vacuum momentum constraint equations, we write the conformal tracefree extrinsic curvature $\bar{A}_{ij}$ as a superposition
+\begin{equation}
+    \bar{A}^{ij} = \sum_{a=1}^2 \bar{A}_a^{ij}
+\end{equation}
+of Bowen-York solutions for each puncture
+\begin{equation}
+    \bar{A}_a^{ij} = \frac{3}{2r^2} \Big[
+        n^i P_a^j + n^j P_a^i + n_k P_a^k (n^i n^j - \delta^{ij}) \Big]
+        - \frac{3}{r^3} (\epsilon^{ilk} n^j + \epsilon^{jlk} n^i) n_l {(S_a)}_k.
+\end{equation}
+Finally, assuming conformal flatness ($\bar{\gamma}_{ij} = \eta_{ij}$) and maximal slicing condition ($K=0$), the Hamiltonian constraint equation reduces to
+\begin{equation}
+    \Delta u + \frac{1}{8} (\psi_{\rm BL} + u)^{-7} \bar{A}_{ij} \bar{A}^{ij}
+    + 2\pi (\psi_{\rm BL} + u)^5 \rho = 0,
+    \label{scalar_TwoPunctures_BBHSF_eq:ham_twopunctures}
+\end{equation}
+where $\Delta=\partial_k \partial^k$ is the flat Laplacian operator.
+The first two terms above constitute the vacuum equations solved in the standard \texttt{TwoPunctures} thorn.
+The third term, on the other hand, contains the contribution from the matter energy density $\rho$.
+Whereas in \texttt{TwoPunctures} the energy density can be rescaled
+\footnote{
+This is to avoid oscillating solutions to the linearized equation.
+Furthermore, the dominant energy condition is satisfied for the 
+physical energy density if and only if it is satisfied for the conformal energy density.
+See Section 8.2.4 of \cite{scalar_TwoPunctures_BBHSF_Gourgoulhon:2007ue}.
+} according to $\rho = \psi^8 \bar{\rho}$,
+here, the massive scalar field contributes two terms with different powers of $\psi$
+\begin{align}
+    \rho
+    &= \frac{\mu_S^2}{2} \Phi^* \Phi
+    + \frac{1}{2} \gamma^{ij} D_i\Phi^* D_j \Phi
+    \nonumber
+    \\
+    &= \frac{\mu_S^2}{2} \Phi^* \Phi
+    + \frac{1}{2} \psi^{-4} \partial_k\Phi^* \partial^k \Phi,
+    \label{scalar_TwoPunctures_BBHSF_eq:rho}
+\end{align}
+so a na\"{i}ve conformal rescaling of $\rho$ does not work.
+As a workaround, we choose to perform a conformal rescaling on the scalar field $\Phi$ itself.
+
+\subsection{Conformal rescaling of the scalar field}
+Let us rescale the scalar field with a generic power $\delta$ of the conformal factor
+\begin{equation}
+    \Phi = \psi^\delta \bar{\Phi},
+    \quad
+    \Phi^* = \psi^\delta \bar{\Phi}^*,
+\end{equation}
+where $\delta$ is a constant parameter to be chosen
+and $\Bar{\Phi}$ is the conformal scalar field.
+The goal is to find a suitable power $\delta$ such that the linearized Hamiltonian
+constraint equation forms a well-posed elliptic problem.
+Inserting Eq.~\eqref{scalar_TwoPunctures_BBHSF_eq:rho}
+and using the rescaled scalar field,
+Eq.~\eqref{scalar_TwoPunctures_BBHSF_eq:ham_twopunctures} can be rewritten as
+\begin{align}
+    \Delta\psi
+    + \frac{1}{8} \psi^{-7} \bar{A}_{ij} \bar{A}^{ij}
+    +
+    &\pi \psi^{2\delta + 5}
+    \mu_S^2 \bar{\Phi}^* \bar{\Phi}
+    \nonumber
+    \\
+    +
+    &\pi \psi^{2\delta + 1}
+    (\partial_i\bar{\Phi}^*)
+    (\partial^i\bar{\Phi})
+    \nonumber
+    \\
+    + \delta
+    &\pi \psi^{2\delta}\quad
+    (\partial_i\psi)
+    ( \bar{\Phi}^* \partial^i\bar{\Phi}
+    + \bar{\Phi} \partial^i\bar{\Phi}^* )
+    \nonumber
+    \\
+    + \delta^2
+    &\pi \psi^{2\delta-1} (\partial_i\psi) (\partial^i\psi)
+    \bar{\Phi}^* \bar{\Phi}
+    \quad\quad\quad\quad
+    = 0,
+    \label{scalar_TwoPunctures_BBHSF_eq:nonlin_ham_eq}
+\end{align}
+with the conformal factor
+\begin{align}
+    \psi 
+    &= \psi_{\rm BL} + u,
+    \\
+    \partial_i\psi 
+    &= \partial_i\psi_{\rm BL} + \partial_i u.
+\end{align}
+
+Writing the correction function as $u = u_0 + \epsilon$ with $u_0$ a known solution
+and $|\epsilon|\ll u_0$, 
+we can expand Eq.~\eqref{scalar_TwoPunctures_BBHSF_eq:nonlin_ham_eq}
+to first order in $\epsilon$, giving
+the linearized equation
+\begin{align}
+    \Delta\epsilon
+    - \epsilon
+    \Bigg[
+        \frac{7}{8} \psi^{-8} \bar{A}_{ij} \bar{A}^{ij}
+        - (2\delta + 5) \pi
+        &\psi_0^{2\delta + 4}
+        \mu_S^2 \bar{\Phi}^* \bar{\Phi}
+        \nonumber
+        \\
+        - (2\delta + 1) \pi
+        &\psi_0^{2\delta}\quad
+        (\partial_i\bar{\Phi}^*)
+        (\partial^i\bar{\Phi})
+        \nonumber
+        \\
+        -\ \ (2\delta)\ \ \delta \pi
+        &\psi_0^{2\delta-1} (\partial_i\psi_0)
+        ( \bar{\Phi}^* \partial^i\bar{\Phi}
+        + \bar{\Phi} \partial^i\bar{\Phi}^* )
+        \nonumber
+        \\
+        - (2\delta-1) \delta^2 \pi
+        &\psi_0^{2\delta-2}
+        (\partial_i\psi_0) (\partial^i\psi_0)
+        \bar{\Phi}^* \bar{\Phi}
+    \quad\quad\quad\quad\Big]
+    \nonumber
+    \\
+    + (\partial_i\epsilon)
+    \Big[
+        \delta \pi \psi_0^{2\delta}
+        ( \bar{\Phi}^* \partial^i\bar{\Phi}
+        &+ \bar{\Phi} \partial^i\bar{\Phi}^* )
+        +
+        \delta^2 \pi \psi_0^{2\delta-1} (\partial^i\psi_0)
+        \bar{\Phi}^* \bar{\Phi}
+    \Big]= 0,
+    \label{scalar_TwoPunctures_BBHSF_eq:lin_ham_eq}
+\end{align}
+where the conformal factor $\psi_0$ is defined as
+\begin{align}
+    \psi_0
+    &= \psi_{\rm BL} + u_0,
+    \\
+    \partial_i \psi_0
+    &= \partial_i \psi_{\rm BL}
+    + \partial_i u_0.
+\end{align}
+
+Equations \eqref{scalar_TwoPunctures_BBHSF_eq:nonlin_ham_eq} and
+\eqref{scalar_TwoPunctures_BBHSF_eq:lin_ham_eq} constitute our main result.
+We see that for any choice of $\delta < -2.5$,
+Eq.~\eqref{scalar_TwoPunctures_BBHSF_eq:lin_ham_eq} takes the form of 
+\begin{equation}
+    \Delta \epsilon - h \epsilon = 0
+\end{equation}
+with $h>0$,
+so it is well-posed as an elliptic equation in $u$,
+and its numerical solution is unique and stable.
+
+The Eqs. \eqref{scalar_TwoPunctures_BBHSF_eq:nonlin_ham_eq} and
+\eqref{scalar_TwoPunctures_BBHSF_eq:lin_ham_eq}
+are implemented in \texttt{Equations.c} of the thorn \texttt{TwoPunctures\_BBHSF}.
+In testing the initial data constructed this way, we found no significant difference in
+the resulting metric and constraint violation when using different values of
+the parameter $\delta < -2.5$.
+By default, $\delta$ is set to be $-3$ in the thorn.
+
+
+\section{Initializing scalar field configurations}
+We consider scalar field configurations with a Gaussian radial profile and zero momentum
+\begin{equation}
+    \bar{\Phi}(t=0) = A_{\rm SF} Z(\theta, \phi) e^{-(r-r_0)^2/w^2},
+    \quad
+    \Pi(t=0) = 0,
+\end{equation}
+where $A_{\rm SF}, r_0, w$ are constant parameters
+and $Z(\theta, \phi)$ encodes the angular dependence.
+In the file \texttt{SF\_source\_term.c} of the thorn, we have implemented
+the $l=m=0$ (monopole) and $l=m=1$ (dipole) spherical harmonics modes
+as options for $Z(\theta, \phi)$:
+\begin{align}
+    Y_{0,0}(\theta, \phi)
+    &= \sqrt{\frac{1}{4\pi}},
+    \\
+    Y_{1,1}(\theta, \phi)
+    &= -\sqrt{\frac{3}{8\pi}} \sin\theta\ (\cos\phi + i \sin\phi).
+\end{align}
+In addition, Cartesian derivatives of $\bar{\Phi}$ are computed,
+so this thorn replaces the use of \texttt{ScalarInit}
+(which only computes $\Phi$ and does not conformally rescale the scalar fields)
+when initializing the scalar field grid functions.
+If one wishes to use a different initial scalar configuration than currently implemented,
+they should supply the corresponding fields and source terms to \texttt{SF\_source\_term.c}.
+
+The parameter \texttt{TwoPunctures\_BBHSF::switch\_on\_back-reaction} is used to control whether the
+scalar field is included in the metric initial data calculation.
+To remove the back-reaction from the metric ID calculation, it is sufficient to set
+\texttt{TwoPunctures\_BBHSF::switch\_on\_back-reaction = no},
+and that will reduce to the standard \texttt{TwoPunctures}.
+
+To enable back-reaction during the evolution, one
+is reminded to set \texttt{TmunuBase::stress\_energy\_at\_RHS = yes}.
+If using \texttt{LeanBSSNMoL} for the spacetime evolution, one should also set
+\texttt{LeanBSSNMoL::couple\_Tab = 1}.
+
+
+\begin{thebibliography}{9}
+%\cite{scalar_TwoPunctures_BBHSF_Ansorg:2004ds}
+\bibitem{scalar_TwoPunctures_BBHSF_Ansorg:2004ds}
+M.~Ansorg, B.~Bruegmann and W.~Tichy,
+``A Single-domain spectral method for black hole puncture data,''
+Phys. Rev. D \textbf{70} (2004), 064011
+doi:10.1103/PhysRevD.70.064011
+[arXiv:gr-qc/0404056 [gr-qc]].
+%287 citations counted in INSPIRE as of 13 Jul 2022
+
+%\cite{scalar_TwoPunctures_BBHSF_Brandt:1997tf}
+\bibitem{scalar_TwoPunctures_BBHSF_Brandt:1997tf}
+S.~Brandt and B.~Bruegmann,
+``A Simple construction of initial data for multiple black holes,''
+Phys. Rev. Lett. \textbf{78}, 3606-3609 (1997)
+doi:10.1103/PhysRevLett.78.3606
+[arXiv:gr-qc/9703066 [gr-qc]].
+%424 citations counted in INSPIRE as of 13 Jul 2022
+
+%\cite{scalar_TwoPunctures_BBHSF_Gourgoulhon:2007ue}
+\bibitem{scalar_TwoPunctures_BBHSF_Gourgoulhon:2007ue}
+E.~Gourgoulhon,
+``3+1 formalism and bases of numerical relativity,''
+[arXiv:gr-qc/0703035 [gr-qc]].
+%316 citations counted in INSPIRE as of 08 Jul 2022
+
+\bibitem{scalar_TwoPunctures_BBHSF_Ficarra:2022tba}
+  G.~Ficarra, C-H.~Cheng and H.~Witek. To appear.
+
+
+\end{thebibliography}
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{schedule\_in\_admbase\_initialdata}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{adm\_tol} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Tolerance of ADM masses when give\_bare\_mass=no}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0e-10 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*)} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{ampsf} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em amplitude of Gaussian wave packet}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any value possible} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{center\_offset} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em offset b=0 to position (x,y,z)}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (*:*)} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{delta} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Exponent delta for conformal decomposition of the scalar field {\textbackslash}phi = {\textbackslash}psi\^delta {\textbackslash}bar{\textbackslash}phi}} \\
+\hline{\bf Range} & &  {\bf Default:} -3.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (*:*)} & \multicolumn{2}{p{\paraWidth}|}{Should be negative and less than -3} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{do\_initial\_debug\_output} & {\bf Scope:} restricted & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Output debug information about initial guess}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{do\_residuum\_debug\_output} & {\bf Scope:} restricted & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Output debug information about the residuum}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{give\_bare\_mass} & {\bf Scope:} restricted & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em User provides bare masses rather than target ADM masses}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{grid\_setup\_method} & {\bf Scope:} restricted & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How to fill the 3D grid from the spectral grid}} \\
+\hline{\bf Range} & &  {\bf Default:} Taylor expansion \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Taylor expansion} & \multicolumn{2}{p{\paraWidth}|}{use a Taylor expansion about the nearest collocation point (fast, but might be inaccurate)} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering evaluation} & \multicolumn{2}{p{\paraWidth}|}{evaluate using all spectral coefficients (slow)} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{initial\_lapse\_psi\_exponent} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Exponent n for psi\^-n initial lapse profile}} \\
+\hline{\bf Range} & &  {\bf Default:} -2.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (*:*)} & \multicolumn{2}{p{\paraWidth}|}{Should be negative} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{keep\_u\_around} & {\bf Scope:} restricted & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Keep the variable u around after solving}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{l0sf} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em angular quantum number}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:2} & \multicolumn{2}{p{\paraWidth}|}{for now we've implemented the spherical harmonics only up to l=m=1} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{m0sf} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em azimuthal quantum number}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -2:2} & \multicolumn{2}{p{\paraWidth}|}{for now we've implemented the spherical harmonics only up to l=m=1} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{multiply\_old\_lapse} & {\bf Scope:} restricted & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Multiply the old lapse with the new one}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{newton\_maxit} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Maximum number of Newton iterations}} \\
+\hline{\bf Range} & &  {\bf Default:} 5 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{newton\_tol} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Tolerance for Newton solver}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0e-10 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*)} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{npoints\_a} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Number of coefficients in the compactified radial direction}} \\
+\hline{\bf Range} & &  {\bf Default:} 30 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 4:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{npoints\_b} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Number of coefficients in the angular direction}} \\
+\hline{\bf Range} & &  {\bf Default:} 30 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 4:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{npoints\_phi} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Number of coefficients in the phi direction}} \\
+\hline{\bf Range} & &  {\bf Default:} 16 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 4:*:2} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{par\_b} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em x coordinate of the m+ puncture}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0.0:*)} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{par\_m\_minus} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em mass of the m- puncture}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:*)} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{par\_m\_plus} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em mass of the m+ puncture}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:*)} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{par\_p\_minus} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em momentum of the m- puncture}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (*:*)} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{par\_p\_plus} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em momentum of the m+ puncture}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (*:*)} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{par\_s\_minus} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em spin of the m- puncture}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (*:*)} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{par\_s\_plus} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em spin of the m+ puncture}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (*:*)} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{r0sf} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em location of Gaussian wave packet}} \\
+\hline{\bf Range} & &  {\bf Default:} 10.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{any positive value possible} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rescale\_sources} & {\bf Scope:} restricted & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em If sources are used - rescale them after solving?}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{scalar\_gaussprofile} & {\bf Scope:} restricted & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Which mode composition for the Gaussian?}} \\
+\hline{\bf Range} & &  {\bf Default:} single\_mode \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering single\_mode} & \multicolumn{2}{p{\paraWidth}|}{single mode initial data with (l0,m0)} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering superpose\_ID010} & \multicolumn{2}{p{\paraWidth}|}{superpose Y00, Y10 as initial data} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering superpose\_ID011} & \multicolumn{2}{p{\paraWidth}|}{superpose Y00, Y11 as initial data} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering superpose\_ID01011} & \multicolumn{2}{p{\paraWidth}|}{superpose Y00, Y10, Y11 as initial data} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering superpose\_ID012} & \multicolumn{2}{p{\paraWidth}|}{superpose Y10 + Y11 + Y20 + Y22 as initial data} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{schedule\_in\_admbase\_initialdata} & {\bf Scope:} restricted & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Schedule in (instead of after) ADMBase\_InitialData}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{solve\_momentum\_constraint} & {\bf Scope:} restricted & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Solve for momentum constraint?}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{swap\_xz} & {\bf Scope:} restricted & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Swap x and z coordinates when interpolating, so that the black holes are separated in the z direction}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{switch\_on\_backreaction} & {\bf Scope:} restricted & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Choice for switching on scalar field correction terms to Hamiltonain constraint}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{target\_m\_minus} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em target ADM mass for m-}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.5 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:*)} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{target\_m\_plus} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em target ADM mass for m+}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.5 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:*)} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{tp\_epsilon} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em A small number to smooth out singularities at the puncture locations}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{tp\_extend\_radius} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Radius of an extended spacetime instead of the puncture}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{anything positive, should be smaller than the horizon} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{tp\_tiny} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Tiny number to avoid nans near or at the pucture locations}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{anything positive, usually very small} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{use\_external\_initial\_guess} & {\bf Scope:} restricted & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Set initial guess by external function?}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{use\_sources} & {\bf Scope:} restricted & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Use sources?}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{verbose} & {\bf Scope:} restricted & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Print screen output while solving}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{widthsf} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em width of Gaussian wave packet}} \\
+\hline{\bf Range} & &  {\bf Default:} 2.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{any positive value possible} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{conformal\_storage} & {\bf Scope:} shared from STATICCONFORMAL & KEYWORD \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+twopunctures\_bbhsf
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+admbase
+
+staticconformal
+
+grid
+
+scalarbase
+\vspace{2mm}
+\subsection*{Grid Variables}
+\vspace{5mm}\subsubsection{PRIVATE GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+puncture\_u & puncture\_u & compact & 0 \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & prolongation="none" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+energy &  & compact & 0 \\ 
+ & E & description & ADM energy of the Bowen-York spacetime \\ 
+ &  & dimensions & 0 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+angular\_momentum &  & compact & 0 \\ 
+ & J1 & description & Angular momentum of the Bowen-York spacetime \\ 
+ & J2 & dimensions & 0 \\ 
+ & J3 & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+\vspace{5mm}\subsubsection{PUBLIC GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+bare\_mass &  & compact & 0 \\ 
+ & mp & description & Bare masses of the punctures \\ 
+ & mm & dimensions & 0 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+puncture\_adm\_mass &  & compact & 0 \\ 
+ & mp\_adm & description & ADM masses of the punctures (measured at the other spatial infinities) \\ 
+ & mm\_adm & dimensions & 0 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn Scalar/TwoPunctures\_BBHSF.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+~& {\bf Conditional:} \\ 
+~ &  energy angular\_momentum puncture\_adm\_mass bare\_mass\\ 
+~ &  puncture\_u\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PARAMCHECK}   (conditional) 
+
+\hspace{5mm} bbhsf\_twopunctures\_paramcheck 
+
+\hspace{5mm}{\it check parameters and thorn needs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf ADMBase\_InitialData}   (conditional) 
+
+\hspace{5mm} twopunctures\_bbhsf\_group 
+
+\hspace{5mm}{\it twopunctures initial data group } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_INITIAL}   (conditional) 
+
+\hspace{5mm} twopunctures\_bbhsf\_group 
+
+\hspace{5mm}{\it twopunctures initial data group } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & admbase\_initialdata \\ 
+~& ~ &hydrobase\_initial\\ 
+~ & Before:  & admbase\_postinitial \\ 
+~& ~ &settmunu\\ 
+~& ~ &hydrobase\_prim2coninitial\\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf TwoPunctures\_BBHSF\_Group}   (conditional) 
+
+\hspace{5mm} twopunctures\_bbhsf 
+
+\hspace{5mm}{\it create puncture black hole initial data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & grid::coordinates(everywhere) \\ 
+~ & Storage:  & puncture\_u \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & twopunctures\_bbhsf::mp(everywhere) \\ 
+~& ~ &twopunctures\_bbhsf::mm(everywhere)\\ 
+~& ~ &twopunctures\_bbhsf::mp\_adm(everywhere)\\ 
+~& ~ &twopunctures\_bbhsf::mm\_adm(everywhere)\\ 
+~& ~ &twopunctures\_bbhsf::e(everywhere)\\ 
+~& ~ &twopunctures\_bbhsf::j1(everywhere)\\ 
+~& ~ &twopunctures\_bbhsf::j2(everywhere)\\ 
+~& ~ &twopunctures\_bbhsf::j3(everywhere)\\ 
+~& ~ &twopunctures\_bbhsf::puncture\_u(everywhere)\\ 
+~& ~ &staticconformal::conformal\_state(everywhere)\\ 
+~& ~ &staticconformal::confac\_2derivs(everywhere)\\ 
+~& ~ &staticconformal::confac\_1derivs(everywhere)\\ 
+~& ~ &staticconformal::confac(everywhere)\\ 
+~& ~ &admbase::alp(everywhere)\\ 
+~& ~ &admbase::metric(everywhere)\\ 
+~& ~ &admbase::curv(everywhere)\\ 
+~& ~ &scalarbase::phi(everywhere)\\ 
+~& ~ &scalarbase::kphi(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf TwoPunctures\_BBHSF\_Group}   (conditional) 
+
+\hspace{5mm} bbhsf\_twopunctures\_metadata 
+
+\hspace{5mm}{\it output twopunctures metadata } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & twopunctures\_bbhsf \\ 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

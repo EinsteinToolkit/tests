@@ -1,0 +1,1090 @@
+% *======================================================================*
+%  Cactus Thorn template for ThornGuide documentation
+%  Author: Ian Kelley
+%  Date: Sun Jun 02, 2002
+%  $Header$
+%
+%  Thorn documentation in the latex file doc/documentation.tex
+%  will be included in ThornGuides built with the Cactus make system.
+%  The scripts employed by the make system automatically include
+%  pages about variables, parameters and scheduling parsed from the
+%  relevant thorn CCL files.
+%
+%  This template contains guidelines which help to assure that your
+%  documentation will be correctly added to ThornGuides. More
+%  information is available in the Cactus UsersGuide.
+%
+%  Guidelines:
+%   - Do not change anything before the line
+%       % START CACTUS THORNGUIDE",
+%     except for filling in the title, author, date, etc. fields.
+%        - Each of these fields should only be on ONE line.
+%        - Author names should be separated with a \\ or a comma.
+%   - You can define your own macros, but they must appear after
+%     the START CACTUS THORNGUIDE line, and must not redefine standard
+%     latex commands.
+%   - To avoid name clashes with other thorns, 'labels', 'citations',
+%     'references', and 'image' names should conform to the following
+%     convention:
+%       ARRANGEMENT_THORN_LABEL
+%     For example, an image wave.eps in the arrangement CactusWave and
+%     thorn WaveToyC should be renamed to CactusWave_WaveToyC_wave.eps
+%   - Graphics should only be included using the graphicx package.
+%     More specifically, with the "\includegraphics" command.  Do
+%     not specify any graphic file extensions in your .tex file. This
+%     will allow us to create a PDF version of the ThornGuide
+%     via pdflatex.
+%   - References should be included with the latex "\bibitem" command.
+%   - Use \begin{abstract}...\end{abstract} instead of \abstract{...}
+%   - Do not use \appendix, instead include any appendices you need as
+%     standard sections.
+%   - For the benefit of our Perl scripts, and for future extensions,
+%     please use simple latex.
+%
+% *======================================================================*
+%
+% Example of including a graphic image:
+%    \begin{figure}[ht]
+% 	\begin{center}
+%    	   \includegraphics[width=6cm]{/home/runner/work/tests/tests/arrangements/CTThorns/CT_MultiLevel/doc/MyArrangement_MyThorn_MyFigure}
+% 	\end{center}
+% 	\caption{Illustration of this and that}
+% 	\label{MyArrangement_MyThorn_MyLabel}
+%    \end{figure}
+%
+% Example of using a label:
+%   \label{MyArrangement_MyThorn_MyLabel}
+%
+% Example of a citation:
+%    \cite{MyArrangement_MyThorn_Author99}
+%
+% Example of including a reference
+%   \bibitem{MyArrangement_MyThorn_Author99}
+%   {J. Author, {\em The Title of the Book, Journal, or periodical}, 1 (1999),
+%   1--16. {\tt http://www.nowhere.com/}}
+%
+% *======================================================================*
+
+% If you are using CVS use this line to give version information
+% $Header$
+
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+% The author of the documentation
+\author{Eloisa Bentivegna \textless eloisa.bentivegna@ct.infn.it\textgreater}
+
+% The title of the document (not necessarily the name of the Thorn)
+\title{CT\_MultiLevel}
+
+% the date your document was last changed, if your document is in CVS,
+% please use:
+%    \date{$ $Date: 2004-01-07 15:12:39 -0500 (Wed, 07 Jan 2004) $ $}
+\date{May 27 2013}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+% Add all definitions used in this documentation here
+%   \def\mydef etc
+
+% Add an abstract for this thorn's documentation
+\begin{abstract}
+This thorn implements a multigrid solver for systems of elliptic
+partial differential equations. It uses \texttt{Carpet}'s
+interface to handle loops over the grid hierarchy and pass 
+information between different components. The system of equations
+is passed to the solver via parameters pointing to the external
+grid functions that hold the equation coefficients. 
+\end{abstract}
+
+% The following sections are suggestive only.
+% Remove them or add your own.
+
+\section{Introduction}
+\texttt{CT\_MultiLevel} is a Cactus thorn that implements a multigrid
+solver for elliptic partial differential equations (PDEs). The implementation
+is rather standard, and it also allows for local AMR grids
+(in which case it uses a rudimentary \emph{multilevel} algorithm).
+
+This thorn requires \texttt{Carpet}, which it uses to manage the 
+access to the grid structure (via the \texttt{BEGIN\_*\_LOOP} and 
+\texttt{END\_*\_LOOP} macros) and to pass information between the 
+different levels (via the restriction and prolongation operators).
+
+Structurally, the solver can tackle any type of equation or system
+of equations, their coefficients being passed to \texttt{CT\_MultiLevel} 
+via string parameters holding the names of the corresponding grid 
+function. The thorn comes with a number of test cases which should 
+be easy to customize and extend.
+
+\section{Principle of multigrid}
+Multigrid schemes are designed to solve elliptic equations on a 
+hierarchy of grids, with the goal of speeding up the convergence 
+rate of relaxation algorithms (such as Gauss-Seidel) by eliminating
+different frequency modes of the solution error on different grids.
+It is known that relaxation techniques are very effective at 
+eliminating the high-frequency part of the error; when solving an 
+elliptic PDE on a grid, it is then advantageous to relax it on a 
+coarser grid beforehand and interpolate the result back onto the
+original grid. Complex schemes involving several grid levels, each
+with a different PDE, can be designed to maximize the speed up.
+Please refer to~\cite{Briggs:2000fk} for the details.
+
+\section{Using This Thorn}
+\texttt{CT\_MultiLevel}, along with the rest of the \texttt{Cosmology}
+arrangement, is released under the General Public License, version 2
+and higher. The copyright of this thorn remains with myself.
+
+\subsection{Obtaining This Thorn}
+\texttt{CT\_MultiLevel} is publicly available in COSMOTOOLKIT's git 
+repository:
+\begin{verbatim}
+   git clone https://eloisa@bitbucket.org/eloisa/cosmology.git
+\end{verbatim}
+A helper thorn \texttt{CT\_Analytic} is available under the same repository.
+
+\subsection{Basic Usage}
+In order to solve an elliptic PDE with \texttt{CT\_MultiLevel},
+\texttt{CT\_MultiLevel} can be simply compiled in, with the 
+requirement that \texttt{Carpet} is compiled as well. The thorn 
+also inherits from \texttt{boundary} and \texttt{grid} for boundary 
+APIs and coordinate labels.
+
+Currently, the equation is solved in a single schedule call at 
+\texttt{CCTK\_INITIAL}, in \texttt{GLOBAL\_LATE} mode (to ensure
+that necessary objects such as the grid arrays have been populated).
+
+As the equation coefficients will be set by grid functions, a thorn
+allocating and setting these grid functions to the desired values
+has to be included. Another thorn in the \texttt{Cosmology} arrangement,
+\texttt{CT\_Analytic}, serves this purpose. Grid functions of other
+origin are naturally just as good.
+
+Each equation in the system to solve is parametrized as
+follows:
+\begin{eqnarray}
+c_{xx} \partial_{xx} \psi + c_{xy} \partial_{xy} \psi + c_{xz} \partial_{xz} \psi + 
+c_{yy} \partial_{yy} \psi + c_{yz} \partial_{yz} \psi + c_{zz} \partial_{zz} \psi &+& \\
+c_{x} \partial_{x} \psi + c_{y} \partial_{y} \psi + c_{z} \partial_{z} \psi +
+c_{0} \psi^{n_0} + c_{1} \psi^{n_1} + c_{2} \psi^{n_2} + c_{3} \psi^{n_3} + c_4 \psi^{n_4} &=& 0
+\end{eqnarray}
+All the coefficients $c_*$ and the powers $n_*$ can be specified by
+setting the parameters \texttt{*\_gfname[*]} to the desired grid 
+function name. These parameters are arrays to allow for the solution 
+of systems of equations.
+
+The only other parameter which must be set to ensure correct 
+operation is \texttt{CT\_MultiLevel::topMGlevel}, which tells the
+solver which is the finest refinement level that covers the entire
+domain in which the equation is to be solved. All levels below and
+including this will be used in the classical multigrid sense
+(e.g., in a V- or FMG-cycle). The ones above will be treated as
+local AMR boxes, and be solved via a multilevel prescription; 
+presently, this involves simply interpolating the solution from
+the \texttt{topMGlevel} refinement level at the end of the 
+multigrid part and relaxing it progressively, from coarser to 
+finer, on all the local grids. 
+
+Other parameters control the stopping criteria (numbers of 
+relaxation sweeps and residual tolerance), the finite-differencing 
+order used to discretized the equation, the number of equations
+in the system, and whether the solution error should be calculated
+(this obviously requires the exact solution to be known and
+stored in a grid function, its name passed to \texttt{CT\_MultiLevel}
+via the usual parameter mechanism).
+
+Concrete examples on how to set these parameters are provided
+below.
+
+\subsection{Special Behaviour}
+When the equation coefficients cannot be passed in via external
+grid functions (as is the case, for instance, when solving a
+coupled system of PDEs), then one can resort to auxiliary functions,
+which are recalculated after each relaxation sweep. The actual
+algorithm used to populate these coefficient has to be provided
+by the user; some examples are provided under \texttt{src/auxiliaries}.
+These values are stored in \texttt{CT\_MultiLevel}'s \texttt{auxiliaries}
+variable group.
+
+All coefficients, auxiliaries, and other useful grid functions are
+stored in the pointer structure \texttt{coeffptr}, to which the user
+can further append pointers to extra external grid functions, which 
+are not used as PDE coefficients (and thus do not need additional 
+storage space and shouldn't be introduced as auxiliaries), but are 
+still needed by the solver. Examples can be found under 
+\texttt{src/extra}.
+ 
+Finally, if variable resetting is necessary after each relaxation
+step (for instance, when solving linear problems in periodic domains),
+a suitable calculation needs to be provided by the user, similar to
+the examples in \texttt{src/integral}.
+
+\subsection{Interaction With Other Thorns}
+\texttt{CT\_MultiLevel} uses some of \texttt{Carpet}'s macros to
+access different components of a grid hierarchy, and its prolongation
+and restriction operators to pass information between them.
+
+Furthermore, \texttt{CT\_MultiLevel} needs at least one external
+thorn to set the PDE coefficients. The helper thorn \texttt{CT\_Analytic}
+can be used to this purpose, but any set of external grid functions 
+will serve the purpose.
+
+\subsection{Examples}
+The solver is described in~\cite{Bentivegna:2013xna}, along with a number
+of examples. I rediscuss some of those below from the technical
+standpoint, highlighting which parameters need to be set in each case
+and whether other information is required from the user.
+
+\subsection{Poisson's equation}
+Poisson's equation reads:
+\begin{equation}
+\Delta \psi + \rho = 0
+\end{equation}
+where $\rho$ is a known source function and $\psi$ is an unknown
+to solve for. Its Laplacian, $\Delta \psi$, simply represents the
+sum of its diagonal second-order derivatives:
+\begin{equation}
+\Delta \psi = \partial_{xx} \psi + \partial_{yy} \psi + \partial_{zz} \psi
+\end{equation}
+so that \texttt{cxx\_gfname[0]}, \texttt{cyy\_gfname[0]} and \texttt{czz\_gfname[0]}
+all have to be set to one. The source term can be specified freely.
+\texttt{CT\_Analytic} can be used to set all coefficients, e.g. 
+setting the \texttt{CT\_Analytic::free\_data} parameter to \texttt{exact}, 
+where the coefficients of the diagonal second-order derivatives are
+all one, the source term can be set to a linear combination of a
+gaussian, a sine, and a $1/r$ term, and all the other coefficients
+default to zero. To choose a gaussian source term, for instance, one
+can set:
+\begin{verbatim}
+CT_Analytic::free_data             = "exact"
+CT_Analytic::ampG                  = 1
+CT_Analytic::sigma                 = 0.5
+\end{verbatim}
+and then pass the relevant grid functions to \texttt{CT\_MultiLevel}:
+\begin{verbatim}
+CT_MultiLevel::cxx_gfname[0]       = "CT_Analytic::testcxx"
+CT_MultiLevel::cyy_gfname[0]       = "CT_Analytic::testcyy"
+CT_MultiLevel::czz_gfname[0]       = "CT_Analytic::testczz"
+CT_MultiLevel::c0_gfname[0]        = "CT_Analytic::testc0"
+CT_MultiLevel::n0[0]               = 0
+\end{verbatim}
+\texttt{CT\_Analytic} can also be used to set the initial guess for
+the solver:
+\begin{verbatim}
+CT_MultiLevel::inipsi_gfname[0]    = "CT_Analytic::testinipsi"
+\end{verbatim}
+Any coefficient that is not specified explicitly via a parameter 
+will be initialized to zero.
+
+Other parameters can be used to tune the solver's behavior, 
+including the cycling mode through the different levels and the
+stopping criterion. The parameter file \texttt{par/poisson.par}
+provides a concrete example.
+
+\subsection{The Einstein constraint system for a spherical distribution of matter}
+Let's consider Einstein's constraints in the Lichnerowicz-York form
+and in a conformally-flat space, 
+i.e. a coupled system of four PDEs for the four functions $\psi$ and 
+$X_i$:
+\begin{eqnarray}
+\label{eq:CTT}
+ \Delta \psi - \frac{K^2}{12}\,\psi^5 + \frac{1}{8} {A}_{ij} {A}^{ij} \psi^{-7} = - 2 \pi \rho \psi^5 \\
+ \Delta X_i + \partial_i \partial_j X^j - \frac{2}{3} \psi^6 \delta^{ij} \partial_i K = 8 \pi j^i \psi^{10}
+\end{eqnarray} 
+where
+\begin{equation}
+A_{ij}=\partial_i X_j + \partial_j X_i + \frac{2}{3} \; \delta_{ij} \partial_k X^k
+\end{equation}
+and $K$, $\rho$ and $j^i$ are freely specifiable functions.
+
+Due to conformal flatness, again $\Delta = \partial_{xx} + \partial_{yy} 
++ \partial_{zz}$. However, in this case we have the additional
+complication that the coefficient of the $\psi^{-7}$ term in the
+first equation depends on $X^i$, and therefore has to be updated
+during the solution process. This is accomplished by storing this 
+coefficient in an auxiliary function, filled by the function
+\texttt{CT\_SetAuxiliaries} initially and after each Gauss-Seidel 
+iteration. The recipe to fill this grid function is contained in
+\texttt{src/auxiliaries/Lump.cc}.
+
+The parameter specification for this case is then:
+\begin{verbatim}
+CT_Analytic::free_data             = "Lump"
+CT_Analytic::Kc                    = -0.1
+CT_Analytic::ampG                  = 1
+CT_Analytic::ampC                  = 1
+CT_Analytic::ampV                  = 0.1
+CT_Analytic::sigma                 = 0.2
+CT_Analytic::vecA                  = 0.6
+\end{verbatim}
+which specifies the equation coefficients and the free data 
+$K$, $\rho$ and $X^i$, and:
+\begin{verbatim}
+CT_MultiLevel::inipsi_gfname[0]    = "CT_Analytic::testinipsi"
+CT_MultiLevel::cxx_gfname[0]       = "CT_Analytic::testcxx"
+CT_MultiLevel::cyy_gfname[0]       = "CT_Analytic::testcyy"
+CT_MultiLevel::czz_gfname[0]       = "CT_Analytic::testczz"
+CT_MultiLevel::n0[0]               = 5
+CT_MultiLevel::c0_gfname[0]        = "CT_Analytic::testc0"
+CT_MultiLevel::n1[0]               = 0
+CT_MultiLevel::c1_gfname[0]        = "CT_Analytic::testc1"
+CT_MultiLevel::n2[0]               = -7
+CT_MultiLevel::c2_gfname[0]        = "CT_MultiLevel::ct_auxiliary[0]"
+
+CT_MultiLevel::inipsi_gfname[1]    = "CT_Analytic::testinixx"
+CT_MultiLevel::cxx_gfname[1]       = "CT_Analytic::testcxx"
+CT_MultiLevel::cyy_gfname[1]       = "CT_Analytic::testcyy"
+CT_MultiLevel::czz_gfname[1]       = "CT_Analytic::testczz"
+CT_MultiLevel::n0[1]               = 0
+CT_MultiLevel::c0_gfname[1]        = "CT_Analytic::testc2"
+CT_MultiLevel::n1[1]               = 0
+CT_MultiLevel::c1_gfname[1]        = "CT_MultiLevel::ct_auxiliary[1]"
+
+CT_MultiLevel::inipsi_gfname[2]    = "CT_Analytic::testinixy"
+CT_MultiLevel::cxx_gfname[2]       = "CT_Analytic::testcxx"
+CT_MultiLevel::cyy_gfname[2]       = "CT_Analytic::testcyy"
+CT_MultiLevel::czz_gfname[2]       = "CT_Analytic::testczz"
+CT_MultiLevel::n0[2]               = 0
+CT_MultiLevel::c0_gfname[2]        = "CT_Analytic::testc3"
+CT_MultiLevel::n1[2]               = 0
+CT_MultiLevel::c1_gfname[2]        = "CT_MultiLevel::ct_auxiliary[2]"
+
+CT_MultiLevel::inipsi_gfname[3]    = "CT_Analytic::testinixz"
+CT_MultiLevel::cxx_gfname[3]       = "CT_Analytic::testcxx"
+CT_MultiLevel::cyy_gfname[3]       = "CT_Analytic::testcyy"
+CT_MultiLevel::czz_gfname[3]       = "CT_Analytic::testczz"
+CT_MultiLevel::n0[3]               = 0
+CT_MultiLevel::c0_gfname[3]        = "CT_Analytic::testc4"
+CT_MultiLevel::n1[3]               = 0
+CT_MultiLevel::c1_gfname[3]        = "CT_MultiLevel::ct_auxiliary[3]"
+\end{verbatim}
+which informs \texttt{CT\_MultiLevel} on the grid functions holding
+the coefficients and on the existence of auxiliary functions.
+
+Further parameters control other aspects of the solution, and can be
+found in \texttt{par/constraints\_spherical.par}. In particular, the
+parameter \texttt{CT\_MultiLevel::number\_of\_equations} has to be set
+explicitly to four to accomodate the full system of equations.
+
+\section{History}
+The development of this solver has been financed by the European
+Commission's $7^{\rm th}$ Framework through a Marie Curie IR Grant 
+(PIRG05-GA-2009-249290, COSMOTOOLKIT). Please direct any feedback, 
+as well as requests for support, to 
+\href{mailto:eloisa.bentivegna@aei.mpg.de}{eloisa.bentivegna@aei.mpg.de}.
+
+Lars Andersson, Miko\l{}aj Korzy\'nski, Ian Hinder, Bruno Mundim, 
+Oliver Rinne and Erik Schnetter have also contributed insight and
+suggestions that have partly offset my bad judgement on many issues.
+All remaining errors and bugs are naturally my own responsibility. 
+
+\begin{thebibliography}{9}
+
+\bibitem{Briggs:2000fk}
+Briggs W, Henson V and McCormick S 2000 {\em A Multigrid Tutorial\/}
+  Miscellaneous Bks (Society for Industrial and Applied Mathematics) ISBN
+  9780898714623
+
+\bibitem{Bentivegna:2013xna}
+Bentivegna E 2013 \textit{Solving the Einstein constraints in periodic spaces 
+with a multigrid approach} (\textit{Preprint} 
+\href{http://arxiv.org/abs/arXiv:1305.5576}{gr-qc/1305.5576})
+
+\end{thebibliography}
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{exact\_laplacian\_gfname}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{a0\_gfname} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Use this grid function to set the a0 coefficient}} \\
+\hline{\bf Range} & &  {\bf Default:} CT\_MultiLevel::ct\_zero \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{Any valid grid function} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{a1\_gfname} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Use this grid function to set the a1 coefficient}} \\
+\hline{\bf Range} & &  {\bf Default:} CT\_MultiLevel::ct\_zero \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{Any valid grid function} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{a2\_gfname} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Use this grid function to set the a2 coefficient}} \\
+\hline{\bf Range} & &  {\bf Default:} CT\_MultiLevel::ct\_zero \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{Any valid grid function} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{a3\_gfname} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Use this grid function to set the a3 coefficient}} \\
+\hline{\bf Range} & &  {\bf Default:} CT\_MultiLevel::ct\_zero \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{Any valid grid function} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{a4\_gfname} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Use this grid function to set the a4 coefficient}} \\
+\hline{\bf Range} & &  {\bf Default:} CT\_MultiLevel::ct\_zero \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{Any valid grid function} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{boundary\_conditions} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Which boundary conditions to apply to psi}} \\
+\hline{\bf Range} & &  {\bf Default:} none \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Robin} & \multicolumn{2}{p{\paraWidth}|}{Robin} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering TwoPunctures} & \multicolumn{2}{p{\paraWidth}|}{Dirichlet BCs from TwoPunctures} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering none} & \multicolumn{2}{p{\paraWidth}|}{This thorn will apply no boundary conditions} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{c0\_gfname} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Use this grid function to set the c0 coefficient}} \\
+\hline{\bf Range} & &  {\bf Default:} CT\_MultiLevel::ct\_zero \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{Any valid grid function} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{c1\_gfname} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Use this grid function to set the c1 coefficient}} \\
+\hline{\bf Range} & &  {\bf Default:} CT\_MultiLevel::ct\_zero \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{Any valid grid function} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{c2\_gfname} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Use this grid function to set the c2 coefficient}} \\
+\hline{\bf Range} & &  {\bf Default:} CT\_MultiLevel::ct\_zero \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{Any valid grid function} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{c3\_gfname} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Use this grid function to set the c3 coefficient}} \\
+\hline{\bf Range} & &  {\bf Default:} CT\_MultiLevel::ct\_zero \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{Any valid grid function} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{c4\_gfname} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Use this grid function to set the c4 coefficient}} \\
+\hline{\bf Range} & &  {\bf Default:} CT\_MultiLevel::ct\_zero \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{Any valid grid function} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{compare\_to\_exact} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Output a file with the difference between the solution at each iteration and the exact solution, if known}} \\
+\hline{\bf Range} & &  {\bf Default:} no \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering no} & \multicolumn{2}{p{\paraWidth}|}{no} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering yes} & \multicolumn{2}{p{\paraWidth}|}{yes} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{cx\_gfname} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Use this grid function to set the cx coefficient}} \\
+\hline{\bf Range} & &  {\bf Default:} CT\_MultiLevel::ct\_zero \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{Any valid grid function} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{cxx\_gfname} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Use this grid function to set the cxx coefficient}} \\
+\hline{\bf Range} & &  {\bf Default:} CT\_MultiLevel::ct\_zero \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{Any valid grid function} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{cxy\_gfname} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Use this grid function to set the cxy coefficient}} \\
+\hline{\bf Range} & &  {\bf Default:} CT\_MultiLevel::ct\_zero \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{Any valid grid function} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{cxz\_gfname} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Use this grid function to set the cxz coefficient}} \\
+\hline{\bf Range} & &  {\bf Default:} CT\_MultiLevel::ct\_zero \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{Any valid grid function} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{cy\_gfname} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Use this grid function to set the cy coefficient}} \\
+\hline{\bf Range} & &  {\bf Default:} CT\_MultiLevel::ct\_zero \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{Any valid grid function} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{cycle\_type} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How should be cycle over the refinement levels?}} \\
+\hline{\bf Range} & &  {\bf Default:} V cycle \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering V cycle} & \multicolumn{2}{p{\paraWidth}|}{A V cycle} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering FMG cycle} & \multicolumn{2}{p{\paraWidth}|}{A FMG cycle} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{cyy\_gfname} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Use this grid function to set the cyy coefficient}} \\
+\hline{\bf Range} & &  {\bf Default:} CT\_MultiLevel::ct\_zero \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{Any valid grid function} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{cyz\_gfname} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Use this grid function to set the cyz coefficient}} \\
+\hline{\bf Range} & &  {\bf Default:} CT\_MultiLevel::ct\_zero \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{Any valid grid function} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{cz\_gfname} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Use this grid function to set the cz coefficient}} \\
+\hline{\bf Range} & &  {\bf Default:} CT\_MultiLevel::ct\_zero \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{Any valid grid function} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{czz\_gfname} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Use this grid function to set the czz coefficient}} \\
+\hline{\bf Range} & &  {\bf Default:} CT\_MultiLevel::ct\_zero \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{Any valid grid function} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{disable} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Should this equation actually be solved?}} \\
+\hline{\bf Range} & &  {\bf Default:} no \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering no} & \multicolumn{2}{p{\paraWidth}|}{no} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering yes} & \multicolumn{2}{p{\paraWidth}|}{yes} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{enforce\_int} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Enforce the integral compatibility condition?}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:1:1} & \multicolumn{2}{p{\paraWidth}|}{True or false} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{eps} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Regularization factor at the punctures}} \\
+\hline{\bf Range} & &  {\bf Default:} 1e-06 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Any non-negative real} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{exact\_laplacian\_gfname} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Grid function holding the exact laplacian}} \\
+\hline{\bf Range} & &  {\bf Default:} CT\_MultiLevel::ct\_zero \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{Any valid grid function} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{exact\_offset} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Offset between exact solution and grid function pointed by exact\_solution\_gfname}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{exact\_solution\_gfname} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Grid function holding the exact solution}} \\
+\hline{\bf Range} & &  {\bf Default:} CT\_MultiLevel::ct\_zero \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{Any valid grid function} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{fd\_order} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Order of FD}} \\
+\hline{\bf Range} & &  {\bf Default:} 2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 2:4:2} & \multicolumn{2}{p{\paraWidth}|}{Order of differencing} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{fill\_adm} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Should the equation solution be used to fill the ADM variables?}} \\
+\hline{\bf Range} & &  {\bf Default:} no \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering no} & \multicolumn{2}{p{\paraWidth}|}{no} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering yes} & \multicolumn{2}{p{\paraWidth}|}{yes} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{fill\_aij} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Where does the final Aij come from?}} \\
+\hline{\bf Range} & &  {\bf Default:} Analytic Aij \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Solver} & \multicolumn{2}{p{\paraWidth}|}{Aij is solved for as well} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Analytic Xi} & \multicolumn{2}{p{\paraWidth}|}{Aij comes from differentiating an analytic Xi} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Analytic Aij} & \multicolumn{2}{p{\paraWidth}|}{Aij comes from an exact solution} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{fmg\_niter} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How many times should we execute the FMG cycle?}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:} & \multicolumn{2}{p{\paraWidth}|}{Any non-negative integer} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{gs\_update} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Update solution immediately?}} \\
+\hline{\bf Range} & &  {\bf Default:} yes \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering yes} & \multicolumn{2}{p{\paraWidth}|}{yes} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering no} & \multicolumn{2}{p{\paraWidth}|}{no} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{inipsi\_gfname} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Use this grid function to set the initial guess for psi}} \\
+\hline{\bf Range} & &  {\bf Default:} CT\_MultiLevel::ct\_zero \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{Any valid grid function} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{integral\_refinement} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How much to refine the grid via interpolation before calculating integrals}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{Any integer greater than zero} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{mode} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Which equation should we solve?}} \\
+\hline{\bf Range} & &  {\bf Default:} generic \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering generic} & \multicolumn{2}{p{\paraWidth}|}{Generic elliptic operator, to be defined via the coefficients} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering constraints} & \multicolumn{2}{p{\paraWidth}|}{The GR constraints} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{model} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Model used to populate the auxiliary functions}} \\
+\hline{\bf Range} & &  {\bf Default:} None \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Bowen-York} & \multicolumn{2}{p{\paraWidth}|}{Bowen-York extrinsic curvature for multiple punctures} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Expanding BH lattice} & \multicolumn{2}{p{\paraWidth}|}{An expanding black-hole lattice} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Lump} & \multicolumn{2}{p{\paraWidth}|}{Generic compact source in Tmunu} \\\multicolumn{1}{|p{\maxVarWidth}|}{see [1] below} & \multicolumn{2}{p{\paraWidth}|}{Inhomogeneous Helmholtz equation} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering None} & \multicolumn{2}{p{\paraWidth}|}{No auxiliaries needed} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent {\bf [1]} \noindent \begin{verbatim}Inhomogeneous Helmholtz\end{verbatim}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{n0} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Exponent of a power-law term}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{Any integer} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{n1} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Exponent of a power-law term}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{Any integer} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{n2} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Exponent of a power-law term}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{Any integer} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{n3} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Exponent of a power-law term}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{Any integer} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{n4} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Exponent of a power-law term}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{Any integer} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{nrelsteps\_bottom} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How many times should we relax each level at the bottom of a cycle?}} \\
+\hline{\bf Range} & &  {\bf Default:} 2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:} & \multicolumn{2}{p{\paraWidth}|}{Any non-negative integer} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{nrelsteps\_down} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How many times should we relax each level inside the downward leg of a cycle?}} \\
+\hline{\bf Range} & &  {\bf Default:} 2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:} & \multicolumn{2}{p{\paraWidth}|}{Any non-negative integer} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{nrelsteps\_top} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How many times should we relax each level at the top of a cycle?}} \\
+\hline{\bf Range} & &  {\bf Default:} 2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:} & \multicolumn{2}{p{\paraWidth}|}{Any non-negative integer} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{nrelsteps\_up} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How many times should we relax each level inside the upward leg of a cycle?}} \\
+\hline{\bf Range} & &  {\bf Default:} 2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:} & \multicolumn{2}{p{\paraWidth}|}{Any non-negative integer} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{number\_of\_auxiliaries} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How many auxiliary functions do we need?}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:} & \multicolumn{2}{p{\paraWidth}|}{A non-negative integer} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{number\_of\_equations} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How many equations are to be solved concurrently?}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:10} & \multicolumn{2}{p{\paraWidth}|}{A positive integer smaller than or equal to 10} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{omega} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Overrelaxation factor}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:2} & \multicolumn{2}{p{\paraWidth}|}{Real larger than zero and smaller than 2} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{other\_gfname} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Other gf names needed by solver}} \\
+\hline{\bf Range} & &  {\bf Default:} CT\_MultiLevel::ct\_zero \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{Any valid grid function} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{output\_norms} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Output the norms of psi and residual, and those of their errors?}} \\
+\hline{\bf Range} & &  {\bf Default:} no \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering no} & \multicolumn{2}{p{\paraWidth}|}{no} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering yes} & \multicolumn{2}{p{\paraWidth}|}{yes} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{output\_walk} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Output a file with the parameter-space walk followed by the algorithm?}} \\
+\hline{\bf Range} & &  {\bf Default:} no \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering no} & \multicolumn{2}{p{\paraWidth}|}{no} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering yes} & \multicolumn{2}{p{\paraWidth}|}{yes} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{reset\_every} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How often should we reset psi?}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{Any positive integer} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{reset\_psi} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Reset psi after each relaxation step? How?}} \\
+\hline{\bf Range} & &  {\bf Default:} no \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering no} & \multicolumn{2}{p{\paraWidth}|}{Do not reset} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering to value} & \multicolumn{2}{p{\paraWidth}|}{Reset to the value specified by reset\_value} \\\multicolumn{1}{|p{\maxVarWidth}|}{see [1] below} & \multicolumn{2}{p{\paraWidth}|}{Reset so that the integrability condition is satisfied} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent {\bf [1]} \noindent \begin{verbatim}through integrability\end{verbatim}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{reset\_value} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Value to reset psi to}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{reset\_x} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em x-coordinate of point of reference for variable resetting}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{Any real number (contained in the domain!)} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{reset\_y} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em y-coordinate of point of reference for variable resetting}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{Any real number (contained in the domain!)} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{reset\_z} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em z-coordinate of point of reference for variable resetting}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{Any real number (contained in the domain!)} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{single\_srj\_scheme} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Use a single SRJ scheme for all the levels?}} \\
+\hline{\bf Range} & &  {\bf Default:} yes \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering no} & \multicolumn{2}{p{\paraWidth}|}{no} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering yes} & \multicolumn{2}{p{\paraWidth}|}{yes} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{srj\_scheme} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Which SRJ scheme should be used?}} \\
+\hline{\bf Range} & &  {\bf Default:} 6-32 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 6-32} & \multicolumn{2}{p{\paraWidth}|}{6 levels, 32\^3-point grid} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 6-64} & \multicolumn{2}{p{\paraWidth}|}{6 levels, 64\^3-point grid} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 6-128} & \multicolumn{2}{p{\paraWidth}|}{6 levels, 128\^3-point grid} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 6-256} & \multicolumn{2}{p{\paraWidth}|}{6 levels, 256\^3-point grid} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 6-512} & \multicolumn{2}{p{\paraWidth}|}{6 levels, 512\^3-point grid} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 6-1024} & \multicolumn{2}{p{\paraWidth}|}{6 levels, 1024\^3-point grid} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 6-150} & \multicolumn{2}{p{\paraWidth}|}{6 levels, 150\^3-point grid} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{tol} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Maximum residual tolerated}} \\
+\hline{\bf Range} & &  {\bf Default:} 1e-06 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Any non-negative real} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{topmglevel} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Finest level that covers the entire domain}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:} & \multicolumn{2}{p{\paraWidth}|}{Any non-negative integer ({\textless} Carpet::reflevels!)} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{use\_srj} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Use SRJ relaxation factor?}} \\
+\hline{\bf Range} & &  {\bf Default:} no \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering no} & \multicolumn{2}{p{\paraWidth}|}{no} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering yes} & \multicolumn{2}{p{\paraWidth}|}{yes} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{use\_srj\_err} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Use SRJ relaxation factor in the error equation?}} \\
+\hline{\bf Range} & &  {\bf Default:} no \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering no} & \multicolumn{2}{p{\paraWidth}|}{no} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering yes} & \multicolumn{2}{p{\paraWidth}|}{yes} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{verbose} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Output debugging information?}} \\
+\hline{\bf Range} & &  {\bf Default:} no \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering no} & \multicolumn{2}{p{\paraWidth}|}{no} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering yes} & \multicolumn{2}{p{\paraWidth}|}{yes} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{veryverbose} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Output more debugging information?}} \\
+\hline{\bf Range} & &  {\bf Default:} no \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering no} & \multicolumn{2}{p{\paraWidth}|}{no} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering yes} & \multicolumn{2}{p{\paraWidth}|}{yes} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{initial\_data} & {\bf Scope:} shared from ADMBASE & KEYWORD \\\hline
+\multicolumn{3}{|l|}{\bf Extends ranges:}\\ 
+\hline\multicolumn{1}{|p{\maxVarWidth}|}{\centering CT\_MultiLevel} & \multicolumn{2}{p{\paraWidth}|}{Initial data from this solver} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+ct\_multilevel
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+boundary
+
+grid
+\vspace{2mm}
+\subsection*{Grid Variables}
+\vspace{5mm}\subsubsection{PRIVATE GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+psi &  & compact & 0 \\ 
+ & ct\_psi & description & Conformal factor in the metric \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="Scalar" \\ 
+ &  & timelevels & 3 \\ 
+ &  & vararray\_size & number\_of\_equations \\ 
+ &  & variable type & REAL \\ 
+\hline 
+err &  & compact & 0 \\ 
+ & ct\_err & description & Solution error \\ 
+ & ct\_terr & dimensions & 3 \\ 
+ & ct\_trunc & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="Scalar" \\ 
+ &  & timelevels & 3 \\ 
+ &  & vararray\_size & number\_of\_equations \\ 
+ &  & variable type & REAL \\ 
+\hline 
+residual &  & compact & 0 \\ 
+ & ct\_residual & description & Residual \\ 
+ & ct\_residual\_above & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="Scalar" \\ 
+ &  & timelevels & 3 \\ 
+ &  & vararray\_size & number\_of\_equations \\ 
+ &  & variable type & REAL \\ 
+\hline 
+coeffs &  & compact & 0 \\ 
+ & ct\_cxx & description & Equation's coefficients \\ 
+ & ct\_cxy & dimensions & 3 \\ 
+ & ct\_cxz & distribution & DEFAULT \\ 
+ & ct\_cyy & group type & GF \\ 
+ & ct\_cyz & tags & tensortypealias="Scalar" \\ 
+ & ct\_czz & timelevels & 3 \\ 
+ & ct\_cx & vararray\_size & number\_of\_equations \\ 
+ & ct\_cy & variable type & REAL \\ 
+\hline 
+copies &  & compact & 0 \\ 
+ & ct\_psi\_copy & description & Copies of grid functions \\ 
+ & ct\_residual\_copy & dimensions & 3 \\ 
+ & ct\_residual\_above\_copy & distribution & DEFAULT \\ 
+ & ct\_err\_copy & group type & GF \\ 
+ & ct\_trunc\_copy & tags & tensortypealias="Scalar" prolongation="None" \\ 
+ & ct\_psi\_jacobi & timelevels & 1 \\ 
+ & ct\_err\_jacobi & vararray\_size & number\_of\_equations \\ 
+ &  & variable type & REAL \\ 
+\hline 
+cell\_integral &  & compact & 0 \\ 
+ & ct\_integrand1 & description & Integrand of the equation integral over a cell \\ 
+ & ct\_integrand2 & dimensions & 3 \\ 
+ & ct\_integrand3 & distribution & DEFAULT \\ 
+ & ct\_integrand4 & group type & GF \\ 
+ &  & tags & tensortypealias="Scalar" prolongation="None" \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & number\_of\_equations \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~ \\ 
+\hline 
+auxiliaries &  & compact & 0 \\ 
+ & ct\_auxiliary & description & Auxiliary functions needed to set the equation coefficients in coupled systems \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="Scalar" prolongation="None" \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & number\_of\_auxiliaries \\ 
+ &  & variable type & REAL \\ 
+\hline 
+rhs &  & compact & 0 \\ 
+ & ct\_rhs & description & rhs \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="Scalar" prolongation="None" \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & number\_of\_equations \\ 
+ &  & variable type & REAL \\ 
+\hline 
+constants &  & compact & 0 \\ 
+ & ct\_zero & description & Constants \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="Scalar" prolongation="None" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+
+\noindent {\bf Uses header}: 
+
+Symmetry.h
+
+loopcontrol.h
+
+Boundary.h
+\vspace{2mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn CTThorns/CT\_MultiLevel.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Always:}&  ~ \\ 
+ psi[3] & ~\\ 
+ residual[3] err[3] & ~\\ 
+ coeffs[3] & ~\\ 
+ copies[1] & ~\\ 
+ cell\_integral[1] & ~\\ 
+ auxiliaries[1] & ~\\ 
+ rhs[1] & ~\\ 
+ constants[1] & ~\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_INITIAL} 
+
+\hspace{5mm} ct\_multilevel 
+
+\hspace{5mm}{\it main multilevel function } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ct\_scalarfield\_setconfrho \\ 
+~ & Language:  & c \\ 
+~ & Options:  & global-late \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

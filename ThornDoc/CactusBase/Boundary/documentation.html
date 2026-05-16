@@ -1,0 +1,2796 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>Boundary Conditions</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">Boundary Conditions</h2>
+ <div class="author" ><span 
+class="cmr-12">Miguel Alcubierre</span>
+<br />   <span 
+class="cmr-12">Gabrielle Allen</span>
+<br /> <span 
+class="cmr-12">Gerd Lanfermann</span>
+<br />   <span 
+class="cmr-12">David Rideout</span></div>
+<br />
+<div class="date" >\( \)<span 
+class="cmr-12">Date</span>\( \)</div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 21--><p class="noindent" ><span 
+class="cmr-9">Provides  a  generic  interface  to  boundary  conditions,  and  provides  a  set  of  standard  boundary</span>
+     <span 
+class="cmr-9">conditions for one, two, and three dimensional grid variables.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Introduction</h3>
+<!--l. 29--><p class="noindent" >This thorn provides a generic method for registering routines to perform boundary conditions, and selecting
+variables to have these boundary conditions applied to them. In addition, it provides abstraction which allows all
+considerations of symmetry to be separated from those of physical boundary conditions. The general idea is that
+codes which use boundary conditions, be they physical or symmetry conditions, need not know anything about
+the thorns which provide them.
+</p><!--l. 38--><p class="noindent" >This thorn also contains some standard boundary conditions, most of which can be used with any spatial
+dimension and data type.
+                                                                                       
+                                                                                       
+</p><!--l. 41--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">1.1   </span> <a 
+ id="x1-20001.1"></a>Local and non-local boundary conditions</h4>
+<!--l. 43--><p class="noindent" >Boundary conditions can be <span 
+class="cmti-10">local</span>, meaning that the boundary point can be updated based on data in its
+immediate vicinity, or <span 
+class="cmti-10">non-local</span>, meaning that the new value on the boundary depends on data from a remote
+region of the computational domain (for a parallel simulation this data could for example be physically located
+on several different processors). An example of the latter is a “rotating” symmetry condition, which
+arises e.g. when one uses a quadrant to simulate a physical domain which possesses a rotational
+symmetry.
+</p><!--l. 52--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">1.2   </span> <a 
+ id="x1-30001.2"></a>Symmetry and physical boundary conditions</h4>
+<!--l. 54--><p class="noindent" ><span 
+class="cmti-10">Symmetry </span>boundary conditions are those that arise by viewing the computational domain as a subregion of some
+larger domain which possesses symmetries. These symmetries allow a simulation of the subregion to act as an
+effective simulation of the larger encompassing domain, because the latter can be inferred from the former via
+the symmetry. For example, one can often simulate a rotating star by ‘slicing’ the space in half through the
+equatorial plane, simulating only one half, and placing a reflection boundary condition at this plane. The
+symmetry can be regarded as a property of the underlying computational grid upon which the simulation takes
+place.
+</p><!--l. 65--><p class="noindent" >It is often possible to describe the symmetry of a physical problem in terms of multiple ‘simpler’
+symmetries. Going back to the rotating star example, we can note that there is also a rotational
+symmetry about the axis of the star. Thus it is sufficient to simulate only the upper half of a \(\phi =\mbox {const}\)
+plane of the star, since rotational symmetry will recover half of the star from the single plane, and
+the reflection symmetry can recover the other half of the star. To do this we use two symmetry
+boundary conditions, one for the rotational symmetry and one for the reflection symmetry. At
+the edges and corner grid points there will be two symmetry boundary conditions active, which
+illustrates a general point about symmetry boundary conditions, namely that there can be any
+number of them active at any given grid point. In addition symmetry boundary conditions are
+often non-local, for example a periodic boundary condition which applies in simulating plasma in a
+tokamak.
+</p><!--l. 81--><p class="noindent" ><span 
+class="cmti-10">Physical </span>boundary conditions are motivated by the physics of the quantity that the grid variable represents, such
+as one which allows outgoing waves of a scalar field to propagate off the grid, but does not allow
+ingoing waves or reflections. Usually the same physical boundary condition is applied to all external
+boundaries of the computational domain, however this is not always the case. Currently thorn <span 
+class="cmtt-10">Boundary</span>
+allows a separate boundary condition to be applied to each face of the domain, however this is only
+implemented at the moment using the older deprecated interface. Face specific calls will be available
+using the current interface shortly. It is also possible that one will want to use different physical
+boundary conditions at different regions of a face, and support for this can be added if necessary.
+Usually physical boundary conditions are local. A non-local physical boundary condition may arise
+e.g. from a need to solve an elliptic equation at the boundary. As opposed to symmetry boundary
+                                                                                       
+                                                                                       
+conditions, it only makes sense to have a single physical boundary condition active at a given grid
+point.<span class="footnote-mark"><a 
+href="documentation2.html#fn1x0"><sup class="textsuperscript">1</sup></a></span><a 
+ id="x1-3001f1"></a> 
+</p><!--l. 110--><p class="noindent" >To summarize, a ‘physics’ thorn, such as a spacetime evolution thorn, knows only about physical
+boundary conditions. Symmetry boundary conditions are aspects of the grid and are managed by other
+thorns.
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-40002"></a>The generic boundary interface</h3>
+<!--l. 117--><p class="noindent" >The implementation <span 
+class="cmtt-10">Boundary </span>provides a number of aliased functions, which allow application thorns to register
+routines which provide a particular physical boundary condition, and also to select variables or groups of
+variables to have boundary conditions applied to whenever the <span 
+class="cmtt-10">ApplyBCs </span>schedule group is scheduled (see section
+<a 
+href="#x1-70002.3">2.3<!--tex4ht:ref: Boundary/sec:schedule_groups --></a>). In addition, an aliased function is provided which returns a list of grid variables selected for a boundary
+condition (see appendix <a 
+href="#x1-5000011">11<!--tex4ht:ref: Boundary/apx:symmetry --></a>).
+</p><!--l. 128--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.1   </span> <a 
+ id="x1-50002.1"></a>Boundary condition registration</h4>
+<!--l. 131--><p class="noindent" >To register a routine to provide some physical boundary condition, use
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-1">
+Boundary_RegisterPhysicalBC(CCTK_POINTER cctkGH,
+                            phys_bc_fn_ptr function_pointer,
+                            CCTK_STRING bc_name)
+</pre>
+<!--l. 136--><p class="nopar" > where
+</p>
+<div class="tabular"> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /><col 
+id="TBL-2-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-1"  
+class="td11"> <span 
+class="cmtt-10">cctkGH           </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-2"  
+class="td11"> pointer to the grid hierarchy                                       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-2-2-1"  
+class="td11"> <span 
+class="cmtt-10">function</span><span 
+class="cmtt-10">_pointer </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-2-2"  
+class="td11"> pointer to the function providing the boundary condition  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-1"  
+class="td11"> <span 
+class="cmtt-10">bc</span><span 
+class="cmtt-10">_name          </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-2"  
+class="td11"> name of boundary condition                                        </td>
+</tr></table>                                                                                       </div>
+<!--l. 146--><p class="noindent" >The function pointer takes arguments
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-2">
+(CCTK_POINTER cctkGH, CCTK_INT num_vars, CCTK_INT *var_indices,
+ CCTK_INT *faces, CCTK_INT *widths, CCTK_INT *table_handles)
+</pre>
+<!--l. 150--><p class="nopar" > (this defines the type <span 
+class="cmtt-10">phys</span><span 
+class="cmtt-10">_bc</span><span 
+class="cmtt-10">_fn</span><span 
+class="cmtt-10">_ptr</span>, above) where
+</p>
+<div class="tabular"> <table id="TBL-3" class="tabular" 
+ 
+><colgroup id="TBL-3-1g"><col 
+id="TBL-3-1" /><col 
+id="TBL-3-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-3-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-1"  
+class="td11"> <span 
+class="cmtt-10">cctkGH        </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-2"  
+class="td11"> pointer to the grid hierarchy                                                          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-3-2-1"  
+class="td11"> <span 
+class="cmtt-10">num</span><span 
+class="cmtt-10">_vars      </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-2-2"  
+class="td11"> number of entries passed in the following three arrays                         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-3-3-1"  
+class="td11"> <span 
+class="cmtt-10">var</span><span 
+class="cmtt-10">_indices   </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-3-2"  
+class="td11"> array of <span 
+class="cmtt-10">num</span><span 
+class="cmtt-10">_vars </span>variable indices selected for this boundary condition  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-3-4-1"  
+class="td11"> <span 
+class="cmtt-10">faces         </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-4-2"  
+class="td11"> array of <span 
+class="cmtt-10">num</span><span 
+class="cmtt-10">_vars </span>faces specifications (see section <a 
+href="#x1-80002.4">2.4<!--tex4ht:ref: Boundary/sec:faces --></a>)                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-5-"><td  style="white-space:nowrap; text-align:left;" id="TBL-3-5-1"  
+class="td11"> <span 
+class="cmtt-10">widths        </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-5-2"  
+class="td11"> array of <span 
+class="cmtt-10">num</span><span 
+class="cmtt-10">_vars </span>boundary widths (see below)                                </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-6-"><td  style="white-space:nowrap; text-align:left;" id="TBL-3-6-1"  
+class="td11"> <span 
+class="cmtt-10">table</span><span 
+class="cmtt-10">_handles </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-6-2"  
+class="td11"> array of <span 
+class="cmtt-10">num</span><span 
+class="cmtt-10">_vars </span>table handles                                                     </td>
+</tr></table>                                                                                       </div>
+<!--l. 163--><p class="noindent" >The table handles hold extra arguments for each application of the boundary condition. The four
+arrays are sorted first on table handle, and then on variable index. This way variables which have
+precisely the same boundary condition are grouped together, and within this grouping variables are
+sorted by index, so that variable groups are stored together. In many cases this sorting will allow
+a more efficient implementation of the boundary condition. (At the moment it is not clear how
+face information should be considered in the sorting, so it is not.) A null pointer can be passed for
+<span 
+class="cmtt-10">function</span><span 
+class="cmtt-10">_pointer</span>, in which case no routine is executed when <span 
+class="cmtt-10">Boundary</span><span 
+class="cmtt-10">_ApplyPhysicalBCs </span>is called (see
+section <a 
+href="#x1-70002.3">2.3<!--tex4ht:ref: Boundary/sec:schedule_groups --></a>).
+</p><!--l. 176--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.2   </span> <a 
+ id="x1-60002.2"></a>Boundary condition selection</h4>
+<!--l. 178--><p class="noindent" >To select a grid variable to have a boundary condition applied to it, use one of the following aliased
+functions:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-3">
+Boundary_SelectVarForBC(CCTK_POINTER cctkGH,
+                        CCTK_INT faces,
+                        CCTK_INT boundary_width,
+                        CCTK_INT table_handle,
+                        CCTK_STRING var_name,
+                        CCTK_STRING bc_name)
+
+Boundary_SelectVarForBCI(CCTK_POINTER cctkGH,
+                        CCTK_INT faces,
+                        CCTK_INT boundary_width,
+                        CCTK_INT table_handle,
+                        CCTK_INT var_index,
+                        CCTK_STRING bc_name)
+
+Boundary_SelectGroupForBC(CCTK_POINTER cctkGH,
+                          CCTK_INT faces,
+                          CCTK_INT boundary_width,
+                          CCTK_INT table_handle,
+                          CCTK_STRING group_name,
+                          CCTK_STRING bc_name)
+
+Boundary_SelectGroupForBCI(CCTK_POINTER cctkGH,
+                           CCTK_INT faces,
+                           CCTK_INT boundary_width,
+                           CCTK_INT table_handle,
+                           CCTK_INT group_index,
+                           CCTK_STRING bc_name)
+</pre>
+<!--l. 208--><p class="nopar" > where
+</p>
+<div class="tabular"> <table id="TBL-4" class="tabular" 
+ 
+><colgroup id="TBL-4-1g"><col 
+id="TBL-4-1" /><col 
+id="TBL-4-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-4-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-1"  
+class="td11"> <span 
+class="cmtt-10">cctkGH         </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-2"  
+class="td11"> pointer to the grid hierarchy                                                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-4-2-1"  
+class="td11"> <span 
+class="cmtt-10">faces          </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-2-2"  
+class="td11"> set of faces to which to apply the boundary condition                           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-1"  
+class="td11"> <span 
+class="cmtt-10">boundary</span><span 
+class="cmtt-10">_width </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-2"  
+class="td11"> width (in grid points) of the boundaries                                             </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-4-4-1"  
+class="td11"> <span 
+class="cmtt-10">table</span><span 
+class="cmtt-10">_handle   </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-4-2"  
+class="td11"> handle for table which holds extra arguments for the boundary condition  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-5-"><td  style="white-space:nowrap; text-align:left;" id="TBL-4-5-1"  
+class="td11"> <span 
+class="cmtt-10">var</span><span 
+class="cmtt-10">_name       </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-5-2"  
+class="td11"> name of the grid variable                                                                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-6-"><td  style="white-space:nowrap; text-align:left;" id="TBL-4-6-1"  
+class="td11"> <span 
+class="cmtt-10">bc</span><span 
+class="cmtt-10">_name        </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-6-2"  
+class="td11"> name of the boundary condition                                                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-7-"><td  style="white-space:nowrap; text-align:left;" id="TBL-4-7-1"  
+class="td11"> <span 
+class="cmtt-10">var</span><span 
+class="cmtt-10">_index      </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-7-2"  
+class="td11"> index of grid variable                                                                      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-8-"><td  style="white-space:nowrap; text-align:left;" id="TBL-4-8-1"  
+class="td11"> <span 
+class="cmtt-10">group</span><span 
+class="cmtt-10">_name     </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-8-2"  
+class="td11"> name of group of grid variables                                                         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-9-"><td  style="white-space:nowrap; text-align:left;" id="TBL-4-9-1"  
+class="td11"> <span 
+class="cmtt-10">group</span><span 
+class="cmtt-10">_index    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-9-2"  
+class="td11"> index of group of grid variables                                                         </td>
+</tr></table>                                                                                       </div>
+<!--l. 223--><p class="noindent" >Each of these functions returns 0 for success, or one of the negative error codes below something went
+wrong.
+</p>
+                                                                                       
+                                                                                       
+<div class="tabular"> <table id="TBL-5" class="tabular" 
+ 
+><colgroup id="TBL-5-1g"><col 
+id="TBL-5-1" /></colgroup><colgroup id="TBL-5-2g"><col 
+id="TBL-5-2" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:nowrap; text-align:left;"><span 
+class="cmbx-10">error code</span></div>  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-2"  
+class="td11"> <span 
+class="cmbx-10">description                                         </span></td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-2-"><td  style="white-space:nowrap; text-align:right;" id="TBL-5-2-1"  
+class="td11">          <span 
+class="cmtt-10">-2 </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-2-2"  
+class="td11"> no such physical boundary condition registered  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-3-"><td  style="white-space:nowrap; text-align:right;" id="TBL-5-3-1"  
+class="td11">          <span 
+class="cmtt-10">-3 </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-3-2"  
+class="td11"> faces already selected for bc                           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-4-"><td  style="white-space:nowrap; text-align:right;" id="TBL-5-4-1"  
+class="td11">          <span 
+class="cmtt-10">-5 </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-4-2"  
+class="td11"> new value for GH passed in                           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-5-"><td  style="white-space:nowrap; text-align:right;" id="TBL-5-5-1"  
+class="td11">          <span 
+class="cmtt-10">-6 </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-5-2"  
+class="td11"> invalid group name or index                           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-6-"><td  style="white-space:nowrap; text-align:right;" id="TBL-5-6-1"  
+class="td11">          <span 
+class="cmtt-10">-7 </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-6-2"  
+class="td11"> invalid variable index                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-7-"><td  style="white-space:nowrap; text-align:right;" id="TBL-5-7-1"  
+class="td11">          <span 
+class="cmtt-10">-8 </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-7-2"  
+class="td11"> group has zero vars                                      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-8-"><td  style="white-space:nowrap; text-align:right;" id="TBL-5-8-1"  
+class="td11">         <span 
+class="cmtt-10">-11 </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-8-2"  
+class="td11"> invalid variable name                                    </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-9-"><td  style="white-space:nowrap; text-align:right;" id="TBL-5-9-1"  
+class="td11">             </td>
+</tr></table>                                                                                       </div>
+<!--l. 240--><p class="noindent" ><span class="obeylines-h"><code class="verb">Boundary_SelectVarForBC()</code></span> and <span class="obeylines-h"><code class="verb">Boundary_SelectVarForBCI()</code></span> select a single grid variable for a boundary
+condition, using either the variable name or index respectively. <span class="obeylines-h"><code class="verb">Boundary_SelectGroupForBC()</code></span> and
+<span class="obeylines-h"><code class="verb">Boundary_SelectGroupForBCI()</code></span> select an entire variable group, using either its name or index.
+</p><!--l. 246--><p class="noindent" >Each of these functions takes a faces specification, a boundary width, and a table handle as additional
+arguments. The faces specification is a single integer which identifies a set of faces to which to apply the
+boundary condition. See section <a 
+href="#x1-80002.4">2.4<!--tex4ht:ref: Boundary/sec:faces --></a> for details. The boundary width is the thickness, in grid points, of the
+boundaries.
+</p><!--l. 253--><p class="noindent" >The table handle identifies a table which holds extra arguments for the particular boundary condition that is
+requested. For example, if a negative value is passed for the boundary width, then the boundary condition will
+look in this table for a \(2d\)-element integer array, which holds the width of each face of the boundary (for a \(d\)
+dimensional grid variable). (The first element of the array holds the width of the ‘-x’ face, the second the ‘+x’
+face, the third the ‘-y’ face, etc.)
+</p><!--l. 263--><p class="noindent" >In some cases the table handle is required, so the boundary condition, when it is called within the
+<span 
+class="cmtt-10">BoundaryConditions </span>schedule group (see section <a 
+href="#x1-70002.3">2.3<!--tex4ht:ref: Boundary/sec:schedule_groups --></a>), will return an error code. However, in most cases it is
+optional. If one uses an invalid table handle here (such as -1), commonly used default values will be assumed for
+all arguments (besides the explicit faces specification and boundary widths). Note that you, the user, will be
+creating the table, so you may choose whatever options (such as case sensitivity) you like. The case of the keys
+for which the boundary conditions implemented in this thorn search are as given in the documentation, which is
+currently all capitals. To be safe you may choose to create case-insensitive tables, however case sensitive tables
+are slightly faster.
+</p><!--l. 277--><p class="noindent" >The name of the boundary condition must match that with which the boundary condition providing function
+was registered. These names are case insensitive. See section <a 
+href="#x1-90003">3<!--tex4ht:ref: Boundary/sec:provided_bcs --></a> for a list of boundary conditions provided by
+thorn <span 
+class="cmtt-10">Boundary</span>.
+</p><!--l. 283--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.3   </span> <a 
+ id="x1-70002.3"></a>Schedule groups</h4>
+<!--l. 286--><p class="noindent" >Implementation <span 
+class="cmtt-10">Boundary </span>creates two schedule groups
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-4">
+ApplyBCs
+</pre>
+<!--l. 289--><p class="nopar" > and
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-5">
+BoundaryConditions in ApplyBCs BEFORE Boundary_ClearSelection
+</pre>
+<!--l. 293--><p class="nopar" > and schedules two functions <span 
+class="cmtt-10">Boundary</span><span 
+class="cmtt-10">_ApplyPhysicalBCs </span>in <span 
+class="cmtt-10">BoundaryConditions </span>and <span 
+class="cmtt-10">Boundary</span><span 
+class="cmtt-10">_ClearSelection</span>
+in <span 
+class="cmtt-10">ApplyBCs</span>. <span 
+class="cmtt-10">Boundary</span><span 
+class="cmtt-10">_ApplyPhysicalBCs </span>goes through the list of all selected grid variables, and calls the
+registered function corresponding to the requested boundary condition on each. <span 
+class="cmtt-10">Boundary</span><span 
+class="cmtt-10">_ClearSelection</span>
+clears the list of selected grid variables. A thorn which wishes to have boundary conditions applied simply
+schedules <span 
+class="cmtt-10">ApplyBCs </span>at the appropriate point. Please schedule it as e.g. <span class="obeylines-h"><code class="verb">&#x003C;MyThorn&#x003E;_ApplyBCs</code></span>, to make each
+instance of it unique. <span 
+class="cmtt-10">Boundary</span><span 
+class="cmtt-10">_ClearSelection </span>ensures that each boundary condition gets executed exactly
+once for each selected grid variable.
+</p><!--l. 308--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.4   </span> <a 
+ id="x1-80002.4"></a>Faces</h4>
+<!--l. 311--><p class="noindent" >The computational domain is assumed to be in the shape of a \(n\)-dimensional ‘rectangle’, which has \(2n\) \(n-1\) dimensional
+faces. (Usually \(n\) is three.) Each of these \(2n\) faces is assigned a specific bit in a word, so that arbitrary subsets can be
+compactly expressed as a bitwise-or of these individual bits. Macros defining this mapping of subsets to bits will
+be provided. For the moment there is only <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_ALL</span><span 
+class="cmtt-10">_FACES</span>, which corresponds to the set of all
+faces of the domain. If you need face specific calls immediately, please use the old interface for
+now.
+</p><!--l. 322--><p class="noindent" >The mapping of bits to faces will likely be the same as that used for the (optional) <span 
+class="cmtt-10">BOUNDARY</span><span 
+class="cmtt-10">_WIDTH </span>array.
+Precisely, the rule is as follows. For a \(d\) dimensional grid variable, label the elements or bits by integers \(i\) from \(0\) to \(2d-1\).
+Element or bit \(i\) gets mapped to face \((-)^{i+1}e_{\lfloor i\rfloor }\), where \({}_{\lfloor \rfloor }\) designates the ‘floor’ function (greatest integer less than its
+argument), and \(e_j\) represents the ‘\(j\)-direction’ on the grid.
+</p><!--l. 331--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-90003"></a>Provided boundary conditions</h3>
+<!--l. 333--><p class="noindent" >Thorn <span 
+class="cmtt-10">Boundary </span>also provides seven standard boundary conditions, which can be applied to one, two, or three
+dimensional grid variables. The boundary conditions available are </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 337--><p class="noindent" >Scalar
+                                                                                       
+                                                                                       
+     </p></li>
+     <li class="itemize">
+     <!--l. 338--><p class="noindent" >Flat
+     </p></li>
+     <li class="itemize">
+     <!--l. 339--><p class="noindent" >Radiation
+     </p></li>
+     <li class="itemize">
+     <!--l. 340--><p class="noindent" >Copy
+     </p></li>
+     <li class="itemize">
+     <!--l. 341--><p class="noindent" >Robin
+     </p></li>
+     <li class="itemize">
+     <!--l. 342--><p class="noindent" >Static
+     </p></li>
+     <li class="itemize">
+     <!--l. 343--><p class="noindent" >None</p></li></ul>
+<!--l. 346--><p class="noindent" >Registration for each of these can be switched off by setting any of the following parameters to “no” (each
+defaults to “yes”) </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 349--><p class="noindent" ><span 
+class="cmtt-10">register</span><span 
+class="cmtt-10">_scalar</span>
+     </p></li>
+     <li class="itemize">
+     <!--l. 350--><p class="noindent" ><span 
+class="cmtt-10">register</span><span 
+class="cmtt-10">_flat</span>
+     </p></li>
+     <li class="itemize">
+     <!--l. 351--><p class="noindent" ><span 
+class="cmtt-10">register</span><span 
+class="cmtt-10">_radiation</span>
+     </p></li>
+     <li class="itemize">
+     <!--l. 352--><p class="noindent" ><span 
+class="cmtt-10">register</span><span 
+class="cmtt-10">_copy</span>
+     </p></li>
+     <li class="itemize">
+     <!--l. 353--><p class="noindent" ><span 
+class="cmtt-10">register</span><span 
+class="cmtt-10">_robin</span>
+     </p></li>
+     <li class="itemize">
+     <!--l. 354--><p class="noindent" ><span 
+class="cmtt-10">register</span><span 
+class="cmtt-10">_static</span>
+                                                                                       
+                                                                                       
+     </p></li>
+     <li class="itemize">
+     <!--l. 355--><p class="noindent" ><span 
+class="cmtt-10">register</span><span 
+class="cmtt-10">_none</span></p></li></ul>
+<!--l. 357--><p class="noindent" >This is useful if you have your own implementation of one of these boundary conditions, which you would like to
+use instead.
+</p><!--l. 361--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">3.1   </span> <a 
+ id="x1-100003.1"></a>General Comments</h4>
+<!--l. 374--><p class="noindent" >Note that the number of boundary zones, as expressed in the <span 
+class="cmtt-10">boundary</span><span 
+class="cmtt-10">_width </span>argument or the
+<span 
+class="cmtt-10">BOUNDARY</span><span 
+class="cmtt-10">_WIDTH </span>array, is taken from the total number of grid points presented by Cactus through <span 
+class="cmtt-10">cctk</span><span 
+class="cmtt-10">_lsh</span>,
+etc.
+</p><!--l. 381--><p class="noindent" >For the moment, these boundary routines may not work properly on grid arrays. Please contact<br 
+class="newline" /><span 
+class="cmtt-10">cactusmaint@cactuscode.org </span>if you run into trouble.
+</p><!--l. 386--><p class="noindent" >
+</p>
+<h5 class="subsubsectionHead"><span class="titlemark">3.1.1   </span> <a 
+ id="x1-110003.1.1"></a>Old interface</h5>
+<!--l. 388--><p class="noindent" >The old, direct function call interface to these boundary conditions is still available, and is documented here,
+though it is deprecated and will be removed at some point in the future. It is provided for a number of
+reasons, the most significant of which is to provide compatibility with existing codes. Another reason
+why you might choose to use the old interface is if you have difficulty doing your iterations with
+the Cactus scheduler, and thus have trouble scheduling the <span 
+class="cmtt-10">ApplyBCs </span>schedule group everywhere
+you need boundary conditions applied. A third reason may be that you need face specific calls
+immediately.
+</p><!--l. 399--><p class="noindent" >You should not run into any special difficulty mixing the old and new interface, just be aware of the order in
+which boundary conditions, and code that depends upon them, are executed.
+</p><!--l. 403--><p class="noindent" >Note that if you choose to use the old interface for some boundary conditions, then the symmetry conditions will
+not know to apply themselves to those grid variables for which you use the old interface. To get around this
+difficulty, simply select these grid variables for the “None” boundary condition, and be sure that <span 
+class="cmtt-10">ApplyBCs </span>is
+scheduled in an appropriate place.
+</p><!--l. 410--><p class="noindent" >All routines can be called by </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 412--><p class="noindent" ><span 
+class="cmti-10">variable name</span>: (<span 
+class="cmtt-10">&#x003C;implementation&#x003E;:&#x003C;var</span><span 
+class="cmtt-10">_name&#x003E; </span>) Suffix: <span 
+class="cmtt-10">VN</span>; apply the boundary condition to the
+     variable with the specified name.
+                                                                                       
+                                                                                       
+     </p></li>
+     <li class="itemize">
+     <!--l. 415--><p class="noindent" ><span 
+class="cmti-10">group name</span>: (<span 
+class="cmtt-10">&#x003C;implementation&#x003E;:&#x003C;group</span><span 
+class="cmtt-10">_name&#x003E;</span>) Suffix: <span 
+class="cmtt-10">GN</span>; apply the boundary condition to all
+     variables in the group.
+     </p></li>
+     <li class="itemize">
+     <!--l. 417--><p class="noindent" ><span 
+class="cmti-10">variable index</span>: Suffix: <span 
+class="cmtt-10">VI</span>; apply the boundary condition to the variable with the specified variable
+     index.
+     </p></li>
+     <li class="itemize">
+     <!--l. 419--><p class="noindent" ><span 
+class="cmti-10">group index</span>: Suffix: <span 
+class="cmtt-10">GI </span>apply the boundary condition to all variables in the group with the specified
+     group index.</p></li></ul>
+<!--l. 423--><p class="noindent" >For the boundary conditions in individual coordinate directions, use<br 
+class="newline" /><!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-6" class="tabular" 
+ 
+><colgroup id="TBL-6-1g"><col 
+id="TBL-6-1" /><col 
+id="TBL-6-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-6-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-1"  
+class="td11"> <span 
+class="cmtt-10">dir=-1 </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-2"  
+class="td11"> to apply at \(x=x_{min}\)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-6-2-1"  
+class="td11"> <span 
+class="cmtt-10">dir= 1  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-2-2"  
+class="td11"> to apply at \(x=x_{max}\)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-1"  
+class="td11"> <span 
+class="cmtt-10">dir=-2  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-2"  
+class="td11"> to apply at \(y=y_{min}\)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-6-4-1"  
+class="td11"> <span 
+class="cmtt-10">dir= 2  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-4-2"  
+class="td11"> to apply at \(y=y_{max}\)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-5-"><td  style="white-space:nowrap; text-align:left;" id="TBL-6-5-1"  
+class="td11"> <span 
+class="cmtt-10">dir=-3  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-5-2"  
+class="td11"> to apply at \(z=z_{min}\)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-6-"><td  style="white-space:nowrap; text-align:left;" id="TBL-6-6-1"  
+class="td11"> <span 
+class="cmtt-10">dir= 3  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-6-2"  
+class="td11"> to apply at \(z=z_{max}\)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-7-"><td  style="white-space:nowrap; text-align:left;" id="TBL-6-7-1"  
+class="td11">         </td>
+</tr></table>                                                                                       </div>
+<!--l. 433--><p class="noindent" >Prototypes for each of the functions described for the old interface are included in the header file <span 
+class="cmtt-10">Boundary.h</span>.
+Please add
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-6">
+uses include header: Boundary.h
+</pre>
+<!--l. 437--><p class="nopar" > to your thorn’s <span 
+class="cmtt-10">interface.ccl </span>to use this header file in your C/C++ source files.
+</p><!--l. 441--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-120004"></a>Scalar Boundary Condition</h3>
+<!--l. 443--><p class="noindent" >A scalar boundary condition means that the value of the given field or fields at the boundary is set to a
+given scalar value, for example zero. The scalar boundary condition is registered under the name
+“Scalar”.
+</p><!--l. 447--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">4.1   </span> <a 
+ id="x1-130004.1"></a>Additional arguments</h4>
+<!--l. 449--><p class="noindent" >A table passed to the scalar boundary condition may contain the following additional arguments:<br 
+class="newline" /> <!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-7" class="tabular" 
+ 
+><colgroup id="TBL-7-1g"><col 
+id="TBL-7-1" /></colgroup><colgroup id="TBL-7-2g"><col 
+id="TBL-7-2" /></colgroup><colgroup id="TBL-7-3g"><col 
+id="TBL-7-3" /></colgroup><colgroup id="TBL-7-4g"><col 
+id="TBL-7-4" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-1"  
+class="td11"> <span 
+class="cmbx-10">key                      </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-2"  
+class="td11"> <span 
+class="cmbx-10">variable type     </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-3"  
+class="td11"> <span 
+class="cmbx-10">description                 </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-4"  
+class="td11"> <span 
+class="cmbx-10">default value  </span></td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-7-2-1"  
+class="td11"> SCALAR                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-2-2"  
+class="td11"> CCTK_REAL       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-2-3"  
+class="td11"> the scalar value                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-2-4"  
+class="td11"> 0.0                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-7-3-1"  
+class="td11"> BOUNDARY_WIDTH  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-3-2"  
+class="td11"> CCTK_INT array  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-3-3"  
+class="td11"> stencil width for each face  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-3-4"  
+class="td11"> n/a                </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-7-4-1"  
+class="td11">                     </td>
+</tr></table>                                                                                       </div>
+<!--l. 460--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">4.2   </span> <a 
+ id="x1-140004.2"></a>Old interface</h4>
+<!--l. 462--><p class="noindent" >
+</p>
+<h5 class="likesubsubsectionHead"><a 
+ id="x1-15000"></a>Calling from C:</h5>
+<!--l. 464--><p class="noindent" ><span 
+class="cmbx-10">All Coordinate Directions:</span>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-7">
+int ierr = BndScalarVN(cGH *cctkGH, int *stencil_size,
+                       CCTK_REAL var0, char *variable_name)
+int ierr = BndScalarGN(cGH *cctkGH, int *stencil_size,
+                       CCTK_REAL var0, char *group_name)
+int ierr = BndScalarVI(cGH *cctkGH, int *stencil_size,
+                       CCTK_REAL var0, int group_index)
+int ierr = BndScalarGI(cGH *cctkGH, int *stencil_size,
+                       CCTK_REAL var0, int variable_index)
+</pre>
+<!--l. 474--><p class="nopar" >
+</p><!--l. 476--><p class="noindent" ><span 
+class="cmbx-10">Individual Coordinate Directions:</span>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-8">
+int ierr = BndScalarDirVN(cGH *cctkGH, int stencil, int dir,
+                       CCTK_REAL var0, char *variable_name)
+int ierr = BndScalarDirGN(cGH *cctkGH, int stencil, int dir,
+                       CCTK_REAL var0, char *group_name)
+int ierr = BndScalarDirVI(cGH *cctkGH, int stencil, int dir,
+                       CCTK_REAL var0, int group_index)
+int ierr = BndScalarDirGI(cGH *cctkGH, int stencil, int dir,
+                       CCTK_REAL var0, int variable_index)
+</pre>
+<!--l. 487--><p class="nopar" >
+</p><!--l. 489--><p class="noindent" >
+</p>
+<h5 class="likesubsubsectionHead"><a 
+ id="x1-16000"></a>Calling from Fortran:</h5>
+<!--l. 490--><p class="noindent" ><span 
+class="cmbx-10">All Coordinate Directions:</span>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-9">
+call BndScalarVN(ierr, cctkGH, stencil_size, var0, variable_name)
+call BndScalarGN(ierr, cctkGH, stencil_size, var0, group_name)
+call BndScalarVI(ierr, cctkGH, stencil_size, var0, variable_index)
+call BndScalarGI(ierr, cctkGH, stencil_size, var0, group_index)
+</pre>
+<!--l. 496--><p class="nopar" >
+</p><!--l. 498--><p class="noindent" ><span 
+class="cmbx-10">Individual Coordinate Directions:</span>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-10">
+call BndScalarDirVN(ierr, cctkGH, stencil, dir, var0, variable_name)
+call BndScalarDirGN(ierr, cctkGH, stencil, dir, var0, group_name)
+call BndScalarDirVI(ierr, cctkGH, stencil, dir, var0, variable_index)
+call BndScalarDirGI(ierr, cctkGH, stencil, dir, var0, group_index)
+</pre>
+<!--l. 505--><p class="nopar" > where
+</p>
+<div class="tabular"> <table id="TBL-8" class="tabular" 
+ 
+><colgroup id="TBL-8-1g"><col 
+id="TBL-8-1" /><col 
+id="TBL-8-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-8-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-8-1-1"  
+class="td11"> <span 
+class="cmtt-10">integer      </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-1-2"  
+class="td11"> <span 
+class="cmtt-10">ierr              </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-8-2-1"  
+class="td11"> <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_POINTER  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-2-2"  
+class="td11"> <span 
+class="cmtt-10">cctkGH            </span></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-8-3-1"  
+class="td11"> <span 
+class="cmtt-10">integer </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-3-2"  
+class="td11"> <span 
+class="cmtt-10">dir</span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-8-4-1"  
+class="td11"> <span 
+class="cmtt-10">integer       </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-4-2"  
+class="td11"> <span 
+class="cmtt-10">stencil           </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-5-"><td  style="white-space:nowrap; text-align:left;" id="TBL-8-5-1"  
+class="td11"> <span 
+class="cmtt-10">integer       </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-5-2"  
+class="td11"> <span 
+class="cmtt-10">stencil</span><span 
+class="cmtt-10">_size(dim) </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-6-"><td  style="white-space:nowrap; text-align:left;" id="TBL-8-6-1"  
+class="td11"> <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_REAL     </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-6-2"  
+class="td11"> <span 
+class="cmtt-10">var0              </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-7-"><td  style="white-space:nowrap; text-align:left;" id="TBL-8-7-1"  
+class="td11"> <span 
+class="cmtt-10">character*(*) </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-7-2"  
+class="td11"> <span 
+class="cmtt-10">variable</span><span 
+class="cmtt-10">_name     </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-8-"><td  style="white-space:nowrap; text-align:left;" id="TBL-8-8-1"  
+class="td11"> <span 
+class="cmtt-10">character*(*) </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-8-2"  
+class="td11"> <span 
+class="cmtt-10">group</span><span 
+class="cmtt-10">_name        </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-9-"><td  style="white-space:nowrap; text-align:left;" id="TBL-8-9-1"  
+class="td11"> <span 
+class="cmtt-10">integer       </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-9-2"  
+class="td11"> <span 
+class="cmtt-10">variable</span><span 
+class="cmtt-10">_index    </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-10-"><td  style="white-space:nowrap; text-align:left;" id="TBL-8-10-1"  
+class="td11"> <span 
+class="cmtt-10">integer       </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-10-2"  
+class="td11"> <span 
+class="cmtt-10">group</span><span 
+class="cmtt-10">_index       </span></td>
+</tr></table>                                                                                       </div>
+<!--l. 523--><p class="noindent" >
+</p>
+<h5 class="likesubsubsectionHead"><a 
+ id="x1-17000"></a>Arguments</h5>
+<div class="tabular"> <table id="TBL-9" class="tabular" 
+ 
+><colgroup id="TBL-9-1g"><col 
+id="TBL-9-1" /><col 
+id="TBL-9-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-9-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-9-1-1"  
+class="td11"> <span 
+class="cmtt-10">ierr           </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-1-2"  
+class="td11"> Return value, negative value indicates the boundary condition was not successfully applied  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-9-2-1"  
+class="td11"> <span 
+class="cmtt-10">cctkGH         </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-2-2"  
+class="td11"> Grid hierarchy pointer                                                                                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-9-3-1"  
+class="td11"> <span 
+class="cmtt-10">var0           </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-3-2"  
+class="td11"> Scalar value to apply (For a complex grid function, this is the real part,                           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-9-4-1"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-4-2"  
+class="td11"> the imaginary part is set to zero.)                                                                             </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-5-"><td  style="white-space:nowrap; text-align:left;" id="TBL-9-5-1"  
+class="td11"> <span 
+class="cmtt-10">dir            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-5-2"  
+class="td11"> Coordinate direction in which to apply boundary condition                                           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-6-"><td  style="white-space:nowrap; text-align:left;" id="TBL-9-6-1"  
+class="td11"> <span 
+class="cmtt-10">stencil</span><span 
+class="cmtt-10">_size   </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-6-2"  
+class="td11"> Array with dimension of the grid function, containing the stencil width                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-7-"><td  style="white-space:nowrap; text-align:left;" id="TBL-9-7-1"  
+class="td11"> <span 
+class="cmtt-10">variable</span><span 
+class="cmtt-10">_name  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-7-2"  
+class="td11"> Name of the variable                                                                                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-8-"><td  style="white-space:nowrap; text-align:left;" id="TBL-9-8-1"  
+class="td11"> <span 
+class="cmtt-10">group</span><span 
+class="cmtt-10">_name     </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-8-2"  
+class="td11"> Name of the group                                                                                                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-9-"><td  style="white-space:nowrap; text-align:left;" id="TBL-9-9-1"  
+class="td11"> <span 
+class="cmtt-10">variable</span><span 
+class="cmtt-10">_index </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-9-2"  
+class="td11"> Variable index                                                                                                      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-10-"><td  style="white-space:nowrap; text-align:left;" id="TBL-9-10-1"  
+class="td11"> <span 
+class="cmtt-10">group</span><span 
+class="cmtt-10">_index    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-10-2"  
+class="td11"> Group index                                                                                                         </td>
+</tr></table>                                                                                                  </div>
+<!--l. 539--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-180005"></a>Flat Boundary Condition</h3>
+<!--l. 541--><p class="noindent" >A flat boundary condition means that the value of the given field or fields at the boundary is copied from the
+value one grid point in, in any direction. For example, for a stencil width of one, the boundary value of phi
+<span 
+class="cmtt-10">phi(nx,j,k)</span>, on the positive x-boundary will be copied from <span 
+class="cmtt-10">phi(nx-1,j,k)</span>. The flat boundary condition is
+registered under the name “Flat”.
+                                                                                       
+                                                                                       
+</p><!--l. 547--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">5.1   </span> <a 
+ id="x1-190005.1"></a>Additional arguments</h4>
+<!--l. 549--><p class="noindent" >A table passed to the flat boundary condition may contain the following additional arguments:<br 
+class="newline" /> <!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-10" class="tabular" 
+ 
+><colgroup id="TBL-10-1g"><col 
+id="TBL-10-1" /></colgroup><colgroup id="TBL-10-2g"><col 
+id="TBL-10-2" /></colgroup><colgroup id="TBL-10-3g"><col 
+id="TBL-10-3" /></colgroup><colgroup id="TBL-10-4g"><col 
+id="TBL-10-4" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-10-1-1"  
+class="td11"> <span 
+class="cmbx-10">key                      </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-1-2"  
+class="td11"> <span 
+class="cmbx-10">variable type     </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-1-3"  
+class="td11"> <span 
+class="cmbx-10">description                 </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-1-4"  
+class="td11"> <span 
+class="cmbx-10">default value  </span></td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-10-2-1"  
+class="td11"> BOUNDARY_WIDTH  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-2-2"  
+class="td11"> CCTK_INT array  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-2-3"  
+class="td11"> stencil width for each face  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-2-4"  
+class="td11"> n/a                </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-10-3-1"  
+class="td11">                     </td>
+</tr></table>                                                                                       </div>
+<!--l. 559--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">5.2   </span> <a 
+ id="x1-200005.2"></a>Old interface</h4>
+<!--l. 561--><p class="noindent" >
+</p>
+<h5 class="likesubsubsectionHead"><a 
+ id="x1-21000"></a>Calling from C:</h5>
+<!--l. 563--><p class="noindent" ><span 
+class="cmbx-10">All Coordinate Directions:</span>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-11">
+int ierr = BndFlatVN(cGH *cctkGH, int *stencil_size, char *variable_name)
+int ierr = BndFlatGN(cGH *cctkGH, int *stencil_size, char *group_name)
+int ierr = BndFlatVI(cGH *cctkGH, int *stencil_size, int variable_index)
+int ierr = BndFlatGI(cGH *cctkGH, int *stencil_size, int group_index)
+</pre>
+<!--l. 569--><p class="nopar" >
+</p><!--l. 571--><p class="noindent" ><span 
+class="cmbx-10">Individual Coordinate Directions:</span>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-12">
+int ierr = BndFlatDirVN(cGH *cctkGH, int stencil, int dir, char *variable_name)
+int ierr = BndFlatDirGN(cGH *cctkGH, int stencil, int dir, char *group_name)
+int ierr = BndFlatDirVI(cGH *cctkGH, int stencil, int dir, int variable_index)
+int ierr = BndFlatDirGI(cGH *cctkGH, int stencil, int dir, int group_index)
+</pre>
+<!--l. 578--><p class="nopar" >
+</p><!--l. 580--><p class="noindent" >
+</p>
+<h5 class="likesubsubsectionHead"><a 
+ id="x1-22000"></a>Calling from Fortran:</h5>
+<!--l. 582--><p class="noindent" ><span 
+class="cmbx-10">All Coordinate Directions:</span>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-13">
+call BndFlatVN(ierr, cctkGH, stencil_array, variable_name)
+call BndFlatGN(ierr, cctkGH, stencil_array, group_name)
+call BndFlatVI(ierr, cctkGH, stencil_array, variable_index)
+call BndFlatGI(ierr, cctkGH, stencil_array, group_index)
+</pre>
+<!--l. 588--><p class="nopar" >
+</p><!--l. 590--><p class="noindent" ><span 
+class="cmbx-10">Individual Coordinate Directions:</span>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-14">
+call BndFlatDirVN(ierr, cctkGH, stencil, dir, variable_name)
+call BndFlatDirGN(ierr, cctkGH, stencil, dir, group_name)
+call BndFlatDirVI(ierr, cctkGH, stencil, dir, variable_index)
+call BndFlatDirGI(ierr, cctkGH, stencil, dir, group_index)
+</pre>
+<!--l. 597--><p class="nopar" > where
+</p>
+<div class="tabular"> <table id="TBL-11" class="tabular" 
+ 
+><colgroup id="TBL-11-1g"><col 
+id="TBL-11-1" /><col 
+id="TBL-11-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-11-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-11-1-1"  
+class="td11"> <span 
+class="cmtt-10">integer      </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-1-2"  
+class="td11"> <span 
+class="cmtt-10">ierr               </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-11-2-1"  
+class="td11"> <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_POINTER  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-2-2"  
+class="td11"> <span 
+class="cmtt-10">cctkGH             </span></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-11-3-1"  
+class="td11"> <span 
+class="cmtt-10">integer </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-3-2"  
+class="td11"> <span 
+class="cmtt-10">dir</span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-11-4-1"  
+class="td11"> <span 
+class="cmtt-10">integer       </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-4-2"  
+class="td11"> <span 
+class="cmtt-10">stencil            </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-5-"><td  style="white-space:nowrap; text-align:left;" id="TBL-11-5-1"  
+class="td11"> <span 
+class="cmtt-10">integer       </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-5-2"  
+class="td11"> <span 
+class="cmtt-10">stencil</span><span 
+class="cmtt-10">_array(dim) </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-6-"><td  style="white-space:nowrap; text-align:left;" id="TBL-11-6-1"  
+class="td11"> <span 
+class="cmtt-10">character*(*) </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-6-2"  
+class="td11"> <span 
+class="cmtt-10">variable</span><span 
+class="cmtt-10">_name      </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-7-"><td  style="white-space:nowrap; text-align:left;" id="TBL-11-7-1"  
+class="td11"> <span 
+class="cmtt-10">character*(*) </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-7-2"  
+class="td11"> <span 
+class="cmtt-10">group</span><span 
+class="cmtt-10">_name         </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-8-"><td  style="white-space:nowrap; text-align:left;" id="TBL-11-8-1"  
+class="td11"> <span 
+class="cmtt-10">integer       </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-8-2"  
+class="td11"> <span 
+class="cmtt-10">variable</span><span 
+class="cmtt-10">_index     </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-9-"><td  style="white-space:nowrap; text-align:left;" id="TBL-11-9-1"  
+class="td11"> <span 
+class="cmtt-10">integer       </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-9-2"  
+class="td11"> <span 
+class="cmtt-10">group</span><span 
+class="cmtt-10">_index        </span></td>
+</tr></table>                                                                                       </div>
+<!--l. 614--><p class="noindent" >
+</p>
+<h5 class="likesubsubsectionHead"><a 
+ id="x1-23000"></a>Arguments</h5>
+<div class="tabular"> <table id="TBL-12" class="tabular" 
+ 
+><colgroup id="TBL-12-1g"><col 
+id="TBL-12-1" /><col 
+id="TBL-12-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-12-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-12-1-1"  
+class="td11"> <span 
+class="cmtt-10">ierr           </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-1-2"  
+class="td11"> Return value, negative value indicates the boundary condition was not successfully applied  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-12-2-1"  
+class="td11"> <span 
+class="cmtt-10">cctkGH         </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-2-2"  
+class="td11"> Grid hierarchy pointer                                                                                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-12-3-1"  
+class="td11"> <span 
+class="cmtt-10">dir            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-3-2"  
+class="td11"> Coordinate direction in which to apply boundary condition                                           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-12-4-1"  
+class="td11"> <span 
+class="cmtt-10">stencil</span><span 
+class="cmtt-10">_size   </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-4-2"  
+class="td11"> Array with dimension of the grid function, containing the stencil width                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-5-"><td  style="white-space:nowrap; text-align:left;" id="TBL-12-5-1"  
+class="td11"> <span 
+class="cmtt-10">variable</span><span 
+class="cmtt-10">_name  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-5-2"  
+class="td11"> Name of the variable                                                                                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-6-"><td  style="white-space:nowrap; text-align:left;" id="TBL-12-6-1"  
+class="td11"> <span 
+class="cmtt-10">group</span><span 
+class="cmtt-10">_name     </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-6-2"  
+class="td11"> Name of the group                                                                                                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-7-"><td  style="white-space:nowrap; text-align:left;" id="TBL-12-7-1"  
+class="td11"> <span 
+class="cmtt-10">variable</span><span 
+class="cmtt-10">_index </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-7-2"  
+class="td11"> Variable index                                                                                                      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-8-"><td  style="white-space:nowrap; text-align:left;" id="TBL-12-8-1"  
+class="td11"> <span 
+class="cmtt-10">group</span><span 
+class="cmtt-10">_index    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-8-2"  
+class="td11"> Group index                                                                                                         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-9-"><td  style="white-space:nowrap; text-align:left;" id="TBL-12-9-1"  
+class="td11">                </td>
+</tr></table>                                                                                                  </div>
+<!--l. 628--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">6   </span> <a 
+ id="x1-240006"></a>Radiation Boundary Condition</h3>
+<!--l. 630--><p class="noindent" >This is a two level scheme. Grid functions are given for the current time level (to which the BC
+is applied) as well as grid functions from a past timelevel which are needed for constructing the
+boundary condition. The grid function of the past time level needs to have the same geometry.
+Currently radiative boundary conditions can only be applied with a stencil width of one in each
+direction.
+</p><!--l. 639--><p class="noindent" >The radiative boundary condition that is implemented is \begin {equation}  \label {Boundary/eq:eqrad} f = f_0 + \frac {u(r-vt)}{r}+\frac {h(r+vt)}{r}  \end {equation}<a 
+ id="x1-24001r1"></a> That is, outgoing radial waves with a \(1/r\) fall off, and the
+                                                                                       
+                                                                                       
+correct asymptotic value \(f_0\) are assumed, including the possibility of incoming waves (these incoming waves should
+be modeled somehow).
+</p><!--l. 649--><p class="noindent" >Condition <a 
+href="#x1-24001r1">1<!--tex4ht:ref: Boundary/eq:eqrad --></a> above leads to the differential equation: \begin {equation}  \frac {x^i}{r}\frac {\partial f}{\partial t} + v \frac {\partial f}{\partial x^i} +\frac {v x^i}{r^2} (f-f_0) = H \frac {v x^i}{r^2}  \end {equation}<a 
+ id="x1-24002r2"></a> where \(x^i\) is the normal direction to the given boundaries, and
+\(H = 2 dh(s)/ds\).
+</p><!--l. 659--><p class="noindent" >At a given boundary only the derivatives in the normal direction are considered. Notice that \(u(r-vt)\) has disappeared,
+but we still do not know the value of \(H\).
+</p><!--l. 663--><p class="noindent" >To get \(H\) we do the following: The expression is evaluated one point in from the boundary and solved for \(H\) there.
+Now we need a way of extrapolating \(H\) to the boundary. For this, assume that \(H\) falls off as a power law: \begin {equation}  H = \frac {k}{r^n} \qquad \mbox {which gives} \qquad d_i H = - n \frac {H}{r}  \end {equation}<a 
+ id="x1-24003r3"></a> The value
+of \(n\) is defined by the parameter <span 
+class="cmtt-10">radpower</span>. If this parameter is negative, \(H\) is forced to be zero (this corresponds to
+pure outgoing waves and is the default).
+</p><!--l. 674--><p class="noindent" >The observed behavior is the following: Using \(H=0\) is very stable, but has a very bad initial transient. Taking \(n\) to be 0
+or positive improves the initial behavior considerably, but introduces a drift that can kill an evolution at very
+late times. Empirically, the best value found so far is \(n=2\), for which the initial behavior is very nice, and the late
+time drift is quite small.
+</p><!--l. 682--><p class="noindent" >Another problem with this condition is that it does not use the physical characteristic speed, but rather it
+assumes a wave speed of \(v\), so the boundaries should be out in the region where the characteristic speed is
+constant. Notice that this speed does not have to be 1.
+</p><!--l. 688--><p class="noindent" >The radiation boundary condition is registered under the name “Radiation”.
+</p><!--l. 691--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">6.1   </span> <a 
+ id="x1-250006.1"></a>Additional arguments</h4>
+<!--l. 693--><p class="noindent" >A table passed to the radiative boundary condition may contain the following additional arguments:<br 
+class="newline" /> <!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-13" class="tabular" 
+ 
+><colgroup id="TBL-13-1g"><col 
+id="TBL-13-1" /></colgroup><colgroup id="TBL-13-2g"><col 
+id="TBL-13-2" /></colgroup><colgroup id="TBL-13-3g"><col 
+id="TBL-13-3" /></colgroup><colgroup id="TBL-13-4g"><col 
+id="TBL-13-4" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-13-1-1"  
+class="td11"> <span 
+class="cmbx-10">key                             </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-1-2"  
+class="td11"> <span 
+class="cmbx-10">variable type                      </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-1-3"  
+class="td11"> <span 
+class="cmbx-10">description                 </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-1-4"  
+class="td11"> <span 
+class="cmbx-10">default value               </span></td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-13-2-1"  
+class="td11"> LIMIT                              </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-2-2"  
+class="td11"> CCTK_REAL                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-2-3"  
+class="td11"> \(f_0\)                       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-2-4"  
+class="td11"> 0.0                                 </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-13-3-1"  
+class="td11">
+ PREVIOUS_TIME_LEVEL  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-3-2"  
+class="td11"> CCTK_INT or CCTK_STRING  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-3-3"  
+class="td11"> GV which holds the          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-3-4"  
+class="td11"> Cactus previous time level  </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-13-4-1"  
+class="td11">
+                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-4-2"  
+class="td11">                             </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-4-3"  
+class="td11"> previous time level           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-4-4"  
+class="td11">                        </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-5-"><td  style="white-space:nowrap; text-align:left;" id="TBL-13-5-1"  
+class="td11">
+ SPEED                             </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-5-2"  
+class="td11"> CCTK_REAL                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-5-3"  
+class="td11"> wave speed \(v\)                    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-5-4"  
+class="td11"> 1.0                                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-6-"><td  style="white-space:nowrap; text-align:left;" id="TBL-13-6-1"  
+class="td11"> BOUNDARY_WIDTH         </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-6-2"  
+class="td11"> CCTK_INT array                     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-6-3"  
+class="td11"> stencil width for each face  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-6-4"  
+class="td11"> n/a                                </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-7-"><td  style="white-space:nowrap; text-align:left;" id="TBL-13-7-1"  
+class="td11">                          </td>
+</tr></table>                                                                                                                </div><br 
+class="newline" /> The default behavior is to use the Cactus previous time level, as defined in the <span 
+class="cmtt-10">interface.ccl </span>file, for the grid
+variable requested for the radiative boundary condition. The “PREVIOUS_TIME_LEVEL” key is provided for
+backward compatibility only, and will be deprecated in the future. The corresponding value may be either a
+<span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_INT</span>, which will be interpreted as the index of a grid variable holding the previous time level, or a
+<span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_STRING</span>, interpreted as holding the name. Note that this will not work when selecting an entire variable
+group (with more than one member) with one call to <span 
+class="cmtt-10">Boundary</span><span 
+class="cmtt-10">_SelectGroupForBC*</span>, as each member will have
+a separate previous time level, and thus require a separate table. Please make your life easier by using Cactus
+time levels…
+<!--l. 721--><p class="noindent" >
+                                                                                       
+                                                                                       
+</p>
+<h4 class="subsectionHead"><span class="titlemark">6.2   </span> <a 
+ id="x1-260006.2"></a>Old interface</h4>
+<!--l. 723--><p class="noindent" >
+</p>
+<h5 class="likesubsubsectionHead"><a 
+ id="x1-27000"></a>Calling from C:</h5>
+<!--l. 725--><p class="noindent" ><span 
+class="cmbx-10">All Coordinate Directions:</span>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-15">
+int ierr = BndRadiativeVN(cGH *cctkGH, int *stencil_size,
+                          CCTK_REAL limit, CCTK_REAL speed,
+                          char *variable_name, char *variable_name_past)
+int ierr = BndRadiativeGN(cGH *cctkGH, int *stencil_size,
+                          CCTK_REAL limit, CCTK_REAL speed,
+                          char *group_name, char *group_name_past)
+int ierr = BndRadiativeVI(cGH *cctkGH, int *stencil_size,
+                          CCTK_REAL limit, CCTK_REAL speed,
+                          int variable_index, int variable_index_past)
+int ierr = BndRadiativeGI(cGH *cctkGH, int *stencil_size,
+                          CCTK_REAL limit, CCTK_REAL speed,
+                          int group_index, int group_index_past)
+</pre>
+<!--l. 739--><p class="nopar" >
+</p><!--l. 741--><p class="noindent" ><span 
+class="cmbx-10">Individual Coordinate Directions:</span>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-16">
+int ierr = BndRadiativeDirVN(cGH *cctkGH, int stencil, int dir,
+                             CCTK_REAL limit, CCTK_REAL speed,
+                             char *variable_name, char *variable_name_past)
+int ierr = BndRadiativeDirGN(cGH *cctkGH, int *stencil, int dir,
+                             CCTK_REAL limit, CCTK_REAL speed,
+                             char *group_name, char *group_name_past)
+int ierr = BndRadiativeDirVI(cGH *cctkGH, int *stencil, int dir,
+                             CCTK_REAL limit, CCTK_REAL speed,
+                             int variable_index, int variable_index_past)
+int ierr = BndRadiativeDirGI(cGH *cctkGH, int *stencil, int dir,
+                             CCTK_REAL limit, CCTK_REAL speed,
+                             int group_index, int group_index_past)
+</pre>
+<!--l. 756--><p class="nopar" >
+</p><!--l. 758--><p class="noindent" >
+</p>
+<h5 class="likesubsubsectionHead"><a 
+ id="x1-28000"></a>Calling from Fortran:</h5>
+<!--l. 760--><p class="noindent" ><span 
+class="cmbx-10">All Coordinate Directions:</span>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-17">
+call BndRadiativeVN(ierr, cctkGH, stencil_size, speed, limit,
+                    variable_name, variable_name_past)
+call BndRadiativeGN(ierr, cctkGH, stencil_size, speed, limit,
+                    group_name, group_name_past)
+call BndRadiativeVI(ierr, cctkGH, stencil_size, speed, limit,
+                    variable_index, variable_index_past)
+call BndRadiativeGI(ierr, cctkGH, stencil_size, speed, limit,
+                    group_index, group_index_past)
+</pre>
+<!--l. 770--><p class="nopar" >
+</p><!--l. 772--><p class="noindent" ><span 
+class="cmbx-10">Individual Coordinate Directions:</span>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-18">
+call BndRadiativeDirVN(ierr, cctkGH, stencil, dir, speed, limit,
+                       variable_name, variable_name_past)
+call BndRadiativeDirGN(ierr, cctkGH, stencil, dir, speed, limit,
+                       group_name, group_name_past)
+call BndRadiativeDirVI(ierr, cctkGH, stencil, dir, speed, limit,
+                       variable_index, variable_index_past)
+call BndRadiativeDirGI(ierr, cctkGH, stencil, dir, speed, limit,
+                       group_index, group_index_past)
+</pre>
+<!--l. 783--><p class="nopar" > where
+</p>
+<div class="tabular"> <table id="TBL-14" class="tabular" 
+ 
+><colgroup id="TBL-14-1g"><col 
+id="TBL-14-1" /><col 
+id="TBL-14-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-14-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-14-1-1"  
+class="td11"> <span 
+class="cmtt-10">integer      </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-1-2"  
+class="td11"> <span 
+class="cmtt-10">ierr               </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-14-2-1"  
+class="td11"> <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_POINTER  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-2-2"  
+class="td11"> <span 
+class="cmtt-10">cctkGH             </span></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-14-3-1"  
+class="td11"> <span 
+class="cmtt-10">integer </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-3-2"  
+class="td11"> <span 
+class="cmtt-10">dir</span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-14-4-1"  
+class="td11"> <span 
+class="cmtt-10">integer       </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-4-2"  
+class="td11"> <span 
+class="cmtt-10">stencil            </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-5-"><td  style="white-space:nowrap; text-align:left;" id="TBL-14-5-1"  
+class="td11"> <span 
+class="cmtt-10">integer       </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-5-2"  
+class="td11"> <span 
+class="cmtt-10">stencil</span><span 
+class="cmtt-10">_array(dim) </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-6-"><td  style="white-space:nowrap; text-align:left;" id="TBL-14-6-1"  
+class="td11"> <span 
+class="cmtt-10">character*(*) </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-6-2"  
+class="td11"> <span 
+class="cmtt-10">variable</span><span 
+class="cmtt-10">_name      </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-7-"><td  style="white-space:nowrap; text-align:left;" id="TBL-14-7-1"  
+class="td11"> <span 
+class="cmtt-10">character*(*) </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-7-2"  
+class="td11"> <span 
+class="cmtt-10">group</span><span 
+class="cmtt-10">_name         </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-8-"><td  style="white-space:nowrap; text-align:left;" id="TBL-14-8-1"  
+class="td11"> <span 
+class="cmtt-10">integer       </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-8-2"  
+class="td11"> <span 
+class="cmtt-10">variable</span><span 
+class="cmtt-10">_index     </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-9-"><td  style="white-space:nowrap; text-align:left;" id="TBL-14-9-1"  
+class="td11"> <span 
+class="cmtt-10">integer       </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-9-2"  
+class="td11"> <span 
+class="cmtt-10">group</span><span 
+class="cmtt-10">_index        </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-10-"><td  style="white-space:nowrap; text-align:left;" id="TBL-14-10-1"  
+class="td11"> <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_REAL     </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-10-2"  
+class="td11"> <span 
+class="cmtt-10">speed              </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-11-"><td  style="white-space:nowrap; text-align:left;" id="TBL-14-11-1"  
+class="td11"> <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_REAL     </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-11-2"  
+class="td11"> <span 
+class="cmtt-10">limit              </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-12-"><td  style="white-space:nowrap; text-align:left;" id="TBL-14-12-1"  
+class="td11">               </td>
+</tr></table>                                                                                       </div>
+<!--l. 802--><p class="noindent" >
+</p>
+<h5 class="likesubsubsectionHead"><a 
+ id="x1-29000"></a>Arguments</h5>
+<div class="tabular"> <table id="TBL-15" class="tabular" 
+ 
+><colgroup id="TBL-15-1g"><col 
+id="TBL-15-1" /><col 
+id="TBL-15-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-15-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-15-1-1"  
+class="td11"> <span 
+class="cmtt-10">ierr                </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-1-2"  
+class="td11"> return value, operation failed when return value <span 
+class="cmti-10">negative                              </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-15-2-1"  
+class="td11"> <span 
+class="cmtt-10">cctkGH              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-2-2"  
+class="td11"> grid hierarchy pointer                                                                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-15-3-1"  
+class="td11"> <span 
+class="cmtt-10">stencil</span><span 
+class="cmtt-10">_size(dim)   </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-3-2"  
+class="td11"> array of size <span 
+class="cmtt-10">dim </span>(dimension of the grid function).                                         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-15-4-1"  
+class="td11">                     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-4-2"  
+class="td11"> To how many points from the outer boundary to apply the boundary condition.  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-5-"><td  style="white-space:nowrap; text-align:left;" id="TBL-15-5-1"  
+class="td11"> <span 
+class="cmtt-10">speed               </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-5-2"  
+class="td11"> wave speed used for boundary condition (\(v\))                                                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-6-"><td  style="white-space:nowrap; text-align:left;" id="TBL-15-6-1"  
+class="td11"> <span 
+class="cmtt-10">limit               </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-6-2"  
+class="td11"> asymptotic value of function at infinity (\(f_0\))                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-7-"><td  style="white-space:nowrap; text-align:left;" id="TBL-15-7-1"  
+class="td11"> <span 
+class="cmtt-10">variable</span><span 
+class="cmtt-10">_name       </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-7-2"  
+class="td11"> the name of the grid function to which the boundary condition will be applied    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-8-"><td  style="white-space:nowrap; text-align:left;" id="TBL-15-8-1"  
+class="td11"> <span 
+class="cmtt-10">variable</span><span 
+class="cmtt-10">_name</span><span 
+class="cmtt-10">_past  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-8-2"  
+class="td11"> The name of the grid function containing the values on the past time level,        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-9-"><td  style="white-space:nowrap; text-align:left;" id="TBL-15-9-1"  
+class="td11">                     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-9-2"  
+class="td11"> needed to calculate the boundary condition.                                                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-10-"><td  style="white-space:nowrap; text-align:left;" id="TBL-15-10-1"  
+class="td11"> <span 
+class="cmtt-10">group</span><span 
+class="cmtt-10">_name          </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-10-2"  
+class="td11"> the name of the group to which the boundary condition will be applied             </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-11-"><td  style="white-space:nowrap; text-align:left;" id="TBL-15-11-1"  
+class="td11"> <span 
+class="cmtt-10">group</span><span 
+class="cmtt-10">_name</span><span 
+class="cmtt-10">_past     </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-11-2"  
+class="td11"> is the name of the group containing the grid functions on the past time level,     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-12-"><td  style="white-space:nowrap; text-align:left;" id="TBL-15-12-1"  
+class="td11">                     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-12-2"  
+class="td11"> needed to calculate the boundary condition.                                                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-13-"><td  style="white-space:nowrap; text-align:left;" id="TBL-15-13-1"  
+class="td11"> <span 
+class="cmtt-10">variable</span><span 
+class="cmtt-10">_index      </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-13-2"  
+class="td11"> the index of the grid function to which the boundary condition will be applied    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-14-"><td  style="white-space:nowrap; text-align:left;" id="TBL-15-14-1"  
+class="td11"> <span 
+class="cmtt-10">variable</span><span 
+class="cmtt-10">_index</span><span 
+class="cmtt-10">_past </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-14-2"  
+class="td11"> the index of the grid function containing the values on the past time level,         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-15-"><td  style="white-space:nowrap; text-align:left;" id="TBL-15-15-1"  
+class="td11">                     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-15-2"  
+class="td11"> needed to calculate the boundary condition.                                                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-16-"><td  style="white-space:nowrap; text-align:left;" id="TBL-15-16-1"  
+class="td11"> <span 
+class="cmtt-10">group</span><span 
+class="cmtt-10">_index         </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-16-2"  
+class="td11"> the index of the group to which the boundary condition will be applied             </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-17-"><td  style="white-space:nowrap; text-align:left;" id="TBL-15-17-1"  
+class="td11"> <span 
+class="cmtt-10">group</span><span 
+class="cmtt-10">_index</span><span 
+class="cmtt-10">_past    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-17-2"  
+class="td11"> the index of the group containing the values on the past time level,                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-18-"><td  style="white-space:nowrap; text-align:left;" id="TBL-15-18-1"  
+class="td11">                     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-18-2"  
+class="td11"> needed to calculate the boundary condition.                                                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-19-"><td  style="white-space:nowrap; text-align:left;" id="TBL-15-19-1"  
+class="td11">                     </td>
+</tr></table>                                                                                              </div>
+                                                                                       
+                                                                                       
+<!--l. 828--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">7   </span> <a 
+ id="x1-300007"></a>Copy Boundary Condition</h3>
+<!--l. 830--><p class="noindent" >This is a two level scheme. Copy the boundary values from a different grid function, for example the previous
+timelevel. The two grid functions (or groups of grid functions) must have the same geometry. The copy boundary
+condition is registered under the name “Copy”.
+</p><!--l. 835--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">7.1   </span> <a 
+ id="x1-310007.1"></a>Additional arguments</h4>
+<!--l. 837--><p class="noindent" >The “COPY_FROM” argument for the copy boundary condition is required, so a valid table handle is required
+as well. The keys read are<br 
+class="newline" /> <!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-16" class="tabular" 
+ 
+><colgroup id="TBL-16-1g"><col 
+id="TBL-16-1" /></colgroup><colgroup id="TBL-16-2g"><col 
+id="TBL-16-2" /></colgroup><colgroup id="TBL-16-3g"><col 
+id="TBL-16-3" /></colgroup><colgroup id="TBL-16-4g"><col 
+id="TBL-16-4" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-16-1-1"  
+class="td11"> <span 
+class="cmbx-10">key                      </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-1-2"  
+class="td11"> <span 
+class="cmbx-10">variable type                      </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-1-3"  
+class="td11"> <span 
+class="cmbx-10">description                 </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-1-4"  
+class="td11"> <span 
+class="cmbx-10">default value  </span></td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-16-2-1"  
+class="td11"> COPY_FROM            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-2-2"  
+class="td11"> CCTK_INT or CCTK_STRING  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-2-3"  
+class="td11"> GV to copy from              </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-2-4"  
+class="td11"> <span 
+class="cmti-10">no default        </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-16-3-1"  
+class="td11"> BOUNDARY_WIDTH  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-3-2"  
+class="td11"> CCTK_INT array                     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-3-3"  
+class="td11"> stencil width for each face  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-3-4"  
+class="td11"> n/a                </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-16-4-1"  
+class="td11">                     </td>
+</tr></table>                                                                                                  </div><br 
+class="newline" /> (The <span 
+class="cmtt-10">BOUNDARY</span><span 
+class="cmtt-10">_WIDTH </span>table entry is only necessary if the <span 
+class="cmtt-10">boundary</span><span 
+class="cmtt-10">_width </span>parameter is negative.)
+<!--l. 853--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">7.2   </span> <a 
+ id="x1-320007.2"></a>Old interface</h4>
+<!--l. 855--><p class="noindent" >
+</p>
+<h5 class="likesubsubsectionHead"><a 
+ id="x1-33000"></a>Calling from C:</h5>
+                                                                                       
+                                                                                       
+<pre class="verbatim" id="verbatim-19">
+int ierr = BndCopyVN(cGH *cctkGH, int *stencil_size,
+                     char *variable_name_to, char *variable_name_from)
+int ierr = BndCopyGN(cGH *cctkGH, int *stencil_size,
+                     char *group_name_to, char *group_name_from)
+int ierr = BndCopyVI(cGH *cctkGH, int *stencil_size,
+                     int variable_index_to, int variable_index_from)
+int ierr = BndCopyGI(cGH *cctkGH, int *stencil_size,
+                     int group_index_to, int group_index_from)
+</pre>
+<!--l. 865--><p class="nopar" >
+</p><!--l. 867--><p class="noindent" >
+</p>
+<h5 class="likesubsubsectionHead"><a 
+ id="x1-34000"></a>Calling from Fortran:</h5>
+                                                                                       
+                                                                                       
+<pre class="verbatim" id="verbatim-20">
+call BndCopyVN(ierr, cctkGH, stencil_size, variable_name_to,
+               variable_name_from)
+call BndCopyVN(ierr, cctkGH, stencil_size, group_name_to,
+               group_name_from)
+call BndCopyVN(ierr, cctkGH, stencil_size, variable_index_to,
+               variable_index_from)
+call BndCopyVN(ierr, cctkGH, stencil_size, group_index_to,
+               group_index_from)
+</pre>
+<!--l. 877--><p class="nopar" > where
+</p>
+<div class="tabular"> <table id="TBL-17" class="tabular" 
+ 
+><colgroup id="TBL-17-1g"><col 
+id="TBL-17-1" /><col 
+id="TBL-17-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-17-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-17-1-1"  
+class="td11"> <span 
+class="cmtt-10">integer ierr                     </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-1-2"  
+class="td11"> return value, operation failed when return value <span 
+class="cmti-10">negative                   </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-17-2-1"  
+class="td11"> <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_POINTER cctkGH              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-2-2"  
+class="td11"> grid hierarchy pointer                                                                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-17-3-1"  
+class="td11"> <span 
+class="cmtt-10">integer stencil</span><span 
+class="cmtt-10">_size(dim)        </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-3-2"  
+class="td11"> array of size <span 
+class="cmtt-10">dim </span>(dimension of the grid function). To how many points  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-17-4-1"  
+class="td11">                                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-4-2"  
+class="td11"> from the outer boundary to apply the boundary condition.                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-5-"><td  style="white-space:nowrap; text-align:left;" id="TBL-17-5-1"  
+class="td11"> <span 
+class="cmtt-10">character*(*) variable</span><span 
+class="cmtt-10">_name</span><span 
+class="cmtt-10">_to   </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-5-2"  
+class="td11"> the name of the grid function to which the boundary condition            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-6-"><td  style="white-space:nowrap; text-align:left;" id="TBL-17-6-1"  
+class="td11">                                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-6-2"  
+class="td11"> will be applied by copying to.                                                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-7-"><td  style="white-space:nowrap; text-align:left;" id="TBL-17-7-1"  
+class="td11"> <span 
+class="cmtt-10">character*(*) variable</span><span 
+class="cmtt-10">_name</span><span 
+class="cmtt-10">_from </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-7-2"  
+class="td11"> the name of the grid function containing the values to copy from.         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-8-"><td  style="white-space:nowrap; text-align:left;" id="TBL-17-8-1"  
+class="td11"> <span 
+class="cmtt-10">character*(*) group</span><span 
+class="cmtt-10">_name</span><span 
+class="cmtt-10">_to      </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-8-2"  
+class="td11"> the name of the group to which the boundary condition                      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-9-"><td  style="white-space:nowrap; text-align:left;" id="TBL-17-9-1"  
+class="td11">                                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-9-2"  
+class="td11"> will be applied by copying to.                                                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-10-"><td  style="white-space:nowrap; text-align:left;" id="TBL-17-10-1"  
+class="td11"> <span 
+class="cmtt-10">character*(*) group</span><span 
+class="cmtt-10">_name</span><span 
+class="cmtt-10">_from    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-10-2"  
+class="td11"> the name of the group containing the the values to copy from.             </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-11-"><td  style="white-space:nowrap; text-align:left;" id="TBL-17-11-1"  
+class="td11"> <span 
+class="cmtt-10">integer variable</span><span 
+class="cmtt-10">_index</span><span 
+class="cmtt-10">_to        </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-11-2"  
+class="td11"> the index of the grid function to which the boundary condition            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-12-"><td  style="white-space:nowrap; text-align:left;" id="TBL-17-12-1"  
+class="td11">                                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-12-2"  
+class="td11"> will be applied by copying to.                                                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-13-"><td  style="white-space:nowrap; text-align:left;" id="TBL-17-13-1"  
+class="td11"> <span 
+class="cmtt-10">integer variable</span><span 
+class="cmtt-10">_index</span><span 
+class="cmtt-10">_from      </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-13-2"  
+class="td11"> the index of the grid function containing the the values to copy from.    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-14-"><td  style="white-space:nowrap; text-align:left;" id="TBL-17-14-1"  
+class="td11"> <span 
+class="cmtt-10">integer group</span><span 
+class="cmtt-10">_index</span><span 
+class="cmtt-10">_to           </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-14-2"  
+class="td11"> the index of the group to which the boundary condition                      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-15-"><td  style="white-space:nowrap; text-align:left;" id="TBL-17-15-1"  
+class="td11">                                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-15-2"  
+class="td11"> will be applied by copying to.                                                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-16-"><td  style="white-space:nowrap; text-align:left;" id="TBL-17-16-1"  
+class="td11"> <span 
+class="cmtt-10">integer group</span><span 
+class="cmtt-10">_index</span><span 
+class="cmtt-10">_from         </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-16-2"  
+class="td11"> the index of the group containing the the values to copy from.             </td>
+</tr></table>                                                                                                    </div>
+<!--l. 913--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">8   </span> <a 
+ id="x1-350008"></a>Robin Boundary Condition</h3>
+<!--l. 915--><p class="noindent" >This boundary condition has not yet been implemented in individual coordinate directions. The Robin boundary
+condition is: \begin {equation}  f(r) = f_0 + \frac {k}{r^n}  \end {equation}<a 
+ id="x1-35001r4"></a> with \(k\) a constant, \(n\) the decay rate and \(f_0\) the value at infinity. This implies: \begin {equation}  \frac {\partial f}{\partial r} = - n \frac {k}{r^{n+1}}  \end {equation}<a 
+ id="x1-35002r5"></a> or \begin {equation}  \frac {\partial f}{\partial r} = - n \frac {(f-f_0)}{r}  \end {equation}<a 
+ id="x1-35003r6"></a> Considering now a
+given Cartesian direction \(x\) we get: \begin {equation}  \frac {\partial f}{\partial x} = \frac {\partial f}{\partial r} \frac {\partial r}{\partial x} = \frac {x}{r}\frac {\partial f}{\partial r}  \end {equation}<a 
+ id="x1-35004r7"></a> which implies \begin {equation}  \frac {\partial f}{\partial x} = - n (f-f_0)\frac {x}{r^2}  \end {equation}<a 
+ id="x1-35005r8"></a> The equations are then finite differenced around the
+grid point \(i+1/2\): \begin {equation}  f_{i+1} - f_i = - n \Delta x \left ( \frac {1}{2}(f_{i+1}+f_i) - f_0\right ) \frac {x_{i+1/2}}{r^2_{i+1/2}}  \end {equation}<a 
+ id="x1-35006r9"></a> or \begin {equation}  f_{i+1}-f_i = -n \Delta x ( (f_{i+1}+f_i)-2 f_0)\frac {x_{i+1}+x_i}{(r_{i+1}+r_i)^2}  \end {equation}<a 
+ id="x1-35007r10"></a> And this is then solved either for \(f_i\) or \(f_{i+1}\) depending on which side are we looking
+at.
+</p><!--l. 950--><p class="noindent" >The Robin boundary condition is registered under the name “Robin”.
+</p><!--l. 953--><p class="noindent" >
+</p>
+                                                                                       
+                                                                                       
+<h4 class="subsectionHead"><span class="titlemark">8.1   </span> <a 
+ id="x1-360008.1"></a>Additional arguments</h4>
+<!--l. 955--><p class="noindent" >A table passed to the Robin boundary condition may contain the following additional arguments:<br 
+class="newline" /> <!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-18" class="tabular" 
+ 
+><colgroup id="TBL-18-1g"><col 
+id="TBL-18-1" /></colgroup><colgroup id="TBL-18-2g"><col 
+id="TBL-18-2" /></colgroup><colgroup id="TBL-18-3g"><col 
+id="TBL-18-3" /></colgroup><colgroup id="TBL-18-4g"><col 
+id="TBL-18-4" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-18-1-1"  
+class="td11"> <span 
+class="cmbx-10">key                      </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-1-2"  
+class="td11"> <span 
+class="cmbx-10">variable type     </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-1-3"  
+class="td11"> <span 
+class="cmbx-10">description                 </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-1-4"  
+class="td11"> <span 
+class="cmbx-10">default value  </span></td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-18-2-1"  
+class="td11"> FINF                         </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-2-2"  
+class="td11"> CCTK_REAL       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-2-3"  
+class="td11"> \(f_0\)                       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-2-4"  
+class="td11"> 0                    </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-18-3-1"  
+class="td11"> DECAY_POWER </td> <td  style="white-space:nowrap; text-align:left;" id="TBL-18-3-2"  
+class="td11"> CCTK_INT </td> <td  style="white-space:nowrap; text-align:left;" id="TBL-18-3-3"  
+class="td11">  \(n\) </td> <td  style="white-space:nowrap; text-align:left;" id="TBL-18-3-4"  
+class="td11"> 1 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-18-4-1"  
+class="td11"> BOUNDARY_WIDTH  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-4-2"  
+class="td11"> CCTK_INT array  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-4-3"  
+class="td11"> stencil width for each face  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-4-4"  
+class="td11"> n/a                </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-5-"><td  style="white-space:nowrap; text-align:left;" id="TBL-18-5-1"  
+class="td11">                     </td>
+</tr></table>                                                                                       </div>
+<!--l. 968--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">8.2   </span> <a 
+ id="x1-370008.2"></a>Old interface</h4>
+<!--l. 970--><p class="noindent" >
+</p>
+<h5 class="likesubsubsectionHead"><a 
+ id="x1-38000"></a>Calling from C:</h5>
+<!--l. 972--><p class="noindent" ><span 
+class="cmbx-10">All Coordinate Directions:</span>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-21">
+int ierr = BndRobinVN(cGH *cctkGH, int *stencil_size,
+                       CCTK_REAL finf, int npow, char *variable_name)
+int ierr = BndScalarGN(cGH *cctkGH, int *stencil_size,
+                       CCTK_REAL finf, int npow, char *group_name)
+int ierr = BndScalarVI(cGH *cctkGH, int *stencil_size,
+                       CCTK_REAL finf, int npow, int group_index)
+int ierr = BndScalarGI(cGH *cctkGH, int *stencil_size,
+                       CCTK_REAL finf, int npow, int variable_index)
+</pre>
+<!--l. 982--><p class="nopar" >
+</p><!--l. 985--><p class="noindent" >
+</p>
+<h5 class="likesubsubsectionHead"><a 
+ id="x1-39000"></a>Calling from Fortran:</h5>
+<!--l. 986--><p class="noindent" ><span 
+class="cmbx-10">All Coordinate Directions:</span>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-22">
+call BndRobinVN(ierr, cctkGH, stencil_size, finf, npow, variable_name)
+call BndRobinGN(ierr, cctkGH, stencil_size, finf, npow, group_name)
+call BndRobinVI(ierr, cctkGH, stencil_size, finf, npow, variable_index)
+call BndRobinGI(ierr, cctkGH, stencil_size, finf, npow, group_index)
+</pre>
+<!--l. 992--><p class="nopar" > where
+</p>
+<div class="tabular"> <table id="TBL-19" class="tabular" 
+ 
+><colgroup id="TBL-19-1g"><col 
+id="TBL-19-1" /><col 
+id="TBL-19-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-19-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-19-1-1"  
+class="td11"> <span 
+class="cmtt-10">integer      </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-1-2"  
+class="td11"> <span 
+class="cmtt-10">ierr              </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-19-2-1"  
+class="td11"> <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_POINTER  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-2-2"  
+class="td11"> <span 
+class="cmtt-10">cctkGH            </span></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-19-3-1"  
+class="td11"> <span 
+class="cmtt-10">integer </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-3-2"  
+class="td11"> <span 
+class="cmtt-10">stencil</span><span 
+class="cmtt-10">_size(dim)</span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-19-4-1"  
+class="td11"> <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_REAL     </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-4-2"  
+class="td11"> <span 
+class="cmtt-10">finf              </span></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-5-"><td  style="white-space:nowrap; text-align:left;" id="TBL-19-5-1"  
+class="td11"> <span 
+class="cmtt-10">integer </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-5-2"  
+class="td11"> <span 
+class="cmtt-10">npow</span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-6-"><td  style="white-space:nowrap; text-align:left;" id="TBL-19-6-1"  
+class="td11"> <span 
+class="cmtt-10">character*(*) </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-6-2"  
+class="td11"> <span 
+class="cmtt-10">variable</span><span 
+class="cmtt-10">_name     </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-7-"><td  style="white-space:nowrap; text-align:left;" id="TBL-19-7-1"  
+class="td11"> <span 
+class="cmtt-10">character*(*) </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-7-2"  
+class="td11"> <span 
+class="cmtt-10">group</span><span 
+class="cmtt-10">_name        </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-8-"><td  style="white-space:nowrap; text-align:left;" id="TBL-19-8-1"  
+class="td11"> <span 
+class="cmtt-10">integer       </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-8-2"  
+class="td11"> <span 
+class="cmtt-10">variable</span><span 
+class="cmtt-10">_index    </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-9-"><td  style="white-space:nowrap; text-align:left;" id="TBL-19-9-1"  
+class="td11"> <span 
+class="cmtt-10">integer       </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-9-2"  
+class="td11"> <span 
+class="cmtt-10">group</span><span 
+class="cmtt-10">_index       </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-10-"><td  style="white-space:nowrap; text-align:left;" id="TBL-19-10-1"  
+class="td11">               </td>
+</tr></table>                                                                                       </div>
+<!--l. 1009--><p class="noindent" >
+</p>
+<h5 class="likesubsubsectionHead"><a 
+ id="x1-40000"></a>Arguments</h5>
+<div class="tabular"> <table id="TBL-20" class="tabular" 
+ 
+><colgroup id="TBL-20-1g"><col 
+id="TBL-20-1" /><col 
+id="TBL-20-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-20-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-20-1-1"  
+class="td11"> <span 
+class="cmtt-10">ierr           </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-1-2"  
+class="td11"> Return value, negative value indicates the boundary condition was not successfully applied          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-20-2-1"  
+class="td11"> <span 
+class="cmtt-10">cctkGH         </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-2-2"  
+class="td11"> Grid hierarchy pointer                                                                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-20-3-1"  
+class="td11"> <span 
+class="cmtt-10">finf           </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-3-2"  
+class="td11"> Scalar value at infinity                                                                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-20-4-1"  
+class="td11"> <span 
+class="cmtt-10">npow           </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-4-2"  
+class="td11"> Decay rate (\(n\) in discussion above)                                                                                      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-5-"><td  style="white-space:nowrap; text-align:left;" id="TBL-20-5-1"  
+class="td11"> <span 
+class="cmtt-10">stencil</span><span 
+class="cmtt-10">_size   </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-5-2"  
+class="td11"> Array with dimension of the grid function, containing the stencil width to apply the boundary at  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-6-"><td  style="white-space:nowrap; text-align:left;" id="TBL-20-6-1"  
+class="td11"> <span 
+class="cmtt-10">variable</span><span 
+class="cmtt-10">_name  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-6-2"  
+class="td11"> Name of the variable                                                                                                      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-7-"><td  style="white-space:nowrap; text-align:left;" id="TBL-20-7-1"  
+class="td11"> <span 
+class="cmtt-10">group</span><span 
+class="cmtt-10">_name     </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-7-2"  
+class="td11"> Name of the group                                                                                                         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-8-"><td  style="white-space:nowrap; text-align:left;" id="TBL-20-8-1"  
+class="td11"> <span 
+class="cmtt-10">variable</span><span 
+class="cmtt-10">_index </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-8-2"  
+class="td11"> Variable index                                                                                                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-9-"><td  style="white-space:nowrap; text-align:left;" id="TBL-20-9-1"  
+class="td11"> <span 
+class="cmtt-10">group</span><span 
+class="cmtt-10">_index    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-9-2"  
+class="td11"> Group index                                                                                                                 </td>
+</tr></table>                                                                                                        </div>
+<!--l. 1024--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">9   </span> <a 
+ id="x1-410009"></a>Static Boundary Condition</h3>
+<!--l. 1026--><p class="noindent" >The static boundary condition ensures that the boundary values do not evolve in time, by copying
+their values from previous timelevels. The static boundary condition is registered under the name
+“Static”.
+                                                                                       
+                                                                                       
+</p><!--l. 1030--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">9.1   </span> <a 
+ id="x1-420009.1"></a>Additional arguments</h4>
+<!--l. 1032--><p class="noindent" >A table passed to the static boundary condition may contain the following additional arguments:<br 
+class="newline" /> <!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-21" class="tabular" 
+ 
+><colgroup id="TBL-21-1g"><col 
+id="TBL-21-1" /></colgroup><colgroup id="TBL-21-2g"><col 
+id="TBL-21-2" /></colgroup><colgroup id="TBL-21-3g"><col 
+id="TBL-21-3" /></colgroup><colgroup id="TBL-21-4g"><col 
+id="TBL-21-4" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-21-1-1"  
+class="td11"> <span 
+class="cmbx-10">key                      </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-1-2"  
+class="td11"> <span 
+class="cmbx-10">variable type     </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-1-3"  
+class="td11"> <span 
+class="cmbx-10">description                 </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-1-4"  
+class="td11"> <span 
+class="cmbx-10">default value  </span></td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-21-2-1"  
+class="td11"> BOUNDARY_WIDTH  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-2-2"  
+class="td11"> CCTK_INT array  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-2-3"  
+class="td11"> stencil width for each face  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-2-4"  
+class="td11"> n/a                </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-21-3-1"  
+class="td11">                     </td>
+</tr></table>                                                                                       </div>
+<!--l. 1043--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">9.2   </span> <a 
+ id="x1-430009.2"></a>Old interface</h4>
+<!--l. 1045--><p class="noindent" >
+</p>
+<h5 class="likesubsubsectionHead"><a 
+ id="x1-44000"></a>Calling from C:</h5>
+<!--l. 1047--><p class="noindent" ><span 
+class="cmbx-10">All Coordinate Directions:</span>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-23">
+int ierr = BndStaticVN(cGH *cctkGH, int *stencil_size, char *variable_name)
+int ierr = BndStaticGN(cGH *cctkGH, int *stencil_size, char *group_name)
+int ierr = BndStaticVI(cGH *cctkGH, int *stencil_size, int variable_index)
+int ierr = BndStaticGI(cGH *cctkGH, int *stencil_size, int group_index)
+</pre>
+<!--l. 1053--><p class="nopar" >
+</p><!--l. 1055--><p class="noindent" ><span 
+class="cmbx-10">Individual Coordinate Directions:</span>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-24">
+int ierr = BndStaticDirVN(cGH *cctkGH, int stencil, int dir, char *variable_name)
+int ierr = BndStaticDirGN(cGH *cctkGH, int stencil, int dir, char *group_name)
+int ierr = BndStaticDirVI(cGH *cctkGH, int stencil, int dir, int variable_index)
+int ierr = BndStaticDirGI(cGH *cctkGH, int stencil, int dir, int group_index)
+</pre>
+<!--l. 1062--><p class="nopar" >
+</p><!--l. 1064--><p class="noindent" >
+</p>
+<h5 class="likesubsubsectionHead"><a 
+ id="x1-45000"></a>Calling from Fortran:</h5>
+<!--l. 1066--><p class="noindent" ><span 
+class="cmbx-10">All Coordinate Directions:</span>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-25">
+call BndStaticVN(ierr, cctkGH, stencil_array, variable_name)
+call BndStaticGN(ierr, cctkGH, stencil_array, group_name)
+call BndStaticVI(ierr, cctkGH, stencil_array, variable_index)
+call BndStaticGI(ierr, cctkGH, stencil_array, group_index)
+</pre>
+<!--l. 1072--><p class="nopar" >
+</p><!--l. 1074--><p class="noindent" ><span 
+class="cmbx-10">Individual Coordinate Directions:</span>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-26">
+call BndStaticDirVN(ierr, cctkGH, stencil, dir, variable_name)
+call BndStaticDirGN(ierr, cctkGH, stencil, dir, group_name)
+call BndStaticDirVI(ierr, cctkGH, stencil, dir, variable_index)
+call BndStaticDirGI(ierr, cctkGH, stencil, dir, group_index)
+</pre>
+<!--l. 1081--><p class="nopar" > where
+</p>
+<div class="tabular"> <table id="TBL-22" class="tabular" 
+ 
+><colgroup id="TBL-22-1g"><col 
+id="TBL-22-1" /><col 
+id="TBL-22-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-22-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-22-1-1"  
+class="td11"> <span 
+class="cmtt-10">integer      </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-1-2"  
+class="td11"> <span 
+class="cmtt-10">ierr               </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-22-2-1"  
+class="td11"> <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_POINTER  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-2-2"  
+class="td11"> <span 
+class="cmtt-10">cctkGH             </span></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-22-3-1"  
+class="td11"> <span 
+class="cmtt-10">integer </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-3-2"  
+class="td11"> <span 
+class="cmtt-10">dir</span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-22-4-1"  
+class="td11"> <span 
+class="cmtt-10">integer       </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-4-2"  
+class="td11"> <span 
+class="cmtt-10">stencil            </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-5-"><td  style="white-space:nowrap; text-align:left;" id="TBL-22-5-1"  
+class="td11"> <span 
+class="cmtt-10">integer       </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-5-2"  
+class="td11"> <span 
+class="cmtt-10">stencil</span><span 
+class="cmtt-10">_array(dim) </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-6-"><td  style="white-space:nowrap; text-align:left;" id="TBL-22-6-1"  
+class="td11"> <span 
+class="cmtt-10">character*(*) </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-6-2"  
+class="td11"> <span 
+class="cmtt-10">variable</span><span 
+class="cmtt-10">_name      </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-7-"><td  style="white-space:nowrap; text-align:left;" id="TBL-22-7-1"  
+class="td11"> <span 
+class="cmtt-10">character*(*) </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-7-2"  
+class="td11"> <span 
+class="cmtt-10">group</span><span 
+class="cmtt-10">_name         </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-8-"><td  style="white-space:nowrap; text-align:left;" id="TBL-22-8-1"  
+class="td11"> <span 
+class="cmtt-10">integer       </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-8-2"  
+class="td11"> <span 
+class="cmtt-10">variable</span><span 
+class="cmtt-10">_index     </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-9-"><td  style="white-space:nowrap; text-align:left;" id="TBL-22-9-1"  
+class="td11"> <span 
+class="cmtt-10">integer       </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-9-2"  
+class="td11"> <span 
+class="cmtt-10">group</span><span 
+class="cmtt-10">_index        </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-10-"><td  style="white-space:nowrap; text-align:left;" id="TBL-22-10-1"  
+class="td11">               </td>
+</tr></table>                                                                                       </div>
+<!--l. 1098--><p class="noindent" >
+</p>
+<h5 class="likesubsubsectionHead"><a 
+ id="x1-46000"></a>Arguments</h5>
+<div class="tabular"> <table id="TBL-23" class="tabular" 
+ 
+><colgroup id="TBL-23-1g"><col 
+id="TBL-23-1" /><col 
+id="TBL-23-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-23-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-23-1-1"  
+class="td11"> <span 
+class="cmtt-10">ierr           </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-1-2"  
+class="td11"> Return value, negative value indicates the boundary condition was not successfully applied          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-23-2-1"  
+class="td11"> <span 
+class="cmtt-10">cctkGH         </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-2-2"  
+class="td11"> Grid hierarchy pointer                                                                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-23-3-1"  
+class="td11"> <span 
+class="cmtt-10">dir            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-3-2"  
+class="td11"> Coordinate direction in which to apply boundary condition                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-23-4-1"  
+class="td11"> <span 
+class="cmtt-10">stencil</span><span 
+class="cmtt-10">_size   </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-4-2"  
+class="td11"> Array with dimension of the grid function, containing the stencil width to apply the boundary at  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-5-"><td  style="white-space:nowrap; text-align:left;" id="TBL-23-5-1"  
+class="td11"> <span 
+class="cmtt-10">variable</span><span 
+class="cmtt-10">_name  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-5-2"  
+class="td11"> Name of the variable                                                                                                      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-6-"><td  style="white-space:nowrap; text-align:left;" id="TBL-23-6-1"  
+class="td11"> <span 
+class="cmtt-10">group</span><span 
+class="cmtt-10">_name     </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-6-2"  
+class="td11"> Name of the group                                                                                                         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-7-"><td  style="white-space:nowrap; text-align:left;" id="TBL-23-7-1"  
+class="td11"> <span 
+class="cmtt-10">variable</span><span 
+class="cmtt-10">_index </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-7-2"  
+class="td11"> Variable index                                                                                                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-8-"><td  style="white-space:nowrap; text-align:left;" id="TBL-23-8-1"  
+class="td11"> <span 
+class="cmtt-10">group</span><span 
+class="cmtt-10">_index    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-8-2"  
+class="td11"> Group index                                                                                                                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-9-"><td  style="white-space:nowrap; text-align:left;" id="TBL-23-9-1"  
+class="td11">                </td>
+</tr></table>                                                                                                        </div>
+<!--l. 1112--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">10   </span> <a 
+ id="x1-4700010"></a>None Boundary Condition</h3>
+<!--l. 1114--><p class="noindent" >The “None” boundary condition does just that, nothing. It is provided to inform the boundary implementation
+of grid variables which should have symmetry boundary conditions applied to them, but do not have their
+physical boundary conditions applied using a properly registered function.
+                                                                                       
+                                                                                       
+</p><!--l. 1120--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">10.1   </span> <a 
+ id="x1-4800010.1"></a>Additional arguments</h4>
+<!--l. 1122--><p class="noindent" >The none boundary condition will ignore all arguments passed to it. (Notably, when registering variables/groups
+for this boundary condition, the <span class="obeylines-h"><code class="verb">boundary_width</code></span> and <span class="obeylines-h"><code class="verb">table_handle</code></span> arguments are unused, and may be passed
+as dummy values.)
+</p><!--l. 1128--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">10.2   </span> <a 
+ id="x1-4900010.2"></a>Old interface</h4>
+<!--l. 1130--><p class="noindent" >There is no old interface to this boundary condition.
+</p><!--l. 1133--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">11   </span> <a 
+ id="x1-5000011"></a>Appendix: Symmetry and non-local boundary conditions</h3>
+<!--l. 1136--><p class="noindent" >An additional aliased function is provided to allow one to retrieve a list of grid variables which are selected
+for any particular boundary condition, or the entire list of selected grid variables (regardless of
+selected boundary condition). This is needed to write a thorn which provides a symmetry boundary
+condition, or a non-local boundary condition, as either of these need to schedule a routine
+in the <span 
+class="cmtt-10">BoundaryConditions </span>schedule group to execute their condition on the list of selected
+variables<span class="footnote-mark"><a 
+href="documentation3.html#fn2x0"><sup class="textsuperscript">2</sup></a></span><a 
+ id="x1-50001f2"></a> .
+(A symmetry boundary condition will need the entire list of selected variables, while the non-local physical
+condition will only need the list of variables which request that particular boundary condition.)
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-27">
+int Boundary_SelectedGVs(CCTK_POINTER cctkGH,
+                         CCTK_INT array_size,
+                         CCTK_POINTER var_indices,
+                         CCTK_POINTER faces,
+                         CCTK_POINTER boundary_widths,
+                         CCTK_POINTER table_handles,
+                         CCTK_STRING bc_name)
+</pre>
+<!--l. 1158--><p class="nopar" > <!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-24" class="tabular" 
+ 
+><colgroup id="TBL-24-1g"><col 
+id="TBL-24-1" /><col 
+id="TBL-24-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-24-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-24-1-1"  
+class="td11"> <span 
+class="cmtt-10">cctkGH          </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-1-2"  
+class="td11"> pointer to the grid hierarchy                                                                                         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-24-2-1"  
+class="td11"> <span 
+class="cmtt-10">array</span><span 
+class="cmtt-10">_size      </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-2-2"  
+class="td11"> size of arrays pointed to by the next three arguments                                                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-24-3-1"  
+class="td11"> <span 
+class="cmtt-10">var</span><span 
+class="cmtt-10">_indices     </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-3-2"  
+class="td11"> array of integers into which the selected variables’ grid variable indices will be placed              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-24-4-1"  
+class="td11"> <span 
+class="cmtt-10">faces           </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-4-2"  
+class="td11"> array of integers into which the faces specification for each selected grid variable will be placed  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-5-"><td  style="white-space:nowrap; text-align:left;" id="TBL-24-5-1"  
+class="td11"> <span 
+class="cmtt-10">boundary</span><span 
+class="cmtt-10">_widths </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-5-2"  
+class="td11"> array of integers which holds the <span 
+class="cmtt-10">boundary</span><span 
+class="cmtt-10">_width </span>parameter for each selected GV                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-6-"><td  style="white-space:nowrap; text-align:left;" id="TBL-24-6-1"  
+class="td11"> <span 
+class="cmtt-10">table</span><span 
+class="cmtt-10">_handles   </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-6-2"  
+class="td11"> array of integers into which the table handle for each selected grid variable will be placed         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-7-"><td  style="white-space:nowrap; text-align:left;" id="TBL-24-7-1"  
+class="td11"> <span 
+class="cmtt-10">bc</span><span 
+class="cmtt-10">_name         </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-7-2"  
+class="td11"> name of boundary condition                                                                                         </td>
+</tr></table>                                                                                                                                                                  </div>
+<!--l. 1169--><p class="noindent" >This function places a list of up to <span 
+class="cmtt-10">array</span><span 
+class="cmtt-10">_size </span>grid variable indices, sorted as described in section <a 
+href="#x1-50002.1">2.1<!--tex4ht:ref: Boundary/sec:bc_registration --></a>, into the
+array <span 
+class="cmtt-10">var</span><span 
+class="cmtt-10">_indices</span>. The corresponding (up to <span 
+class="cmtt-10">array</span><span 
+class="cmtt-10">_size</span>) faces specifications, boundary widths, and table
+handles are placed into the arrays <span 
+class="cmtt-10">faces</span>, <span 
+class="cmtt-10">boundary</span><span 
+class="cmtt-10">_widths</span>, and <span 
+class="cmtt-10">table</span><span 
+class="cmtt-10">_handles</span>, respectively. (If the list
+contains \(n&lt;\)<span 
+class="cmtt-10">array</span><span 
+class="cmtt-10">_size </span>elements, then only \(n\) elements are placed into the arrays <span 
+class="cmtt-10">var</span><span 
+class="cmtt-10">_indices</span>, <span 
+class="cmtt-10">faces</span>,
+<span 
+class="cmtt-10">boundary</span><span 
+class="cmtt-10">_widths</span>, and <span 
+class="cmtt-10">table</span><span 
+class="cmtt-10">_handles</span>.) To retrieve a list of all selected grid variables (for all
+boundary conditions), pass a null pointer for <span 
+class="cmtt-10">bc</span><span 
+class="cmtt-10">_name</span>. The return value is the number elements of the
+requested list, so <span 
+class="cmtt-10">Boundary</span><span 
+class="cmtt-10">_SelectedGVs </span>can be called first with <span 
+class="cmtt-10">var</span><span 
+class="cmtt-10">_indices </span>equal to zero to
+determine how much memory to allocate for the arrays <span 
+class="cmtt-10">var</span><span 
+class="cmtt-10">_indices</span>, <span 
+class="cmtt-10">faces</span>, <span 
+class="cmtt-10">boundary</span><span 
+class="cmtt-10">_widths</span>, and
+<span 
+class="cmtt-10">table</span><span 
+class="cmtt-10">_handles</span>.
+</p><!--l. 1187--><p class="noindent" >A non-local boundary condition must register a null pointer as its providing function in<br 
+class="newline" /><span 
+class="cmtt-10">Boundary</span><span 
+class="cmtt-10">_RegisterPhysicalBC</span>, so that its name exists in the database of available boundary conditions, yet no
+extra routine is called when <span 
+class="cmtt-10">Boundary</span><span 
+class="cmtt-10">_ApplyPhysicalBCs </span>is executed.
+</p>
+<h3 class="sectionHead"><span class="titlemark">12   </span> <a 
+ id="x1-5100012"></a>Parameters</h3>
+<!--l. 1221--><p class="noindent" ></p> <table id="TBL-25" class="tabular" 
+ 
+><colgroup id="TBL-25-1g"><col 
+id="TBL-25-1" /></colgroup><colgroup id="TBL-25-2g"><col 
+id="TBL-25-2" /><col 
+id="TBL-25-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-1-"><td  style="white-space:normal; text-align:left;" id="TBL-25-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">radpower</div>           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-25-1-3"  
+class="td01">                                               INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-25-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Power of decay rate in extrapolation used in radiative boundaries</span></div>                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-3-1"  
+class="td11">     <span 
+class="cmbx-10">Range       </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-25-3-3"  
+class="td01">                                         <span 
+class="cmbx-10">Default: </span>-1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-4-"><td  style="white-space:normal; text-align:left;" id="TBL-25-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">:</div>                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-25-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">A negative value switches off this feature</div>                                                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-5-1"  
+class="td11">                 </td></tr></table>
+<!--l. 1228--><p class="noindent" ></p> <table id="TBL-26" class="tabular" 
+ 
+><colgroup id="TBL-26-1g"><col 
+id="TBL-26-1" /></colgroup><colgroup id="TBL-26-2g"><col 
+id="TBL-26-2" /><col 
+id="TBL-26-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-1-"><td  style="white-space:normal; text-align:left;" id="TBL-26-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">register_copy</div>      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-1-3"  
+class="td01">                                    BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-26-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Register routine to handle the ’Copy’ boundary condition</span></div>                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-3-1"  
+class="td11">                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-3-3"  
+class="td01">                                   <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-4-1"  
+class="td11">                 </td></tr></table>
+<!--l. 1235--><p class="noindent" ></p> <table id="TBL-27" class="tabular" 
+ 
+><colgroup id="TBL-27-1g"><col 
+id="TBL-27-1" /></colgroup><colgroup id="TBL-27-2g"><col 
+id="TBL-27-2" /><col 
+id="TBL-27-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-1-"><td  style="white-space:normal; text-align:left;" id="TBL-27-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">register_flat</div>        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-27-1-3"  
+class="td01">                                    BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-27-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Register routine to handle the ’Flat’ boundary condition</span></div>                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-3-1"  
+class="td11">                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-27-3-3"  
+class="td01">                                   <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-4-1"  
+class="td11">                 </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 1242--><p class="noindent" ></p> <table id="TBL-28" class="tabular" 
+ 
+><colgroup id="TBL-28-1g"><col 
+id="TBL-28-1" /></colgroup><colgroup id="TBL-28-2g"><col 
+id="TBL-28-2" /><col 
+id="TBL-28-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-1-"><td  style="white-space:normal; text-align:left;" id="TBL-28-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">register_none</div>      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-28-1-3"  
+class="td01">                                    BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-28-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Register routine to handle the ’None’ boundary condition</span></div>                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-3-1"  
+class="td11">                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-28-3-3"  
+class="td01">                                   <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-4-1"  
+class="td11">                 </td></tr></table>
+<!--l. 1249--><p class="noindent" ></p> <table id="TBL-29" class="tabular" 
+ 
+><colgroup id="TBL-29-1g"><col 
+id="TBL-29-1" /></colgroup><colgroup id="TBL-29-2g"><col 
+id="TBL-29-2" /><col 
+id="TBL-29-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-1-"><td  style="white-space:normal; text-align:left;" id="TBL-29-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">register_radiation</div></td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-29-1-3"  
+class="td01">                                    BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-29-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Register routine to handle the ’Radiation’ boundary condition</span></div>                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-29-3-1"  
+class="td11">                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-29-3-3"  
+class="td01">                                   <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-29-4-1"  
+class="td11">                 </td></tr></table>
+<!--l. 1256--><p class="noindent" ></p> <table id="TBL-30" class="tabular" 
+ 
+><colgroup id="TBL-30-1g"><col 
+id="TBL-30-1" /></colgroup><colgroup id="TBL-30-2g"><col 
+id="TBL-30-2" /><col 
+id="TBL-30-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-1-"><td  style="white-space:normal; text-align:left;" id="TBL-30-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">register_robin</div>     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-30-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-30-1-3"  
+class="td01">                                    BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-30-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Register routine to handle the ’Robin’ boundary condition</span></div>                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-30-3-1"  
+class="td11">                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-30-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-30-3-3"  
+class="td01">                                   <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-30-4-1"  
+class="td11">                 </td></tr></table>
+<!--l. 1263--><p class="noindent" ></p> <table id="TBL-31" class="tabular" 
+ 
+><colgroup id="TBL-31-1g"><col 
+id="TBL-31-1" /></colgroup><colgroup id="TBL-31-2g"><col 
+id="TBL-31-2" /><col 
+id="TBL-31-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-1-"><td  style="white-space:normal; text-align:left;" id="TBL-31-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">register_scalar</div>     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-31-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-31-1-3"  
+class="td01">                                    BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-31-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Register routine to handle the ’Scalar’ boundary condition</span></div>                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-31-3-1"  
+class="td11">                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-31-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-31-3-3"  
+class="td01">                                   <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-31-4-1"  
+class="td11">                 </td></tr></table>
+<!--l. 1270--><p class="noindent" ></p> <table id="TBL-32" class="tabular" 
+ 
+><colgroup id="TBL-32-1g"><col 
+id="TBL-32-1" /></colgroup><colgroup id="TBL-32-2g"><col 
+id="TBL-32-2" /><col 
+id="TBL-32-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-1-"><td  style="white-space:normal; text-align:left;" id="TBL-32-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">register_static</div>     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-32-1-3"  
+class="td01">                                    BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-32-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Register routine to handle the ’Static’ boundary condition</span></div>                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-32-3-1"  
+class="td11">                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-32-3-3"  
+class="td01">                                   <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-32-4-1"  
+class="td11">                 </td></tr></table>
+<!--l. 1277--><p class="noindent" ></p> <table id="TBL-33" class="tabular" 
+ 
+><colgroup id="TBL-33-1g"><col 
+id="TBL-33-1" /></colgroup><colgroup id="TBL-33-2g"><col 
+id="TBL-33-2" /><col 
+id="TBL-33-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-1-"><td  style="white-space:normal; text-align:left;" id="TBL-33-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">presync_mode</div>     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from CACTUS</td><td  style="white-space:nowrap; text-align:right;" id="TBL-33-1-3"  
+class="td01">KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-33-2-1"  
+class="td11">                 </td></tr></table>
+<!--l. 1284--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">13   </span> <a 
+ id="x1-5200013"></a>Interfaces</h3>
+<!--l. 1289--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-53000"></a>General</h4>
+<!--l. 1291--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 1293--><p class="noindent" >boundary
+</p><!--l. 1298--><p class="noindent" ><span 
+class="cmbx-10">Adds header</span>:
+</p><!--l. 1302--><p class="noindent" >Boundary.h
+</p><!--l. 1305--><p class="noindent" ><span 
+class="cmbx-10">Provides</span>:
+</p><!--l. 1309--><p class="noindent" >Boundary_RegisterPhysicalBC to
+</p><!--l. 1311--><p class="noindent" >Boundary_QueryRegisteredPhysicalBC to
+</p><!--l. 1313--><p class="noindent" >Boundary_SelectVarForBC to
+</p><!--l. 1315--><p class="noindent" >Boundary_SelectVarForBCI to
+</p><!--l. 1317--><p class="noindent" >Boundary_SelectGroupForBC to
+</p><!--l. 1319--><p class="noindent" >Boundary_SelectGroupForBCI to
+</p><!--l. 1321--><p class="noindent" >Boundary_SelectedGVs to
+                                                                                       
+                                                                                       
+</p><!--l. 1324--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">14   </span> <a 
+ id="x1-5400014"></a>Schedule</h3>
+<!--l. 1330--><p class="noindent" >This section lists all the variables which are assigned storage by thorn CactusBase/Boundary. Storage can
+either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 1333--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-55000"></a>Storage</h4>
+<!--l. 1333--><p class="noindent" >NONE
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-56000"></a>Scheduled Functions</h4>
+<!--l. 1337--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_PARAMCHECK</span>
+</p><!--l. 1339--><p class="noindent" >      boundary_check
+</p><!--l. 1341--><p class="noindent" >     <span 
+class="cmti-10">check dimension of grid variables</span>
+</p><!--l. 1344--><p class="noindent" > 
+</p><!--l. 1346--><p class="noindent" ></p> <table id="TBL-34" class="tabular" 
+ 
+><colgroup id="TBL-34-1g"><col 
+id="TBL-34-1" /><col 
+id="TBL-34-2" /><col 
+id="TBL-34-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-34-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-34-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-34-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-34-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 1354--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_WRAGH</span>
+</p><!--l. 1356--><p class="noindent" >      boundary_registerbcs
+</p><!--l. 1358--><p class="noindent" >     <span 
+class="cmti-10">register boundary conditions that this thorn provides</span>
+</p><!--l. 1361--><p class="noindent" > 
+</p><!--l. 1363--><p class="noindent" ></p> <table id="TBL-35" class="tabular" 
+ 
+><colgroup id="TBL-35-1g"><col 
+id="TBL-35-1" /><col 
+id="TBL-35-2" /><col 
+id="TBL-35-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-35-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-1-2"  
+class="td11"> Before:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-1-3"  
+class="td11"> driver_boundaryselect  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-2-3"  
+class="td11"> c                             </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-3-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-3-3"  
+class="td11"> global                       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-4-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-4-3"  
+class="td11"> function                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-5-1"  
+class="td11">    </td></tr></table>
+<!--l. 1373--><p class="noindent" >
+</p><!--l. 1375--><p class="noindent" >      applybcs
+</p><!--l. 1377--><p class="noindent" >     <span 
+class="cmti-10">apply boundary conditions</span>
+</p><!--l. 1380--><p class="noindent" > 
+</p><!--l. 1382--><p class="noindent" ></p> <table id="TBL-36" class="tabular" 
+ 
+><colgroup id="TBL-36-1g"><col 
+id="TBL-36-1" /><col 
+id="TBL-36-2" /><col 
+id="TBL-36-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-36-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-36-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-1-2"  
+class="td11"> Type:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-1-3"  
+class="td11"> group  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-36-2-1"  
+class="td11">    </td></tr></table>
+<!--l. 1389--><p class="noindent" ><span 
+class="cmbx-10">ApplyBCs</span>
+</p><!--l. 1391--><p class="noindent" >      boundaryconditions
+</p><!--l. 1393--><p class="noindent" >     <span 
+class="cmti-10">execute all boundary conditions</span>
+</p><!--l. 1396--><p class="noindent" > 
+</p><!--l. 1398--><p class="noindent" ></p> <table id="TBL-37" class="tabular" 
+ 
+><colgroup id="TBL-37-1g"><col 
+id="TBL-37-1" /><col 
+id="TBL-37-2" /><col 
+id="TBL-37-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-37-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-1-2"  
+class="td11"> Before:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-1-3"  
+class="td11"> boundary_clearselection  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-2-2"  
+class="td11"> Type:   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-2-3"  
+class="td11"> group                          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-3-1"  
+class="td11">    </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 1406--><p class="noindent" ><span 
+class="cmbx-10">BoundaryConditions</span>
+</p><!--l. 1408--><p class="noindent" >      boundary_applyphysicalbcs
+</p><!--l. 1410--><p class="noindent" >     <span 
+class="cmti-10">apply all requested local physical boundary conditions</span>
+</p><!--l. 1413--><p class="noindent" > 
+</p><!--l. 1415--><p class="noindent" ></p> <table id="TBL-38" class="tabular" 
+ 
+><colgroup id="TBL-38-1g"><col 
+id="TBL-38-1" /><col 
+id="TBL-38-2" /><col 
+id="TBL-38-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-38-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-38-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-38-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-38-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-38-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-38-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-38-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-38-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-38-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-38-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 1423--><p class="noindent" ><span 
+class="cmbx-10">ApplyBCs</span>
+</p><!--l. 1425--><p class="noindent" >      boundary_clearselection
+</p><!--l. 1427--><p class="noindent" >     <span 
+class="cmti-10">unselect all grid variables for boundary conditions</span>
+</p><!--l. 1430--><p class="noindent" > 
+</p><!--l. 1432--><p class="noindent" ></p> <table id="TBL-39" class="tabular" 
+ 
+><colgroup id="TBL-39-1g"><col 
+id="TBL-39-1" /><col 
+id="TBL-39-2" /><col 
+id="TBL-39-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-39-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-2-3"  
+class="td11"> level       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-3-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-4-1"  
+class="td11">    </td></tr></table>
+ 
+</body></html> 
+
+                                                                                       
+
+

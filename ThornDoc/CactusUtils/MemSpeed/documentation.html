@@ -1,0 +1,529 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>MemSpeed</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">MemSpeed</h2>
+ <div class="author" ><span 
+class="cmr-12">Erik Schnetter </span><span 
+class="cmmi-12">&#x003C;</span><span 
+class="cmr-12">eschnetter@perimeterinstitute.ca</span><span 
+class="cmmi-12">&#x003E;</span></div>
+<br />
+<div class="date" ><span 
+class="cmr-12">June 22, 2013</span></div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 96--><p class="noindent" ><span 
+class="cmr-9">Determine the speed of the CPU, as well as latencies and bandwidths of caches and main memory.</span>
+     <span 
+class="cmr-9">These provides ideal, but real-world values against which the performance of other routines can be</span>
+     <span 
+class="cmr-9">compared.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Measuring Maximum Speeds</h3>
+<!--l. 104--><p class="noindent" >This thorn measures the maximum practical speed that can be attained on a particular system. This
+speed will be somewhat lower than the theoretical peak performance listed in a system’s hardware
+description.
+</p><!--l. 109--><p class="noindent" >This thorn measures </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 111--><p class="noindent" >CPU floating-point peformance (GFlop/s),
+                                                                                       
+                                                                                       
+     </p></li>
+     <li class="itemize">
+     <!--l. 112--><p class="noindent" >CPU integer peformance (GIop/s),
+     </p></li>
+     <li class="itemize">
+     <!--l. 113--><p class="noindent" >Cache/memory read latency (ns),
+     </p></li>
+     <li class="itemize">
+     <!--l. 114--><p class="noindent" >Cache/memory read bandwidth (GByte/s),
+     </p></li>
+     <li class="itemize">
+     <!--l. 115--><p class="noindent" >Cache/memory write latency (ns),
+     </p></li>
+     <li class="itemize">
+     <!--l. 116--><p class="noindent" >Cache/memory write bandwidth (GByte/s).</p></li></ul>
+<!--l. 119--><p class="noindent" >Theoretical performance values for memory access are often quoted in slightly different units. For example,
+bandwidth is often measured in GT/s (Giga-Transactions per second), where a transaction transfers a certain
+number of bytes, usually a cache line (e.g. 64 bytes).
+</p><!--l. 124--><p class="noindent" >A detailed understanding of the results requires some knowledge of how CPUs, caches, and memories operate. <span class="cite">[<a 
+href="#Xlmbench-usenix">1</a>]</span>
+provides a good introduction to this as well as to benchmark design. <span class="cite">[<a 
+href="#Xmhz-usenix">2</a>]</span> is also a good read (by the same
+authors), and their (somewhat dated) software <span 
+class="cmti-10">lmbench </span>is available here <span class="cite">[<a 
+href="#Xlmbench">3</a>]</span>.
+</p><!--l. 133--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a>Algorithms</h3>
+<!--l. 135--><p class="noindent" >We use the following algorithms to determine the maximum speeds. We believe these algorithms and
+their implementations are adequate for current architectures, but this may need to change in the
+future.
+</p><!--l. 139--><p class="noindent" >Each benchmark is run \(N\) times, where \(N\) is automatically chosen such that the total run time is larger than \(1\) second.
+(If a benchmark finishes too quickly, then \(N\) is increased and the benchmark is repeated.)
+</p><!--l. 144--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.1   </span> <a 
+ id="x1-30002.1"></a>CPU floating-point peformance</h4>
+<!--l. 147--><p class="noindent" >CPUs for HPC systems are typically tuned for dot-product-like operations, where multiplications and additions
+alternate. We measure the floating-point peformance with the following calculation:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-1">
+  for (int i=0; i&#x003C;N; ++i) {
+    s := c_1 * s + c_2
+  }
+</pre>
+<!--l. 154--><p class="nopar" > where \(s\) is suitably initialized and \(c_1\) and \(c_2\) are suitably chosed to avoid overflow, e.g. \(s=1.0\), \(c_1=1.1\), \(c_2=-0.1\).
+</p><!--l. 158--><p class="noindent" >\(s\) is a double precision variable. The loop over \(i\) is explicitly unrolled \(8\) times, is explicitly vectorized using
+LSUThorns/Vectors, and uses fma (fused multiply-add) instructions where available. This should ensure that the
+loops runs very close to the maximum possible speed. As usual, each (scalar) multiplication and addition is
+counted as one Flop (floating point operation).
+</p><!--l. 165--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.2   </span> <a 
+ id="x1-40002.2"></a>CPU integer performance</h4>
+<!--l. 167--><p class="noindent" >Many modern CPUs can handle integers in two different ways, treating integers either as data, or as pointers
+and array indices. For example, integers may be stored in two different sets of registers depending on their use.
+We are here interested in the performance of pointers and array indices. Most modern CPUs cannot
+vectorize these operations (some GPUs can), and we therefore do not employ vectorization in this
+benchmark.
+</p><!--l. 175--><p class="noindent" >In general, array index calculations require addition and multiplication. For example, accessing the element \(A(i,j)\) of a
+two-dimensional array requires calculating \(i + n_i \cdot j\), where \(n_i\) is the number of elements allocated in the \(i\)
+direction.
+</p><!--l. 180--><p class="noindent" >However, general integer multiplcations are expensive, and are not necessary if the array is accessed in a loop,
+since a running index \(p\) can instead be kept. Accessing neighbouring elements (e.g. in stencil calculations)
+require only addition and multiplication with small constants. In the example above, assuming
+that \(p\) is the linear index corresponding to \(A(i,j)\), accessing \(A(i+1,j)\) requires calculating \(p+1\), and accessing \(A(i,j+2)\) requires
+calculating \(p + 2 \cdot n_i\). We thus base our benchmark on integer additions and integer multiplications with small
+constants.
+</p><!--l. 190--><p class="noindent" >We measure the floating-point peformance with the following calculation:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-2">
+  for (int i=0; i&#x003C;N; ++i) {
+    s := b + c * s
+  }
+</pre>
+<!--l. 196--><p class="nopar" > where \(b\) is a constant defined at run time, and \(c\) is a small integer constant (\(c = 1 \ldots 8\)) known at compile
+time.
+</p><!--l. 200--><p class="noindent" >\(s\) is an integer variable of the same size as a pointer, i.e. 64 bit on a 64-bit system. The loop over \(i\) is explicitly
+unrolled \(8\) times, each time with a different value for \(c\). Each addition and multiplication is counted as one Iop
+(integer operation).
+</p><!--l. 205--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.3   </span> <a 
+ id="x1-50002.3"></a>Cache/memory read latency</h4>
+<!--l. 207--><p class="noindent" >Memory read access latency is measured by reading small amounts of data from random locations in memory.
+This random access pattern defeats caches, because caching does not work for random access patterns. To ensure
+that the read operations are executed sequentially, each read operation needs to depend on the previous. The
+idea for the algorithm below was taken from <span class="cite">[<a 
+href="#Xlmbench-usenix">1</a>]</span>.
+</p><!--l. 214--><p class="noindent" >To implement this, we set up a large linked list where the elements are randomly orderd. Traversing this linked
+list then measures the memory read latency. This is done as in the following pseudo-code:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-3">
+  struct L { L* next; };
+  ... set up large circular list ...
+  L* ptr = head;
+  for (int i=0; i&#x003C;N; ++i) {
+    ptr = ptr-&#x003E;next;
+  }
+</pre>
+<!--l. 224--><p class="nopar" >
+</p><!--l. 226--><p class="noindent" >To reduce the overhead of the for loop, we explicitly unroll the loop 100 times.
+</p><!--l. 230--><p class="noindent" >We use the <span 
+class="cmti-10">hwloc </span>library to determine the sizes of the available data caches, the NUMA-node-local, and the
+global amount of memory. We perform this benchmark once for each cache level, and once each for the local and
+global memory: </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 235--><p class="noindent" >for a cache, the list occupies 3/4 of the cache;
+     </p></li>
+     <li class="itemize">
+     <!--l. 236--><p class="noindent" >for the local memory, the list occupies 1/2 of the memory;
+     </p></li>
+     <li class="itemize">
+     <!--l. 237--><p class="noindent" >for the global memory, the list skips the local memory, and occupies 1/4 of the remaining global
+     memory.</p></li></ul>
+<!--l. 241--><p class="noindent" >To skip the local memory, we allocate an array of the size of the local memory. Assuming that the operating
+system prefers to allocate local memory, this will then ensure that all further allocations will then use non-local
+memory. We do not test this assumption.
+</p><!--l. 246--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.4   </span> <a 
+ id="x1-60002.4"></a>Cache/memory read bandwidth</h4>
+<!--l. 248--><p class="noindent" >Memory read access bandwidth is measured by reading a large, contiguous amount of data from memory. This
+access pattern benefits from caches (if the amount is less than the cache size), and also benefits from prefetching
+(that may be performed either by the compiler or by the hardware). This presents thus an ideal case where
+memory is read as fast as possible.
+                                                                                       
+                                                                                       
+</p><!--l. 255--><p class="noindent" >To ensure that data are actually read from memory, it is necessary to consume the data, i.e. to perform some
+operations on them. We assume that a floating-point dot-product is among the fastest operations, and thus use
+the following algorithm:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-4">
+  for (int i=0; i&#x003C;N; i+=2) {
+    s := m[i] * s + m[i+1]
+  }
+</pre>
+<!--l. 263--><p class="nopar" >
+</p><!--l. 265--><p class="noindent" >As in section <a 
+href="#x1-30002.1">2.1<!--tex4ht:ref: sec:flop --></a> above, \(s\) is a double precision variable. \(m[i]\) denotes the memory accesses. The loop over \(i\) is explicitly
+unrolled \(8\) times, is explicitly vectorized using LSUThorns/Vectors, and uses fma (fused multiply-add)
+instructions where available. This should ensure that the loops runs very close to the maximum possible
+speed.
+</p><!--l. 272--><p class="noindent" >To measure the bandwidth of each cache level as well as the local and global memory, the same array sizes as in
+section <a 
+href="#x1-50002.3">2.3<!--tex4ht:ref: sec:sizes --></a> are used.
+</p><!--l. 276--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.5   </span> <a 
+ id="x1-70002.5"></a>Cache/memory write latency</h4>
+<!--l. 279--><p class="noindent" >The notion of a “write latency” does not really make sense, as write operations to different memory locations do
+not depend on each other. This benchmark thus rather measures the speed at which independent write requests
+can be handled. However, since writing partial cache lines also requires reading them, this benchmark is also
+influence by read performance.
+</p><!--l. 286--><p class="noindent" >To measure the write latency, we use the following algorithm, writing a single byte to random locations in
+memory:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-5">
+  char array[N];
+  char* ptr = ...;
+  for (int i=0; i&#x003C;N; ++i) {
+    *ptr = 1;
+    ptr += ...;
+  }
+</pre>
+<!--l. 295--><p class="nopar" >
+</p><!--l. 297--><p class="noindent" >In the loop, the pointer is increased by a pseudo-random amount, but ensuring that it stays within the bound of
+the array.
+</p><!--l. 300--><p class="noindent" >To measure the bandwidth of each cache level as well as the local and global memory, the same array sizes as in
+section <a 
+href="#x1-50002.3">2.3<!--tex4ht:ref: sec:sizes --></a> are used as starting point. For efficiency reasons, these sizes are then rounded down to the nearest
+power of two.
+</p><!--l. 305--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.6   </span> <a 
+ id="x1-80002.6"></a>Cache/memory write bandwidth</h4>
+<!--l. 307--><p class="noindent" >Memory write access bandwidth is measured by writing a large, contiguous amount of data from memory, in a
+manner very similar to measuring read bandwidth. The major difference is that the written data do not need to
+be consumed by the CPU, which simplifies the implementation.
+</p><!--l. 313--><p class="noindent" >We use <span 
+class="cmti-10">memset </span>to write data into an array, assuming that the memset function is already heavily
+optimized.
+</p><!--l. 316--><p class="noindent" >To measure the bandwidth of each cache level as well as the local and global memory, the same array sizes as in
+section <a 
+href="#x1-50002.3">2.3<!--tex4ht:ref: sec:sizes --></a> are used.
+</p><!--l. 322--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-90003"></a>Caveats</h3>
+<!--l. 324--><p class="noindent" >This benchmark should work out of the box on all systems.
+</p><!--l. 326--><p class="noindent" >The only major caveat is that it does allocate more than half of the system’s memory for its benchmarks, and
+this can severely degrade system performance if run on an interactive system (laptop or workstation). If run with
+                                                                                       
+                                                                                       
+MPI, then only the root process will run the benchmark.
+</p><!--l. 332--><p class="noindent" >Typical memory bandwidth numbers are in the range of multiple GByte/s. Given today’s memory amounts of
+many GByte, this means that this benchmark will run for tens of seconds. In addition to bencharking memory
+access, the operating system also needs to allocate the memory, which is surprisingly slow. A typical total
+execution time is several minutes.
+</p><!--l. 341--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-100004"></a>Example Results</h3>
+<!--l. 343--><p class="noindent" >The XSEDE system Kraken at NICS reports the following performance numbers (measured on June 21,
+2013):
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-6">
+INFO (MemSpeed): Measuring CPU, cache, and memory speeds:
+  CPU floating point performance: 10.396 Gflop/sec for each PU
+  CPU integer performance: 6.23736 Giop/sec for each PU
+  Read latency:
+    D1 cache read latency: 1.15434 nsec
+    L2 cache read latency: 5.82695 nsec
+    L3 cache read latency: 29.4962 nsec
+    local memory read latency: 135.264 nsec
+    global memory read latency: 154.1 nsec
+  Read bandwidth:
+    D1 cache read bandwidth: 72.3597 GByte/sec for 1 PUs
+    L2 cache read bandwidth: 20.7431 GByte/sec for 1 PUs
+    L3 cache read bandwidth: 9.51587 GByte/sec for 6 PUs
+    local memory read bandwidth: 5.19518 GByte/sec for 6 PUs
+    global memory read bandwidth: 4.03817 GByte/sec for 12 PUs
+  Write latency:
+    D1 cache write latency: 0.24048 nsec
+    L2 cache write latency: 2.8294 nsec
+    L3 cache write latency: 9.32924 nsec
+    local memory write latency: 47.5912 nsec
+    global memory write latency: 58.1591 nsec
+  Write bandwidth:
+    D1 cache write bandwidth: 39.3172 GByte/sec for 1 PUs
+    L2 cache write bandwidth: 12.9614 GByte/sec for 1 PUs
+    L3 cache write bandwidth: 5.5553 GByte/sec for 6 PUs
+    local memory write bandwidth: 4.48227 GByte/sec for 6 PUs
+    global memory write bandwidth: 3.16998 GByte/sec for 12 PUs
+</pre>
+<!--l. 373--><p class="nopar" >
+</p><!--l. 375--><p class="noindent" >The XSEDE system Kraken at NICS also reports the following system configuration via thorn hwloc (reported
+on June 21, 2013):
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-7">
+INFO (hwloc): Extracting CPU/cache/memory properties:
+  There are 1 PUs per core (aka hardware SMT threads)
+  There are 1 threads per core (aka SMT threads used)
+  Cache (unknown name) has type &#x0022;data&#x0022; depth 1
+    size 65536 linesize 64 associativity 2 stride 32768, for 1 PUs
+  Cache (unknown name) has type &#x0022;unified&#x0022; depth 2
+    size 524288 linesize 64 associativity 16 stride 32768, for 1 PUs
+  Cache (unknown name) has type &#x0022;unified&#x0022; depth 3
+    size 6291456 linesize 64 associativity 48 stride 131072, for 6 PUs
+  Memory has type &#x0022;local&#x0022; depth 1
+    size 8589541376 pagesize 4096, for 6 PUs
+  Memory has type &#x0022;global&#x0022; depth 1
+    size 17179082752 pagesize 4096, for 12 PUs
+</pre>
+<!--l. 391--><p class="nopar" >
+</p><!--l. 393--><p class="noindent" >Kraken’s CPUs identify themselves as <span class="obeylines-h"><code class="verb">6-Core AMD Opteron(tm) Processor 23 (D0)</code></span>.
+</p><!--l. 396--><p class="noindent" >Let us examine and partially interpret these numbers. (While the particular results will be different for other
+systems, the general behaviour will often be similar.)
+</p><!--l. 400--><p class="noindent" >Kraken’s compute nodes run at 2.6 GHz and execute 4 Flop/cycle, leading to a theoretical peak performance of
+10.4 GFlop/s. Our measured number of 10.396 GFlop/s is surprisingly close.
+</p><!--l. 404--><p class="noindent" >For integer performance, we expect half of the floating point performance since we cannot make use of
+vectorization, which yields a factor of two on this architecture. The reported number of 6.2 GIop/s is somewhat
+larger. We assume that the compiler found some way to optimize the code that we did not foresee, i.e. that this
+benchmark is not optimally designed. Still, the results are close.
+</p><!--l. 411--><p class="noindent" >The read latency for the D1 cache is here difficult to measure exactly, since it is so fast, and the cycle time and
+thus the natural uncertainty is about 0.38 ns. (We assume this could be measured accuratly with sufficient
+effort, but we do not completely trust our benchmark algorithm.) We thus conclude that the D1 cache has a
+latency of about 1 ns or less. A similar argument holds for the D1 read bandwidth – we conclude that the true
+bandwidth is 72 GB/s or higher.
+</p><!--l. 419--><p class="noindent" >The L2 cache has a higher read latency and a lower read bandwidth (it is also significantly larger than the D1
+cache). We consider these performance numbers now to be trustworthy.
+</p><!--l. 423--><p class="noindent" >The L3 cache has again a slightly slower read performance than the L2 cache. The major difference is that the
+L3 cache is shared between six cores, so that the bandwidth will be shared if several cores access it
+simultaneously.
+</p><!--l. 428--><p class="noindent" >The local memory has a slightly lower read bandwith, and a significantly higher read latency than
+the L3 cache. The global memory is measurably slower than the local memory, but not by a large
+margin.
+                                                                                       
+                                                                                       
+</p><!--l. 432--><p class="noindent" >The write latencies are, as expected, lower than the read latencies (see section <a 
+href="#x1-70002.5">2.5<!--tex4ht:ref: sec:write-latency --></a>).
+</p><!--l. 435--><p class="noindent" >The write bandwidths are, surprisingly, only about half as large as the read bandwidths. This could either be a
+true property of the system architecture, or may be caused by write-allocating cache lines. The
+latter means that, as soon as a cache line is partially written, the cache fills it by reading from
+memory or the next higher cache level, although this is not actually necessary as the whole cache line
+will eventually be written. This additional read from memory effectively halves the observed write
+bandwidth. In principle, the memset function should use appropriate write instructions to avoid these
+unnecessary reads, but this may either not be the case, or the hardware may not be offering such write
+instructions.
+</p><!--l. 449--><p class="noindent" >
+</p>
+<h3 class="likesectionHead"><a 
+ id="x1-11000"></a>References</h3>
+<!--l. 449--><p class="noindent" >
+   </p><div class="thebibliography">
+   <p class="bibitem" ><span class="biblabel">
+ [1]<span class="bibsp">   </span></span><a 
+ id="Xlmbench-usenix"></a>Larry  McVoy,  Carl  Staelin,  <span 
+class="cmti-10">lmbench:  Portable  tools  for  performance  analysis</span>,  1996,  Usenix,
+   <a 
+href="http://www.bitmover.com/lmbench/lmbench-usenix.pdf" class="url" ><span 
+class="cmtt-10">http://www.bitmover.com/lmbench/lmbench-usenix.pdf</span></a>
+   </p>
+   <p class="bibitem" ><span class="biblabel">
+ [2]<span class="bibsp">   </span></span><a 
+ id="Xmhz-usenix"></a>Carl   Staelin,   Larry   McVoy,   <span 
+class="cmti-10">mhz:   Anatomy   of   a   micro-benchmark</span>,   1998,   Usenix,
+   <a 
+href="http://www.bitmover.com/lmbench/mhz-usenix.pdf" class="url" ><span 
+class="cmtt-10">http://www.bitmover.com/lmbench/mhz-usenix.pdf</span></a>
+   </p>
+   <p class="bibitem" ><span class="biblabel">
+ [3]<span class="bibsp">   </span></span><a 
+ id="Xlmbench"></a><span 
+class="cmti-10">LMbench – Tools for Performance Analysis</span>, <a 
+href="http://www.bitmover.com/lmbench" class="url" ><span 
+class="cmtt-10">http://www.bitmover.com/lmbench</span></a>
+</p>
+   </div>
+<!--l. 469--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-120005"></a>Parameters</h3>
+<!--l. 488--><p class="noindent" ></p> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /></colgroup><colgroup id="TBL-2-2g"><col 
+id="TBL-2-2" /><col 
+id="TBL-2-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:normal; text-align:left;" id="TBL-2-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">skip_largemem_benchmarks</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-1-3"  
+class="td01">                               BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-2-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Skip benchmarks that require much memory</span></div>                                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-1"  
+class="td11">                        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-3-3"  
+class="td01">                              <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-4-1"  
+class="td11">                        </td></tr></table>
+<!--l. 495--><p class="noindent" ></p> <table id="TBL-3" class="tabular" 
+ 
+><colgroup id="TBL-3-1g"><col 
+id="TBL-3-1" /></colgroup><colgroup id="TBL-3-2g"><col 
+id="TBL-3-2" /><col 
+id="TBL-3-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-1-"><td  style="white-space:normal; text-align:left;" id="TBL-3-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">verbose</div>                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-1-3"  
+class="td01">                               BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-3-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Verbose output</span></div>                                                                                    
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-3-1"  
+class="td11">                        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-3-3"  
+class="td01">                              <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-4-1"  
+class="td11">                        </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 504--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">6   </span> <a 
+ id="x1-130006"></a>Interfaces</h3>
+<!--l. 509--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-14000"></a>General</h4>
+<!--l. 511--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 513--><p class="noindent" >memspeed
+</p><!--l. 518--><p class="noindent" ><span 
+class="cmbx-10">Uses header</span>:
+</p><!--l. 520--><p class="noindent" >vectors.h
+</p><!--l. 523--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">7   </span> <a 
+ id="x1-150007"></a>Schedule</h3>
+<!--l. 529--><p class="noindent" >This section lists all the variables which are assigned storage by thorn CactusUtils/MemSpeed. Storage can
+either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 532--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-16000"></a>Storage</h4>
+<!--l. 532--><p class="noindent" >NONE
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-17000"></a>Scheduled Functions</h4>
+<!--l. 536--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_WRAGH</span>
+</p><!--l. 538--><p class="noindent" >      memspeed_measurespeed
+</p><!--l. 540--><p class="noindent" >     <span 
+class="cmti-10">measure cpu, memory, cache speeds</span>
+</p><!--l. 543--><p class="noindent" > 
+</p><!--l. 545--><p class="noindent" ></p> <table id="TBL-4" class="tabular" 
+ 
+><colgroup id="TBL-4-1g"><col 
+id="TBL-4-1" /><col 
+id="TBL-4-2" /><col 
+id="TBL-4-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-4-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-2-3"  
+class="td11"> meta      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-4-1"  
+class="td11">    </td></tr></table>
+                                                                                       
+                                                                                       
+ 
+</body></html> 
+
+                                                                                       
+
+

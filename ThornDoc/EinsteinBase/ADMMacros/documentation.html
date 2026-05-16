@@ -1,0 +1,733 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>ADMMacros</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">ADMMacros</h2>
+   <div class="author" ><span 
+class="cmr-12">Original code by Gabrielle Allen,</span>
+<br /> <span 
+class="cmr-12">later enhancements by Denis Pollney</span></div>
+<br />
+<div class="date" >\( \)<span 
+class="cmr-12">Date</span>\( \)</div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 101--><p class="noindent" ><span 
+class="cmr-9">Provides macros for common relativity calculations, using the </span><span 
+class="cmbx-9">ADMBase </span><span 
+class="cmr-9">variables.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Purpose</h3>
+<!--l. 108--><p class="noindent" >This thorn provides various macros which can be used to calculate quantities, such as the Christoffel Symbol or
+Riemann Tensor components, using the basic variables of thorn <span 
+class="cmbx-10">ADMBase</span>. The macros can be used in both
+Fortran and C code. The macros work pointwise to calculate quantities at the grid point \((\code {i},\code {j},\code {k})\); it’s up to you to loop
+over all the grid points where you want computations done. The macros are written in such a way that within
+any single loop, quantities which have already been calculated are automagically reused as needed in later
+calculations.
+                                                                                       
+                                                                                       
+</p><!--l. 119--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">1.1   </span> <a 
+ id="x1-20001.1"></a>Finite Differencing</h4>
+<!--l. 121--><p class="noindent" >By default, the macros use centered 2nd order finite differencing, with 3-point finite difference molecules. That
+is, when finite differencing the the grid-point indices \(\code {i} \pm 1\), \(\code {j} \pm 1\), and \(\code {k} \pm 1\) must also be valid, and <span 
+class="cmtt-10">driver::ghost</span><span 
+class="cmtt-10">_size</span> must
+be set to at least \(1\).
+</p><!--l. 128--><p class="noindent" >Some of the macros also support centered 4th order finite differencing; This is selected with the parameter
+<span class="obeylines-h"><code class="verb">spatial_order</code></span>. This may be set to either \(2\) or \(4\); it defaults to \(2\). If it’s set to \(4\), then 5-point finite difference
+molecules are used, so the grid-point indices \(\code {i} \pm 2\), \(\code {j} \pm 2\), and \(\code {k} \pm 2\) must also be valid, and <span 
+class="cmtt-10">driver::ghost</span><span 
+class="cmtt-10">_size</span> must be set to
+at least \(2\). The only save way to be certain which macros support 4th order finite differencing is to check the
+source code; the macros which don’t support it simply hard-code 2nd order finite differencing and ignore the
+<span 
+class="cmtt-10">spatial</span><span 
+class="cmtt-10">_order</span> parameter.
+</p><!--l. 139--><p class="noindent" >At present 4th order finite differencing is only supported for Fortran code. (That is, at present the C versions of
+the macros all ignore the <span 
+class="cmtt-10">spatial</span><span 
+class="cmtt-10">_order</span> parameter.)
+</p><!--l. 144--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-30002"></a>Using ADM Macros</h3>
+<!--l. 146--><p class="noindent" >Each macro described in Section <a 
+href="#x1-90004">4<!--tex4ht:ref: admmacros:macros --></a> is implemented using three include files:
+     </p><dl class="description"><dt class="description">
+<span 
+class="cmtt-10">&#x003C;MACRONAME&#x003E;</span><span 
+class="cmtt-10">_declare.h</span> </dt><dd 
+class="description">
+     <!--l. 149--><p class="noindent" >sets up the declarations for the internal macro variables. All the internal (hidden) variables have
+     names beginning with the macro name. This file should be included in the declarations section of
+     your routine.
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">&#x003C;MACRONAME&#x003E;</span><span 
+class="cmtt-10">_guts.h</span> </dt><dd 
+class="description">
+     <!--l. 155--><p class="noindent" >is the actual included source code which will calculate the quantities.
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">&#x003C;MACRONAME&#x003E;</span><span 
+class="cmtt-10">_undefine.h</span> </dt><dd 
+class="description">
+     <!--l. 158--><p class="noindent" >resets the macros. This file <span 
+class="cmbx-10">must </span>be <span 
+class="cmtt-10">#include</span>d at the end of every loop using macros. Without
+     this, a second loop using macros would assume that quantities have already been calculated (and
+     thus get wrong results).</p></dd></dl>
+<!--l. 165--><p class="noindent" >The macros which compute derivatives also use the following variables; you should avoid using these in your
+code, in either lower or upper case:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-1">
+di2, dj2, dk2        /* only in C, not in Fortran */
+dt, dx, dy, dz
+idx, idy, idz
+i2dx, i2dy, i2dz
+i12dx, i12dy, i12dz
+idxx, idxy, idxz, idyy, idyz, idzz
+i12dxx, i12dyy, i12dzz
+i36dxy, i36dxz, i36dyz
+</pre>
+<!--l. 176--><p class="nopar" >
+</p><!--l. 178--><p class="noindent" >To use the macros, first find the name of the macro from the table in Section <a 
+href="#x1-90004">4<!--tex4ht:ref: admmacros:macros --></a> and put the include files in
+the correct place following the instructions above. Note that all ADMMacro include files are in
+the directory <span 
+class="cmtt-10">EinsteinBase/ADMMacros/src/macro/</span>, so you include the macros with lines such
+as
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-2">
+#include &#x0022;EinsteinBase/ADMMacros/src/macro/&#x003C;MACRONAME&#x003E;_&#x003C;TYPE&#x003E;.h&#x0022;
+</pre>
+<!--l. 185--><p class="nopar" > (Recall that Cactus uses a C-style preprocessor for Fortran as well as C/C<span 
+class="cmr-8">++</span> code; you use the same <span 
+class="cmtt-10">#include</span>s
+for all these languages.)
+</p><!--l. 190--><p class="noindent" >Each variable that the macro calculates is listed in the table of Section <a 
+href="#x1-90004">4<!--tex4ht:ref: admmacros:macros --></a>. Note that these variable names are
+themselves macros and are case sensitive. <span 
+class="cmbx-10">Always use the macro variables on the right hand sides</span>
+<span 
+class="cmbx-10">of equations, never redefine them yourself, since they may be used in later (hidden)</span>
+<span 
+class="cmbx-10">calculations.</span>
+</p><!--l. 196--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.1   </span> <a 
+ id="x1-40002.1"></a>Fortran</h4>
+<!--l. 198--><p class="noindent" >If you are using the macros inside a Fortran function then the <span 
+class="cmtt-10">i</span>, <span 
+class="cmtt-10">j</span> and <span 
+class="cmtt-10">k</span> indices are used directly.
+</p><!--l. 201--><p class="noindent" >If you’re using (either directly or indirectly) any macro which computes derivatives, you also need to <span 
+class="cmtt-10">#include</span>
+two additional files:
+     </p><dl class="description"><dt class="description">
+<span 
+class="cmtt-10">ADM</span><span 
+class="cmtt-10">_Spacing</span><span 
+class="cmtt-10">_declare.h</span> </dt><dd 
+class="description">
+     <!--l. 204--><p class="noindent" ><br 
+class="newline" />This must be <span 
+class="cmtt-10">#include</span>d <span 
+class="cmbx-10">before </span>any of the other <span 
+class="cmtt-10">&#x003C;MACRONAME&#x003E;</span><span 
+class="cmtt-10">_declare.h </span>files.
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">ADM</span><span 
+class="cmtt-10">_Spacing.h</span> </dt><dd 
+class="description">
+     <!--l. 207--><p class="noindent" ><br 
+class="newline" />This must be <span 
+class="cmtt-10">#include</span>d <span 
+class="cmbx-10">after </span>all of the other <span 
+class="cmtt-10">&#x003C;MACRONAME&#x003E;</span><span 
+class="cmtt-10">_declare.h </span>and <span 
+class="cmbx-10">before </span>any of the
+     <span 
+class="cmtt-10">&#x003C;MACRONAME&#x003E;</span><span 
+class="cmtt-10">_guts.h </span>files.</p></dd></dl>
+<!--l. 213--><p class="noindent" >The Fortran example below should make this clear(er).
+</p><!--l. 215--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.2   </span> <a 
+ id="x1-50002.2"></a>C</h4>
+                                                                                       
+                                                                                       
+<!--l. 217--><p class="noindent" >If you are using the macros inside a C function then you must define the grid-function subscripting index <span 
+class="cmtt-10">ijk</span>,
+which can be found from <span 
+class="cmtt-10">i</span>, <span 
+class="cmtt-10">j</span> and <span 
+class="cmtt-10">k</span> using the macro <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_GFINDEX3D(cctkGH,i,j,k)</span>. Of course,
+since <span 
+class="cmtt-10">ijk</span> depends on <span 
+class="cmtt-10">i</span>, <span 
+class="cmtt-10">j</span> and <span 
+class="cmtt-10">k</span>, you have to assign <span 
+class="cmtt-10">ijk</span> its value <span 
+class="cmbx-10">inside </span>the loop-over-grid-points
+loops.
+</p><!--l. 224--><p class="noindent" >You must also define the grid-function strides <span 
+class="cmtt-10">di</span>, <span 
+class="cmtt-10">dj</span> and <span 
+class="cmtt-10">dk</span> to give the grid-function subscripting index offsets
+of the grid points \((i+1,j,k)\), \((i,j+1,k)\), and \((i,j,k+1)\) (respectively) relative to \((i,j,k)\). That is, you should define <span 
+class="cmtt-10">di = 1</span>, <span 
+class="cmtt-10">dj = cctk</span><span 
+class="cmtt-10">_lsh[0]</span>, and
+<span 
+class="cmtt-10">dk = cctk</span><span 
+class="cmtt-10">_lsh[0]*cctk</span><span 
+class="cmtt-10">_lsh[1]</span>. Since these don’t depend on <span 
+class="cmtt-10">i</span>, <span 
+class="cmtt-10">j</span> and <span 
+class="cmtt-10">k</span>, they can be assigned values once
+outside the loop-over-grid-points loops.
+</p><!--l. 232--><p class="noindent" >The C example below should make this clear(er).
+</p><!--l. 234--><p class="noindent" >Note that you should assign all these variables their values <span 
+class="cmbx-10">before</span> <span 
+class="cmtt-10">#include</span>ing the <span 
+class="cmtt-10">&#x003C;MACRONAME&#x003E;</span><span 
+class="cmtt-10">_guts.h </span>macro
+(it may do calculations which use these values).
+</p><!--l. 239--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-60003"></a>Examples</h3>
+<!--l. 241--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">3.1   </span> <a 
+ id="x1-70003.1"></a>Fortran</h4>
+<!--l. 243--><p class="noindent" >This example comes from thorn <span 
+class="cmtt-10">CactusArchive/Maximal </span>and uses the \(trK\) macro to calculate the trace of the
+extrinsic curvature.
+</p><!--l. 246--><p class="noindent" >
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-3">
+c     Declarations for macros.
+#include &#x0022;EinsteinBase/ADMMacros/src/macro/TRK_declare.h&#x0022;
+
+c we’re not taking any derivatives here, but if we were,
+c we would also need the following line:
+#include &#x0022;EinsteinBase/ADMMacros/src/macro/ADM_Spacing_declare.h&#x0022;
+
+c we’re not taking any derivatives here, but if we were,
+c we would also need the following line:
+#include &#x0022;EinsteinBase/ADMMacros/src/macro/ADM_Spacing.h&#x0022;
+
+&#x003C;CUT&#x003E;
+
+c     Add the shift term: N = B^i D_i(trK).
+      if ((maxshift).and.(shift_state.eq.1)) then
+         do k=1,nz
+            do j=1,ny
+               do i=1,nx
+#include &#x0022;EinsteinBase/ADMMacros/src/macro/TRK_guts.h&#x0022;
+                  K_temp(i,j,k) = TRK_TRK
+                end do
+             end do
+         end do
+#include &#x0022;EinsteinBase/ADMMacros/src/macro/TRK_undefine.h&#x0022;
+</pre>
+<!--l. 272--><p class="nopar" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">3.2   </span> <a 
+ id="x1-80003.2"></a>C</h4>
+<!--l. 276--><p class="noindent" >This function computes the curved-space Laplacian of a scalar field \(\phi \), \(\del ^i \del _i \phi = g^{ij} \partial _{ij} \phi - g^{ij} \Gamma ^k_{ij} \partial _k \phi \), assuming that the partial derivatives \(\partial _{ij} \phi \) and \(\partial _k \phi \)
+have already been computed:
+</p><!--l. 282--><p class="noindent" >
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-4">
+/*
+ * This function computes the curved-space Laplacian of a scalar field,
+ * $\del^i \del_i \phi
+ *     = g^{ij} \partial_{ij} \phi - g^{ij} \Gamma^k_{ij} \partial_k \phi$
+ * at the interior grid points only; it doesn’t do anything at all on the
+ * boundaries.
+ *
+ * This function uses the following Cactus grid functions:
+ *    input:   dx_phi, dy_phi, dz_phi       # 1st derivatives of phi
+ *             dxx_phi, dxy_phi, dxz_phi,   # 2nd derivatives of phi
+ *                      dyy_phi, dyz_phi,
+ *                               dzz_phi
+ *    output:  Laplacian_phi
+ */
+void compute_Laplacian(CCTK_ARGUMENTS)
+{
+DECLARE_CCTK_ARGUMENTS
+int i,j,k;
+
+/* contracted Christoffel symbols $\Gamma^k = g^{ij} \Gamma^k_{ij}$ */
+CCTK_REAL Gamma_u_x, Gamma_u_y, Gamma_u_z;
+
+/* grid-function strides for ADMMacros */
+const int di = 1;
+const int dj = cctk_ash[0];
+const int dk = cctk_ash[0]*cctk_ash[1];
+
+/* declare the ADMMacros variables for $g^{ij}$ and $\Gamma^k_{ij}$ */
+#include &#x0022;EinsteinBase/ADMMacros/src/macro/UPPERMET_declare.h&#x0022;
+#include &#x0022;EinsteinBase/ADMMacros/src/macro/CHR2_declare.h&#x0022;
+
+    for (k = 1 ; k &#x003C; cctk_lsh[2]-1 ; ++k)
+    {
+    for (j = 1 ; j &#x003C; cctk_lsh[1]-1 ; ++j)
+    {
+    for (i = 1 ; i &#x003C; cctk_lsh[0]-1 ; ++i)
+    {
+    const int ijk = CCTK_GFINDEX3D(cctkGH,i,j,k);   /* grid-function subscripting index for ADMMacros */
+                                                    /* (must be assigned inside the i,j,k loops) */
+
+    /* compute the ADMMacros $g^{ij}$ and $\Gamma^k_{ij}$ variables at the (i,j,k) grid point */
+    #include &#x0022;EinsteinBase/ADMMacros/src/macro/UPPERMET_guts.h&#x0022;
+    #include &#x0022;EinsteinBase/ADMMacros/src/macro/CHR2_guts.h&#x0022;
+
+    /* compute the contracted Christoffel symbols $\Gamma^k = g^{ij} \Gamma^k_{ij}$ */
+    Gamma_u_x =
+      UPPERMET_UXX*CHR2_XXX + 2.0*UPPERMET_UXY*CHR2_XXY + 2.0*UPPERMET_UXZ*CHR2_XXZ
+                            +     UPPERMET_UYY*CHR2_XYY + 2.0*UPPERMET_UYZ*CHR2_XYZ
+                                                        +     UPPERMET_UZZ*CHR2_XZZ;
+    Gamma_u_y =
+      UPPERMET_UXX*CHR2_YXX + 2.0*UPPERMET_UXY*CHR2_YXY + 2.0*UPPERMET_UXZ*CHR2_YXZ
+                            +     UPPERMET_UYY*CHR2_YYY + 2.0*UPPERMET_UYZ*CHR2_YYZ
+                                                        +     UPPERMET_UZZ*CHR2_YZZ;
+    Gamma_u_z =
+      UPPERMET_UXX*CHR2_ZXX + 2.0*UPPERMET_UXY*CHR2_ZXY + 2.0*UPPERMET_UXZ*CHR2_ZXZ
+                            +     UPPERMET_UYY*CHR2_ZYY + 2.0*UPPERMET_UYZ*CHR2_ZYZ
+                                                        +     UPPERMET_UZZ*CHR2_ZZZ;
+
+                                                                                       
+                                                                                       
+    /* compute the Laplacian */
+    Laplacian_phi[ijk] =
+      UPPERMET_UXX*dxx_phi[ijk] + 2.0*UPPERMET_UXY*dxy_phi[ijk] + 2.0*UPPERMET_UXZ*dxz_phi[ijk]
+                                +     UPPERMET_UYY*dyy_phi[ijk] + 2.0*UPPERMET_UYZ*dyz_phi[ijk]
+                                                                +     UPPERMET_UZZ*dzz_phi[ijk]
+      -  Gamma_u_x*dx_phi[ijk]  -        Gamma_u_y*dy_phi[ijk]  -        Gamma_u_z*dz_phi[ijk];
+    }
+    }
+    }
+
+#include &#x0022;EinsteinBase/ADMMacros/src/macro/UPPERMET_undefine.h&#x0022;
+#include &#x0022;EinsteinBase/ADMMacros/src/macro/CHR2_undefine.h&#x0022;
+}
+</pre>
+<!--l. 357--><p class="nopar" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-90004"></a>Macros</h3>
+<!--l. 363--><p class="noindent" >Macros exist for the following quantities
+</p>
+                                                                                       
+                                                                                       
+<div class="tabular"> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /><col 
+id="TBL-2-2" /><col 
+id="TBL-2-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:normal; text-align:left;" id="TBL-2-1-1"  
+class="td11"> <!--l. 366--><p class="noindent" ><span 
+class="cmbx-10">Calculates</span>                         </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-1-2"  
+class="td11"> <!--l. 366--><p class="noindent" ><span 
+class="cmbx-10">Macro Name</span>                      </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-1-3"  
+class="td11"> <!--l. 366--><p class="noindent" ><span 
+class="cmbx-10">Sets variables</span>                     </p></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td  style="white-space:normal; text-align:left;" id="TBL-2-2-1"  
+class="td11"> <!--l. 367--><p class="noindent" >All first spatial derivatives of
+  lapse, \(\alpha _{,i}\):                                    </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-2-2"  
+class="td11"> <!--l. 367--><p class="noindent" >DA                                        </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-2-3"  
+class="td11"> <!--l. 367--><p class="noindent" >DA_DXDA,           DA_DYDA,
+  DA_DZDA                              </p></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:normal; text-align:left;" id="TBL-2-3-1"  
+class="td11"> <!--l. 368--><p class="noindent" >All second spatial derivatives of
+  lapse, \(\alpha _{,ij}\):                                    </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-3-2"  
+class="td11"> <!--l. 368--><p class="noindent" >DDA                                      </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-3-3"  
+class="td11"> <!--l. 368--><p class="noindent" >DDA_DXXDA,  DDA_DXYDA,
+  DDA_DXZDA,  DDA_DYYDA,
+  DDA_DYZDA, DDA_DZZDA     </p></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-4-"><td  style="white-space:normal; text-align:left;" id="TBL-2-4-1"  
+class="td11"> <!--l. 369--><p class="noindent" >All   second   covariant   spatial
+  derivatives of lapse, \(\alpha _{;ij}\):                  </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-4-2"  
+class="td11"> <!--l. 369--><p class="noindent" >CDCDA                                 </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-4-3"  
+class="td11"> <!--l. 370--><p class="noindent" >                            </p></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-5-"><td  style="white-space:normal; text-align:left;" id="TBL-2-5-1"  
+class="td11"> <!--l. 370--><p class="noindent" >All  first  spatial  derivatives  of
+  shift, \(\beta ^{i}_{\;\;j}\):                                     </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-5-2"  
+class="td11"> <!--l. 370--><p class="noindent" >DB                                        </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-5-3"  
+class="td11"> <!--l. 371--><p class="noindent" >                            </p></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-6-"><td  style="white-space:normal; text-align:left;" id="TBL-2-6-1"  
+class="td11"> <!--l. 371--><p class="noindent" >All first covariant derivatives of
+  the extrinsic curvature, \(K_{ij;kl}\)              </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-6-2"  
+class="td11"> <!--l. 371--><p class="noindent" >CDK                                      </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-6-3"  
+class="td11"> <!--l. 372--><p class="noindent" >                            </p></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-7-"><td  style="white-space:normal; text-align:left;" id="TBL-2-7-1"  
+class="td11"> <!--l. 372--><p class="noindent" >First covariant derivatives of the
+  extrinsic curvature, \(K_{ij;x}\), \(K_{ij;y}\), \(K_{ij;z}\)               </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-7-2"  
+class="td11"> <!--l. 372--><p class="noindent" >CDXCDK,              CDYCDK,
+  CDZCDK                               </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-7-3"  
+class="td11"> <!--l. 373--><p class="noindent" >                            </p></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-8-"><td  style="white-space:normal; text-align:left;" id="TBL-2-8-1"  
+class="td11"> <!--l. 373--><p class="noindent" >Determinant of 3-metric:             </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-8-2"  
+class="td11"> <!--l. 373--><p class="noindent" >DETG                                    </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-8-3"  
+class="td11"> <!--l. 374--><p class="noindent" >                            </p></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-9-"><td  style="white-space:normal; text-align:left;" id="TBL-2-9-1"  
+class="td11"> <!--l. 374--><p class="noindent" >Upper 3-metric,  \(g{ij}\): </p> </td><td  style="white-space:normal; text-align:left;" id="TBL-2-9-2"  
+class="td11"> <!--l. 374--><p class="noindent" >UPPERMET </p> </td><td  style="white-space:normal; text-align:left;" id="TBL-2-9-3"  
+class="td11"> <!--l. 375--><p class="noindent" ></p></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-10-"><td  style="white-space:normal; text-align:left;" id="TBL-2-10-1"  
+class="td11"> <!--l. 375--><p class="noindent" >Trace of extrinsic curvature \(trK\):       </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-10-2"  
+class="td11"> <!--l. 375--><p class="noindent" >TRK                                      </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-10-3"  
+class="td11"> <!--l. 376--><p class="noindent" >                            </p></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-11-"><td  style="white-space:normal; text-align:left;" id="TBL-2-11-1"  
+class="td11"> <!--l. 376--><p class="noindent" >Trace of stress energy tensor: </p> </td><td  style="white-space:normal; text-align:left;" id="TBL-2-11-2"  
+class="td11"> <!--l. 376--><p class="noindent" >TRT </p> </td><td  style="white-space:normal; text-align:left;" id="TBL-2-11-3"  
+class="td11"> <!--l. 377--><p class="noindent" ></p></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-12-"><td  style="white-space:normal; text-align:left;" id="TBL-2-12-1"  
+class="td11"> <!--l. 377--><p class="noindent" >Hamiltonian constraint:              </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-12-2"  
+class="td11"> <!--l. 377--><p class="noindent" >HAMADM                              </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-12-3"  
+class="td11"> <!--l. 378--><p class="noindent" >                            </p></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-13-"><td  style="white-space:normal; text-align:left;" id="TBL-2-13-1"  
+class="td11"> <!--l. 378--><p class="noindent" >Partial derivatives of extrinsic
+  curvature, \(K_{ij,x}\), \(K_{ij,y}\), \(K_{ij,z}\):                           </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-13-2"  
+class="td11"> <!--l. 378--><p class="noindent" >DXDK, DYDK, DZDK              </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-13-3"  
+class="td11"> <!--l. 379--><p class="noindent" >                            </p></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-14-"><td  style="white-space:normal; text-align:left;" id="TBL-2-14-1"  
+class="td11"> <!--l. 379--><p class="noindent" >First    partial    derivatives    of
+  3-metric, \(g_{ij,x}\), \(g_{ij,y}\), \(g_{ij,z}\):                            </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-14-2"  
+class="td11"> <!--l. 379--><p class="noindent" >DXDG, DYDG, DZDG              </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-14-3"  
+class="td11"> <!--l. 380--><p class="noindent" >                            </p></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-15-"><td  style="white-space:normal; text-align:left;" id="TBL-2-15-1"  
+class="td11"> <!--l. 380--><p class="noindent" >All  first  partial  derivatives  of
+  3-metric, \(g_{ij,k}\):                                </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-15-2"  
+class="td11"> <!--l. 380--><p class="noindent" >DG                                        </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-15-3"  
+class="td11"> <!--l. 381--><p class="noindent" >                            </p></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-16-"><td  style="white-space:normal; text-align:left;" id="TBL-2-16-1"  
+class="td11"> <!--l. 381--><p class="noindent" >First   covariant   derivatives   of
+  3-metric, \(g_{ij;x}\), \(g_{ij;y}\), \(g_{ij;z}\):                            </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-16-2"  
+class="td11"> <!--l. 381--><p class="noindent" >DXDCG, DYDCG, DZDCG       </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-16-3"  
+class="td11"> <!--l. 382--><p class="noindent" >                            </p></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-17-"><td  style="white-space:normal; text-align:left;" id="TBL-2-17-1"  
+class="td11"> <!--l. 382--><p class="noindent" >Second   partial   derivatives   of
+  3-metric, \(g_{ij,xx}\), \(g_{ij,xy}\), \(g_{ij,xz}\):                            </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-17-2"  
+class="td11"> <!--l. 382--><p class="noindent" >DXXDG,   DXYDG,   DXZDG,
+  DYYDG, DYZDG, DZZDG        </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-17-3"  
+class="td11"> <!--l. 383--><p class="noindent" >                            </p></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-18-"><td  style="white-space:normal; text-align:left;" id="TBL-2-18-1"  
+class="td11"> <!--l. 383--><p class="noindent" >All  second  partial  derivative  of
+  3-metric, \(g_{ij,lm}\)                                 </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-18-2"  
+class="td11"> <!--l. 383--><p class="noindent" >DDG                                      </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-18-3"  
+class="td11"> <!--l. 384--><p class="noindent" >                            </p></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-19-"><td  style="white-space:normal; text-align:left;" id="TBL-2-19-1"  
+class="td11"> <!--l. 384--><p class="noindent" >Ricci tensor \(R_{ij}\):                            </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-19-2"  
+class="td11"> <!--l. 384--><p class="noindent" >RICCI                                    </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-19-3"  
+class="td11"> <!--l. 385--><p class="noindent" >                            </p></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-20-"><td  style="white-space:normal; text-align:left;" id="TBL-2-20-1"  
+class="td11"> <!--l. 385--><p class="noindent" >Trace of Ricci tensor \(R\):                </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-20-2"  
+class="td11"> <!--l. 385--><p class="noindent" >TRRICCI                               </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-20-3"  
+class="td11"> <!--l. 386--><p class="noindent" >                            </p></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-21-"><td  style="white-space:normal; text-align:left;" id="TBL-2-21-1"  
+class="td11"> <!--l. 386--><p class="noindent" >Christoffel symbols of first kind:
+  \(\Gamma _{cab}\)                                             </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-21-2"  
+class="td11"> <!--l. 386--><p class="noindent" >CHR1                                    </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-21-3"  
+class="td11"> <!--l. 387--><p class="noindent" >                            </p></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-22-"><td  style="white-space:normal; text-align:left;" id="TBL-2-22-1"  
+class="td11"> <!--l. 387--><p class="noindent" >Christoffel   symbols   of   second
+  kind \(\Gamma ^{c}_{\;\;ab}\):                                      </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-22-2"  
+class="td11"> <!--l. 387--><p class="noindent" >CHR2                                    </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-22-3"  
+class="td11"> <!--l. 388--><p class="noindent" >                            </p></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-23-"><td  style="white-space:normal; text-align:left;" id="TBL-2-23-1"  
+class="td11"> <!--l. 388--><p class="noindent" >Momentum constraints               </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-23-2"  
+class="td11"> <!--l. 388--><p class="noindent" >MOMX, MOMY, MOMZ           </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-23-3"  
+class="td11"> <!--l. 389--><p class="noindent" >                            </p></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-24-"><td  style="white-space:normal; text-align:left;" id="TBL-2-24-1"  
+class="td11"> <!--l. 389--><p class="noindent" >Source             term             in
+  evolution equation for conformal
+  metric, \(\tilde {g}_{ij,t}\):                                  </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-24-2"  
+class="td11"> <!--l. 389--><p class="noindent" >DCGDT                                 </p></td><td  style="white-space:normal; text-align:left;" id="TBL-2-24-3"  
+class="td11"> <!--l. 390--><p class="noindent" >                            </p></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-25-"><td  style="white-space:normal; text-align:left;" id="TBL-2-25-1"  
+class="td11">                              </td>
+</tr></table>                                                                                               </div>
+<!--l. 394--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-100005"></a>Definitions</h3>
+<!--l. 398--><p class="noindent" >\begin {equation}  \Gamma _{cab} = \frac {1}{2}\left (g_{ac,b} + g_{bc,a} - g_{ab,c}\right )  \end {equation}<a 
+ id="x1-10001r1"></a>
+</p><!--l. 402--><p class="noindent" >\begin {equation}  \Gamma ^{c}_{\;\;ab} = g^{cd}\Gamma _{dab} = \frac {1}{2} g^{cd} \left (g_{ad,b} + g_{bd,a} - g_{ab,d}\right )  \end {equation}<a 
+ id="x1-10002r2"></a>
+</p><!--l. 408--><p class="noindent" >
+</p>
+                                                                                       
+                                                                                       
+<h3 class="sectionHead"><span class="titlemark">6   </span> <a 
+ id="x1-110006"></a>Parameters</h3>
+<!--l. 427--><p class="noindent" ></p> <table id="TBL-3" class="tabular" 
+ 
+><colgroup id="TBL-3-1g"><col 
+id="TBL-3-1" /></colgroup><colgroup id="TBL-3-2g"><col 
+id="TBL-3-2" /><col 
+id="TBL-3-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-1-"><td  style="white-space:normal; text-align:left;" id="TBL-3-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">spatial_order</div></td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-1-3"  
+class="td01">                                                   INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-3-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Order of spatial differencing</span></div>                                                                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-3-1"  
+class="td11">   <span 
+class="cmbx-10">Range     </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-3-3"  
+class="td01">                                             <span 
+class="cmbx-10">Default: </span>2  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-4-"><td  style="white-space:normal; text-align:left;" id="TBL-3-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">2</div>                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-3-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">2nd order finite differencing</div>                                                                             
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-5-"><td  style="white-space:normal; text-align:left;" id="TBL-3-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">4</div>                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-3-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">4th order finite differencing</div>                                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-6-1"  
+class="td11">             </td></tr></table>
+<!--l. 436--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">7   </span> <a 
+ id="x1-120007"></a>Interfaces</h3>
+<!--l. 441--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-13000"></a>General</h4>
+<!--l. 443--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 445--><p class="noindent" >admmacros
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-14000"></a>Grid Variables</h4>
+<!--l. 448--><p class="noindent" >
+</p>
+<h5 class="subsubsectionHead"><span class="titlemark">7.0.1   </span> <a 
+ id="x1-150007.0.1"></a>PUBLIC GROUPS</h5>
+<!--l. 452--><p class="noindent" ></p> <table id="TBL-4" class="tabular" 
+ 
+><colgroup id="TBL-4-1g"><col 
+id="TBL-4-1" /></colgroup><colgroup id="TBL-4-2g"><col 
+id="TBL-4-2" /></colgroup><colgroup id="TBL-4-3g"><col 
+id="TBL-4-3" /><col 
+id="TBL-4-4" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-1-1"  
+class="td11">   <span 
+class="cmbx-10">Group Names </span>   </td><td  style="white-space:nowrap; text-align:center;" id="TBL-4-1-2"  
+class="td10">   <span 
+class="cmbx-10">Variable Names </span> </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-1-3"  
+class="td01">    <span 
+class="cmbx-10">Details </span>   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-4"  
+class="td11">                                                                                </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-2-1"  
+class="td11">  local_spatial_order   </td><td  style="white-space:nowrap; text-align:center;" id="TBL-4-2-2"  
+class="td10">  local_spatial_order  </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-2-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-2-4"  
+class="td11"> 0                                                                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-3-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-4-3-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-3-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-4"  
+class="td11"> Can be set pointwise to change the finite differencing order  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-4-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-4-4-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-4-3"  
+class="td01">   dimensions  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-4-4"  
+class="td11"> 0                                                                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-5-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-4-5-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-5-3"  
+class="td01">  distribution  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-5-4"  
+class="td11"> CONSTANT                                                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-6-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-4-6-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-6-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-6-4"  
+class="td11"> SCALAR                                                                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-7-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-4-7-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-7-3"  
+class="td01">    timelevels  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-7-4"  
+class="td11"> 1                                                                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-8-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-4-8-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-8-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-8-4"  
+class="td11"> INT                                                                          </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-9-1"  
+class="td11">                    </td></tr></table>
+<!--l. 469--><p class="noindent" ><span 
+class="cmbx-10">Uses header</span>:
+</p><!--l. 471--><p class="noindent" >CalcTmunu_temps.inc
+</p><!--l. 473--><p class="noindent" >CalcTmunu.inc
+</p><!--l. 476--><p class="noindent" >
+</p>
+                                                                                       
+                                                                                       
+<h3 class="sectionHead"><span class="titlemark">8   </span> <a 
+ id="x1-160008"></a>Schedule</h3>
+<!--l. 482--><p class="noindent" >This section lists all the variables which are assigned storage by thorn EinsteinBase/ADMMacros. Storage can
+either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 485--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-17000"></a>Storage</h4>
+<!--l. 487--><p class="noindent" > 
+</p><!--l. 489--><p class="noindent" ></p> <table id="TBL-5" class="tabular" 
+ 
+><colgroup id="TBL-5-1g"><col 
+id="TBL-5-1" /><col 
+id="TBL-5-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-5-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-1"  
+class="td11"> <span 
+class="cmbx-10">Always:            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-2"  
+class="td11">    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-5-2-1"  
+class="td11"> local_spatial_order  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-2-2"  
+class="td11">    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-5-3-1"  
+class="td11">                           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-3-2"  
+class="td11">    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-5-4-1"  
+class="td11">                  </td></tr></table>
+<!--l. 497--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-18000"></a>Scheduled Functions</h4>
+<!--l. 500--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_BASEGRID</span>
+</p><!--l. 502--><p class="noindent" >      admmacros_setlocalspatialorder
+</p><!--l. 504--><p class="noindent" >     <span 
+class="cmti-10">initialize the local</span><span 
+class="cmti-10">_spatial</span><span 
+class="cmti-10">_order</span>
+</p><!--l. 507--><p class="noindent" > 
+</p><!--l. 509--><p class="noindent" ></p> <table id="TBL-6" class="tabular" 
+ 
+><colgroup id="TBL-6-1g"><col 
+id="TBL-6-1" /><col 
+id="TBL-6-2" /><col 
+id="TBL-6-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-6-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-3"  
+class="td11"> c                                                           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-2-3"  
+class="td11"> function                                                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-3"  
+class="td11"> admmacros::local_spatial_order(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-4-1"  
+class="td11">    </td></tr></table>
+ 
+</body></html> 
+
+                                                                                       
+
+

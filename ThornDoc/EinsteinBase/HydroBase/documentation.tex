@@ -1,0 +1,1046 @@
+% *======================================================================*
+%  Thorn documentation in the latex file doc/documentation.tex 
+%  will be included in ThornGuides built with the Cactus make system.
+%  The scripts employed by the make system automatically include 
+%  pages about variables, parameters and scheduling parsed from the 
+%  relevant thorn CCL files.
+%  
+%  This template contains guidelines which help to assure that your     
+%  documentation will be correctly added to ThornGuides. More 
+%  information is available in the Cactus UsersGuide.
+%                                                    
+%  Guidelines:
+%   - Do not change anything before the line
+%       % START CACTUS THORNGUIDE",
+%     except for filling in the title, author, date etc. fields.
+%        - Each of these fields should only be on ONE line.
+%        - Author names should be separated with a \\ or a comma
+%   - You can define your own macros are OK, but they must appear after
+%     the START CACTUS THORNGUIDE line, and do not redefine standard 
+%     latex commands.
+%   - To avoid name clashes with other thorns, 'labels', 'citations', 
+%     'references', and 'image' names should conform to the following 
+%     convention:          
+%       ARRANGEMENT_THORN_LABEL
+%     For example, an image wave.eps in the arrangement CactusWave and 
+%     thorn WaveToyC should be renamed to CactusWave_WaveToyC_wave.eps
+%   - Graphics should only be included using the graphix package. 
+%     More specifically, with the "includegraphics" command. Do
+%     not specify any graphic file extensions in your .tex file. This 
+%     will allow us (later) to create a PDF version of the ThornGuide
+%     via pdflatex. |
+%   - References should be included with the latex "bibitem" command. 
+%   - use \begin{abstract}...\end{abstract} instead of \abstract{...}
+%   - For the benefit of our Perl scripts, and for future extensions, 
+%     please use simple latex.     
+%
+% *======================================================================* 
+% 
+% Example of including a graphic image:
+% \begin{figure}[ht]
+%  \begin{center}
+%   \includegraphics[width=6cm]{/home/runner/work/tests/tests/arrangements/EinsteinBase/HydroBase/doc/MyArrangement_MyThorn_MyFigure}
+%  \end{center}
+%  \caption{Illustration of this and that}
+%  \label{MyArrangement_MyThorn_MyLabel}
+% \end{figure}
+%
+% Example of using a label:
+%   \label{MyArrangement_MyThorn_MyLabel}
+%
+% Example of a citation:
+%    \cite{MyArrangement_MyThorn_Author99}
+%
+% Example of including a reference
+%   \bibitem{MyArrangement_MyThorn_Author99}
+%   {J. Author, {\em The Title of the Book, Journal, or periodical}, 1 (1999), 
+%   1--16. {\tt http://www.nowhere.com/}}
+%
+% *======================================================================* 
+
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a 
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+% The author of the documentation
+\author{Tanja Bode \textless tanja.bode@physics.gatech.edu\textgreater\\
+        Frank L\"offler \textless knarf@cct.lsu.edu\textgreater}
+
+% The title of the document (not necessarily the name of the Thorn)
+\title{HydroBase}
+
+% the date your document was last changed, if your document is in CVS, 
+% please use:
+\date{April 29, 2010}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+% Add all definitions used in this documentation here 
+%   \def\mydef etc
+
+% Add an abstract for this thorn's documentation
+\begin{abstract}
+
+HydroBase extends the CactusEinstein framework to include an interface for magnetohydrodynamics to 
+work within.  HydroBase's main function is to store the primitive variables, common among 
+hydrodynamic simulations, commonly needed parameters, and schedule groups for the main 
+functions of a hydrodynamics code.  This has been done with an eye on Whisky, but can be used 
+to implement any hydrodynamics formulation.
+
+\end{abstract}
+
+% The following sections are suggestive only.
+% Remove them or add your own.
+
+\section{Introduction}
+
+The idea behind this thorn is to create a slim, common set of variables, parameters and
+scheduling groups which can then be used by different hydrodynamics codes. It should contain
+the common concepts of different hydrodynamics codes, but at the same time it should be
+as slim as possible to remain as general as possible. HydroBase should not contain the
+actual source code of typical routines of hydrodynamics codes, it should merely provide
+a common setup in which hydrodynamics codes can put their routines.
+
+Because there exist different formulations of the hydrodynamics equations and not all of
+them involve concepts like conserved variabled or treat them
+differently, which is the reason why these variables are not defined in HydroBase but this
+is left to the hydrodynamics codes.
+
+One of the advantages of such a common base is that modules of hydrodynamics codes only
+working with entities defined in HydroBase could be used interchangeably. Prime examples
+for this are initial data solvers or importers and analysis modules.
+Another advantage is that the format of output generated by different hydrodynamics
+codes in Cactus would be the same, including variable names and unit conventions, which
+would improve the ability to compare results of different codes directly a lot.
+
+\section{Using this Thorn}
+
+HydroBase is to be used as a central part of hydrodynamics fields just as ADMBase is used as a 
+central part of spacetime evolution and analysis codes. HydroBase only stores variables which
+are common to most if not all hydrodynamics codes solving the Euler
+equations, the so called primitive variables. These are also the variables which are needed
+to couple to a spacetime solver and which are usually needed by analysis thorns. The usage of
+a common set of variables by different hydrodynamics codes creates the possibility to share
+parts of the code, e.g.\ initial data solvers or analysis routines. 
+
+Currently the defined primitive variables are (see~\cite{livrevgrrfd} for
+details):
+\begin{itemize}
+ \item \verb|rho|: rest mass density $\varrho$
+ \item \verb|press|: pressure $p$
+ \item \verb|eps|: specific internal energy $\epsilon$
+ \item \verb|vel[3]|: contravariant fluid three velocity $v^i$ with respect 
+to the Eulerian observer defined as
+  \begin{equation}
+      v^i = \frac{u^i}{\alpha u^0} + \frac{\beta^i}{\alpha}
+  \end{equation}
+  in terms of the four-velocity $u^\mu$, lapse $\alpha$, and shift vector
+  $\beta^i$.
+ \item \verb|Y_e|: electron fraction $Y_e$
+ \item \verb|temperature|: temperature $T$
+ \item \verb|entropy|: specific entropy per particle $s$
+ \item \verb|Bvec[3]|: contravariant magnetic field vector defined as 
+  \begin{equation}
+      B^i = \frac{1}{\sqrt{4\pi}} n_{\nu} F^{*\nu i}
+  \end{equation}
+  in terms of the dual 
+  $F^{*\mu\nu} = \frac{1}{2}\varepsilon^{\mu\nu\alpha\beta}F_{\alpha\beta}$ 
+  to the Faraday tensor and the unit normal of the foliation of spacetime
+  $n^\mu$.
+\end{itemize}
+
+HydroBase also sets up scheduling blocks that organize the main functions which modules of a 
+hydrodynamics code may need. All of those scheduling blocks are optional, however if used,
+they might simplify existing codes and make them more interoperable. HydroBase itself does
+not schedule something inside most of the groups which it provides.
+
+Currently the scheduling blocks are:
+\begin{itemize}
+ \item Initializing the primitive variables
+ \item Converting primitive variables to conservative variables
+ \item Calculating the right hand side (RHS) in the method of lines (MoL)
+ \item Setting and updating an excision mask
+ \item Applying boundary conditions
+\end{itemize}
+
+In this way the initiation of the primitive variables, methods to recover the conservative
+variables, and basic atmosphere handling can be implemented in different thorns while allowing
+a central access point for analysis thorns.
+
+\section{Units}
+
+HydroBase does not require a specific set of units itself. However 
+so that there are no misunderstandings between thorns a specific 
+set of units is suggested.  These units are derived from the
+conventions
+\begin{eqnarray}
+  M_{\mathrm{sun}} = 1 &;& c = G = 1
+\end{eqnarray}
+which are commonly used in astrophysics and in relativity.
+The former sets the mass scale to the solar one and the latter
+adopts the same units for time, length and mass.
+
+We assume the following definitions and constants of nature:
+\begin{eqnarray}
+  c             & = & 299792458\, \mathrm{m/s}
+  \\
+  G             & = & 6.67428\cdot 10^{-11}\, \mathrm{m^3/kg/s^2}
+  \\
+  \mu_0         & = & 4 \pi 10^{-7}\, \mathrm{N/A^2}
+  \\
+  \epsilon_0    & = & \frac{1}{\mu_0 c^2}
+  \\
+  M_{\mathrm{sun}} & = & 1.98892\cdot10^{30}\, \mathrm{kg}
+\end{eqnarray}
+
+This corresponds to the following units for mass, length, time, and
+magnetic field:
+\begin{eqnarray}
+  [M] & = & M_{\mathrm{sun}}
+  \\{}
+  [L] & = & [M]\; G/c^2
+  \\{}
+  [T] & = & [L]\; / c
+  \\{}
+  [B] & = & 1/[L]\; / \sqrt{\epsilon_0 G / c^2} \qquad (\mathrm{SI})
+  \\{}
+  [B] & = & c^2/[L]\; / \sqrt{G} \qquad \qquad (\mathrm{Gaussian})
+\end{eqnarray}
+
+Inserting the SI units into the above unit correspondences, 
+we find the following conversion factors:
+\begin{eqnarray}
+  [L] & = & 1\, M_{\mathrm{sun}} \equiv 1.477\, \mathrm{km}
+  \\{}
+  [T] & = & 1\, M_{\mathrm{sun}} \equiv 4.92673\, \mathrm{\mu s}
+  \\{}
+  [B] & = & 1\, \sqrt{\mu_0/4\pi} /M_{\mathrm{sun}} \equiv 2.35537\cdot 
+            10^{15}\, \mathrm{T},  \qquad (\mathrm{SI})
+  \\{}
+  [B] & = & 1\, M^{-1}_{\mathrm{sun}} \equiv 2.35537\cdot 10^{19}\, \mathrm{G}, 
+            \qquad \qquad \qquad (\mathrm{Gaussian})
+\end{eqnarray}
+where T (Tesla) is the magnetic field unit in SI, 
+$1\,\mathrm{T}=1\,\mathrm{N/(A\cdot m)}$, and G (Gauss) is its cgs equivalent,
+$1\,\mathrm{Tesla} = 10^4\,\mathrm{Gauss}$. 
+
+
+\section{Acknowledgments}
+
+This thorn was produced by Tanja Bode, Roland Haas, Frank L\"offler, and Erik Schnetter.
+
+\begin{thebibliography}{9}
+\bibitem{livrevgrrfd}
+    J.~A. Font.
+    \newblock Numerical hydrodynamics in {G}eneral {R}elativity.
+    \newblock {\em Living Rev. Relativity}, {\bf 3}, 2000.
+    \newblock [Article in on-line journal], cited on 31/07/01,
+      http://www.livingreviews.org/ Articles/Volume3/2000-2font/index.html.
+\bibitem{valenciaHD}
+    F. Banyuls, J.~A. Font, J.~M.~A. Ibanez, J.~M.~A. Marti, and 
+	J.~A. Miralles. 
+    \newblock Numerical 3+1 General Relativistic Hydrodynamics: A Local Characteristic Approach.
+    \newblock {\em ApJ}, {\bf 476}, 221, 1997.
+\bibitem{valenciaMHD}
+    L. Ant{\'o}n, O. Zanotti, J.~A. Miralles,  
+	J.~M. Mart{\'{\i}}, J.~M. Ib{\'a}{\~n}ez, J.~A. Font, and 
+	 J.~A Pons.
+    \newblock Numerical 3+1 General Relativistic Magnetohydrodynamics: A Local Characteristic Approach.
+    \newblock {\em ApJ}, {\bf 637}, 296 -- 312, 2006.
+\end{thebibliography}
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{temperature\_evolution\_method}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{abar\_evolution\_method} & {\bf Scope:} restricted & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Evolution method for Abar}} \\
+\hline{\bf Range} & &  {\bf Default:} none \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering none} & \multicolumn{2}{p{\paraWidth}|}{Evolution for Abar is disabled} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bvec\_evolution\_method} & {\bf Scope:} restricted & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Evolution method for Bvec}} \\
+\hline{\bf Range} & &  {\bf Default:} none \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering none} & \multicolumn{2}{p{\paraWidth}|}{Evolution for Bvec is disabled} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{entropy\_evolution\_method} & {\bf Scope:} restricted & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Evolution method for entropy}} \\
+\hline{\bf Range} & &  {\bf Default:} none \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering none} & \multicolumn{2}{p{\paraWidth}|}{Evolution for entropy is disabled} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{evolution\_method} & {\bf Scope:} restricted & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em The hydro evolution method}} \\
+\hline{\bf Range} & &  {\bf Default:} none \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering none} & \multicolumn{2}{p{\paraWidth}|}{hydro variables are not evolved} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{hydro\_excision} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Turn on of off (default) storage for hydro excision}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Anything else than 0 turns hydro\_excision on, added to by other thorns} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{initial\_abar} & {\bf Scope:} restricted & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial value for Abar}} \\
+\hline{\bf Range} & &  {\bf Default:} none \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering none} & \multicolumn{2}{p{\paraWidth}|}{inactive} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering zero} & \multicolumn{2}{p{\paraWidth}|}{initially set to zero} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering read from file} & \multicolumn{2}{p{\paraWidth}|}{Read the initial data using the IOUtil file reader.  Note that this only allows you to read the data from a file, it does not actually do it.  You still have to programme the IOUtil file reader accordingly.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{initial\_aphi} & {\bf Scope:} restricted & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial value for Aphi}} \\
+\hline{\bf Range} & &  {\bf Default:} none \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering none} & \multicolumn{2}{p{\paraWidth}|}{inactive} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering zero} & \multicolumn{2}{p{\paraWidth}|}{initially set to zero} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering read from file} & \multicolumn{2}{p{\paraWidth}|}{Read the initial data using the IOUtil file reader.  Note that this only allows you to read the data from a file, it does not actually do it.  You still have to programme the IOUtil file reader accordingly.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{initial\_avec} & {\bf Scope:} restricted & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial value for Avec}} \\
+\hline{\bf Range} & &  {\bf Default:} none \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering none} & \multicolumn{2}{p{\paraWidth}|}{inactive} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering zero} & \multicolumn{2}{p{\paraWidth}|}{initially set to zero} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering read from file} & \multicolumn{2}{p{\paraWidth}|}{Read the initial data using the IOUtil file reader.  Note that this only allows you to read the data from a file, it does not actually do it.  You still have to programme the IOUtil file reader accordingly.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{initial\_bvec} & {\bf Scope:} restricted & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial value for Bvec}} \\
+\hline{\bf Range} & &  {\bf Default:} none \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering none} & \multicolumn{2}{p{\paraWidth}|}{inactive} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering zero} & \multicolumn{2}{p{\paraWidth}|}{initially set to zero} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering read from file} & \multicolumn{2}{p{\paraWidth}|}{Read the initial data using the IOUtil file reader.  Note that this only allows you to read the data from a file, it does not actually do it.  You still have to programme the IOUtil file reader accordingly.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{initial\_entropy} & {\bf Scope:} restricted & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial value for entropy}} \\
+\hline{\bf Range} & &  {\bf Default:} none \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering none} & \multicolumn{2}{p{\paraWidth}|}{inactive} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering zero} & \multicolumn{2}{p{\paraWidth}|}{initially set to zero} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering read from file} & \multicolumn{2}{p{\paraWidth}|}{Read the initial data using the IOUtil file reader.  Note that this only allows you to read the data from a file, it does not actually do it.  You still have to programme the IOUtil file reader accordingly.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{initial\_hydro} & {\bf Scope:} restricted & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em The hydro initial data}} \\
+\hline{\bf Range} & &  {\bf Default:} zero \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering zero} & \multicolumn{2}{p{\paraWidth}|}{hydro variables are set to vacuum (without atmosphere)} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering read from file} & \multicolumn{2}{p{\paraWidth}|}{Read the initial data using the IOUtil file reader.  Note that this only allows you to read the data from a file, it does not actually do it.  You still have to programme the IOUtil file reader accordingly.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{initial\_temperature} & {\bf Scope:} restricted & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial value for temperature}} \\
+\hline{\bf Range} & &  {\bf Default:} none \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering none} & \multicolumn{2}{p{\paraWidth}|}{inactive} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering zero} & \multicolumn{2}{p{\paraWidth}|}{initially set to zero} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering read from file} & \multicolumn{2}{p{\paraWidth}|}{Read the initial data using the IOUtil file reader.  Note that this only allows you to read the data from a file, it does not actually do it.  You still have to programme the IOUtil file reader accordingly.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{initial\_y\_e} & {\bf Scope:} restricted & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial value for Y\_e}} \\
+\hline{\bf Range} & &  {\bf Default:} none \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering none} & \multicolumn{2}{p{\paraWidth}|}{inactive} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering one} & \multicolumn{2}{p{\paraWidth}|}{initially set to one} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering read from file} & \multicolumn{2}{p{\paraWidth}|}{Read the initial data using the IOUtil file reader.  Note that this only allows you to read the data from a file, it does not actually do it.  You still have to programme the IOUtil file reader accordingly.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{prolongation\_type} & {\bf Scope:} restricted & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em The prolongation operator used by Carpet for HydroBase variables}} \\
+\hline{\bf Range} & &  {\bf Default:} ENO \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering ENO} & \multicolumn{2}{p{\paraWidth}|}{Third order ENO operators; only third order is implemented} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering WENO} & \multicolumn{2}{p{\paraWidth}|}{Fifth order WENO operators; only fifth order is implemented} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{Anything else} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{temperature\_evolution\_method} & {\bf Scope:} restricted & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Evolution method for temperature}} \\
+\hline{\bf Range} & &  {\bf Default:} none \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering none} & \multicolumn{2}{p{\paraWidth}|}{Evolution for temperature is disabled} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{timelevels} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Number of time levels in evolution scheme}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:3} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{y\_e\_evolution\_method} & {\bf Scope:} restricted & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Evolution method for Y\_e}} \\
+\hline{\bf Range} & &  {\bf Default:} none \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering none} & \multicolumn{2}{p{\paraWidth}|}{Evolution for Y\_e is disabled} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{filereader\_id\_vars} & {\bf Scope:} shared from IO & STRING \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+hydrobase
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+initbase
+\vspace{2mm}
+\subsection*{Grid Variables}
+\vspace{5mm}\subsubsection{PUBLIC GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+rho & rho & compact & 0 \\ 
+ &  & description & rest mass density \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & ProlongationParameter="HydroBase::prolongation\_type" tensortypealias="Scalar" interpolator="matter" \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+press & press & compact & 0 \\ 
+ &  & description & gas pressure \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & ProlongationParameter="HydroBase::prolongation\_type" tensortypealias="Scalar" interpolator="matter" \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+eps & eps & compact & 0 \\ 
+ &  & description & specific internal energy \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & ProlongationParameter="HydroBase::prolongation\_type" tensortypealias="Scalar" interpolator="matter" \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+vel & vel & compact & 0 \\ 
+ &  & description & velocity v\^i \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & ProlongationParameter="HydroBase::prolongation\_type" tensortypealias="U" interpolator="matter" \\ 
+ &  & timelevels & 3 \\ 
+ &  & vararray\_size & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+w\_lorentz & w\_lorentz & compact & 0 \\ 
+ &  & description & Lorentz Factor \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & ProlongationParameter="HydroBase::prolongation\_type" tensortypealias="Scalar" interpolator="matter" \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+y\_e & Y\_e & compact & 0 \\ 
+ &  & description & Electron Fraction \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & ProlongationParameter="HydroBase::prolongation\_type" tensortypealias="Scalar" interpolator="matter" \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~ \\ 
+\hline 
+abar & Abar & compact & 0 \\ 
+ &  & description & Average atomic mass [atomic mass unit] \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & ProlongationParameter="HydroBase::prolongation\_type" tensortypealias="Scalar" interpolator="matter" \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+temperature & temperature & compact & 0 \\ 
+ &  & description & Temperature [MeV] \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & ProlongationParameter="HydroBase::prolongation\_type" tensortypealias="Scalar" interpolator="matter" \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+entropy & entropy & compact & 0 \\ 
+ &  & description & Specific Entropy [k\_b/baryon] \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & ProlongationParameter="HydroBase::prolongation\_type" tensortypealias="Scalar" interpolator="matter" \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+bvec & Bvec & compact & 0 \\ 
+ &  & description & Magnetic field components B\^i \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & ProlongationParameter="HydroBase::prolongation\_type" tensortypealias="U" tensorparity=-1 interpolator="matter" \\ 
+ &  & timelevels & 3 \\ 
+ &  & vararray\_size & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+avec & Avec & compact & 0 \\ 
+ &  & description & Vector potential \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & ProlongationParameter="HydroBase::prolongation\_type" tensortypealias="D" jacobian="jacobian" interpolator="matter" \\ 
+ &  & timelevels & 3 \\ 
+ &  & vararray\_size & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+aphi & Aphi & compact & 0 \\ 
+ &  & description & Electric potential for Lorentz Gauge \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & ProlongationParameter="HydroBase::prolongation\_type" tensortypealias="Scalar" jacobian="jacobian" interpolator="matter" \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~ \\ 
+\hline 
+hydro\_excision\_mask & hydro\_excision\_mask & compact & 0 \\ 
+ &  & description & Mask for hydro excision \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & Prolongation="None" checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & INT \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+
+\noindent {\bf Adds header}: 
+
+
+
+HydroBase.h
+\vspace{2mm}
+
+\noindent {\bf Uses header}: 
+
+HydroBase.h
+\vspace{2mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn EinsteinBase/HydroBase.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Always:}& {\bf Conditional:} \\ 
+ rho[timelevels] &  press[timelevels]\\ 
+ eps[timelevels] &  temperature[timelevels]\\ 
+ vel[timelevels] &  entropy[timelevels]\\ 
+ w\_lorentz[timelevels] &  hydro\_excision\_mask\\ 
+~ &  Y\_e[timelevels]\\ 
+~ &  Abar[timelevels]\\ 
+~ &  Bvec[timelevels]\\ 
+~ &  Avec[timelevels]\\ 
+~ &  Aphi[timelevels]\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_INITIAL}   (conditional) 
+
+\hspace{5mm} hydrobase\_initial 
+
+\hspace{5mm}{\it hydrobase initial data group } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & admbase\_initialdata \\ 
+~& ~ &admbase\_initialgauge\\ 
+~& ~ &ioutil\_recoveridfromdatafiles\\ 
+~ & Before:  & admbase\_postinitial \\ 
+~& ~ &settmunu\\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_STARTUP}   (conditional) 
+
+\hspace{5mm} hydrobase\_startup 
+
+\hspace{5mm}{\it startup banner } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_INITIAL}   (conditional) 
+
+\hspace{5mm} hydrobase\_prim2coninitial 
+
+\hspace{5mm}{\it recover the conservative variables from the primitive variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & hydrobase\_initial \\ 
+~ & Before:  & settmunu \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Initial}   (conditional) 
+
+\hspace{5mm} hydrobase\_zero 
+
+\hspace{5mm}{\it set up vacuum hydro initial data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & hydrobase::rho(everywhere) \\ 
+~& ~ &rho\_p(everywhere)\\ 
+~& ~ &rho\_p\_p(everywhere)\\ 
+~& ~ &hydrobase::vel(everywhere)\\ 
+~& ~ &vel\_p(everywhere)\\ 
+~& ~ &vel\_p\_p(everywhere)\\ 
+~& ~ &hydrobase::w\_lorentz(everywhere)\\ 
+~& ~ &w\_lorentz\_p(everywhere)\\ 
+~& ~ &w\_lorentz\_p\_p(everywhere)\\ 
+~& ~ &hydrobase::eps(everywhere)\\ 
+~& ~ &eps\_p(everywhere)\\ 
+~& ~ &eps\_p\_p(everywhere)\\ 
+~& ~ &hydrobase::abar(everywhere)\\ 
+~& ~ &abar\_p(everywhere)\\ 
+~& ~ &abar\_p\_p(everywhere)\\ 
+~& ~ &hydrobase::temperature(everywhere)\\ 
+~& ~ &temperature\_p(everywhere)\\ 
+~& ~ &temperature\_p\_p(everywhere)\\ 
+~& ~ &hydrobase::entropy(everywhere)\\ 
+~& ~ &entropy\_p(everywhere)\\ 
+~& ~ &entropy\_p\_p(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Initial}   (conditional) 
+
+\hspace{5mm} hydrobase\_y\_e\_one 
+
+\hspace{5mm}{\it set electron fraction to 1 } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & hydrobase::y\_e(everywhere) \\ 
+~& ~ &y\_e\_p(everywhere)\\ 
+~& ~ &y\_e\_p\_p(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Initial}   (conditional) 
+
+\hspace{5mm} hydrobase\_bvec\_zero 
+
+\hspace{5mm}{\it set magnetic field to 0 } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & hydrobase::bvec(everywhere) \\ 
+~& ~ &bvec\_p(everywhere)\\ 
+~& ~ &bvec\_p\_p(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Initial}   (conditional) 
+
+\hspace{5mm} hydrobase\_avec\_zero 
+
+\hspace{5mm}{\it set vector potential to 0 } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & hydrobase::avec(everywhere) \\ 
+~& ~ &avec\_p(everywhere)\\ 
+~& ~ &avec\_p\_p(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Initial}   (conditional) 
+
+\hspace{5mm} hydrobase\_aphi\_zero 
+
+\hspace{5mm}{\it set vector potential phi to 0 } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & hydrobase::aphi(everywhere) \\ 
+~& ~ &aphi\_p(everywhere)\\ 
+~& ~ &aphi\_p\_p(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Initial}   (conditional) 
+
+\hspace{5mm} hydrobase\_excisionmasksetup 
+
+\hspace{5mm}{\it set up hydro excision mask } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTREGRIDINITIAL}   (conditional) 
+
+\hspace{5mm} hydrobase\_excisionmasksetup 
+
+\hspace{5mm}{\it set up hydro excision mask } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & mol\_poststep \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTREGRID}   (conditional) 
+
+\hspace{5mm} hydrobase\_excisionmasksetup 
+
+\hspace{5mm}{\it set up hydro excision mask } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & mol\_poststep \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POST\_RECOVER\_VARIABLES}   (conditional) 
+
+\hspace{5mm} hydrobase\_excisionmasksetup 
+
+\hspace{5mm}{\it set up hydro excision mask } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & mol\_poststep \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PARAMCHECK}   (conditional) 
+
+\hspace{5mm} hydrobase\_paramcheck 
+
+\hspace{5mm}{\it check that hydrobase parameters are consistent } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_ExcisionMaskSetup}   (conditional) 
+
+\hspace{5mm} hydrobase\_initexcisionmask 
+
+\hspace{5mm}{\it initialize hydro excision mask to 'no excision everywhere' } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & hydrobase::hydro\_excision\_mask(everywhere) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTSTEP}   (conditional) 
+
+\hspace{5mm} hydrobase\_excisionhasbeenset 
+
+\hspace{5mm}{\it group to schedule thorns changing the mask before and thorns using the mask after } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_CalcRHS}   (conditional) 
+
+\hspace{5mm} hydrobase\_rhs 
+
+\hspace{5mm}{\it groups for scheduling tasks for calculating rhs of hydro variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_PostStep}   (conditional) 
+
+\hspace{5mm} hydrobase\_poststep 
+
+\hspace{5mm}{\it post step tasks for hydro thorns } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & admbase\_setadmvars \\ 
+~ & Before:  & settmunu \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_PostStep}   (conditional) 
+
+\hspace{5mm} hydrobase\_boundaries 
+
+\hspace{5mm}{\it hydrobase-internal boundary conditions group } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & hydrobase\_con2prim \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Boundaries}   (conditional) 
+
+\hspace{5mm} hydrobase\_select\_boundaries 
+
+\hspace{5mm}{\it group to schedule the boundary condition functions } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Boundaries}   (conditional) 
+
+\hspace{5mm} applybcs 
+
+\hspace{5mm}{\it apply the boundary conditions of hydrobase } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & hydrobase\_select\_boundaries \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_PostStep}   (conditional) 
+
+\hspace{5mm} hydrobase\_con2prim 
+
+\hspace{5mm}{\it convert from conservative to primitive variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTPOSTINITIAL}   (conditional) 
+
+\hspace{5mm} hydrobase\_con2prim 
+
+\hspace{5mm}{\it convert from conservative to primitive variables (might be redundant) } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & admconstraintsgroup \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\subsection*{Aliased Functions}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Alias Name:} ~~~~~~~ & {\bf Function Name:} \\ 
+ApplyBCs & HydroBase\_ApplyBCs \\ 
+HydroBase\_Con2Prim & Con2Prim \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}
