@@ -1,0 +1,301 @@
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn WVUThorns/GiRaFFE.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Always:}&  ~ \\ 
+ ADMBase::metric[metric\_timelevels] ADMBase::curv[metric\_timelevels] ADMBase::lapse[lapse\_timelevels] ADMBase::shift[shift\_timelevels] & ~\\ 
+ GiRaFFE::BSSN\_quantities & ~\\ 
+ grmhd\_conservatives[3] em\_Ax[3] em\_Ay[3] em\_Az[3] em\_psi6phi[3] & ~\\ 
+ grmhd\_primitives\_allbutBi grmhd\_primitives\_Bi grmhd\_primitives\_reconstructed\_temps grmhd\_conservatives\_rhs em\_Ax\_rhs em\_Ay\_rhs em\_Az\_rhs em\_psi6phi\_rhs grmhd\_cmin\_cmax\_temps grmhd\_flux\_temps TUPmunu diagnostic\_gfs & ~\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf MoL\_Register} 
+
+\hspace{5mm} giraffe\_registervars 
+
+\hspace{5mm}{\it register evolved, rhs variables in giraffe for mol } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & bssn\_registervars \\ 
+~& ~ &lapse\_registervars\\ 
+~ & Language:  & c \\ 
+~ & Options:  & meta \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_BASEGRID} 
+
+\hspace{5mm} giraffe\_initsymbound 
+
+\hspace{5mm}{\it schedule symmetries } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & lapse\_initsymbound \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Boundaries} 
+
+\hspace{5mm} giraffe\_compute\_b\_and\_bstagger\_from\_a 
+
+\hspace{5mm}{\it compute b and b\_stagger from a } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & giraffe\_outer\_boundaries\_on\_a\_mu \\ 
+~ & Language:  & c \\ 
+~ & Sync:  & grmhd\_primitives\_bi \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf AddToTmunu} 
+
+\hspace{5mm} giraffe\_conserv\_to\_prims\_ffe 
+
+\hspace{5mm}{\it applies the ffe condition b\^2{\textgreater}e\^2 and recomputes the velocities } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & giraffe\_compute\_b\_and\_bstagger\_from\_a \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf AddToTmunu} 
+
+\hspace{5mm} giraffe\_outer\_boundaries\_on\_vx\_vy\_vz 
+
+\hspace{5mm}{\it apply outflow-only, flat bcs on \{vx,vy,vz\}. outflow only == velocities pointed inward from outer boundary are set to zero. } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & conserv\_to\_prims \\ 
+~ & Language:  & c \\ 
+~ & Sync:  & grmhd\_primitives\_allbutbi \\ 
+~& ~ &grmhd\_conservatives\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTPOSTINITIAL} 
+
+\hspace{5mm} giraffe\_postpostinitial 
+
+\hspace{5mm}{\it hydrobase\_con2prim in cctk\_postpostinitial sets conserv to prim then outer boundaries (obs, which are technically disabled). the post ob syncs actually reprolongate the conservative variables, making cons and prims inconsistent. so here we redo the con2prim, avoiding the sync afterward, then copy the result to other timelevels } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & hydrobase\_con2prim \\ 
+~ & Before:  & mol\_poststep \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GiRaFFE\_PostPostInitial} 
+
+\hspace{5mm} giraffe\_initsymbound 
+
+\hspace{5mm}{\it schedule symmetries -- actually just a placeholder function to ensure prolongations / processor syncs are done before outer boundaries are updated. } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & compute\_b \\ 
+~ & Language:  & c \\ 
+~ & Sync:  & grmhd\_conservatives \\ 
+~& ~ &em\_ax\\ 
+~& ~ &em\_ay\\ 
+~& ~ &em\_az\\ 
+~& ~ &em\_psi6phi\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GiRaFFE\_PostPostInitial} 
+
+\hspace{5mm} giraffe\_compute\_b\_and\_bstagger\_from\_a 
+
+\hspace{5mm}{\it compute b and b\_stagger from a sync: grmhd\_primitives\_bi } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & postid \\ 
+~& ~ &empostid\\ 
+~& ~ &lapsepostid\\ 
+~ & Language:  & c \\ 
+~ & Sync:  & grmhd\_primitives\_bi \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GiRaFFE\_PostPostInitial} 
+
+\hspace{5mm} giraffe\_conserv\_to\_prims\_ffe 
+
+\hspace{5mm}{\it applies the ffe condition b\^2{\textgreater}e\^2 and recomputes the velocities } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & compute\_b \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GiRaFFE\_PostPostInitial} 
+
+\hspace{5mm} giraffe\_postpostinitial\_set\_symmetries\_\_copy\_timelevels 
+
+\hspace{5mm}{\it compute post-initialdata quantities } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & compute\_b \\ 
+~& ~ &p2c\\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_CalcRHS} 
+
+\hspace{5mm} giraffe\_driver\_evaluate\_ffe\_rhs 
+
+\hspace{5mm}{\it evaluate rhss of grffe equations } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & bssn\_rhs \\ 
+~& ~ &shift\_rhs\\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Boundaries} 
+
+\hspace{5mm} giraffe\_initsymbound 
+
+\hspace{5mm}{\it schedule symmetries -- actually just a placeholder function to ensure prolongations / processor syncs are done before outer boundaries are updated. } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & hydrobase\_applybcs \\ 
+~ & Before:  & giraffe\_outer\_boundaries\_on\_a\_mu \\ 
+~ & Language:  & c \\ 
+~ & Sync:  & grmhd\_conservatives \\ 
+~& ~ &em\_ax\\ 
+~& ~ &em\_ay\\ 
+~& ~ &em\_az\\ 
+~& ~ &em\_psi6phi\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Boundaries} 
+
+\hspace{5mm} giraffe\_outer\_boundaries\_on\_a\_mu 
+
+\hspace{5mm}{\it apply linear extrapolation bcs on a\_mu, so that bcs are flat on b\^i. } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & giraffe\_initsymbound \\ 
+~ & Before:  & giraffe\_compute\_b\_and\_bstagger\_from\_a \\ 
+~ & Language:  & c \\ 
+~ & Sync:  & em\_ax \\ 
+~& ~ &em\_ay\\ 
+~& ~ &em\_az\\ 
+~& ~ &em\_psi6phi\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\subsection*{Aliased Functions}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Alias Name:} ~~~~~~~ & {\bf Function Name:} \\ 
+GiRaFFE\_PostPostInitial\_Set\_Symmetries\_\_Copy\_Timelevels & mhdpostid \\ 
+GiRaFFE\_compute\_B\_and\_Bstagger\_from\_A & compute\_b \\ 
+GiRaFFE\_driver\_evaluate\_FFE\_rhs & GiRaFFE\_RHS\_eval \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 

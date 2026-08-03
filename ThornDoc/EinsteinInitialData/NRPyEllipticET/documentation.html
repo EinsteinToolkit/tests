@@ -1,0 +1,1675 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>NRPyEllipticET</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">NRPyEllipticET</h2>
+      <div class="author" ><span 
+class="cmr-12">Leo</span><span 
+class="cmr-12"> R.</span><span 
+class="cmr-12"> Werneck </span><span 
+class="cmmi-12">&#x003C;</span><span 
+class="cmr-12">wernecklr@gmail.com</span><span 
+class="cmmi-12">&#x003E;</span><span 
+class="cmr-12">,</span>
+<br /> <span 
+class="cmr-12">Thiago</span><span 
+class="cmr-12"> Assump</span><span 
+class="cmr-12">ç</span><span 
+class="cmr-12">ão </span><span 
+class="cmmi-12">&#x003C;</span><span 
+class="cmr-12">assumpcaothiago@gmail.com</span><span 
+class="cmmi-12">&#x003E;</span><span 
+class="cmr-12">,</span>
+<br />         <span 
+class="cmr-12">Zach</span><span 
+class="cmr-12"> Etienne </span><span 
+class="cmmi-12">&#x003C;</span><span 
+class="cmr-12">zachetie@gmail.com</span><span 
+class="cmmi-12">&#x003E;</span><span 
+class="cmr-12">,</span>
+<br />   <span 
+class="cmr-12">Terrence</span><span 
+class="cmr-12"> Pierre</span><span 
+class="cmr-12"> Jacques </span><span 
+class="cmmi-12">&#x003C;</span><span 
+class="cmr-12">tp0052@mix.wvu.edu</span><span 
+class="cmmi-12">&#x003E;</span></div>
+<br />
+<div class="date" ><span 
+class="cmr-12">August, 2022</span></div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 105--><p class="noindent" ><span 
+class="cmr-9">This thorn generates numerical relativity initial data by solving the constraints of general relativity</span>
+     <span 
+class="cmr-9">using the hyperbolic relaxation method.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Introduction</h3>
+<!--l. 113--><p class="noindent" >The hyperbolic relaxation method of <span class="cite">[<a 
+href="#Xruter:2018">1</a>]</span> converts an elliptic problem into a hyperbolic one. The prototypical
+elliptic problem—Poisson’s equation—reads \begin {equation}  \nabla ^{2}\vec {u} = \vec {\rho }\;,  \end {equation}<a 
+ id="x1-1001r1"></a> where \(\vec {u}\) is a set of unknowns and \(\vec {\rho }\) are sources. One introduces
+a <span 
+class="cmti-10">relaxation </span>time \(t\) and replaces this elliptic equation with \begin {equation}  \partial _{t}^{2}\vec {u} + \eta \partial _{t}\vec {u} = c^{2}\left (\nabla ^{2}\vec {u} - \vec {\rho }\right )\;,  \end {equation}<a 
+ id="x1-1002r2"></a> where \(\eta \) is a damping parameter with
+units of inverse time and \(c\) is the speed of the relaxation waves. One then evolves this hyperbolic
+equation until a steady state is reached at \(t=t_{\star }\), for which \begin {equation}  \left .\partial _{t}^{2}\vec {u}\right |_{t=t_{\star }} = 0 = \left .\partial _{t}\vec {u}\right |_{t=t_{\star }}\;,  \end {equation}<a 
+ id="x1-1003r3"></a> and thus \(\left .\vec {u}\right |_{t=t_{\star }}\) is also a solution to the original
+elliptic problem. For more details of how this method is implemented in <span 
+class="cmtt-10">NRPyEllipticET</span>, please
+see <span class="cite">[<a 
+href="#Xassumpcao:2022">2</a>]</span>.
+                                                                                       
+                                                                                       
+</p><!--l. 141--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a>Initial data types</h3>
+<!--l. 142--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.1   </span> <a 
+ id="x1-30002.1"></a>Conformally flat binary black hole initial data</h4>
+<!--l. 144--><p class="noindent" >As described in <span class="cite">[<a 
+href="#Xassumpcao:2022">2</a>]</span>, <span 
+class="cmtt-10">NRPyEllipticET </span>solves the Hamiltonian constraint using the conformal transverse-traceless
+(CTT) decomposition, i.e., \begin {equation}  \hat \nabla ^{2}u + \frac {1}{8}\tilde {A}_{ij}\tilde {A}^{ij}\left (\psi _{\rm singular}+u\right )^{-7} = 0\;,  \end {equation}<a 
+ id="x1-3001r4"></a> where \(\hat \nabla _{i}\) is the covariant derivative compatible with the flat spatial metric \(\hat \gamma _{ij}\), \(\hat \nabla ^{2} = \hat \nabla _{i}\hat \nabla ^{i}\), \(\tilde {A}_{ij} = \psi ^{-4}A_{ij}\), where \(A_{ij}\)
+is the traceless part of the extrinsic curvature, and \(\psi \) is the conformal factor, given by \begin {equation}  \psi = \psi _{\rm singular} + u \equiv 1 + \sum _{n=1}^{N_{p}}\frac {m_{n}}{2|\vec {x}_{n}|} + u\;,  \end {equation}<a 
+ id="x1-3002r5"></a> where \(m_{n}\) are \(\vec {x}_{n}\) are the bare
+mass and position vector of the \(n\)<sup class="textsuperscript"><span 
+class="cmr-9">th</span></sup> puncture and \(u\) is a to-be-determined non-singular piece of the conformal
+factor.
+</p><!--l. 164--><p class="noindent" >We thus solve the Hamiltonian constraint using the hyperbolic relaxation method, i.e., \begin {align}  \partial _{t}u &amp;= v - \eta u\;,\\ \partial _{t}v &amp;= c^{2}\left [\hat {\nabla }^{2}u + \frac {1}{8}\tilde {A}_{ij}\tilde {A}^{ij}\left (\psi _{\rm singular} + u\right )\right ]\;,  \end {align}
+</p><!--l. 172--><p class="noindent" >where the first equation defines \(v\).
+</p><!--l. 174--><p class="noindent" >
+</p>
+<h3 class="likesectionHead"><a 
+ id="x1-4000"></a>References</h3>
+<!--l. 174--><p class="noindent" >
+   </p><div class="thebibliography">
+   <p class="bibitem" ><span class="biblabel">
+ [1]<span class="bibsp">   </span></span><a 
+ id="Xruter:2018"></a>Rüter, H. R.,  Hildich, D.,  Bugner, M.,  and  Brügmann, B.,  Phys.  Rev.  D  <span 
+class="cmbx-10">98</span>,  084044,  2018
+   (arXiv:  <a 
+href="https://arxiv.org/abs/1708.07358" >1708.07358</a>).
+   </p>
+   <p class="bibitem" ><span class="biblabel">
+ [2]<span class="bibsp">   </span></span><a 
+ id="Xassumpcao:2022"></a>Assumpção, T., Werneck, L. R., Etienne, Z. B., and Pierre Jacques, T., Phys. Rev. D <span 
+class="cmbx-10">105</span>,
+   104037, 2022 (arXiv:  <a 
+href="https://arxiv.org/abs/2111.02424" >2111.02424</a>).</p></div>
+<!--l. 184--><p class="noindent" >
+                                                                                       
+                                                                                       
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-50003"></a>Parameters</h3>
+<!--l. 203--><p class="noindent" ></p> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /></colgroup><colgroup id="TBL-2-2g"><col 
+id="TBL-2-2" /><col 
+id="TBL-2-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:normal; text-align:left;" id="TBL-2-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">cfl_factor</div>                                        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-1-3"  
+class="td01">                             REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-2-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">CFL factor of the relaxation time evolution.</span></div>                                                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-1"  
+class="td11">              <span 
+class="cmbx-10">Range                    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-3-3"  
+class="td01">                        <span 
+class="cmbx-10">Default: </span>0.7  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-4-"><td  style="white-space:normal; text-align:left;" id="TBL-2-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:1</div>
+                                                      </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-2-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Between zero and one. For higher resolutions this will have
+  to be lowered.</div>                                                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-5-1"  
+class="td11">                                   </td></tr></table>
+<!--l. 210--><p class="noindent" ></p> <table id="TBL-3" class="tabular" 
+ 
+><colgroup id="TBL-3-1g"><col 
+id="TBL-3-1" /></colgroup><colgroup id="TBL-3-2g"><col 
+id="TBL-3-2" /><col 
+id="TBL-3-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-1-"><td  style="white-space:normal; text-align:left;" id="TBL-3-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">conformally_flat_bbh_puncture_0_bare_mass</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-1-3"  
+class="td01">                             REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-3-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Bare mass of first puncture</span></div>                                                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-3-1"  
+class="td11">              <span 
+class="cmbx-10">Range                    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-3-3"  
+class="td01">                      <span 
+class="cmbx-10">Default: </span>1e123  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-4-"><td  style="white-space:normal; text-align:left;" id="TBL-3-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-3-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Must be positive</div>                                                          
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-5-"><td  style="white-space:normal; text-align:left;" id="TBL-3-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1e123</div>                                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-3-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Forbidden value to make sure it is explicitly set in the parfile</div>  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-6-1"  
+class="td11">                                   </td></tr></table>
+<!--l. 217--><p class="noindent" ></p> <table id="TBL-4" class="tabular" 
+ 
+><colgroup id="TBL-4-1g"><col 
+id="TBL-4-1" /></colgroup><colgroup id="TBL-4-2g"><col 
+id="TBL-4-2" /><col 
+id="TBL-4-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-1-"><td  style="white-space:normal; text-align:left;" id="TBL-4-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">conformally_flat_bbh_puncture_0_p</div>    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-1-3"  
+class="td01">                             REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-4-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Linear momentum of first puncture</span></div>                                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-3-1"  
+class="td11">              <span 
+class="cmbx-10">Range                    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-3-3"  
+class="td01">                     <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-4-"><td  style="white-space:normal; text-align:left;" id="TBL-4-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                                                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">This parameter can have any value</div>                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-5-1"  
+class="td11">                                   </td></tr></table>
+<!--l. 224--><p class="noindent" ></p> <table id="TBL-5" class="tabular" 
+ 
+><colgroup id="TBL-5-1g"><col 
+id="TBL-5-1" /></colgroup><colgroup id="TBL-5-2g"><col 
+id="TBL-5-2" /><col 
+id="TBL-5-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-1-"><td  style="white-space:normal; text-align:left;" id="TBL-5-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">conformally_flat_bbh_puncture_0_pos</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-1-3"  
+class="td01">                             REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-5-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Position of first puncture</span></div>                                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-3-1"  
+class="td11">              <span 
+class="cmbx-10">Range                    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-3-3"  
+class="td01">                     <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-4-"><td  style="white-space:normal; text-align:left;" id="TBL-5-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                                                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-5-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">This parameter can have any value</div>                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-5-1"  
+class="td11">                                   </td></tr></table>
+<!--l. 231--><p class="noindent" ></p> <table id="TBL-6" class="tabular" 
+ 
+><colgroup id="TBL-6-1g"><col 
+id="TBL-6-1" /></colgroup><colgroup id="TBL-6-2g"><col 
+id="TBL-6-2" /><col 
+id="TBL-6-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-1-"><td  style="white-space:normal; text-align:left;" id="TBL-6-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">conformally_flat_bbh_puncture_0_s</div>     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-1-3"  
+class="td01">                             REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-6-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Angular momentum of first puncture</span></div>                                                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-3-1"  
+class="td11">              <span 
+class="cmbx-10">Range                    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-3-3"  
+class="td01">                     <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-4-"><td  style="white-space:normal; text-align:left;" id="TBL-6-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                                                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-6-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">This parameter can have any value</div>                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-5-1"  
+class="td11">                                   </td></tr></table>
+<!--l. 238--><p class="noindent" ></p> <table id="TBL-7" class="tabular" 
+ 
+><colgroup id="TBL-7-1g"><col 
+id="TBL-7-1" /></colgroup><colgroup id="TBL-7-2g"><col 
+id="TBL-7-2" /><col 
+id="TBL-7-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-1-"><td  style="white-space:normal; text-align:left;" id="TBL-7-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">conformally_flat_bbh_puncture_1_bare_mass</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-1-3"  
+class="td01">                             REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-7-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Bare mass of second puncture</span></div>                                                                         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-3-1"  
+class="td11">              <span 
+class="cmbx-10">Range                    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-3-3"  
+class="td01">                      <span 
+class="cmbx-10">Default: </span>1e123  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-4-"><td  style="white-space:normal; text-align:left;" id="TBL-7-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-7-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Must be positive</div>                                                          
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-5-"><td  style="white-space:normal; text-align:left;" id="TBL-7-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1e123</div>                                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-7-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Forbidden value to make sure it is explicitly set in the parfile</div>  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-6-1"  
+class="td11">                                   </td></tr></table>
+<!--l. 245--><p class="noindent" ></p> <table id="TBL-8" class="tabular" 
+ 
+><colgroup id="TBL-8-1g"><col 
+id="TBL-8-1" /></colgroup><colgroup id="TBL-8-2g"><col 
+id="TBL-8-2" /><col 
+id="TBL-8-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-1-"><td  style="white-space:normal; text-align:left;" id="TBL-8-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">conformally_flat_bbh_puncture_1_p</div>    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-1-3"  
+class="td01">                             REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-8-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Linear momentum of second puncture</span></div>                                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-3-1"  
+class="td11">              <span 
+class="cmbx-10">Range                    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-3-3"  
+class="td01">                     <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-4-"><td  style="white-space:normal; text-align:left;" id="TBL-8-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                                                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-8-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">This parameter can have any value</div>                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-5-1"  
+class="td11">                                   </td></tr></table>
+<!--l. 252--><p class="noindent" ></p> <table id="TBL-9" class="tabular" 
+ 
+><colgroup id="TBL-9-1g"><col 
+id="TBL-9-1" /></colgroup><colgroup id="TBL-9-2g"><col 
+id="TBL-9-2" /><col 
+id="TBL-9-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-1-"><td  style="white-space:normal; text-align:left;" id="TBL-9-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">conformally_flat_bbh_puncture_1_pos</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-1-3"  
+class="td01">                             REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-9-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Position of second puncture</span></div>                                                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-3-1"  
+class="td11">              <span 
+class="cmbx-10">Range                    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-3-3"  
+class="td01">                     <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-4-"><td  style="white-space:normal; text-align:left;" id="TBL-9-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                                                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-9-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">This parameter can have any value</div>                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-5-1"  
+class="td11">                                   </td></tr></table>
+<!--l. 259--><p class="noindent" ></p> <table id="TBL-10" class="tabular" 
+ 
+><colgroup id="TBL-10-1g"><col 
+id="TBL-10-1" /></colgroup><colgroup id="TBL-10-2g"><col 
+id="TBL-10-2" /><col 
+id="TBL-10-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-1-"><td  style="white-space:normal; text-align:left;" id="TBL-10-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">conformally_flat_bbh_puncture_1_s</div>     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-1-3"  
+class="td01">                             REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-10-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Angular momentum of second puncture</span></div>                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-3-1"  
+class="td11">              <span 
+class="cmbx-10">Range                    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-3-3"  
+class="td01">                     <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-4-"><td  style="white-space:normal; text-align:left;" id="TBL-10-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                                                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-10-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">This parameter can have any value</div>                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-5-1"  
+class="td11">                                   </td></tr></table>
+<!--l. 266--><p class="noindent" ></p> <table id="TBL-11" class="tabular" 
+ 
+><colgroup id="TBL-11-1g"><col 
+id="TBL-11-1" /></colgroup><colgroup id="TBL-11-2g"><col 
+id="TBL-11-2" /><col 
+id="TBL-11-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-1-"><td  style="white-space:normal; text-align:left;" id="TBL-11-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">domain_size</div>                                    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-1-3"  
+class="td01">                             REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-11-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Domain size for the initial data</span></div>                                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-3-1"  
+class="td11">              <span 
+class="cmbx-10">Range                    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-3-3"  
+class="td01">                        <span 
+class="cmbx-10">Default: </span>1e6  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-4-"><td  style="white-space:normal; text-align:left;" id="TBL-11-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-11-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Must be positive</div>                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-5-1"  
+class="td11">                                   </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 273--><p class="noindent" ></p> <table id="TBL-12" class="tabular" 
+ 
+><colgroup id="TBL-12-1g"><col 
+id="TBL-12-1" /></colgroup><colgroup id="TBL-12-2g"><col 
+id="TBL-12-2" /><col 
+id="TBL-12-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-1-"><td  style="white-space:normal; text-align:left;" id="TBL-12-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">eta_damping</div>                                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-1-3"  
+class="td01">                             REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-12-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Wave equation damping parameter</span></div>                                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-3-1"  
+class="td11">              <span 
+class="cmbx-10">Range                    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-3-3"  
+class="td01">                         <span 
+class="cmbx-10">Default: </span>-1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-4-"><td  style="white-space:normal; text-align:left;" id="TBL-12-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-12-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Must be positive</div>                                                          
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-5-"><td  style="white-space:normal; text-align:left;" id="TBL-12-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1</div>
+                                                      </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-12-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Compute                                                      optimum
+  eta_damping (requires domain_size=1e6; sinh_width=0.07;
+  foci_position=5)</div>                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-6-1"  
+class="td11">                                   </td></tr></table>
+<!--l. 280--><p class="noindent" ></p> <table id="TBL-13" class="tabular" 
+ 
+><colgroup id="TBL-13-1g"><col 
+id="TBL-13-1" /></colgroup><colgroup id="TBL-13-2g"><col 
+id="TBL-13-2" /><col 
+id="TBL-13-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-1-"><td  style="white-space:normal; text-align:left;" id="TBL-13-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">foci_position</div>                                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-1-3"  
+class="td01">                             REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-13-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Position of the foci of the prolate spheroidal coordinate system. Typically the position</span>
+  <span 
+class="cmti-10">of the puncture.</span></div>                                                                                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-3-1"  
+class="td11">              <span 
+class="cmbx-10">Range                    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-3-3"  
+class="td01">                        <span 
+class="cmbx-10">Default: </span>5.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-4-"><td  style="white-space:normal; text-align:left;" id="TBL-13-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-13-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Must be positive</div>                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-5-1"  
+class="td11">                                   </td></tr></table>
+<!--l. 287--><p class="noindent" ></p> <table id="TBL-14" class="tabular" 
+ 
+><colgroup id="TBL-14-1g"><col 
+id="TBL-14-1" /></colgroup><colgroup id="TBL-14-2g"><col 
+id="TBL-14-2" /><col 
+id="TBL-14-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-1-"><td  style="white-space:normal; text-align:left;" id="TBL-14-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">info_output_freq</div>                              </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-1-3"  
+class="td01">                               INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-14-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Print progress of relaxation time evolution every info</span><span 
+class="cmti-10">_output</span><span 
+class="cmti-10">_freq iterations</span></div>                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-3-1"  
+class="td11">              <span 
+class="cmbx-10">Range                    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-3-3"  
+class="td01">                     <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-4-"><td  style="white-space:normal; text-align:left;" id="TBL-14-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-14-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Any positive value. 0 disables it</div>                                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-5-1"  
+class="td11">                                   </td></tr></table>
+<!--l. 294--><p class="noindent" ></p> <table id="TBL-15" class="tabular" 
+ 
+><colgroup id="TBL-15-1g"><col 
+id="TBL-15-1" /></colgroup><colgroup id="TBL-15-2g"><col 
+id="TBL-15-2" /><col 
+id="TBL-15-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-1-"><td  style="white-space:normal; text-align:left;" id="TBL-15-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">initial_data_type</div>                             </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-15-1-3"  
+class="td01">                           STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-15-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Type of initial data generated by NRPyEllipticET</span></div>                                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-3-1"  
+class="td11">              <span 
+class="cmbx-10">Range                    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-15-3-3"  
+class="td01">         <span 
+class="cmbx-10">Default: </span>ConformallyFlatBBH  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-4-"><td  style="white-space:normal; text-align:left;" id="TBL-15-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">ConformallyFlatBBH</div>                        </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-15-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Conformally flat binary black hole initial data</div>                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-5-1"  
+class="td11">                                   </td></tr></table>
+<!--l. 301--><p class="noindent" ></p> <table id="TBL-16" class="tabular" 
+ 
+><colgroup id="TBL-16-1g"><col 
+id="TBL-16-1" /></colgroup><colgroup id="TBL-16-2g"><col 
+id="TBL-16-2" /><col 
+id="TBL-16-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-1-"><td  style="white-space:normal; text-align:left;" id="TBL-16-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">interpolation_order</div>                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-16-1-3"  
+class="td01">                               INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-16-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Interpolation order</span></div>                                                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-3-1"  
+class="td11">              <span 
+class="cmbx-10">Range                    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-16-3-3"  
+class="td01">                         <span 
+class="cmbx-10">Default: </span>4  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-4-"><td  style="white-space:normal; text-align:left;" id="TBL-16-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-16-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Must be positive</div>                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-5-1"  
+class="td11">                                   </td></tr></table>
+<!--l. 308--><p class="noindent" ></p> <table id="TBL-17" class="tabular" 
+ 
+><colgroup id="TBL-17-1g"><col 
+id="TBL-17-1" /></colgroup><colgroup id="TBL-17-2g"><col 
+id="TBL-17-2" /><col 
+id="TBL-17-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-1-"><td  style="white-space:normal; text-align:left;" id="TBL-17-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">interpolator_name</div>                            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-1-3"  
+class="td01">                              STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-17-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Interpolator name</span></div>                                                                                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-3-1"  
+class="td11">              <span 
+class="cmbx-10">Range                    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-3-3"  
+class="td01"><span 
+class="cmbx-10">Default: </span>Lagrange polynomial interpolation  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-4-"><td  style="white-space:normal; text-align:left;" id="TBL-17-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.+</div>                                                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-17-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Can be anything</div>                                                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-5-1"  
+class="td11">                                   </td></tr></table>
+<!--l. 315--><p class="noindent" ></p> <table id="TBL-18" class="tabular" 
+ 
+><colgroup id="TBL-18-1g"><col 
+id="TBL-18-1" /></colgroup><colgroup id="TBL-18-2g"><col 
+id="TBL-18-2" /><col 
+id="TBL-18-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-1-"><td  style="white-space:normal; text-align:left;" id="TBL-18-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">lapse_exponent_n</div>                            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-18-1-3"  
+class="td01">                             REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-18-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Exponent of lapse initial data alpha = psi</span><img 
+src="documentation0x.png" alt="{ˆ "  class="circ"  /><span 
+class="cmti-10">n</span><span 
+class="cmsy-10">}</span></div>                         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-3-1"  
+class="td11">              <span 
+class="cmbx-10">Range                    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-18-3-3"  
+class="td01">                         <span 
+class="cmbx-10">Default: </span>-2  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-4-"><td  style="white-space:normal; text-align:left;" id="TBL-18-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                                                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-18-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">This parameter can have any value</div>                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-5-1"  
+class="td11">                                   </td></tr></table>
+<!--l. 322--><p class="noindent" ></p> <table id="TBL-19" class="tabular" 
+ 
+><colgroup id="TBL-19-1g"><col 
+id="TBL-19-1" /></colgroup><colgroup id="TBL-19-2g"><col 
+id="TBL-19-2" /><col 
+id="TBL-19-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-1-"><td  style="white-space:normal; text-align:left;" id="TBL-19-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">log_target_residual</div>                           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-1-3"  
+class="td01">                             REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-19-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Stopping criterion: log10(l2norm(residual))</span></div>                                                         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-3-1"  
+class="td11">              <span 
+class="cmbx-10">Range                    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-3-3"  
+class="td01">                      <span 
+class="cmbx-10">Default: </span>-16.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-4-"><td  style="white-space:normal; text-align:left;" id="TBL-19-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:0</div>                                                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-19-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Should be negative, since we typically want small residuals</div>  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-5-1"  
+class="td11">                                   </td></tr></table>
+<!--l. 329--><p class="noindent" ></p> <table id="TBL-20" class="tabular" 
+ 
+><colgroup id="TBL-20-1g"><col 
+id="TBL-20-1" /></colgroup><colgroup id="TBL-20-2g"><col 
+id="TBL-20-2" /><col 
+id="TBL-20-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-1-"><td  style="white-space:normal; text-align:left;" id="TBL-20-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">max_iterations</div>                                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-20-1-3"  
+class="td01">                               INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-20-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Maximum number of time steps in the relaxation time evolution.</span></div>                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-3-1"  
+class="td11">              <span 
+class="cmbx-10">Range                    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-20-3-3"  
+class="td01">                      <span 
+class="cmbx-10">Default: </span>10000  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-4-"><td  style="white-space:normal; text-align:left;" id="TBL-20-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-20-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Must be positive</div>                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-5-1"  
+class="td11">                                   </td></tr></table>
+<!--l. 336--><p class="noindent" ></p> <table id="TBL-21" class="tabular" 
+ 
+><colgroup id="TBL-21-1g"><col 
+id="TBL-21-1" /></colgroup><colgroup id="TBL-21-2g"><col 
+id="TBL-21-2" /><col 
+id="TBL-21-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-1-"><td  style="white-space:normal; text-align:left;" id="TBL-21-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">n0</div>                                                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-21-1-3"  
+class="td01">                               INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-21-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Number of points in the xx0 direction</span></div>                                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-3-1"  
+class="td11">              <span 
+class="cmbx-10">Range                    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-21-3-3"  
+class="td01">                        <span 
+class="cmbx-10">Default: </span>128  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-4-"><td  style="white-space:normal; text-align:left;" id="TBL-21-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-21-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Must be positive</div>                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-5-1"  
+class="td11">                                   </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 343--><p class="noindent" ></p> <table id="TBL-22" class="tabular" 
+ 
+><colgroup id="TBL-22-1g"><col 
+id="TBL-22-1" /></colgroup><colgroup id="TBL-22-2g"><col 
+id="TBL-22-2" /><col 
+id="TBL-22-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-1-"><td  style="white-space:normal; text-align:left;" id="TBL-22-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">n1</div>                                                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-22-1-3"  
+class="td01">                               INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-22-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Number of points in the xx1 direction</span></div>                                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-3-1"  
+class="td11">              <span 
+class="cmbx-10">Range                    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-22-3-3"  
+class="td01">                        <span 
+class="cmbx-10">Default: </span>128  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-4-"><td  style="white-space:normal; text-align:left;" id="TBL-22-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-22-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Must be positive</div>                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-5-1"  
+class="td11">                                   </td></tr></table>
+<!--l. 350--><p class="noindent" ></p> <table id="TBL-23" class="tabular" 
+ 
+><colgroup id="TBL-23-1g"><col 
+id="TBL-23-1" /></colgroup><colgroup id="TBL-23-2g"><col 
+id="TBL-23-2" /><col 
+id="TBL-23-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-1-"><td  style="white-space:normal; text-align:left;" id="TBL-23-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">n2</div>                                                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-1-3"  
+class="td01">                               INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-23-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Number of points in the xx2 direction</span></div>                                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-3-1"  
+class="td11">              <span 
+class="cmbx-10">Range                    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-3-3"  
+class="td01">                        <span 
+class="cmbx-10">Default: </span>16  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-4-"><td  style="white-space:normal; text-align:left;" id="TBL-23-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-23-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Must be positive</div>                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-5-1"  
+class="td11">                                   </td></tr></table>
+<!--l. 357--><p class="noindent" ></p> <table id="TBL-24" class="tabular" 
+ 
+><colgroup id="TBL-24-1g"><col 
+id="TBL-24-1" /></colgroup><colgroup id="TBL-24-2g"><col 
+id="TBL-24-2" /><col 
+id="TBL-24-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-1-"><td  style="white-space:normal; text-align:left;" id="TBL-24-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">nrpy_epsilon</div>                                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-24-1-3"  
+class="td01">                             REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-24-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Small number to avoid singularities at the punctures</span></div>                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-3-1"  
+class="td11">              <span 
+class="cmbx-10">Range                    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-24-3-3"  
+class="td01">                       <span 
+class="cmbx-10">Default: </span>1e-8  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-4-"><td  style="white-space:normal; text-align:left;" id="TBL-24-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                                                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-24-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Can be anything</div>                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-5-1"  
+class="td11">                                   </td></tr></table>
+<!--l. 364--><p class="noindent" ></p> <table id="TBL-25" class="tabular" 
+ 
+><colgroup id="TBL-25-1g"><col 
+id="TBL-25-1" /></colgroup><colgroup id="TBL-25-2g"><col 
+id="TBL-25-2" /><col 
+id="TBL-25-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-1-"><td  style="white-space:normal; text-align:left;" id="TBL-25-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">number_of_lct</div>                                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-25-1-3"  
+class="td01">                             REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-25-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Number of light-crossing times</span></div>                                                                         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-3-1"  
+class="td11">              <span 
+class="cmbx-10">Range                    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-25-3-3"  
+class="td01">                      <span 
+class="cmbx-10">Default: </span>5.5e-6  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-4-"><td  style="white-space:normal; text-align:left;" id="TBL-25-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-25-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Must be positive</div>                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-5-1"  
+class="td11">                                   </td></tr></table>
+<!--l. 371--><p class="noindent" ></p> <table id="TBL-26" class="tabular" 
+ 
+><colgroup id="TBL-26-1g"><col 
+id="TBL-26-1" /></colgroup><colgroup id="TBL-26-2g"><col 
+id="TBL-26-2" /><col 
+id="TBL-26-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-1-"><td  style="white-space:normal; text-align:left;" id="TBL-26-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">orbital_plane</div>                                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-1-3"  
+class="td01">                           STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-26-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Orbital plane</span></div>                                                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-3-1"  
+class="td11">              <span 
+class="cmbx-10">Range                    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-3-3"  
+class="td01">                        <span 
+class="cmbx-10">Default: </span>xy  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-4-"><td  style="white-space:normal; text-align:left;" id="TBL-26-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">xy</div>                                                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-26-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Orbital plane is the xy-plane</div>                                          
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-5-"><td  style="white-space:normal; text-align:left;" id="TBL-26-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">yx</div>                                                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-26-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Equivalent to xy</div>                                                          
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-6-"><td  style="white-space:normal; text-align:left;" id="TBL-26-6-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">xz</div>                                                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-26-6-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Orbital plane is the xz-plane</div>                                          
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-7-"><td  style="white-space:normal; text-align:left;" id="TBL-26-7-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">zx</div>                                                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-26-7-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Equivalent to xz</div>                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-8-1"  
+class="td11">                                   </td></tr></table>
+<!--l. 378--><p class="noindent" ></p> <table id="TBL-27" class="tabular" 
+ 
+><colgroup id="TBL-27-1g"><col 
+id="TBL-27-1" /></colgroup><colgroup id="TBL-27-2g"><col 
+id="TBL-27-2" /><col 
+id="TBL-27-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-1-"><td  style="white-space:normal; text-align:left;" id="TBL-27-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">position_shift</div>                                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-27-1-3"  
+class="td01">                             REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-27-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Shift punctures on the axis while keeping their distance fixed</span></div>                                    
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-3-1"  
+class="td11">              <span 
+class="cmbx-10">Range                    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-27-3-3"  
+class="td01">                     <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-4-"><td  style="white-space:normal; text-align:left;" id="TBL-27-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                                                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-27-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Can be anything</div>                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-5-1"  
+class="td11">                                   </td></tr></table>
+<!--l. 385--><p class="noindent" ></p> <table id="TBL-28" class="tabular" 
+ 
+><colgroup id="TBL-28-1g"><col 
+id="TBL-28-1" /></colgroup><colgroup id="TBL-28-2g"><col 
+id="TBL-28-2" /><col 
+id="TBL-28-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-1-"><td  style="white-space:normal; text-align:left;" id="TBL-28-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">residual_integration_radius</div>                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-28-1-3"  
+class="td01">                             REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-28-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">The L2-norm of the residual is integrated in a sphere with this radius.</span></div>                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-3-1"  
+class="td11">              <span 
+class="cmbx-10">Range                    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-28-3-3"  
+class="td01">                      <span 
+class="cmbx-10">Default: </span>100.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-4-"><td  style="white-space:normal; text-align:left;" id="TBL-28-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>
+                                                      </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-28-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Must be positive; if set to <span 
+class="cmmi-10">&#x003E;</span>=domain_size then will integrate
+  over the entire NRPy+-generated grid.</div>                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-5-1"  
+class="td11">                                   </td></tr></table>
+<!--l. 392--><p class="noindent" ></p> <table id="TBL-29" class="tabular" 
+ 
+><colgroup id="TBL-29-1g"><col 
+id="TBL-29-1" /></colgroup><colgroup id="TBL-29-2g"><col 
+id="TBL-29-2" /><col 
+id="TBL-29-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-1-"><td  style="white-space:normal; text-align:left;" id="TBL-29-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">sinh_width</div>                                     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-29-1-3"  
+class="td01">                             REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-29-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">This parameter controls how densily sampled the regions near the punctures are.</span>
+  <span 
+class="cmti-10">Smaller values =</span><span 
+class="cmmi-10">&#x003E; </span><span 
+class="cmti-10">higher resolution</span></div>                                                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-29-3-1"  
+class="td11">              <span 
+class="cmbx-10">Range                    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-29-3-3"  
+class="td01">                       <span 
+class="cmbx-10">Default: </span>0.07  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-4-"><td  style="white-space:normal; text-align:left;" id="TBL-29-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-29-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Must be positive</div>                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-29-5-1"  
+class="td11">                                   </td></tr></table>
+<!--l. 399--><p class="noindent" ></p> <table id="TBL-30" class="tabular" 
+ 
+><colgroup id="TBL-30-1g"><col 
+id="TBL-30-1" /></colgroup><colgroup id="TBL-30-2g"><col 
+id="TBL-30-2" /><col 
+id="TBL-30-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-1-"><td  style="white-space:normal; text-align:left;" id="TBL-30-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">verbose</div>                                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-30-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-30-1-3"  
+class="td01">                    BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-30-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Whether or not to print information as the relaxation progresses</span></div>                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-30-3-1"  
+class="td11">                                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-30-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-30-3-3"  
+class="td01">                   <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-30-4-1"  
+class="td11">                                   </td></tr></table>
+<!--l. 406--><p class="noindent" ></p> <table id="TBL-31" class="tabular" 
+ 
+><colgroup id="TBL-31-1g"><col 
+id="TBL-31-1" /></colgroup><colgroup id="TBL-31-2g"><col 
+id="TBL-31-2" /><col 
+id="TBL-31-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-1-"><td  style="white-space:normal; text-align:left;" id="TBL-31-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">initial_data</div>                                     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-31-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from ADMBASE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-31-1-3"  
+class="td01">          KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-2-"><td colspan="3" style="white-space:nowrap; text-align:left;" id="TBL-31-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:nowrap; text-align:left;"><span 
+class="cmbx-10">Extends ranges:</span></div>                                                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-3-"><td  style="white-space:normal; text-align:left;" id="TBL-31-3-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">NRPyEllipticET</div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-31-3-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Initial data from NRPyEllipticET solution</div>                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-31-4-1"  
+class="td11">                                   </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 413--><p class="noindent" ></p> <table id="TBL-32" class="tabular" 
+ 
+><colgroup id="TBL-32-1g"><col 
+id="TBL-32-1" /></colgroup><colgroup id="TBL-32-2g"><col 
+id="TBL-32-2" /><col 
+id="TBL-32-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-1-"><td  style="white-space:normal; text-align:left;" id="TBL-32-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">initial_dtlapse</div>                                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from ADMBASE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-32-1-3"  
+class="td01">          KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-2-"><td colspan="3" style="white-space:nowrap; text-align:left;" id="TBL-32-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:nowrap; text-align:left;"><span 
+class="cmbx-10">Extends ranges:</span></div>                                                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-3-"><td  style="white-space:normal; text-align:left;" id="TBL-32-3-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">NRPyEllipticET</div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-32-3-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Initial dtlapse from NRPyEllipticET solution</div>                    
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-32-4-1"  
+class="td11">                                   </td></tr></table>
+<!--l. 420--><p class="noindent" ></p> <table id="TBL-33" class="tabular" 
+ 
+><colgroup id="TBL-33-1g"><col 
+id="TBL-33-1" /></colgroup><colgroup id="TBL-33-2g"><col 
+id="TBL-33-2" /><col 
+id="TBL-33-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-1-"><td  style="white-space:normal; text-align:left;" id="TBL-33-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">initial_dtshift</div>                                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from ADMBASE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-33-1-3"  
+class="td01">          KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-2-"><td colspan="3" style="white-space:nowrap; text-align:left;" id="TBL-33-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:nowrap; text-align:left;"><span 
+class="cmbx-10">Extends ranges:</span></div>                                                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-3-"><td  style="white-space:normal; text-align:left;" id="TBL-33-3-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">NRPyEllipticET</div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-33-3-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Initial dtshift from NRPyEllipticET solution</div>                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-33-4-1"  
+class="td11">                                   </td></tr></table>
+<!--l. 427--><p class="noindent" ></p> <table id="TBL-34" class="tabular" 
+ 
+><colgroup id="TBL-34-1g"><col 
+id="TBL-34-1" /></colgroup><colgroup id="TBL-34-2g"><col 
+id="TBL-34-2" /><col 
+id="TBL-34-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-1-"><td  style="white-space:normal; text-align:left;" id="TBL-34-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">initial_lapse</div>                                    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from ADMBASE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-34-1-3"  
+class="td01">          KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-2-"><td colspan="3" style="white-space:nowrap; text-align:left;" id="TBL-34-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:nowrap; text-align:left;"><span 
+class="cmbx-10">Extends ranges:</span></div>                                                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-3-"><td  style="white-space:normal; text-align:left;" id="TBL-34-3-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">see [1] below</div>                                    </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-34-3-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Based on the initial conformal factor</div>                               
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-4-"><td  style="white-space:normal; text-align:left;" id="TBL-34-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">see [1] below</div>                                    </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-34-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Averaged lapse for two puncture black holes</div>                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-34-5-1"  
+class="td11">                                   </td></tr></table>
+<!--l. 434--><p class="noindent" ><span 
+class="cmbx-10">[1]</span>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-1">
+NRPyEllipticET-psi\^n
+</pre>
+<!--l. 434--><p class="nopar" ><span 
+class="cmbx-10">[1]</span>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-2">
+NRPyEllipticET-averaged
+</pre>
+<!--l. 434--><p class="nopar" ></p> <table id="TBL-35" class="tabular" 
+ 
+><colgroup id="TBL-35-1g"><col 
+id="TBL-35-1" /></colgroup><colgroup id="TBL-35-2g"><col 
+id="TBL-35-2" /><col 
+id="TBL-35-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-1-"><td  style="white-space:normal; text-align:left;" id="TBL-35-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">initial_shift</div>                                     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from ADMBASE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-35-1-3"  
+class="td01">          KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-2-"><td colspan="3" style="white-space:nowrap; text-align:left;" id="TBL-35-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:nowrap; text-align:left;"><span 
+class="cmbx-10">Extends ranges:</span></div>                                                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-3-"><td  style="white-space:normal; text-align:left;" id="TBL-35-3-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">NRPyEllipticET</div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-35-3-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Initial shift from NRPyEllipticET solution</div>                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-4-1"  
+class="td11">                                   </td></tr></table>
+<!--l. 441--><p class="noindent" ></p> <table id="TBL-36" class="tabular" 
+ 
+><colgroup id="TBL-36-1g"><col 
+id="TBL-36-1" /></colgroup><colgroup id="TBL-36-2g"><col 
+id="TBL-36-2" /><col 
+id="TBL-36-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-1-"><td  style="white-space:normal; text-align:left;" id="TBL-36-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">lapse_timelevels</div>                               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from ADMBASE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-36-1-3"  
+class="td01">INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-36-2-1"  
+class="td11">                                   </td></tr></table>
+<!--l. 446--><p class="noindent" ></p> <table id="TBL-37" class="tabular" 
+ 
+><colgroup id="TBL-37-1g"><col 
+id="TBL-37-1" /></colgroup><colgroup id="TBL-37-2g"><col 
+id="TBL-37-2" /><col 
+id="TBL-37-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-1-"><td  style="white-space:normal; text-align:left;" id="TBL-37-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">metric_timelevels</div>                             </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from ADMBASE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-37-1-3"  
+class="td01">INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-2-1"  
+class="td11">                                   </td></tr></table>
+<!--l. 451--><p class="noindent" ></p> <table id="TBL-38" class="tabular" 
+ 
+><colgroup id="TBL-38-1g"><col 
+id="TBL-38-1" /></colgroup><colgroup id="TBL-38-2g"><col 
+id="TBL-38-2" /><col 
+id="TBL-38-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-38-1-"><td  style="white-space:normal; text-align:left;" id="TBL-38-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">shift_timelevels</div>                               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-38-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from ADMBASE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-38-1-3"  
+class="td01">INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-38-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-38-2-1"  
+class="td11">                                   </td></tr></table>
+<!--l. 458--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-60004"></a>Interfaces</h3>
+<!--l. 463--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-7000"></a>General</h4>
+<!--l. 465--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 467--><p class="noindent" >nrpyellipticet
+</p><!--l. 470--><p class="noindent" ><span 
+class="cmbx-10">Inherits</span>:
+</p><!--l. 472--><p class="noindent" >admbase
+</p><!--l. 474--><p class="noindent" >grid
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-8000"></a>Grid Variables</h4>
+<!--l. 477--><p class="noindent" >
+</p>
+<h5 class="subsubsectionHead"><span class="titlemark">4.0.1   </span> <a 
+ id="x1-90004.0.1"></a>PRIVATE GROUPS</h5>
+                                                                                       
+                                                                                       
+<!--l. 481--><p class="noindent" ></p> <table id="TBL-39" class="tabular" 
+ 
+><colgroup id="TBL-39-1g"><col 
+id="TBL-39-1" /></colgroup><colgroup id="TBL-39-2g"><col 
+id="TBL-39-2" /></colgroup><colgroup id="TBL-39-3g"><col 
+id="TBL-39-3" /><col 
+id="TBL-39-4" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-1-1"  
+class="td11">       <span 
+class="cmbx-10">Group Names </span>         </td><td  style="white-space:nowrap; text-align:center;" id="TBL-39-1-2"  
+class="td10">   <span 
+class="cmbx-10">Variable Names </span> </td><td  style="white-space:nowrap; text-align:right;" id="TBL-39-1-3"  
+class="td01">    <span 
+class="cmbx-10">Details </span>   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-1-4"  
+class="td11">                                                                            </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-2-1"  
+class="td11"> nrpyellipticet_relaxation_vars  </td><td  style="white-space:nowrap; text-align:center;" id="TBL-39-2-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-39-2-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-2-4"  
+class="td11"> 0                                                                          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-3-1"  
+class="td11">                           </td><td  style="white-space:nowrap; text-align:center;" id="TBL-39-3-2"  
+class="td10">        uuGF           </td><td  style="white-space:nowrap; text-align:right;" id="TBL-39-3-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-3-4"  
+class="td11"> These are the variables NRPyEllipticET solves for. E.g.  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-4-1"  
+class="td11">                           </td><td  style="white-space:nowrap; text-align:center;" id="TBL-39-4-2"  
+class="td10">                         </td><td  style="white-space:nowrap; text-align:right;" id="TBL-39-4-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-4-4"  
+class="td11"> for conformally flat BBH                                          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-5-1"  
+class="td11">                           </td><td  style="white-space:nowrap; text-align:center;" id="TBL-39-5-2"  
+class="td10">        uuGF           </td><td  style="white-space:nowrap; text-align:right;" id="TBL-39-5-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-5-4"  
+class="td11"> uuGF is the nonsingular part of the conformal factor.     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-6-1"  
+class="td11">                           </td><td  style="white-space:nowrap; text-align:center;" id="TBL-39-6-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-39-6-3"  
+class="td01">   dimensions  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-6-4"  
+class="td11"> 3                                                                          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-7-1"  
+class="td11">                           </td><td  style="white-space:nowrap; text-align:center;" id="TBL-39-7-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-39-7-3"  
+class="td01">  distribution  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-7-4"  
+class="td11"> DEFAULT                                                             </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-8-1"  
+class="td11">                           </td><td  style="white-space:nowrap; text-align:center;" id="TBL-39-8-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-39-8-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-8-4"  
+class="td11"> GF                                                                       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-9-1"  
+class="td11">                           </td><td  style="white-space:nowrap; text-align:center;" id="TBL-39-9-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-39-9-3"  
+class="td01">         tags  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-9-4"  
+class="td11"> prolongation=”none”                                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-10-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-10-1"  
+class="td11">                           </td><td  style="white-space:nowrap; text-align:center;" id="TBL-39-10-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-39-10-3"  
+class="td01">    timelevels  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-10-4"  
+class="td11"> 1                                                                          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-11-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-11-1"  
+class="td11">                           </td><td  style="white-space:nowrap; text-align:center;" id="TBL-39-11-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-39-11-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-11-4"  
+class="td11"> REAL                                                                   </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-12-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-12-1"  
+class="td11">                           </td></tr></table>
+<!--l. 501--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-100005"></a>Schedule</h3>
+<!--l. 507--><p class="noindent" >This section lists all the variables which are assigned storage by thorn EinsteinInitialData/NRPyEllipticET.
+Storage can either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 510--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-11000"></a>Storage</h4>
+<!--l. 512--><p class="noindent" > 
+</p><!--l. 514--><p class="noindent" ></p> <table id="TBL-40" class="tabular" 
+ 
+><colgroup id="TBL-40-1g"><col 
+id="TBL-40-1" /><col 
+id="TBL-40-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-40-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-40-1-1"  
+class="td11"> <span 
+class="cmbx-10">Always:                                                                                                                                                      </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-40-1-2"  
+class="td11">    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-40-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-40-2-1"  
+class="td11"> ADMBase::metric[metric_timelevels] ADMBase::curv[metric_timelevels] ADMBase::lapse[lapse_timelevels] ADMBase::shift[shift_timelevels]  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-40-2-2"  
+class="td11">    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-40-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-40-3-1"  
+class="td11"> NRPyEllipticET::NRPyEllipticET_relaxation_vars                                                                                                                      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-40-3-2"  
+class="td11">    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-40-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-40-4-1"  
+class="td11">                                                                                                                                                                                         </td><td  style="white-space:nowrap; text-align:left;" id="TBL-40-4-2"  
+class="td11">    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-40-5-"><td  style="white-space:nowrap; text-align:left;" id="TBL-40-5-1"  
+class="td11">                                                                                                                       </td></tr></table>
+<!--l. 523--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-12000"></a>Scheduled Functions</h4>
+<!--l. 526--><p class="noindent" ><span 
+class="cmbx-10">ADMBase</span><span 
+class="cmbx-10">_InitialData</span>
+</p><!--l. 528--><p class="noindent" >      nrpyellipticet
+</p><!--l. 530--><p class="noindent" >     <span 
+class="cmti-10">set up metric fields for binary black hole initial data</span>
+</p><!--l. 533--><p class="noindent" > 
+                                                                                       
+                                                                                       
+</p><!--l. 535--><p class="noindent" ></p> <table id="TBL-41" class="tabular" 
+ 
+><colgroup id="TBL-41-1g"><col 
+id="TBL-41-1" /><col 
+id="TBL-41-2" /><col 
+id="TBL-41-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-41-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-41-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-1-3"  
+class="td11"> c                                      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-41-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-41-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-2-2"  
+class="td11"> Reads:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-2-3"  
+class="td11"> grid::x(everywhere)              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-41-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-41-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-3-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-3-3"  
+class="td11"> grid::y(everywhere)              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-41-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-41-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-4-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-4-3"  
+class="td11"> grid::z(everywhere)              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-41-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-41-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-5-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-5-3"  
+class="td11"> function                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-41-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-41-6-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-6-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-6-3"  
+class="td11"> admbase::alp(everywhere)     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-41-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-41-7-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-7-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-7-3"  
+class="td11"> admbase::betax(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-41-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-41-8-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-8-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-8-3"  
+class="td11"> admbase::betay(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-41-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-41-9-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-9-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-9-3"  
+class="td11"> admbase::betaz(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-41-10-"><td  style="white-space:nowrap; text-align:center;" id="TBL-41-10-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-10-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-10-3"  
+class="td11"> admbase::kxx(everywhere)    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-41-11-"><td  style="white-space:nowrap; text-align:center;" id="TBL-41-11-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-11-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-11-3"  
+class="td11"> admbase::kxy(everywhere)    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-41-12-"><td  style="white-space:nowrap; text-align:center;" id="TBL-41-12-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-12-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-12-3"  
+class="td11"> admbase::kxz(everywhere)     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-41-13-"><td  style="white-space:nowrap; text-align:center;" id="TBL-41-13-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-13-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-13-3"  
+class="td11"> admbase::kyy(everywhere)    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-41-14-"><td  style="white-space:nowrap; text-align:center;" id="TBL-41-14-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-14-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-14-3"  
+class="td11"> admbase::kyz(everywhere)     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-41-15-"><td  style="white-space:nowrap; text-align:center;" id="TBL-41-15-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-15-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-15-3"  
+class="td11"> admbase::kzz(everywhere)     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-41-16-"><td  style="white-space:nowrap; text-align:center;" id="TBL-41-16-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-16-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-16-3"  
+class="td11"> admbase::gxx(everywhere)    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-41-17-"><td  style="white-space:nowrap; text-align:center;" id="TBL-41-17-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-17-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-17-3"  
+class="td11"> admbase::gxy(everywhere)    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-41-18-"><td  style="white-space:nowrap; text-align:center;" id="TBL-41-18-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-18-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-18-3"  
+class="td11"> admbase::gxz(everywhere)     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-41-19-"><td  style="white-space:nowrap; text-align:center;" id="TBL-41-19-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-19-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-19-3"  
+class="td11"> admbase::gyy(everywhere)    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-41-20-"><td  style="white-space:nowrap; text-align:center;" id="TBL-41-20-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-20-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-20-3"  
+class="td11"> admbase::gyz(everywhere)     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-41-21-"><td  style="white-space:nowrap; text-align:center;" id="TBL-41-21-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-21-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-21-3"  
+class="td11"> admbase::gzz(everywhere)     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-41-22-"><td  style="white-space:nowrap; text-align:center;" id="TBL-41-22-1"  
+class="td11">    </td></tr></table>
+<!--l. 562--><p class="noindent" ><span 
+class="cmbx-10">ADMBase</span><span 
+class="cmbx-10">_InitialData</span>
+</p><!--l. 564--><p class="noindent" >      nrpyellipticet_cleanup
+</p><!--l. 566--><p class="noindent" >     <span 
+class="cmti-10">deallocate memory for arrays used when computing initial data</span>
+</p><!--l. 569--><p class="noindent" > 
+</p><!--l. 571--><p class="noindent" ></p> <table id="TBL-42" class="tabular" 
+ 
+><colgroup id="TBL-42-1g"><col 
+id="TBL-42-1" /><col 
+id="TBL-42-2" /><col 
+id="TBL-42-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-42-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-42-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-42-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-42-1-3"  
+class="td11"> nrpyellipticet  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-42-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-42-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-42-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-42-2-3"  
+class="td11"> c                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-42-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-42-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-42-3-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-42-3-3"  
+class="td11"> global-late     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-42-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-42-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-42-4-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-42-4-3"  
+class="td11"> function        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-42-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-42-5-1"  
+class="td11">    </td></tr></table>
+ 
+</body></html> 
+
+                                                                                       
+
+
