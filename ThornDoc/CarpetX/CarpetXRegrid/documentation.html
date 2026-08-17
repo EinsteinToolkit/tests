@@ -1,0 +1,364 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>CarpetXRegrid</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">CarpetXRegrid</h2>
+ <div class="author" ><span 
+class="cmr-12">Steven R. Brandt </span><span 
+class="cmmi-12">&#x003C;</span><span 
+class="cmr-12">sbrandt@cct.lsu.edu</span><span 
+class="cmmi-12">&#x003E;</span>
+<br />     <span 
+class="cmr-12">Roland Haas </span><span 
+class="cmmi-12">&#x003C;</span><span 
+class="cmr-12">rhaas@illinois.edu</span><span 
+class="cmmi-12">&#x003E;</span></div>
+<br />
+<div class="date" ><span 
+class="cmr-12">July 30 2024</span></div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 106--><p class="noindent" ><span 
+class="cmr-9">Provide a grid function,</span> <span 
+class="cmtt-9">regrid</span><span 
+class="cmtt-9">_error</span><span 
+class="cmr-9">, to the</span> <span 
+class="cmtt-9">CarpetX</span> <span 
+class="cmr-9">driver. This grid function is used by</span> <span 
+class="cmtt-9">CarpetX</span>
+     <span 
+class="cmr-9">and</span> <span 
+class="cmtt-9">AMReX</span> <span 
+class="cmr-9">to determine where to refine the grid.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Introduction</h3>
+<!--l. 117--><p class="noindent" ><span 
+class="cmtt-10">AMReX</span> <span class="cite">[<a 
+href="#XCarpetX_CarpetXRegrid_AMReX_JOSS">1</a>]</span> and thus <span 
+class="cmtt-10">CarpetX</span> implement Berger-Oliger <span class="cite">[<a 
+href="#XCarpetX_CarpetXRegrid_Berger:1984zza">2</a>]</span> type structured mesh refinement. Grid <span 
+class="cmti-10">cells </span>are tagged
+for refinement in <span 
+class="cmtt-10">CarpetX</span> using the overloaded virtual function <span 
+class="cmtt-10">AmrCore::ErrorEst</span>.
+</p><!--l. 122--><p class="noindent" >This thorn, in combination with <span 
+class="cmtt-10">CarpetX</span>, provides a covenient way for <span 
+class="cmtt-10">Cactus</span> thorns to label cells needed
+refinement via a cell centered grid function <span 
+class="cmtt-10">regrid</span><span 
+class="cmtt-10">_error</span> whose value controls if a cell is marked for refinement
+or not.
+</p><!--l. 127--><p class="noindent" >A cell is marked for refinement if the value found in <span 
+class="cmtt-10">regrid</span><span 
+class="cmtt-10">_error</span> exceeds the threshold in parameter
+<span 
+class="cmtt-10">CarpetX::regrid</span><span 
+class="cmtt-10">_error</span><span 
+class="cmtt-10">_threshold</span> and marked as not requiring refinement otherwise.
+                                                                                       
+                                                                                       
+</p><!--l. 131--><p class="noindent" >A client thorn wishing to control refinement should schedule a function in schedule bins <span 
+class="cmtt-10">POSTINITIAL</span> and
+<span 
+class="cmtt-10">POSTSTEP</span>. See thorn <span 
+class="cmtt-10">ErrorEstimator</span> for an example.
+</p><!--l. 135--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a>Numerical Implementation</h3>
+<!--l. 137--><p class="noindent" >This thorn only provides access to the tagging grid function <span 
+class="cmtt-10">regrid</span><span 
+class="cmtt-10">_error</span> and initializes it to zero at the
+beginning of the simulation.
+</p><!--l. 141--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-30003"></a>Using This Thorn</h3>
+<!--l. 143--><p class="noindent" >To use this thorn, make sure to <span 
+class="cmtt-10">inherit </span>from <span 
+class="cmtt-10">CarpetXRegrid</span> to gain access to the public grid function
+<span 
+class="cmtt-10">regrid</span><span 
+class="cmtt-10">_error</span>. A client thorn wishing to control refinement should then schedule a function in schedule bins
+<span 
+class="cmtt-10">POSTINITIAL</span> and <span 
+class="cmtt-10">POSTSTEP</span> which should loop over the <span 
+class="cmtt-10">interior </span>of cell centered grid function <span 
+class="cmtt-10">regrid</span><span 
+class="cmtt-10">_error</span>
+marking each cell for refinement or no refinement as needed. See thorn <span 
+class="cmtt-10">ErrorEstimator</span> for an
+example.
+</p><!--l. 151--><p class="noindent" >In the future, to allow multiple independent regridding criteria to contribute to mesh refinement, grid function
+<span 
+class="cmtt-10">regrid</span><span 
+class="cmtt-10">_error</span> may be interpreted as a boolean flag with true / false indicated by values of \(1.0\) and \(0.0\) (and all other
+values considered invalid). In the future this will require that a thorn should never reset non-zero value back to
+zero.
+</p><!--l. 157--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">3.1   </span> <a 
+ id="x1-40003.1"></a>Obtaining This Thorn</h4>
+<!--l. 159--><p class="noindent" >This thorn is included in the <span 
+class="cmtt-10">CarpetX</span> arrangement which is part of the Einstein Toolkit.
+</p><!--l. 162--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">3.2   </span> <a 
+ id="x1-50003.2"></a>Special Behaviour</h4>
+<!--l. 164--><p class="noindent" >This thorn will initialize the error estimator grid function <span 
+class="cmtt-10">regrid</span><span 
+class="cmtt-10">_error</span> to zero at the beginning of a simulation
+but does not change or use its values otherwise.
+                                                                                       
+                                                                                       
+</p><!--l. 168--><p class="noindent" >In the future it may reset the error estimator grid function before client thorns mark cells for refinement.
+</p><!--l. 171--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">3.3   </span> <a 
+ id="x1-60003.3"></a>Interaction With Other Thorns</h4>
+<!--l. 173--><p class="noindent" >This thorn only provides access to <span 
+class="cmtt-10">regrid</span><span 
+class="cmtt-10">_error</span>, while the actual regrid happens inside of <span 
+class="cmtt-10">CarpetX</span> and
+<span 
+class="cmtt-10">AMReX</span>.
+</p><!--l. 176--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">3.4   </span> <a 
+ id="x1-70003.4"></a>Examples</h4>
+<!--l. 178--><p class="noindent" >Please consult thorn <span 
+class="cmtt-10">ErrorEstimator</span> for an example on how to use this thorn.
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-1">
+extern &#x0022;C&#x0022; void MyRegrid_EstError(CCTK_ARGUMENTS) {
+  DECLARE_CCTK_ARGUMENTSX_MyRegrid_EstError;
+  DECLARE_CCTK_PARAMETERS;
+
+  grid.loop_all_device&#x003C;1, 1, 1&#x003E;(
+      grid.nghostzones,
+      [=] CCTK_DEVICE(const Loop::PointDesc &#x0026;p)
+          CCTK_ATTRIBUTE_ALWAYS_INLINE {
+              regrid_error(p.I) = fabs(p.x) &#x003C; 42. ? 1.0 : 0.0;
+      }
+  );
+}
+</pre>
+<!--l. 194--><p class="nopar" >
+</p><!--l. 196--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">3.5   </span> <a 
+ id="x1-80003.5"></a>Support and Feedback</h4>
+<!--l. 198--><p class="noindent" >For questions and bug reports please use the Einstein Toolkit users mailing list <a 
+href="users@einsteintoolkit.org" class="url" ><span 
+class="cmtt-10">users@einsteintoolkit.org</span></a>
+and bug tracker <a 
+href="https://trac.einsteintoolkit.org" class="url" ><span 
+class="cmtt-10">https://trac.einsteintoolkit.org</span></a>.
+</p><!--l. 202--><p class="noindent" >
+</p>
+<h3 class="likesectionHead"><a 
+ id="x1-9000"></a>References</h3>
+<!--l. 202--><p class="noindent" >
+   </p><div class="thebibliography">
+   <p class="bibitem" ><span class="biblabel">
+ [1]<span class="bibsp">   </span></span><a 
+ id="XCarpetX_CarpetXRegrid_AMReX_JOSS"></a>Zhang, W., Almgren, A., Beckner, V., Bell, J., Blaschke, J., Chan, C., Day, M., Friesen, B., Gott,
+   K., Graves, D., Katz, M., Myers, A., Nguyen, T., Nonaka, A., Rosso, M., Williams, S. &#x0026; Zingale,
+   M. AMReX: a framework for block-structured adaptive mesh refinement. <span 
+class="cmti-10">Journal Of Open Source</span>
+   <span 
+class="cmti-10">Software</span>. <span 
+class="cmbx-10">4</span>, 1370 (2019,5), https://doi.org/10.21105/joss.01370
+   </p>
+                                                                                       
+                                                                                       
+   <p class="bibitem" ><span class="biblabel">
+ [2]<span class="bibsp">   </span></span><a 
+ id="XCarpetX_CarpetXRegrid_Berger:1984zza"></a>M. J. Berger  and  J. Oliger,  “Adaptive  Mesh  Refinement  for  Hyperbolic  Partial  Differential
+   Equations,” J. Comput. Phys. <span 
+class="cmbx-10">53 </span>(1984), 484 doi:10.1016/0021-9991(84)90073-1</p></div>
+<!--l. 212--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-100004"></a>Parameters</h3>
+<!--l. 218--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-110005"></a>Interfaces</h3>
+<!--l. 223--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-12000"></a>General</h4>
+<!--l. 225--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 227--><p class="noindent" >carpetxregrid
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-13000"></a>Grid Variables</h4>
+<!--l. 230--><p class="noindent" >
+</p>
+<h5 class="subsubsectionHead"><span class="titlemark">5.0.1   </span> <a 
+ id="x1-140005.0.1"></a>PUBLIC GROUPS</h5>
+<!--l. 234--><p class="noindent" ></p> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /></colgroup><colgroup id="TBL-2-2g"><col 
+id="TBL-2-2" /></colgroup><colgroup id="TBL-2-3g"><col 
+id="TBL-2-3" /><col 
+id="TBL-2-4" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-1-1"  
+class="td11">   <span 
+class="cmbx-10">Group Names </span>   </td><td  style="white-space:nowrap; text-align:center;" id="TBL-2-1-2"  
+class="td10">   <span 
+class="cmbx-10">Variable Names </span> </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-1-3"  
+class="td01">    <span 
+class="cmbx-10">Details </span>   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-4"  
+class="td11">                              </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-2-1"  
+class="td11">     regrid_error        </td><td  style="white-space:nowrap; text-align:center;" id="TBL-2-2-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-2-3"  
+class="td01">    centering  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-2-4"  
+class="td11"> centering=<span 
+class="cmsy-10">{</span>1 1 1<span 
+class="cmsy-10">}  </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-2"  
+class="td10">     regrid_error       </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-3-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-4"  
+class="td11"> 0                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-4-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-2-4-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-4-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-4-4"  
+class="td11"> Regridding condition  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-5-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-2-5-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-5-3"  
+class="td01">   dimensions  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-5-4"  
+class="td11"> 3                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-6-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-2-6-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-6-3"  
+class="td01">  distribution  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-6-4"  
+class="td11"> DEFAULT               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-7-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-2-7-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-7-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-7-4"  
+class="td11"> GF                         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-8-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-2-8-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-8-3"  
+class="td01">         tags  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-8-4"  
+class="td11"> checkpoint=”no”       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-9-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-2-9-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-9-3"  
+class="td01">    timelevels  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-9-4"  
+class="td11"> 1                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-10-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-10-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-2-10-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-10-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-10-4"  
+class="td11"> REAL                     </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-11-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-11-1"  
+class="td11">                    </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 253--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">6   </span> <a 
+ id="x1-150006"></a>Schedule</h3>
+<!--l. 259--><p class="noindent" >This section lists all the variables which are assigned storage by thorn CarpetX/CarpetXRegrid. Storage can
+either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 262--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-16000"></a>Storage</h4>
+<!--l. 262--><p class="noindent" >NONE
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-17000"></a>Scheduled Functions</h4>
+<!--l. 266--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_BASEGRID</span>
+</p><!--l. 268--><p class="noindent" >      carpetxregrid_initerror
+</p><!--l. 270--><p class="noindent" >     <span 
+class="cmti-10">initialize regridding error to zero</span>
+</p><!--l. 273--><p class="noindent" > 
+</p><!--l. 275--><p class="noindent" ></p> <table id="TBL-3" class="tabular" 
+ 
+><colgroup id="TBL-3-1g"><col 
+id="TBL-3-1" /><col 
+id="TBL-3-2" /><col 
+id="TBL-3-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-3-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-3"  
+class="td11"> c                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-2-3"  
+class="td11"> function                                           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-3-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-3-3"  
+class="td11"> carpetxregrid::regrid_error(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-4-1"  
+class="td11">    </td></tr></table>
+ 
+</body></html> 
+
+                                                                                       
+
+

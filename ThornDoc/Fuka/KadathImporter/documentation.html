@@ -1,0 +1,810 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>KadathImporter</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">KadathImporter</h2>
+ <div class="author" ><span 
+class="cmr-12">Samuel Tootle </span><span 
+class="cmmi-12">&#x003C;</span><span 
+class="cmr-12">tootle@itp.uni-frankfurt.de</span><span 
+class="cmmi-12">&#x003E;</span></div>
+<br />
+<div class="date" ><span 
+class="cmr-12">February 19, 2023</span></div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 102--><p class="noindent" ><span 
+class="cmr-9">This   thorn   enables   the   use   of   initial   data   solutions   computed   using   the   Frankfurt</span>
+     <span 
+class="cmr-9">University/KADATH (FUKA) initial data codes</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Introduction</h3>
+<!--l. 110--><p class="noindent" >Accurate time evolution of systems within general relativity require accurate initial data solutions at some initial
+time-slice. For isolated objects in equilibrium, these solutions can be computed easily either analytically or using
+efficient 1-2D solvers. Conversely, initial data for binary configurations is considerably more challenging to
+construct and, as such, has seen considerably fewer codes dedicated to solving this problem especially for mass
+asymmetric and spinning configurations.
+</p><!--l. 118--><p class="noindent" >Frankfurt University/KADATH (FUKA) is a collection of initial data codes that are focused on
+providing a robust suite of solvers capable of computing precise initial data solutions for binary
+configurations including a black hole or neutron stars. This is currently limited to classical general
+                                                                                       
+                                                                                       
+relativity and with a strict z-symmetry so that component spins can only be (anti-)aligned with
+the orbital axis. Furthermore, initial data involving neutron stars can be computed using either
+tabulated equations of state or polytropic. Details of the initial data solvers can be found in the
+publication<span class="cite">[<a 
+href="#XPapenfort2021a">1</a>]</span>.
+</p><!--l. 126--><p class="noindent" >This thorn provides a minimal interface to FUKA’s builtin export routines in order to interpolate an initial data
+solution generated with FUKA into the EinsteinToolkit. Initial data must be generated independently by a
+separately compiled version of FUKA. The latest development version can be found under the <span 
+class="cmti-10">fuka </span>branch at
+<span class="cite">[<a 
+href="#Xfukacodes">2</a>]</span>.
+</p><!--l. 133--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a>Using This Thorn</h3>
+<!--l. 134--><p class="noindent" >This thorn requires the <span 
+class="cmtt-10">KadathThorn </span>which handles the (possibly) building and linking of the FUKA library
+when creating the EinsteinToolkit executable. The FUKA library currently requires a compiler that supports
+C++17 standards and <span 
+class="cmti-10">std::filesystem</span>. However, the library can be compiled separately from the EinsteinToolkit
+and linked by setting
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-1">
+    KADATH_DIR = ${HOME_KADATH}
+</pre>
+<!--l. 139--><p class="nopar" > in the build configuration file. Here <span 
+class="cmtt-10">HOME</span><span 
+class="cmtt-10">_KADATH</span>  is a global environment variable which the user should have
+already set during the installation of FUKA. When linking against a pre-compiled version of FUKA, the
+ETK can be compiled with a lower C++ standard since FUKA is linked via a statically compiled
+library.
+</p><!--l. 144--><p class="noindent" >Note: Linking a previously compiled version of FUKA when building the EinsteinToolkit has been
+known to provide undefined behavior with the intel MKL library. Specifically, imported solutions will
+results in garbage for all quantities (e.g. the lapse). FUKA works exceptionally well with MKL,
+but an ABI issue has been encountered on multiple occasions which has been tied to the order
+of linking scientific libraries. In the case of intel oneapi, ”-mkl” should appear at the end of the
+LDFLAGS. If you encounter and resolve such an error, please submit an issue ticket so it can be
+documented.
+</p><!--l. 150--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.1   </span> <a 
+ id="x1-30002.1"></a>Obtaining This Thorn</h4>
+<!--l. 151--><p class="noindent" >This thorn can be obtained from <span class="cite">[<a 
+href="#Xfukaws">3</a>]</span>
+</p><!--l. 153--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.2   </span> <a 
+ id="x1-40002.2"></a>Basic Usage</h4>
+<!--l. 154--><p class="noindent" >FUKA initial data solutions consist of two files: a configuration file (config) and a data file (dat). In the case of
+neutron stars, the solution also needs the equation of state file that describes the table or polytropic
+configuration.
+</p><!--l. 157--><p class="noindent" >After activating the KadathImporter thorn, one needs to set KadathImporter::filename to the config file,
+e.g.
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-2">
+    KadathImporter::filename = &#x0022;&#x003C;dir&#x003E;/id.info&#x0022;
+</pre>
+<!--l. 160--><p class="nopar" > In the ficticious <span 
+class="cmti-10">dir</span>, we must ensure the config, dat, and possible EOS files are stored in the same place.
+Additionally, FUKA will also check for the desired EOS in
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-3">
+    ${HOME_KADATH}/eos
+</pre>
+<!--l. 165--><p class="nopar" > However, this requires the <span 
+class="cmtt-10">HOME</span><span 
+class="cmtt-10">_KADATH</span>  environment variable being set in the evolution environment. If FUKA
+is built during the ETK build procedure, the directory that should be assigned to <span 
+class="cmtt-10">HOME</span><span 
+class="cmtt-10">_KADATH</span>  is listed in the
+output.
+</p><!--l. 169--><p class="noindent" >In addition to the filename, the initial data type must also be set such as
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-4">
+    KadathImporter::type = &#x0022;BNS&#x0022;
+</pre>
+<!--l. 172--><p class="nopar" > where possible types are
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-5">
+    STRING type &#x0022;ID type&#x0022;
+    {
+    &#x0022;BBH&#x0022; :: &#x0022;Black hole ID&#x0022;
+    &#x0022;BH&#x0022;  :: &#x0022;Binary black hole ID&#x0022;
+    &#x0022;BNS&#x0022; :: &#x0022;Binary neutron star ID&#x0022;
+    &#x0022;NS&#x0022;  :: &#x0022;Neutron star ID&#x0022;
+    &#x0022;BHNS&#x0022; :: &#x0022;Black Hole neutron star ID&#x0022;
+    } &#x0022;BBH&#x0022;
+</pre>
+<!--l. 183--><p class="nopar" >
+</p><!--l. 185--><p class="noindent" >
+</p>
+<h5 class="likesubsubsectionHead"><a 
+ id="x1-5000"></a>Excision filling parameters</h5>
+<!--l. 186--><p class="noindent" >FUKA computes black hole solutions by excising the interior of the black hole, where the excision surface is
+defined as an apparent horizon. However, for puncture evolution the interior needs to be filled with smooth junk
+data. To do so, the FUKA exporter performs 3rd to 7th order Lagrange interpolation on radially equi-spaced
+grid points outside of the excision region. The interpolated solution is then extrapolated to the requested grid
+point inside the horizon.
+</p><!--l. 193--><p class="noindent" >Although the default parameters for filling the excision region have been tuned to be optimal, these settings can
+be modified by the user in the parfile:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-6">
+    CCTK_INT interp_order &#x0022;Interpolation order for smooth junk&#x0022;
+    {
+      3 :: &#x0022;Parabolic&#x0022;
+      5 :: &#x0022;Quartic&#x0022;
+      7 :: &#x0022;6th order polynomial&#x0022;
+      8 :: &#x0022;7th order polynomial&#x0022;
+    }8
+
+    CCTK_REAL interpolation_offset &#x0022;Interpolation offset (in units of r_AH)&#x0022;
+    {
+      -1:* :: &#x0022;Anything goes&#x0022;
+    }0.
+
+    CCTK_REAL delta_r_rel &#x0022;Relative dr spacing for the interpolation polynomial&#x0022;
+    {
+      -1:* :: &#x0022;Anything goes&#x0022;
+    }0.3
+
+    BOOLEAN puncture_lapse &#x0022;Set a puncture lapse alp = psi^-2 inside the hole&#x0022;
+    {
+    }no
+</pre>
+<!--l. 217--><p class="nopar" >
+</p><!--l. 219--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-60003"></a>In the background</h3>
+<!--l. 220--><p class="noindent" >This importer interfaces with the initial data exporters that are built into the FUKA library which is where all
+the actual “work” is done. The source code for these can be found in
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-7">
+    $HOME_KADATH/src/Utilities/Exporters
+</pre>
+<!--l. 226--><p class="nopar" > These exporters provide a simple API to allow one to easily integrate FUKA initial data into a
+new evolution code. In this way, the KadathImporter passes the filename of the initial data along
+with vectors of points in which to interpolate the initial data solution on. In return the exporter
+passes back a vector consisting of the necessary ADMBase and HydroBase quantities, specifically
+</p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 234--><p class="noindent" >Shift - beta\(\langle x\,, y\,, z \rangle \) = 0
+     </p></li>
+     <li class="itemize">
+     <!--l. 235--><p class="noindent" >Physical 3-Metric - \(\gamma _{ij}\)
+     </p></li>
+     <li class="itemize">
+     <!--l. 236--><p class="noindent" >Extrinsic curvature - \(K_{ij}\)
+     </p></li>
+     <li class="itemize">
+     <!--l. 237--><p class="noindent" >Density - \(\rho \)
+     </p></li>
+     <li class="itemize">
+     <!--l. 238--><p class="noindent" >Internal energy - \(\epsilon \)
+     </p></li>
+     <li class="itemize">
+     <!--l. 239--><p class="noindent" >Contravariant eulerian fluid 3 velocity - \(v^i\)</p></li></ul>
+<!--l. 242--><p class="noindent" >Note: FUKA initial data involving neutron stars uses cold equations of state. It has no knowledge of temperature
+or electron fraction. These must be set by another thorn! For an example, see the KadathPizza thorn<span class="cite">[<a 
+href="#Xfukaws">3</a>]</span>
+where these quantities are initialized after initial data import, but before the FreeTHC initial data
+converter.
+</p><!--l. 246--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">3.1   </span> <a 
+ id="x1-70003.1"></a>Interaction With Other Thorns</h4>
+                                                                                       
+                                                                                       
+<!--l. 247--><p class="noindent" >The KadathImporter extends the ADMBase and HydroBase thorns to allow for setting ADMBase and
+HydroBase variables.
+</p><!--l. 250--><p class="noindent" >To import metric quantities from an initial data solution, the following ADMBase variables need to be set to
+<span 
+class="cmbx-10">Kadath</span>: </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 252--><p class="noindent" >initial_data
+     </p></li>
+     <li class="itemize">
+     <!--l. 253--><p class="noindent" >initial_lapse
+     </p></li>
+     <li class="itemize">
+     <!--l. 254--><p class="noindent" >initial_shift
+     </p></li>
+     <li class="itemize">
+     <!--l. 255--><p class="noindent" >initial_dtlapse (can be set to <span 
+class="cmbx-10">Kadath</span>, <span 
+class="cmbx-10">none</span>, or <span 
+class="cmbx-10">zero</span>)
+     </p></li>
+     <li class="itemize">
+     <!--l. 256--><p class="noindent" >initial_dtshift (can be set to <span 
+class="cmbx-10">Kadath</span>, <span 
+class="cmbx-10">none</span>, or <span 
+class="cmbx-10">zero</span>)</p></li></ul>
+<!--l. 259--><p class="noindent" >It is important to note that on import </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 261--><p class="noindent" >The shift (\(\beta \)) is always set to zero such that the shift is recomputed by the evolution thorn within
+     the evolution gauge using the extrinsic curvature.
+     </p></li>
+     <li class="itemize">
+     <!--l. 262--><p class="noindent" >For  binary  initial  data:  the  coordinates  are  shifted  such  that  the  carpet  coordinate  (0,0,0)
+     corresponds to the computed center of mass of the binary</p></li></ul>
+<!--l. 265--><p class="noindent" >In the case of initial data involving a neutron star, HydroBase::initial_hydro must be set to <span 
+class="cmbx-10">Kadath</span>
+too.
+</p>
+<h4 class="subsectionHead"><span class="titlemark">3.2   </span> <a 
+ id="x1-80003.2"></a>Examples</h4>
+<!--l. 267--><p class="noindent" >A short test for verifying the importer interface is working is available in the <span 
+class="cmbx-10">test </span>directory. Examples for a BBH
+and neutron star are available in the <span 
+class="cmbx-10">par </span>directory
+                                                                                       
+                                                                                       
+</p><!--l. 270--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">3.3   </span> <a 
+ id="x1-90003.3"></a>Support and Feedback</h4>
+<!--l. 271--><p class="noindent" >The current active developer and maintainer is
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-8">
+    Samuel Tootle - tootle@itp.uni-frankfurt.de
+</pre>
+<!--l. 274--><p class="nopar" >
+</p><!--l. 276--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-100004"></a>History</h3>
+<!--l. 277--><p class="noindent" >The pre-ETK inclusion KadathThorn and KadathImporter thorns were developed by L. Jens Papenfort, Samuel
+Tootle, and Elias Most for binary black hole and binary neutron star initial data. Samuel Tootle later rewrote
+the thorns to encapsulate all initial data available from FUKA, updated to meet ETK inclusion standards, and
+wrote the documentation.
+</p><!--l. 282--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">4.1   </span> <a 
+ id="x1-110004.1"></a>Acknowledgements</h4>
+<!--l. 283--><p class="noindent" >The authors are grateful to the continued support by Philippe Grandclement, author of the KADATH spectral
+library, throughout the development of the FUKA codes.
+</p><!--l. 286--><p class="noindent" >
+</p>
+<h3 class="likesectionHead"><a 
+ id="x1-12000"></a>References</h3>
+<!--l. 286--><p class="noindent" >
+   </p><div class="thebibliography">
+   <p class="bibitem" ><span class="biblabel">
+ [1]<span class="bibsp">   </span></span><a 
+ id="XPapenfort2021a"></a>”Papenfort,  L.  Jens  et  al”,  <span 
+class="cmti-10">New  public  code  for  initial  data  of  unequal-mass,  spinning</span>
+   <span 
+class="cmti-10">compact-object binaries</span>, ”10.1103/PhysRevD.104.024057”
+   </p>
+                                                                                       
+                                                                                       
+   <p class="bibitem" ><span class="biblabel">
+ [2]<span class="bibsp">   </span></span><a 
+ id="Xfukacodes"></a><span 
+class="cmti-10">Frankfurt University/KADATH (codes)</span>, ”https://bitbucket.org/fukaws/fuka”
+   </p>
+   <p class="bibitem" ><span class="biblabel">
+ [3]<span class="bibsp">   </span></span><a 
+ id="Xfukaws"></a><span 
+class="cmti-10">Frankfurt University/KADATH (workspace)</span>, ”https://bitbucket.org/fukaws/”
+</p>
+   </div>
+<!--l. 302--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-130005"></a>Parameters</h3>
+<!--l. 321--><p class="noindent" ></p> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /></colgroup><colgroup id="TBL-2-2g"><col 
+id="TBL-2-2" /><col 
+id="TBL-2-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:normal; text-align:left;" id="TBL-2-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">delta_r_rel</div>           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-1-3"  
+class="td01">                                              REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-2-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Relative dr spacing for the interpolation polynomial</span></div>                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-1"  
+class="td11">      <span 
+class="cmbx-10">Range        </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-3-3"  
+class="td01">                                         <span 
+class="cmbx-10">Default: </span>0.3  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-4-"><td  style="white-space:normal; text-align:left;" id="TBL-2-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1:*</div>                      </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-2-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Anything goes</div>                                                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-5-1"  
+class="td11">                  </td></tr></table>
+<!--l. 328--><p class="noindent" ></p> <table id="TBL-3" class="tabular" 
+ 
+><colgroup id="TBL-3-1g"><col 
+id="TBL-3-1" /></colgroup><colgroup id="TBL-3-2g"><col 
+id="TBL-3-2" /><col 
+id="TBL-3-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-1-"><td  style="white-space:normal; text-align:left;" id="TBL-3-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">filename</div>               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-1-3"  
+class="td01">                                            STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-3-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Input config file name</span></div>                                                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-3-1"  
+class="td11">      <span 
+class="cmbx-10">Range        </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-3-3"  
+class="td01">                                      <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-4-"><td  style="white-space:normal; text-align:left;" id="TBL-3-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-3-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-5-1"  
+class="td11">                  </td></tr></table>
+<!--l. 335--><p class="noindent" ></p> <table id="TBL-4" class="tabular" 
+ 
+><colgroup id="TBL-4-1g"><col 
+id="TBL-4-1" /></colgroup><colgroup id="TBL-4-2g"><col 
+id="TBL-4-2" /><col 
+id="TBL-4-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-1-"><td  style="white-space:normal; text-align:left;" id="TBL-4-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">interp_order</div>         </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-1-3"  
+class="td01">                                                INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-4-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Interpolation order for smooth junk</span></div>                                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-3-1"  
+class="td11">      <span 
+class="cmbx-10">Range        </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-3-3"  
+class="td01">                                          <span 
+class="cmbx-10">Default: </span>8  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-4-"><td  style="white-space:normal; text-align:left;" id="TBL-4-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">3</div>                         </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Parabolic</div>                                                                                             
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-5-"><td  style="white-space:normal; text-align:left;" id="TBL-4-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">5</div>                         </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Quartic</div>                                                                                                
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-6-"><td  style="white-space:normal; text-align:left;" id="TBL-4-6-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">7</div>                         </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-6-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">6th order polynomial</div>                                                                              
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-7-"><td  style="white-space:normal; text-align:left;" id="TBL-4-7-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">8</div>                         </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-7-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">7th order polynomial</div>                                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-8-1"  
+class="td11">                  </td></tr></table>
+<!--l. 342--><p class="noindent" ></p> <table id="TBL-5" class="tabular" 
+ 
+><colgroup id="TBL-5-1g"><col 
+id="TBL-5-1" /></colgroup><colgroup id="TBL-5-2g"><col 
+id="TBL-5-2" /><col 
+id="TBL-5-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-1-"><td  style="white-space:normal; text-align:left;" id="TBL-5-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">interpolation_offset</div></td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-1-3"  
+class="td01">                                              REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-5-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Interpolation offset (in units of r</span><span 
+class="cmti-10">_AH)</span></div>                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-3-1"  
+class="td11">      <span 
+class="cmbx-10">Range        </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-3-3"  
+class="td01">                                          <span 
+class="cmbx-10">Default: </span>0.  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-4-"><td  style="white-space:normal; text-align:left;" id="TBL-5-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1:*</div>                      </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-5-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Anything goes</div>                                                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-5-1"  
+class="td11">                  </td></tr></table>
+<!--l. 349--><p class="noindent" ></p> <table id="TBL-6" class="tabular" 
+ 
+><colgroup id="TBL-6-1g"><col 
+id="TBL-6-1" /></colgroup><colgroup id="TBL-6-2g"><col 
+id="TBL-6-2" /><col 
+id="TBL-6-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-1-"><td  style="white-space:normal; text-align:left;" id="TBL-6-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">puncture_lapse</div>      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-1-3"  
+class="td01">                                     BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-6-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Set a puncture lapse alp = psi</span><img 
+src="documentation0x.png" alt="ˆ-  "  class="circ"  /><span 
+class="cmti-10">2 inside the hole</span></div>                                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-3-1"  
+class="td11">                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-3-3"  
+class="td01">                                    <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-4-1"  
+class="td11">                  </td></tr></table>
+<!--l. 356--><p class="noindent" ></p> <table id="TBL-7" class="tabular" 
+ 
+><colgroup id="TBL-7-1g"><col 
+id="TBL-7-1" /></colgroup><colgroup id="TBL-7-2g"><col 
+id="TBL-7-2" /><col 
+id="TBL-7-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-1-"><td  style="white-space:normal; text-align:left;" id="TBL-7-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">type</div>                    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-1-3"  
+class="td01">                                          STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-7-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">ID type</span></div>                                                                                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-3-1"  
+class="td11">      <span 
+class="cmbx-10">Range        </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-3-3"  
+class="td01">                                     <span 
+class="cmbx-10">Default: </span>BBH  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-4-"><td  style="white-space:normal; text-align:left;" id="TBL-7-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">BBH</div>                    </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-7-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Black hole ID</div>                                                                                        
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-5-"><td  style="white-space:normal; text-align:left;" id="TBL-7-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">BH</div>                      </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-7-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Binary black hole ID</div>                                                                              
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-6-"><td  style="white-space:normal; text-align:left;" id="TBL-7-6-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">BNS</div>                    </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-7-6-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Binary neutron star ID</div>                                                                           
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-7-"><td  style="white-space:normal; text-align:left;" id="TBL-7-7-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">NS</div>                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-7-7-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Neutron star ID</div>                                                                                    
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-8-"><td  style="white-space:normal; text-align:left;" id="TBL-7-8-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">BHNS</div>                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-7-8-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Black Hole neutron star ID</div>                                                                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-9-1"  
+class="td11">                  </td></tr></table>
+<!--l. 363--><p class="noindent" ></p> <table id="TBL-8" class="tabular" 
+ 
+><colgroup id="TBL-8-1g"><col 
+id="TBL-8-1" /></colgroup><colgroup id="TBL-8-2g"><col 
+id="TBL-8-2" /><col 
+id="TBL-8-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-1-"><td  style="white-space:normal; text-align:left;" id="TBL-8-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">initial_hydro</div>         </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from HYDROBASE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-1-3"  
+class="td01">                        KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-2-"><td colspan="3" style="white-space:nowrap; text-align:left;" id="TBL-8-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:nowrap; text-align:left;"><span 
+class="cmbx-10">Extends ranges:</span></div>                                                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-3-"><td  style="white-space:normal; text-align:left;" id="TBL-8-3-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Kadath</div>                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-8-3-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Kadath Initial Data</div>                                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-4-1"  
+class="td11">                  </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 372--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">6   </span> <a 
+ id="x1-140006"></a>Interfaces</h3>
+<!--l. 377--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-15000"></a>General</h4>
+<!--l. 379--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 381--><p class="noindent" >kadathimporter
+</p><!--l. 384--><p class="noindent" ><span 
+class="cmbx-10">Inherits</span>:
+</p><!--l. 386--><p class="noindent" >grid
+</p><!--l. 388--><p class="noindent" >admbase
+</p><!--l. 390--><p class="noindent" >hydrobase
+</p><!--l. 395--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">7   </span> <a 
+ id="x1-160007"></a>Schedule</h3>
+<!--l. 401--><p class="noindent" >This section lists all the variables which are assigned storage by thorn Fuka/KadathImporter. Storage can
+either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 404--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-17000"></a>Storage</h4>
+<!--l. 404--><p class="noindent" >NONE
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-18000"></a>Scheduled Functions</h4>
+<!--l. 408--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_PARAMCHECK </span>(conditional)
+</p><!--l. 410--><p class="noindent" >      kadathimporter_check_parameters
+</p><!--l. 412--><p class="noindent" >     <span 
+class="cmti-10">check parameters</span>
+</p><!--l. 415--><p class="noindent" > 
+</p><!--l. 417--><p class="noindent" ></p> <table id="TBL-9" class="tabular" 
+ 
+><colgroup id="TBL-9-1g"><col 
+id="TBL-9-1" /><col 
+id="TBL-9-2" /><col 
+id="TBL-9-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-9-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-3-1"  
+class="td11">    </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 425--><p class="noindent" ><span 
+class="cmbx-10">ADMBase</span><span 
+class="cmbx-10">_InitialData </span>(conditional)
+</p><!--l. 427--><p class="noindent" >      kadathimporter
+</p><!--l. 429--><p class="noindent" >     <span 
+class="cmti-10">set up binary black hole initial data</span>
+</p><!--l. 432--><p class="noindent" > 
+</p><!--l. 434--><p class="noindent" ></p> <table id="TBL-10" class="tabular" 
+ 
+><colgroup id="TBL-10-1g"><col 
+id="TBL-10-1" /><col 
+id="TBL-10-2" /><col 
+id="TBL-10-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-10-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 442--><p class="noindent" ><span 
+class="cmbx-10">ADMBase</span><span 
+class="cmbx-10">_InitialData </span>(conditional)
+</p><!--l. 444--><p class="noindent" >      kadathimporter
+</p><!--l. 446--><p class="noindent" >     <span 
+class="cmti-10">set up black hole initial data</span>
+</p><!--l. 449--><p class="noindent" > 
+</p><!--l. 451--><p class="noindent" ></p> <table id="TBL-11" class="tabular" 
+ 
+><colgroup id="TBL-11-1g"><col 
+id="TBL-11-1" /><col 
+id="TBL-11-2" /><col 
+id="TBL-11-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-11-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 459--><p class="noindent" ><span 
+class="cmbx-10">HydroBase</span><span 
+class="cmbx-10">_Initial </span>(conditional)
+</p><!--l. 461--><p class="noindent" >      kadathimporter
+</p><!--l. 463--><p class="noindent" >     <span 
+class="cmti-10">set up binary neutron star initial data</span>
+</p><!--l. 466--><p class="noindent" > 
+</p><!--l. 468--><p class="noindent" ></p> <table id="TBL-12" class="tabular" 
+ 
+><colgroup id="TBL-12-1g"><col 
+id="TBL-12-1" /><col 
+id="TBL-12-2" /><col 
+id="TBL-12-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-12-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-1-2"  
+class="td11"> Before:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-1-3"  
+class="td11"> admbase_postinitial  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-2-3"  
+class="td11"> c                           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-3-3"  
+class="td11"> function                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 477--><p class="noindent" ><span 
+class="cmbx-10">HydroBase</span><span 
+class="cmbx-10">_Initial </span>(conditional)
+</p><!--l. 479--><p class="noindent" >      kadathimporter
+</p><!--l. 481--><p class="noindent" >     <span 
+class="cmti-10">set up neutron star initial data</span>
+</p><!--l. 484--><p class="noindent" > 
+</p><!--l. 486--><p class="noindent" ></p> <table id="TBL-13" class="tabular" 
+ 
+><colgroup id="TBL-13-1g"><col 
+id="TBL-13-1" /><col 
+id="TBL-13-2" /><col 
+id="TBL-13-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-13-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-1-2"  
+class="td11"> Before:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-1-3"  
+class="td11"> admbase_postinitial  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-2-3"  
+class="td11"> c                           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-3-3"  
+class="td11"> function                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 495--><p class="noindent" ><span 
+class="cmbx-10">HydroBase</span><span 
+class="cmbx-10">_Initial </span>(conditional)
+</p><!--l. 497--><p class="noindent" >      kadathimporter
+</p><!--l. 499--><p class="noindent" >     <span 
+class="cmti-10">set up black hole neutron star initial data</span>
+</p><!--l. 502--><p class="noindent" > 
+</p><!--l. 504--><p class="noindent" ></p> <table id="TBL-14" class="tabular" 
+ 
+><colgroup id="TBL-14-1g"><col 
+id="TBL-14-1" /><col 
+id="TBL-14-2" /><col 
+id="TBL-14-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-14-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-1-2"  
+class="td11"> Before:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-1-3"  
+class="td11"> admbase_postinitial  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-2-3"  
+class="td11"> c                           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-3-3"  
+class="td11"> function                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-4-1"  
+class="td11">    </td></tr></table>
+ 
+</body></html> 
+
+                                                                                       
+
+

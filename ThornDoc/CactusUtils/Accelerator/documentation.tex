@@ -1,0 +1,468 @@
+% *======================================================================*
+%  Cactus Thorn template for ThornGuide documentation
+%  Author: Ian Kelley
+%  Date: Sun Jun 02, 2002
+%  $Header$
+%
+%  Thorn documentation in the latex file doc/documentation.tex
+%  will be included in ThornGuides built with the Cactus make system.
+%  The scripts employed by the make system automatically include
+%  pages about variables, parameters and scheduling parsed from the
+%  relevant thorn CCL files.
+%
+%  This template contains guidelines which help to assure that your
+%  documentation will be correctly added to ThornGuides. More
+%  information is available in the Cactus UsersGuide.
+%
+%  Guidelines:
+%   - Do not change anything before the line
+%       % START CACTUS THORNGUIDE",
+%     except for filling in the title, author, date, etc. fields.
+%        - Each of these fields should only be on ONE line.
+%        - Author names should be separated with a \\ or a comma.
+%   - You can define your own macros, but they must appear after
+%     the START CACTUS THORNGUIDE line, and must not redefine standard
+%     latex commands.
+%   - To avoid name clashes with other thorns, 'labels', 'citations',
+%     'references', and 'image' names should conform to the following
+%     convention:
+%       ARRANGEMENT_THORN_LABEL
+%     For example, an image wave.eps in the arrangement CactusWave and
+%     thorn WaveToyC should be renamed to CactusWave_WaveToyC_wave.eps
+%   - Graphics should only be included using the graphicx package.
+%     More specifically, with the "\includegraphics" command.  Do
+%     not specify any graphic file extensions in your .tex file. This
+%     will allow us to create a PDF version of the ThornGuide
+%     via pdflatex.
+%   - References should be included with the latex "\bibitem" command.
+%   - Use \begin{abstract}...\end{abstract} instead of \abstract{...}
+%   - Do not use \appendix, instead include any appendices you need as
+%     standard sections.
+%   - For the benefit of our Perl scripts, and for future extensions,
+%     please use simple latex.
+%
+% *======================================================================*
+%
+% Example of including a graphic image:
+%    \begin{figure}[ht]
+% 	\begin{center}
+%    	   \includegraphics[width=6cm]{/home/runner/work/tests/tests/arrangements/CactusUtils/Accelerator/doc/MyArrangement_MyThorn_MyFigure}
+% 	\end{center}
+% 	\caption{Illustration of this and that}
+% 	\label{MyArrangement_MyThorn_MyLabel}
+%    \end{figure}
+%
+% Example of using a label:
+%   \label{MyArrangement_MyThorn_MyLabel}
+%
+% Example of a citation:
+%    \cite{MyArrangement_MyThorn_Author99}
+%
+% Example of including a reference
+%   \bibitem{MyArrangement_MyThorn_Author99}
+%   {J. Author, {\em The Title of the Book, Journal, or periodical}, 1 (1999),
+%   1--16. {\tt http://www.nowhere.com/}}
+%
+% *======================================================================*
+
+% If you are using CVS use this line to give version information
+% $Header$
+
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+% The author of the documentation
+\author{Erik Schnetter \textless eschnetter@perimeterinstitute.ca\textgreater}
+
+% The title of the document (not necessarily the name of the Thorn)
+\title{Accelerator}
+
+% the date your document was last changed, if your document is in CVS,
+% please use:
+%    \date{$ $Date: 2004-01-07 14:12:39 -0600 (Wed, 07 Jan 2004) $ $}
+\date{May 17, 2012}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+% Add all definitions used in this documentation here
+%   \def\mydef etc
+
+% Add an abstract for this thorn's documentation
+\begin{abstract}
+  Many accelerators and GPU architectures separate device memory from
+  host memory. While device memory may be directly accessible from the
+  host and vice versa, this may include a significant performance
+  penalty. Such architectures require transferring data between host
+  and device, depending on which routines execute where, and depending
+  on which data these routines read and write.
+  
+  Thorn \texttt{Accelerator} keeps track of which data are valid where
+  (host or device), and schedules the necessary data transfers.
+\end{abstract}
+
+
+
+\section{Overview}
+
+This thorn keeps track of which grid variables are valid where (host
+or device). Grid variables can be valid either nowhere (e.g.\ in the
+beginning), only on the host or only on the device (e.g.\ if the
+variable was set by a routine executing there), or both on host and
+device (e.g.\ if the variable was set on the device and then copied to
+the host).
+
+This thorn also examines the schedule to determine which data are
+required where, and initiates he necessary copy operations.
+
+
+
+\section{Details}
+
+\subsection{Scheduled Routines}
+
+\subsubsection{Preparation}
+
+Just before a scheduled routine executes, this thorn examines the
+schedule to determine where the routine executes: a routine tagged
+\texttt{Device=1} executed on a device, a routine without tag or
+tagged \texttt{Device=0} executed on the host.
+
+The schedule \texttt{READS} declarations for this routine in the
+\texttt{schedule.ccl} file (see users' guide). These declarations
+specify which grid variables will be read by this routine.
+
+\texttt{Accelerator} then ensures that these grid variables have valid
+data where the routine executes (host or device). If necessary, data
+are copied. \texttt{Accelerator} does not perform the necessary copy
+operations itself; these are performed by lower-level
+accelerator-architecture aware thorns such as
+e.g.\ \texttt{OpenCLRunTime}.
+
+The parameter \texttt{only\_reads\_current\_timelevel} can be used to
+indicate that all routines only ever read the current timelevel. This
+may e.g.\ true for thorns using \texttt{MoL} for time integration.
+
+\subsubsection{Bookkeeping}
+
+Just after a scheduled routine has finished, this thorn examines the
+\texttt{WRITES} declarations for that routine, and marks these grid
+variables as valid on the device and invalid on the host if the
+routine executed on the device, and vice versa.
+
+The parameter \texttt{only\_writes\_current\_timelevel} can be used to
+indicate that all routines only ever write the current timelevel. This
+may e.g.\ true for thorns using \texttt{MoL} for time integration.
+However, this may not be true for routines setting up initial data, if
+these routines set up multiple timelevels.
+
+
+
+\subsection{Synchronisation}
+
+Synchronisation is always performed on the host.
+
+Before synchronising, this thorn ensures that all data that are sent
+to neighbouring processors during synchonisation are valid on the
+host, by copying these to the host if necessary. Only the data
+actually necessary for synchronisation are copied.
+
+After synchronising, this thorn copies ghost zone values from the host
+to the device, for those grid variable for which the device already
+has otherwise valid data.
+
+
+
+\subsection{I/O}
+
+I/O is always performed on the host.
+
+Before performing I/O, this thorn copies data from the device to the
+host. Since I/O routines do not (yet?) declare which variables they
+access, this thorn has to copy back \emph{all} variables to the host.
+
+This may be expensive, and the parameters \texttt{copy\_back\_every},
+\texttt{copy\_back\_vars}, and \texttt{copy\_back\_all\_timelevels}
+can be used to copy only certain data to the host. It is up to the
+user to ensure that these settings are consistent with the I/O
+settings that select which variables are output when.
+
+
+
+\subsection{Timelevel Cycling}
+
+When the driver cycles time levels on the host, this thorn cycles time
+levels on the device as well, and then marks the new current timelevel
+as invalid on both host and device.
+
+
+
+\section{Implementation Details}
+
+\texttt{Accelerator} expects to be called by the driver on certain
+occasions. It provides a set of aliased functions for this that the
+driver should call. Other infrastructure thorns may also need to call
+these routines.
+
+\begin{description}
+\item[\texttt{Accelerator\_Cycle}] Cycle timelevels of all grid
+  variables
+\item[\texttt{Accelerator\_CopyFromPast}] Copy the past timelevel of
+  some grid variables to the current timelevel (used by \texttt{MoL}
+  at the beginning of each integration step)
+\item[\texttt{Accelerator\_PreSync}] Must be called just before
+  synchronising
+\item[\texttt{Accelerator\_PostSync}] Must be called just after
+  synchronising
+\item[\texttt{Accelerator\_PreCallFunction}] Must be called just
+  before calling a scheduled routine
+\item[\texttt{Accelerator\_PostCallFunction}] Must be called just
+  after calling a scheduled routine
+\item[\texttt{Accelerator\_NotifyDataModified}] Tell
+  \texttt{Accelerator} that certain grid functions were modified, and
+  are thus valid somwhere and invalid elsewhere
+\item[\texttt{Accelerator\_RequireInvalidData}] Tell
+  \texttt{Accelerator} that certain grid functions will be accessed
+  write-only somewhere
+\item[\texttt{Accelerator\_RequireValidData}] Ask \texttt{Accelerator}
+  to ensure that certain grid functions are valid somewhere (by
+  copying data if necessary)
+\end{description}
+
+\texttt{Accelerator} expects another thorn to provide the actual
+device-specific copy operations, e.g.\ for an OpenCL or CUDA device.
+These functions must be provided:
+
+\begin{description}
+\item[\texttt{Device\_CreateVariables}] Create (i.e.\ begin to track)
+  a set of variables/timelevels. This routine will be called exactly
+  once before a variable/timelevel combination is mentioned to the
+  device.
+\item[\texttt{Device\_CopyCycle}] Cycle all timelevels on the device.
+  (This routine should not block.)
+\item[\texttt{Device\_CopyFromPast}] Copy past to current time level
+  on the device. (This routine should not block.)
+\item[\texttt{Device\_CopyToDevice}] Copy data from the host to the
+  device. The return argument indicates whether the data have been
+  copied or moved (i.e.\ are now invalid on the host). (This routine
+  should not block.)
+\item[\texttt{Device\_CopyToHost}] Copy data from the device back to
+  the host. The return argument indicates whether the data have been
+  copied or moved. (This routine should block until all data have been
+  copied.)
+\item[\texttt{Device\_CopyPreSync}] Copy those data from the device
+  back to the host that will be needed for synchronization (i.e.\ for
+  inter-process synchronization; AMR is not yet supported). (This
+  routine should block until all data have been copied.)
+\item[\texttt{Device\_CopyPostSync}] Copy the ghost zones to the
+  device. (This routine should not block.)
+\end{description}
+
+The note ``should not block'' indicates that the respective data
+transfer operation should be performed in the background if possible;
+it is not necessary to wait until the data transfer has finished
+before returning. However, ``should block'' indicates that the routine
+must wait until all data have been transferred.
+
+
+
+\section{Restrictions}
+
+At the moment, \texttt{Accelerator} only supports unigrid simulations;
+adaptive mesh refinement or multi-block methods are not yet supported.
+The main reason for this is that it does not keep track of the
+additional metadata -- this would be straightforward to add.
+
+\texttt{Accelerator} is currently also tied to using \texttt{Carpet}
+as driver and does e.g.\ not work with \texttt{PUGH}. The main reason
+for this is that \texttt{PUGH} and the flesh do not provide the hooks
+necessary for \texttt{Accelerator} to work -- these would also be
+straightforward to add.
+
+
+
+% \begin{thebibliography}{9}
+% 
+% \end{thebibliography}
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{copy\_back\_all\_written\_variables\_in\_analysis}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{copy\_back\_all\_timelevels} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Copy all timelevels back to the host for output}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{copy\_back\_all\_written\_variables\_in\_analysis} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Copy all variables that are written to in analysis back to the host}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{copy\_back\_every} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em When to copy variables back to the host}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering } & \multicolumn{2}{p{\paraWidth}|}{never} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{every so many iterations} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{copy\_back\_vars} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Which variables to copy back}} \\
+\hline{\bf Range} & &  {\bf Default:} all \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{list of group or variable names; empty to copy nothing, 'all' to copy all variables} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{verbose} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Output detailed information}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{veryverbose} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Output even more detailed information}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{only\_reads\_current\_timelevel} & {\bf Scope:} restricted & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Assume that functions read only the current timelevel}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{only\_writes\_current\_timelevel} & {\bf Scope:} restricted & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Assume that functions write only the current timelevel}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+accelerator
+\vspace{2mm}
+
+\vspace{5mm}
+
+\noindent {\bf Uses header}: 
+
+carpet.hh
+\vspace{2mm}
+
+\noindent {\bf Provides}: 
+
+
+
+Accelerator\_Cycle to 
+
+Accelerator\_CopyFromPast to 
+
+Accelerator\_PreSync to 
+
+Accelerator\_PostSync to 
+
+Accelerator\_PreCallFunction to 
+
+Accelerator\_PostCallFunction to 
+
+Accelerator\_NotifyDataModified to 
+
+Accelerator\_RequireInvalidData to 
+
+Accelerator\_RequireValidData to 
+\vspace{2mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn CactusUtils/Accelerator.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}NONE
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_STARTUP} 
+
+\hspace{5mm} accelerator\_init 
+
+\hspace{5mm}{\it initialise accelerator thorn } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_ANALYSIS} 
+
+\hspace{5mm} accelerator\_copyback 
+
+\hspace{5mm}{\it copy memory buffers back to host memory } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

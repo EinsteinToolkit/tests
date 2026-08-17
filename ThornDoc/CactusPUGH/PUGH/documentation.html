@@ -1,0 +1,2530 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>PUGH</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">PUGH</h2>
+        <div class="author" ><span 
+class="cmr-12">The Cactus Team</span>
+<br /> <span 
+class="cmtt-12">cactusmaint@cactuscode.org</span></div>
+<br />
+<div class="date" >\( \)<span 
+class="cmr-12">Date</span>\( \)</div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 21--><p class="noindent" ><span 
+class="cmr-9">The default unigrid driver for Cactus for both multiprocessor and single process runs, handling grid</span>
+     <span 
+class="cmr-9">variables and communications.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Description</h3>
+<!--l. 26--><p class="noindent" >PUGH can create, handle and communicate grid scalars, arrays and functions in 1, 2 or 3-dimensions.
+</p><!--l. 29--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a>Compilation</h3>
+                                                                                       
+                                                                                       
+<!--l. 31--><p class="noindent" >PUGH can be compiled with or without MPI. Compiling without MPI results in an executable which can only
+be used on a single processor, compiling with MPI leads to an executable which can be used with either single or
+multiple processors. (Section <a 
+href="#x1-60006">6<!--tex4ht:ref: pugh_understanding --></a> describes how you can tell if your executable has been compiled with or without
+MPI).
+</p><!--l. 38--><p class="noindent" >For configuring with MPI, see the Cactus User’s Guide.
+</p><!--l. 40--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-30003"></a>Grid Size</h3>
+<!--l. 42--><p class="noindent" >The number of grid points used for a simulation can be set in PUGH either globally (that is, the total number of
+points across all processors), or locally (that is, the number of points on each processor).
+</p><!--l. 46--><p class="noindent" >To set the global size of a N-D grid to be 40 grid points in each direction use
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-1">
+  PUGH::global_nsize = 40
+</pre>
+<!--l. 50--><p class="nopar" >
+</p><!--l. 52--><p class="noindent" >To set the global size of a 2D grid to be \(40\times 20\) use
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-2">
+  PUGH::global_nx = 40
+  PUGH::global_ny = 20
+</pre>
+<!--l. 57--><p class="nopar" >
+</p><!--l. 59--><p class="noindent" >To set the local size of a 2D grid to be \(40\times 20\) on each processor, use
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-3">
+  PUGH::local_nx = 40
+  PUGH::local_ny = 20
+</pre>
+<!--l. 64--><p class="nopar" >
+</p><!--l. 67--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-40004"></a>Periodic Boundary Conditions</h3>
+<!--l. 69--><p class="noindent" >PUGH can implement periodic boundary conditions during the synchronization of grid functions. Although this
+may at first seem a little confusing, and unlike the usual use of boundary conditions which are
+directly called from evolution routines, it is the most efficient and natural place for periodic boundary
+conditions.
+</p><!--l. 75--><p class="noindent" >PUGH applies periodic conditions by simply communicating the appropriate ghostzones between “end”
+processors. For example, for a 1D domain with two ghostzones, split across two processors, Figure <a 
+href="#x1-40011">1<!--tex4ht:ref: pugh::fig1 --></a> shows the
+implementation of periodic boundary conditions.
+</p>
+<hr class="figure" /><div class="figure" 
+>
+                                                                                       
+                                                                                       
+<a 
+ id="x1-40011"></a>
+                                                                                       
+                                                                                       
+<div class="center" 
+>
+<!--l. 80--><p class="noindent" >
+</p><!--l. 81--><p class="noindent" ><span class="rotatebox" style="transform: rotate(-0deg);"><img 
+src="periodic.png" alt="PIC"  
+width="687" /></span>                                        </p></div>
+<br /> <div class="caption" 
+><span class="id">Figure 1: </span><span  
+class="content">Implementation of periodic boundary conditions for a 1D domain, with two ghostzones, split
+across two processors. The lines labelled <span 
+class="cmbx-10">A </span>show the <span 
+class="cmti-10">standard </span>communications during synchronisation,
+the lines labelled <span 
+class="cmbx-10">B </span>show the additional communications for periodic boundary conditions.</span></div><!--tex4ht:label?: x1-40011 -->
+                                                                                       
+                                                                                       
+</div><hr class="endfigure" />
+<!--l. 88--><p class="noindent" >Periodic boundary conditions are applied to all grid functions, by default they are applied in all directions,
+although this behaviour can be customised to switch them off in given directions.
+</p><!--l. 92--><p class="noindent" >By default, no periodic boundary conditions are applied. To apply periodic boundary conditions in all directions,
+set
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-4">
+  PUGH::periodic = &#x0022;yes&#x0022;
+</pre>
+<!--l. 96--><p class="nopar" >
+</p><!--l. 98--><p class="noindent" >To apply periodic boundary conditions in just the x- and y- directions in a 3 dimensional domain,
+use
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-5">
+  PUGH::periodic = &#x0022;yes&#x0022;
+  PUGH::periodic_z = &#x0022;no&#x0022;
+</pre>
+<!--l. 104--><p class="nopar" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-50005"></a>Processor Decomposition</h3>
+<!--l. 110--><p class="noindent" >By default PUGH will distribute the computational grid evenly across all processors (as in Figure <a 
+href="#x1-50012">2<!--tex4ht:ref: pugh::fig2 --></a>a). This may
+not be efficient if there is a different computational load on different processors, or for example for a simulation
+distributed across processors with different per-processor performance.
+</p>
+<hr class="figure" /><div class="figure" 
+>
+                                                                                       
+                                                                                       
+<a 
+ id="x1-50012"></a>
+                                                                                       
+                                                                                       
+<div class="center" 
+>
+<!--l. 117--><p class="noindent" >
+</p><!--l. 118--><p class="noindent" ><span class="rotatebox" style="transform: rotate(-0deg);"><img 
+src="Partitioning.png" alt="PIC"  
+width="1417" /></span>                                                              </p></div>
+<br /> <div class="caption" 
+><span class="id">Figure 2: </span><span  
+class="content">Partitioning of the computational grid across processors, Figure a) is the default type of
+partition used by <span 
+class="cmtt-10">PUGH</span>, Figure b) can be set manually, and Figure c) is not possible with <span 
+class="cmtt-10">PUGH</span></span></div><!--tex4ht:label?: x1-50012 -->
+                                                                                       
+                                                                                       
+</div><hr class="endfigure" />
+<!--l. 125--><p class="noindent" >The computational grid can be manually partitioned in each direction in a regularly way as in
+Figure <a 
+href="#x1-50012">2<!--tex4ht:ref: pugh::fig2 --></a>b.
+</p><!--l. 128--><p class="noindent" >The computational grid can be manually distributed using PUGH’s string parameters
+<span class="obeylines-h"><code class="verb">partition_[1d_x|2d_x|2d_y|3d_x|3d_y|3d_z]</code></span>. To manually specify the load distribution, set
+<span 
+class="cmtt-10">PUGH::partition = &#x0022;manual&#x0022; </span>and then, depending on the grid dimension, set the remaining parameters to
+distribute the load in each direction. Note that for this you need to know apriori the processor
+decomposition.
+</p><!--l. 135--><p class="noindent" >The decomposition is easiest to explain with a simple example: to distribute a 30-cubed grid across 4
+processors (decomposed as \(2 \times 1 \times 2\), with processors 0 and 2 performing twice as fast as processors 1 and 3)
+as:
+</p>
+<div class="tabular"> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /><col 
+id="TBL-2-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-1-1"  
+class="td11"> proc 2: \(20 \times 30 \times 15\)  </td><td  style="white-space:nowrap; text-align:center;" id="TBL-2-1-2"  
+class="td11"> proc 3: \(10 \times 30 \times 15\)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-2-1"  
+class="td11"> proc 0: \(20 \times 30 \times 15\)  </td><td  style="white-space:nowrap; text-align:center;" id="TBL-2-2-2"  
+class="td11"> proc 1: \(10 \times 30 \times 15\)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-1"  
+class="td11">         </td>
+</tr></table>                                                                                       </div>
+<!--l. 145--><p class="noindent" >you would use the following topology and partition parameter settings:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-6">
+  # the overall grid size
+  PUGH::global_nsize = 30
+
+  # processor topology
+  PUGH::processor_topology      = manual
+  PUGH::processor_topology_3d_x = 2
+  PUGH::processor_topology_3d_y = 1
+  PUGH::processor_topology_3d_z = 2     # redundant
+
+  # grid partitioning
+  PUGH::partition      = &#x0022;manual&#x0022;
+  PUGH::partition_3d_x = &#x0022;20 10&#x0022;
+</pre>
+<!--l. 160--><p class="nopar" >
+</p><!--l. 162--><p class="noindent" >Each partition parameter lists the number of grid points for every processor in that direction, with the numbers
+delimited by any non-digit characters. Note that an empty string for a direction (which is the default value for
+the partition parameters) will apply the automatic distribution. That’s why it is not necessary
+to set <span class="obeylines-h"><code class="verb">PUGH::partition_3d_y = &#x0022;30&#x0022;</code></span> or <span class="obeylines-h"><code class="verb">PUGH::partition_3d_z = &#x0022;15 15&#x0022;</code></span> in the parameter
+file.
+</p><!--l. 169--><p class="noindent" >Because the previous automatic distribution gave problems in some cases (e.g. very long box in one, but short in
+other directions), there is now an improved algorithm that tries to do a better job in decomposing the grid
+evenly to the processors. However, it can fail in certain situations, in which it is gracefully falling back to
+the previous (<span class="obeylines-h"><code class="verb">&#x0022;automatic_old&#x0022;</code></span>) giving a warning. Note that, if one or more of the parameters
+<span class="obeylines-h"><code class="verb">PUGH::processor_topology_3d_*</code></span> or <span class="obeylines-h"><code class="verb">PUGH::partition_3d_*</code></span> are set, this mode automatically falls back to
+<span class="obeylines-h"><code class="verb">&#x0022;automatic_old&#x0022;</code></span> without warning.
+</p>
+<h3 class="sectionHead"><span class="titlemark">6   </span> <a 
+ id="x1-60006"></a>Understanding PUGH Output</h3>
+<!--l. 183--><p class="noindent" >PUGH reports information about the processor decomposition to standard output at the start of a job. This
+section describes how to interpret that output.
+</p><!--l. 188--><p class="noindent" ><span 
+class="cmbx-10">Single Processor (no MPI)</span>
+</p>
+     <ul class="itemize1">
+     <li class="itemize">
+                                                                                       
+                                                                                       
+     <!--l. 193--><p class="noindent" ><span 
+class="cmbx-10">Type of evolution</span>
+     </p><!--l. 195--><p class="noindent" >If an executable has been compiled for only single processor use (without MPI), the first thing
+     which PUGH reports is this fact:
+     </p><!--l. 198--><p class="noindent" ><span 
+class="cmtt-10">INFO (PUGH): Single processor evolution</span>
+</p>
+     </li></ul>
+<!--l. 205--><p class="noindent" ><span 
+class="cmbx-10">Multiple Processor (with MPI)</span>
+</p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 214--><p class="noindent" ><span 
+class="cmbx-10">Type of evolution</span>
+     </p><!--l. 216--><p class="noindent" >If an executable has been compiled using MPI, the first thing which PUGH reports is this fact,
+     together with the number of processors being used:
+     </p><!--l. 220--><p class="noindent" ><span 
+class="cmtt-10">INFO (PUGH): MPI Evolution on 3 processors</span>
+     </p></li>
+     <li class="itemize">
+     <!--l. 223--><p class="noindent" ><span 
+class="cmbx-10">Maximum load skew</span>
+     </p><!--l. 225--><p class="noindent" >The maximum load skew describes the variance in the number of gridpoints on each processor, and
+     is defined by
+     </p><!--l. 228--><p class="noindent" >
+                                              \[\mbox {Max Skew} = 100 \;\;\frac {\mbox {Max Points}- \mbox {Min Points}}{\mbox {Average Points}} \]
+     </p><!--l. 230--><p class="noindent" >For most purposes, the maximum skew should ideally be close to zero, however if your simulation
+     has a different load at different grid points, or if you are running across processors with different
+     properties, the optimal skew could be quite different.
+     </p><!--l. 235--><p class="noindent" >By  default,  PUGH  tries  to  minize  the  skew  in  gridpoints,  however  this  may  be  overriden  by
+     performing the load balancing manually.
+</p>
+     </li></ul>
+                                                                                       
+                                                                                       
+<!--l. 240--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">7   </span> <a 
+ id="x1-70007"></a>Useful Parameters</h3>
+<!--l. 242--><p class="noindent" >There are several parameters in PUGH which are useful for debugging and optimisation:
+</p><!--l. 245--><p class="noindent" >
+                  </p><dl class="list1"><dt class="list">
+<span 
+class="cmtt-10">PUGH::enable</span><span 
+class="cmtt-10">_all</span><span 
+class="cmtt-10">_storage</span><br 
+class="newline" />                  </dt><dd 
+class="list">
+                  <!--l. 247--><p class="noindent" >
+                  </p><!--l. 249--><p class="noindent" >Enables  storage  for  all  grid  variables  (that  is,  not  only  those  set  in  a  thorn’s
+                  <span 
+class="cmtt-10">schedule.ccl </span>file). Try this parameter if you are getting segmentation faults. If
+                  enabling all storage removes the problem, it most likely means that you are accessing
+                  a grid variable (probably in a Fortran thorn) for which storage has not been set.
+                  </p></dd><dt class="list">
+<span 
+class="cmtt-10">PUGH::initialise</span><span 
+class="cmtt-10">_memory</span><br 
+class="newline" />                  </dt><dd 
+class="list">
+                  <!--l. 256--><p class="noindent" >
+                  </p><!--l. 258--><p class="noindent" >By default, when PUGH allocates storage for a grid variable it does not initialise
+                  its elements. If you access an uninitialised variable on some platforms you will
+                  get  a  segmentation  fault  (and  in  general  you  will  see  erratic  behaviour).  This
+                  parameter  can  be  used  to  initialise  all  elements  to  zero,  if  this  removes  your
+                  segmentation fault you can then track down the cause of the problem by using the
+                  same parameter to initialize all elements to NaNs and then track them with the
+                  thorn <span 
+class="cmtt-10">CactusUtils/NaNChecker</span>.
+                  </p><!--l. 268--><p class="noindent" >Note that it isn’t recommended to simply use this parameter to initialise all elements
+                  to zero, instead we recommend you to set all variables to their correct values before
+                  using them.
+                  </p></dd><dt class="list">
+<span 
+class="cmtt-10">PUGH::storage</span><span 
+class="cmtt-10">_verbose</span><br 
+class="newline" />                  </dt><dd 
+class="list">
+                  <!--l. 272--><p class="noindent" >
+                  </p><!--l. 274--><p class="noindent" >This parameter can be set to print out the number of grid variables which have
+                  storage allocated at each iteration, and the total size of the storage allocated by
+                  Cactus. Note that this total does not include storage allocated independently in
+                  thorns.
+                  </p></dd><dt class="list">
+<span 
+class="cmtt-10">PUGH::timer</span><span 
+class="cmtt-10">_output</span> </dt><dd 
+class="list">
+                  <!--l. 279--><p class="noindent" >
+                  </p><!--l. 281--><p class="noindent" >This  parameter  can  be  set  to  provide  the  time  spent  communicating  variables
+                  between processors.
+</p>
+                  </dd></dl>
+                                                                                       
+                                                                                       
+<!--l. 291--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">8   </span> <a 
+ id="x1-80008"></a>Parameters</h3>
+<!--l. 310--><p class="noindent" ></p> <table id="TBL-3" class="tabular" 
+ 
+><colgroup id="TBL-3-1g"><col 
+id="TBL-3-1" /></colgroup><colgroup id="TBL-3-2g"><col 
+id="TBL-3-2" /><col 
+id="TBL-3-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-1-"><td  style="white-space:normal; text-align:left;" id="TBL-3-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">cacheline_mult</div>                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-1-3"  
+class="td01">                                        INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-3-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Multiplier for cacheline number</span></div>                                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-3-3"  
+class="td01">                               <span 
+class="cmbx-10">Default: </span>4001  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-4-"><td  style="white-space:normal; text-align:left;" id="TBL-3-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                    </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-3-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Any positive number</div>                                                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 317--><p class="noindent" ></p> <table id="TBL-4" class="tabular" 
+ 
+><colgroup id="TBL-4-1g"><col 
+id="TBL-4-1" /></colgroup><colgroup id="TBL-4-2g"><col 
+id="TBL-4-2" /><col 
+id="TBL-4-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-1-"><td  style="white-space:normal; text-align:left;" id="TBL-4-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">enable_all_storage</div>               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-1-3"  
+class="td01">                            BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-4-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Enable storage for all GFs?</span></div>                                                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-3-1"  
+class="td11">                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-3-3"  
+class="td01">                            <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-4-1"  
+class="td11">                          </td></tr></table>
+<!--l. 324--><p class="noindent" ></p> <table id="TBL-5" class="tabular" 
+ 
+><colgroup id="TBL-5-1g"><col 
+id="TBL-5-1" /></colgroup><colgroup id="TBL-5-2g"><col 
+id="TBL-5-2" /><col 
+id="TBL-5-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-1-"><td  style="white-space:normal; text-align:left;" id="TBL-5-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">ghost_size</div>                         </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-1-3"  
+class="td01">                                        INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-5-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">The width of the ghost zone in each direction</span></div>                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>-1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-4-"><td  style="white-space:normal; text-align:left;" id="TBL-5-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1:*</div>                                   </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-5-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Any positive number to override the ghost_size_[xyz] parameters</div>       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 331--><p class="noindent" ></p> <table id="TBL-6" class="tabular" 
+ 
+><colgroup id="TBL-6-1g"><col 
+id="TBL-6-1" /></colgroup><colgroup id="TBL-6-2g"><col 
+id="TBL-6-2" /><col 
+id="TBL-6-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-1-"><td  style="white-space:normal; text-align:left;" id="TBL-6-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">ghost_size_x</div>                      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-1-3"  
+class="td01">                                        INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-6-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">The width of the ghost zone in the x direction</span></div>                                                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-3-3"  
+class="td01">                                  <span 
+class="cmbx-10">Default: </span>1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-4-"><td  style="white-space:normal; text-align:left;" id="TBL-6-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                    </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-6-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Must be a positive integer</div>                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 338--><p class="noindent" ></p> <table id="TBL-7" class="tabular" 
+ 
+><colgroup id="TBL-7-1g"><col 
+id="TBL-7-1" /></colgroup><colgroup id="TBL-7-2g"><col 
+id="TBL-7-2" /><col 
+id="TBL-7-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-1-"><td  style="white-space:normal; text-align:left;" id="TBL-7-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">ghost_size_y</div>                      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-1-3"  
+class="td01">                                        INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-7-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">The width of the ghost zone in the y direction</span></div>                                                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-3-3"  
+class="td01">                                  <span 
+class="cmbx-10">Default: </span>1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-4-"><td  style="white-space:normal; text-align:left;" id="TBL-7-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                    </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-7-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Must be a positive integer</div>                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 345--><p class="noindent" ></p> <table id="TBL-8" class="tabular" 
+ 
+><colgroup id="TBL-8-1g"><col 
+id="TBL-8-1" /></colgroup><colgroup id="TBL-8-2g"><col 
+id="TBL-8-2" /><col 
+id="TBL-8-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-1-"><td  style="white-space:normal; text-align:left;" id="TBL-8-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">ghost_size_z</div>                      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-1-3"  
+class="td01">                                        INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-8-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">The width of the ghost zone in the z direction</span></div>                                                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-3-3"  
+class="td01">                                  <span 
+class="cmbx-10">Default: </span>1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-4-"><td  style="white-space:normal; text-align:left;" id="TBL-8-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                    </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-8-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Must be a positive integer</div>                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 352--><p class="noindent" ></p> <table id="TBL-9" class="tabular" 
+ 
+><colgroup id="TBL-9-1g"><col 
+id="TBL-9-1" /></colgroup><colgroup id="TBL-9-2g"><col 
+id="TBL-9-2" /><col 
+id="TBL-9-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-1-"><td  style="white-space:normal; text-align:left;" id="TBL-9-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">global_nsize</div>                       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-1-3"  
+class="td01">                                        INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-9-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">The size of the grid in each spatial direction</span></div>                                                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>-1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-4-"><td  style="white-space:normal; text-align:left;" id="TBL-9-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1:*</div>                                   </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-9-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Grid of this size in each dir distributed across all processors</div>              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 359--><p class="noindent" ></p> <table id="TBL-10" class="tabular" 
+ 
+><colgroup id="TBL-10-1g"><col 
+id="TBL-10-1" /></colgroup><colgroup id="TBL-10-2g"><col 
+id="TBL-10-2" /><col 
+id="TBL-10-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-1-"><td  style="white-space:normal; text-align:left;" id="TBL-10-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">global_nx</div>                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-1-3"  
+class="td01">                                        INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-10-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">The size of the grid in the x direction</span></div>                                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>10  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-4-"><td  style="white-space:normal; text-align:left;" id="TBL-10-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                    </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-10-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Grid of this size distributed across all processors</div>                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 366--><p class="noindent" ></p> <table id="TBL-11" class="tabular" 
+ 
+><colgroup id="TBL-11-1g"><col 
+id="TBL-11-1" /></colgroup><colgroup id="TBL-11-2g"><col 
+id="TBL-11-2" /><col 
+id="TBL-11-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-1-"><td  style="white-space:normal; text-align:left;" id="TBL-11-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">global_ny</div>                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-1-3"  
+class="td01">                                        INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-11-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">The size of the grid in the y direction</span></div>                                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>10  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-4-"><td  style="white-space:normal; text-align:left;" id="TBL-11-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                    </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-11-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Grid of this size distributed across all processors</div>                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 373--><p class="noindent" ></p> <table id="TBL-12" class="tabular" 
+ 
+><colgroup id="TBL-12-1g"><col 
+id="TBL-12-1" /></colgroup><colgroup id="TBL-12-2g"><col 
+id="TBL-12-2" /><col 
+id="TBL-12-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-1-"><td  style="white-space:normal; text-align:left;" id="TBL-12-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">global_nz</div>                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-1-3"  
+class="td01">                                        INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-12-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">The size of the grid in the z direction</span></div>                                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>10  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-4-"><td  style="white-space:normal; text-align:left;" id="TBL-12-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                    </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-12-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Grid of this size distributed across all processors</div>                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-5-1"  
+class="td11">                          </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 380--><p class="noindent" ></p> <table id="TBL-13" class="tabular" 
+ 
+><colgroup id="TBL-13-1g"><col 
+id="TBL-13-1" /></colgroup><colgroup id="TBL-13-2g"><col 
+id="TBL-13-2" /><col 
+id="TBL-13-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-1-"><td  style="white-space:normal; text-align:left;" id="TBL-13-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">info</div>                                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-1-3"  
+class="td01">                                 KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-13-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Provide additional information about what PUGH is doing</span></div>                                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-3-3"  
+class="td01">                               <span 
+class="cmbx-10">Default: </span>none  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-4-"><td  style="white-space:normal; text-align:left;" id="TBL-13-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">none</div>                                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-13-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">No extra information</div>                                                                 
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-5-"><td  style="white-space:normal; text-align:left;" id="TBL-13-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">load</div>                                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-13-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Load on each processor</div>                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-6-1"  
+class="td11">                          </td></tr></table>
+<!--l. 387--><p class="noindent" ></p> <table id="TBL-14" class="tabular" 
+ 
+><colgroup id="TBL-14-1g"><col 
+id="TBL-14-1" /></colgroup><colgroup id="TBL-14-2g"><col 
+id="TBL-14-2" /><col 
+id="TBL-14-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-1-"><td  style="white-space:normal; text-align:left;" id="TBL-14-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">initialize_memory</div>               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-1-3"  
+class="td01">                                 KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-14-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">How to initialize memory for grid variables at allocation time</span></div>                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-3-3"  
+class="td01">                               <span 
+class="cmbx-10">Default: </span>none  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-4-"><td  style="white-space:normal; text-align:left;" id="TBL-14-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">none</div>                                 </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-14-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Do not initialize storage for allocated grid variables (default)</div>             
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-5-"><td  style="white-space:normal; text-align:left;" id="TBL-14-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">zero</div>                                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-14-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Zero out all elements of all allocated grid variables</div>                          
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-6-"><td  style="white-space:normal; text-align:left;" id="TBL-14-6-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">NaN</div>
+                                         </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-14-6-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Set  all  elements  of  allocated  floating  point  grid  variables  to
+  Not-a-Number values</div>                                                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-7-1"  
+class="td11">                          </td></tr></table>
+<!--l. 394--><p class="noindent" ></p> <table id="TBL-15" class="tabular" 
+ 
+><colgroup id="TBL-15-1g"><col 
+id="TBL-15-1" /></colgroup><colgroup id="TBL-15-2g"><col 
+id="TBL-15-2" /><col 
+id="TBL-15-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-1-"><td  style="white-space:normal; text-align:left;" id="TBL-15-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">local_nsize</div>                         </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-15-1-3"  
+class="td01">                                        INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-15-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">The size of the grid in each spatial direction</span></div>                                                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-15-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>-1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-4-"><td  style="white-space:normal; text-align:left;" id="TBL-15-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1:*</div>                                   </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-15-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Grid of this size in each dir on each processor</div>                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 401--><p class="noindent" ></p> <table id="TBL-16" class="tabular" 
+ 
+><colgroup id="TBL-16-1g"><col 
+id="TBL-16-1" /></colgroup><colgroup id="TBL-16-2g"><col 
+id="TBL-16-2" /><col 
+id="TBL-16-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-1-"><td  style="white-space:normal; text-align:left;" id="TBL-16-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">local_nx</div>                            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-16-1-3"  
+class="td01">                                        INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-16-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">The size of the grid in the x direction</span></div>                                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-16-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>-1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-4-"><td  style="white-space:normal; text-align:left;" id="TBL-16-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1:*</div>                                   </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-16-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Grid of this size on each processor</div>                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 408--><p class="noindent" ></p> <table id="TBL-17" class="tabular" 
+ 
+><colgroup id="TBL-17-1g"><col 
+id="TBL-17-1" /></colgroup><colgroup id="TBL-17-2g"><col 
+id="TBL-17-2" /><col 
+id="TBL-17-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-1-"><td  style="white-space:normal; text-align:left;" id="TBL-17-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">local_ny</div>                            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-1-3"  
+class="td01">                                        INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-17-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">The size of the grid in the y direction</span></div>                                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>-1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-4-"><td  style="white-space:normal; text-align:left;" id="TBL-17-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1:*</div>                                   </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-17-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Grid of this size on each processor</div>                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 415--><p class="noindent" ></p> <table id="TBL-18" class="tabular" 
+ 
+><colgroup id="TBL-18-1g"><col 
+id="TBL-18-1" /></colgroup><colgroup id="TBL-18-2g"><col 
+id="TBL-18-2" /><col 
+id="TBL-18-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-1-"><td  style="white-space:normal; text-align:left;" id="TBL-18-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">local_nz</div>                            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-18-1-3"  
+class="td01">                                        INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-18-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">The size of the grid in the z direction</span></div>                                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-18-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>-1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-4-"><td  style="white-space:normal; text-align:left;" id="TBL-18-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1:*</div>                                   </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-18-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Grid of this size on each processor</div>                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 422--><p class="noindent" ></p> <table id="TBL-19" class="tabular" 
+ 
+><colgroup id="TBL-19-1g"><col 
+id="TBL-19-1" /></colgroup><colgroup id="TBL-19-2g"><col 
+id="TBL-19-2" /><col 
+id="TBL-19-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-1-"><td  style="white-space:normal; text-align:left;" id="TBL-19-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">local_size_includes_ghosts</div>    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-1-3"  
+class="td01">                            BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-19-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Does the local grid size include the ghost zones?</span></div>                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-3-1"  
+class="td11">                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-3-3"  
+class="td01">                           <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-4-1"  
+class="td11">                          </td></tr></table>
+<!--l. 429--><p class="noindent" ></p> <table id="TBL-20" class="tabular" 
+ 
+><colgroup id="TBL-20-1g"><col 
+id="TBL-20-1" /></colgroup><colgroup id="TBL-20-2g"><col 
+id="TBL-20-2" /><col 
+id="TBL-20-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-1-"><td  style="white-space:normal; text-align:left;" id="TBL-20-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">overloadabort</div>                     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-20-1-3"  
+class="td01">                            BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-20-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Overload Abort driver function</span></div>                                                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-3-1"  
+class="td11">                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-20-3-3"  
+class="td01">                           <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-4-1"  
+class="td11">                          </td></tr></table>
+<!--l. 436--><p class="noindent" ></p> <table id="TBL-21" class="tabular" 
+ 
+><colgroup id="TBL-21-1g"><col 
+id="TBL-21-1" /></colgroup><colgroup id="TBL-21-2g"><col 
+id="TBL-21-2" /><col 
+id="TBL-21-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-1-"><td  style="white-space:normal; text-align:left;" id="TBL-21-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">overloadarraygroupsizeb</div>       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-21-1-3"  
+class="td01">                            BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-21-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Overload ArrayGroupSizeB driver function</span></div>                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-3-1"  
+class="td11">                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-21-3-3"  
+class="td01">                           <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-4-1"  
+class="td11">                          </td></tr></table>
+<!--l. 443--><p class="noindent" ></p> <table id="TBL-22" class="tabular" 
+ 
+><colgroup id="TBL-22-1g"><col 
+id="TBL-22-1" /></colgroup><colgroup id="TBL-22-2g"><col 
+id="TBL-22-2" /><col 
+id="TBL-22-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-1-"><td  style="white-space:normal; text-align:left;" id="TBL-22-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">overloadbarrier</div>                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-22-1-3"  
+class="td01">                            BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-22-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Overload Barrier driver function</span></div>                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-3-1"  
+class="td11">                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-22-3-3"  
+class="td01">                           <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-4-1"  
+class="td11">                          </td></tr></table>
+<!--l. 450--><p class="noindent" ></p> <table id="TBL-23" class="tabular" 
+ 
+><colgroup id="TBL-23-1g"><col 
+id="TBL-23-1" /></colgroup><colgroup id="TBL-23-2g"><col 
+id="TBL-23-2" /><col 
+id="TBL-23-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-1-"><td  style="white-space:normal; text-align:left;" id="TBL-23-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">overloaddisablegroupcomm</div>   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-1-3"  
+class="td01">                            BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-23-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Overload DisableGroupComm driver function</span></div>                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-3-1"  
+class="td11">                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-3-3"  
+class="td01">                           <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-4-1"  
+class="td11">                          </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 457--><p class="noindent" ></p> <table id="TBL-24" class="tabular" 
+ 
+><colgroup id="TBL-24-1g"><col 
+id="TBL-24-1" /></colgroup><colgroup id="TBL-24-2g"><col 
+id="TBL-24-2" /><col 
+id="TBL-24-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-1-"><td  style="white-space:normal; text-align:left;" id="TBL-24-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">overloaddisablegroupstorage</div>  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-24-1-3"  
+class="td01">                            BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-24-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Overload DisableGroupStorage driver function</span></div>                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-3-1"  
+class="td11">                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-24-3-3"  
+class="td01">                           <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-4-1"  
+class="td11">                          </td></tr></table>
+<!--l. 464--><p class="noindent" ></p> <table id="TBL-25" class="tabular" 
+ 
+><colgroup id="TBL-25-1g"><col 
+id="TBL-25-1" /></colgroup><colgroup id="TBL-25-2g"><col 
+id="TBL-25-2" /><col 
+id="TBL-25-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-1-"><td  style="white-space:normal; text-align:left;" id="TBL-25-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">overloadenablegroupcomm</div>    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-25-1-3"  
+class="td01">                            BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-25-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Overload EnableGroupComm driver function</span></div>                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-3-1"  
+class="td11">                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-25-3-3"  
+class="td01">                           <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-4-1"  
+class="td11">                          </td></tr></table>
+<!--l. 471--><p class="noindent" ></p> <table id="TBL-26" class="tabular" 
+ 
+><colgroup id="TBL-26-1g"><col 
+id="TBL-26-1" /></colgroup><colgroup id="TBL-26-2g"><col 
+id="TBL-26-2" /><col 
+id="TBL-26-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-1-"><td  style="white-space:normal; text-align:left;" id="TBL-26-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">overloadenablegroupstorage</div>  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-1-3"  
+class="td01">                            BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-26-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Overload EnableGroupStorage driver function</span></div>                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-3-1"  
+class="td11">                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-3-3"  
+class="td01">                           <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-4-1"  
+class="td11">                          </td></tr></table>
+<!--l. 478--><p class="noindent" ></p> <table id="TBL-27" class="tabular" 
+ 
+><colgroup id="TBL-27-1g"><col 
+id="TBL-27-1" /></colgroup><colgroup id="TBL-27-2g"><col 
+id="TBL-27-2" /><col 
+id="TBL-27-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-1-"><td  style="white-space:normal; text-align:left;" id="TBL-27-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">overloadevolve</div>                    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-27-1-3"  
+class="td01">                            BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-27-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Overload Evolve driver function</span></div>                                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-3-1"  
+class="td11">                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-27-3-3"  
+class="td01">                           <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-4-1"  
+class="td11">                          </td></tr></table>
+<!--l. 485--><p class="noindent" ></p> <table id="TBL-28" class="tabular" 
+ 
+><colgroup id="TBL-28-1g"><col 
+id="TBL-28-1" /></colgroup><colgroup id="TBL-28-2g"><col 
+id="TBL-28-2" /><col 
+id="TBL-28-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-1-"><td  style="white-space:normal; text-align:left;" id="TBL-28-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">overloadexit</div>                       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-28-1-3"  
+class="td01">                            BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-28-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Overload Exit driver function</span></div>                                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-3-1"  
+class="td11">                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-28-3-3"  
+class="td01">                           <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-4-1"  
+class="td11">                          </td></tr></table>
+<!--l. 492--><p class="noindent" ></p> <table id="TBL-29" class="tabular" 
+ 
+><colgroup id="TBL-29-1g"><col 
+id="TBL-29-1" /></colgroup><colgroup id="TBL-29-2g"><col 
+id="TBL-29-2" /><col 
+id="TBL-29-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-1-"><td  style="white-space:normal; text-align:left;" id="TBL-29-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">overloadgroupdynamicdata</div>   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-29-1-3"  
+class="td01">                            BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-29-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Overload GroupDynamicData driver function</span></div>                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-29-3-1"  
+class="td11">                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-29-3-3"  
+class="td01">                           <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-29-4-1"  
+class="td11">                          </td></tr></table>
+<!--l. 499--><p class="noindent" ></p> <table id="TBL-30" class="tabular" 
+ 
+><colgroup id="TBL-30-1g"><col 
+id="TBL-30-1" /></colgroup><colgroup id="TBL-30-2g"><col 
+id="TBL-30-2" /><col 
+id="TBL-30-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-1-"><td  style="white-space:normal; text-align:left;" id="TBL-30-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">overloadmyproc</div>                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-30-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-30-1-3"  
+class="td01">                            BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-30-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Overload MyProc driver function</span></div>                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-30-3-1"  
+class="td11">                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-30-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-30-3-3"  
+class="td01">                           <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-30-4-1"  
+class="td11">                          </td></tr></table>
+<!--l. 506--><p class="noindent" ></p> <table id="TBL-31" class="tabular" 
+ 
+><colgroup id="TBL-31-1g"><col 
+id="TBL-31-1" /></colgroup><colgroup id="TBL-31-2g"><col 
+id="TBL-31-2" /><col 
+id="TBL-31-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-1-"><td  style="white-space:normal; text-align:left;" id="TBL-31-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">overloadnprocs</div>                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-31-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-31-1-3"  
+class="td01">                            BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-31-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Overload nProcs driver function</span></div>                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-31-3-1"  
+class="td11">                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-31-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-31-3-3"  
+class="td01">                           <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-31-4-1"  
+class="td11">                          </td></tr></table>
+<!--l. 513--><p class="noindent" ></p> <table id="TBL-32" class="tabular" 
+ 
+><colgroup id="TBL-32-1g"><col 
+id="TBL-32-1" /></colgroup><colgroup id="TBL-32-2g"><col 
+id="TBL-32-2" /><col 
+id="TBL-32-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-1-"><td  style="white-space:normal; text-align:left;" id="TBL-32-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">overloadparallelinit</div>              </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-32-1-3"  
+class="td01">                            BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-32-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Overload ParallelInit driver function</span></div>                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-32-3-1"  
+class="td11">                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-32-3-3"  
+class="td01">                           <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-32-4-1"  
+class="td11">                          </td></tr></table>
+<!--l. 520--><p class="noindent" ></p> <table id="TBL-33" class="tabular" 
+ 
+><colgroup id="TBL-33-1g"><col 
+id="TBL-33-1" /></colgroup><colgroup id="TBL-33-2g"><col 
+id="TBL-33-2" /><col 
+id="TBL-33-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-1-"><td  style="white-space:normal; text-align:left;" id="TBL-33-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">overloadquerygroupstorageb</div>  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-33-1-3"  
+class="td01">                            BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-33-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Overload QueryGroupStorageB driver function</span></div>                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-33-3-1"  
+class="td11">                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-33-3-3"  
+class="td01">                           <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-33-4-1"  
+class="td11">                          </td></tr></table>
+<!--l. 527--><p class="noindent" ></p> <table id="TBL-34" class="tabular" 
+ 
+><colgroup id="TBL-34-1g"><col 
+id="TBL-34-1" /></colgroup><colgroup id="TBL-34-2g"><col 
+id="TBL-34-2" /><col 
+id="TBL-34-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-1-"><td  style="white-space:normal; text-align:left;" id="TBL-34-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">overloadsyncgroup</div>              </td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-34-1-3"  
+class="td01">                            BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-34-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Overload SyncGroup driver function</span></div>                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-34-3-1"  
+class="td11">                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-34-3-3"  
+class="td01">                            <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-34-4-1"  
+class="td11">                          </td></tr></table>
+<!--l. 534--><p class="noindent" ></p> <table id="TBL-35" class="tabular" 
+ 
+><colgroup id="TBL-35-1g"><col 
+id="TBL-35-1" /></colgroup><colgroup id="TBL-35-2g"><col 
+id="TBL-35-2" /><col 
+id="TBL-35-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-1-"><td  style="white-space:normal; text-align:left;" id="TBL-35-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">overloadsyncgroupsbydiri</div>      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-35-1-3"  
+class="td01">                            BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-35-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Overload SyncGroupsByDirI driver function</span></div>                                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-3-1"  
+class="td11">                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-35-3-3"  
+class="td01">                           <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-4-1"  
+class="td11">                          </td></tr></table>
+<!--l. 541--><p class="noindent" ></p> <table id="TBL-36" class="tabular" 
+ 
+><colgroup id="TBL-36-1g"><col 
+id="TBL-36-1" /></colgroup><colgroup id="TBL-36-2g"><col 
+id="TBL-36-2" /><col 
+id="TBL-36-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-1-"><td  style="white-space:normal; text-align:left;" id="TBL-36-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">partition</div>                           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-36-1-3"  
+class="td01">                                 KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-36-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Is the partition manual</span></div>                                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-36-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-36-3-3"  
+class="td01">                          <span 
+class="cmbx-10">Default: </span>automatic  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-4-"><td  style="white-space:normal; text-align:left;" id="TBL-36-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">automatic</div>                          </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-36-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">even</div>                                                                                       
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-5-"><td  style="white-space:normal; text-align:left;" id="TBL-36-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">manual</div>                              </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-36-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">specified by partition_XYZ ..</div>                                                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-36-6-1"  
+class="td11">                          </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 548--><p class="noindent" ></p> <table id="TBL-37" class="tabular" 
+ 
+><colgroup id="TBL-37-1g"><col 
+id="TBL-37-1" /></colgroup><colgroup id="TBL-37-2g"><col 
+id="TBL-37-2" /><col 
+id="TBL-37-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-1-"><td  style="white-space:normal; text-align:left;" id="TBL-37-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">partition_1d_x</div>                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-37-1-3"  
+class="td01">                                    STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-37-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Tells how to partition on direction X</span></div>                                                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-37-3-3"  
+class="td01">                             <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-4-"><td  style="white-space:normal; text-align:left;" id="TBL-37-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.*</div>                                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-37-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">A regex which matches anything</div>                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 555--><p class="noindent" ></p> <table id="TBL-38" class="tabular" 
+ 
+><colgroup id="TBL-38-1g"><col 
+id="TBL-38-1" /></colgroup><colgroup id="TBL-38-2g"><col 
+id="TBL-38-2" /><col 
+id="TBL-38-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-38-1-"><td  style="white-space:normal; text-align:left;" id="TBL-38-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">partition_2d_x</div>                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-38-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-38-1-3"  
+class="td01">                                    STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-38-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-38-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Tells how to partition on direction X</span></div>                                                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-38-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-38-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-38-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-38-3-3"  
+class="td01">                             <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-38-4-"><td  style="white-space:normal; text-align:left;" id="TBL-38-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.*</div>                                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-38-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">A regex which matches anything</div>                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-38-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-38-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 562--><p class="noindent" ></p> <table id="TBL-39" class="tabular" 
+ 
+><colgroup id="TBL-39-1g"><col 
+id="TBL-39-1" /></colgroup><colgroup id="TBL-39-2g"><col 
+id="TBL-39-2" /><col 
+id="TBL-39-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-1-"><td  style="white-space:normal; text-align:left;" id="TBL-39-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">partition_2d_y</div>                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-39-1-3"  
+class="td01">                                    STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-39-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Tells how to partition on direction y</span></div>                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-39-3-3"  
+class="td01">                             <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-4-"><td  style="white-space:normal; text-align:left;" id="TBL-39-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.*</div>                                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-39-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">A regex which matches anything</div>                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 569--><p class="noindent" ></p> <table id="TBL-40" class="tabular" 
+ 
+><colgroup id="TBL-40-1g"><col 
+id="TBL-40-1" /></colgroup><colgroup id="TBL-40-2g"><col 
+id="TBL-40-2" /><col 
+id="TBL-40-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-40-1-"><td  style="white-space:normal; text-align:left;" id="TBL-40-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">partition_3d_x</div>                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-40-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-40-1-3"  
+class="td01">                                    STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-40-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-40-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Tells how to partition on direction X</span></div>                                                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-40-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-40-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-40-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-40-3-3"  
+class="td01">                             <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-40-4-"><td  style="white-space:normal; text-align:left;" id="TBL-40-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.*</div>                                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-40-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">A regex which matches anything</div>                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-40-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-40-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 576--><p class="noindent" ></p> <table id="TBL-41" class="tabular" 
+ 
+><colgroup id="TBL-41-1g"><col 
+id="TBL-41-1" /></colgroup><colgroup id="TBL-41-2g"><col 
+id="TBL-41-2" /><col 
+id="TBL-41-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-41-1-"><td  style="white-space:normal; text-align:left;" id="TBL-41-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">partition_3d_y</div>                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-41-1-3"  
+class="td01">                                    STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-41-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-41-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Tells how to partition on direction y</span></div>                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-41-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-41-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-41-3-3"  
+class="td01">                             <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-41-4-"><td  style="white-space:normal; text-align:left;" id="TBL-41-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.*</div>                                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-41-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">A regex which matches anything</div>                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-41-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-41-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 583--><p class="noindent" ></p> <table id="TBL-42" class="tabular" 
+ 
+><colgroup id="TBL-42-1g"><col 
+id="TBL-42-1" /></colgroup><colgroup id="TBL-42-2g"><col 
+id="TBL-42-2" /><col 
+id="TBL-42-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-42-1-"><td  style="white-space:normal; text-align:left;" id="TBL-42-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">partition_3d_z</div>                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-42-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-42-1-3"  
+class="td01">                                    STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-42-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-42-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Tells how to partition on direction z</span></div>                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-42-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-42-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-42-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-42-3-3"  
+class="td01">                             <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-42-4-"><td  style="white-space:normal; text-align:left;" id="TBL-42-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.*</div>                                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-42-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">A regex which matches anything</div>                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-42-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-42-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 590--><p class="noindent" ></p> <table id="TBL-43" class="tabular" 
+ 
+><colgroup id="TBL-43-1g"><col 
+id="TBL-43-1" /></colgroup><colgroup id="TBL-43-2g"><col 
+id="TBL-43-2" /><col 
+id="TBL-43-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-43-1-"><td  style="white-space:normal; text-align:left;" id="TBL-43-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">physical2logical</div>                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-43-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-43-1-3"  
+class="td01">                                 KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-43-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-43-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Physical process to logical process mapping method to use</span></div>                                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-43-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-43-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-43-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-43-3-3"  
+class="td01">                              <span 
+class="cmbx-10">Default: </span>direct  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-43-4-"><td  style="white-space:normal; text-align:left;" id="TBL-43-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">direct</div>                                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-43-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Maps MPI IDs directly to IJKs</div>                                                   
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-43-5-"><td  style="white-space:normal; text-align:left;" id="TBL-43-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">example</div>                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-43-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Maps MPI IDs directly to IJKs using a lookup table</div>                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-43-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-43-6-1"  
+class="td11">                          </td></tr></table>
+<!--l. 597--><p class="noindent" ></p> <table id="TBL-44" class="tabular" 
+ 
+><colgroup id="TBL-44-1g"><col 
+id="TBL-44-1" /></colgroup><colgroup id="TBL-44-2g"><col 
+id="TBL-44-2" /><col 
+id="TBL-44-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-44-1-"><td  style="white-space:normal; text-align:left;" id="TBL-44-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">processor_topology</div>              </td><td  style="white-space:nowrap; text-align:left;" id="TBL-44-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-44-1-3"  
+class="td01">                                 KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-44-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-44-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">How to determine the processor topology</span></div>                                                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-44-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-44-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-44-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-44-3-3"  
+class="td01">                          <span 
+class="cmbx-10">Default: </span>automatic  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-44-4-"><td  style="white-space:normal; text-align:left;" id="TBL-44-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">manual</div>                              </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-44-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Specified by proc_top_nx etc</div>                                                      
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-44-5-"><td  style="white-space:normal; text-align:left;" id="TBL-44-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">automatic</div>                          </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-44-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Automatically generated</div>                                                            
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-44-6-"><td  style="white-space:normal; text-align:left;" id="TBL-44-6-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">automatic_old</div>                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-44-6-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Automatically generated (old method)</div>                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-44-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-44-7-1"  
+class="td11">                          </td></tr></table>
+<!--l. 604--><p class="noindent" ></p> <table id="TBL-45" class="tabular" 
+ 
+><colgroup id="TBL-45-1g"><col 
+id="TBL-45-1" /></colgroup><colgroup id="TBL-45-2g"><col 
+id="TBL-45-2" /><col 
+id="TBL-45-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-45-1-"><td  style="white-space:normal; text-align:left;" id="TBL-45-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">processor_topology_1d_x</div>      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-45-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-45-1-3"  
+class="td01">                                        INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-45-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-45-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Number of processors in X direction</span></div>                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-45-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-45-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-45-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-45-3-3"  
+class="td01">                             <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-45-4-"><td  style="white-space:normal; text-align:left;" id="TBL-45-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                    </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-45-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">See proc_topology</div>                                                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-45-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-45-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 611--><p class="noindent" ></p> <table id="TBL-46" class="tabular" 
+ 
+><colgroup id="TBL-46-1g"><col 
+id="TBL-46-1" /></colgroup><colgroup id="TBL-46-2g"><col 
+id="TBL-46-2" /><col 
+id="TBL-46-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-46-1-"><td  style="white-space:normal; text-align:left;" id="TBL-46-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">processor_topology_2d_x</div>      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-46-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-46-1-3"  
+class="td01">                                        INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-46-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-46-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Number of processors in X direction</span></div>                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-46-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-46-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-46-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-46-3-3"  
+class="td01">                             <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-46-4-"><td  style="white-space:normal; text-align:left;" id="TBL-46-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                    </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-46-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">See proc_topology</div>                                                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-46-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-46-5-1"  
+class="td11">                          </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 618--><p class="noindent" ></p> <table id="TBL-47" class="tabular" 
+ 
+><colgroup id="TBL-47-1g"><col 
+id="TBL-47-1" /></colgroup><colgroup id="TBL-47-2g"><col 
+id="TBL-47-2" /><col 
+id="TBL-47-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-47-1-"><td  style="white-space:normal; text-align:left;" id="TBL-47-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">processor_topology_2d_y</div>      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-47-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-47-1-3"  
+class="td01">                                        INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-47-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-47-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Number of processors in Y direction</span></div>                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-47-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-47-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-47-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-47-3-3"  
+class="td01">                             <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-47-4-"><td  style="white-space:normal; text-align:left;" id="TBL-47-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                    </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-47-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">See proc_topology</div>                                                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-47-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-47-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 625--><p class="noindent" ></p> <table id="TBL-48" class="tabular" 
+ 
+><colgroup id="TBL-48-1g"><col 
+id="TBL-48-1" /></colgroup><colgroup id="TBL-48-2g"><col 
+id="TBL-48-2" /><col 
+id="TBL-48-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-48-1-"><td  style="white-space:normal; text-align:left;" id="TBL-48-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">processor_topology_3d_x</div>      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-48-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-48-1-3"  
+class="td01">                                        INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-48-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-48-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Number of processors in X direction</span></div>                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-48-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-48-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-48-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-48-3-3"  
+class="td01">                             <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-48-4-"><td  style="white-space:normal; text-align:left;" id="TBL-48-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                    </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-48-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">See proc_topology</div>                                                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-48-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-48-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 632--><p class="noindent" ></p> <table id="TBL-49" class="tabular" 
+ 
+><colgroup id="TBL-49-1g"><col 
+id="TBL-49-1" /></colgroup><colgroup id="TBL-49-2g"><col 
+id="TBL-49-2" /><col 
+id="TBL-49-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-49-1-"><td  style="white-space:normal; text-align:left;" id="TBL-49-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">processor_topology_3d_y</div>      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-49-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-49-1-3"  
+class="td01">                                        INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-49-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-49-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Number of processors in Y direction</span></div>                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-49-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-49-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-49-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-49-3-3"  
+class="td01">                             <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-49-4-"><td  style="white-space:normal; text-align:left;" id="TBL-49-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                    </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-49-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">See proc_topology</div>                                                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-49-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-49-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 639--><p class="noindent" ></p> <table id="TBL-50" class="tabular" 
+ 
+><colgroup id="TBL-50-1g"><col 
+id="TBL-50-1" /></colgroup><colgroup id="TBL-50-2g"><col 
+id="TBL-50-2" /><col 
+id="TBL-50-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-50-1-"><td  style="white-space:normal; text-align:left;" id="TBL-50-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">processor_topology_3d_z</div>      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-50-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-50-1-3"  
+class="td01">                                        INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-50-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-50-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Number of processors in Z direction</span></div>                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-50-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-50-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-50-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-50-3-3"  
+class="td01">                             <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-50-4-"><td  style="white-space:normal; text-align:left;" id="TBL-50-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                    </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-50-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">See proc_topology</div>                                                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-50-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-50-5-1"  
+class="td11">                          </td></tr></table>
+<!--l. 646--><p class="noindent" ></p> <table id="TBL-51" class="tabular" 
+ 
+><colgroup id="TBL-51-1g"><col 
+id="TBL-51-1" /></colgroup><colgroup id="TBL-51-2g"><col 
+id="TBL-51-2" /><col 
+id="TBL-51-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-51-1-"><td  style="white-space:normal; text-align:left;" id="TBL-51-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">storage_report_every</div>           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-51-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-51-1-3"  
+class="td01">                                        INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-51-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-51-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">How often to provide a report on storage information</span></div>                                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-51-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-51-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-51-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-51-3-3"  
+class="td01">                             <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-51-4-"><td  style="white-space:normal; text-align:left;" id="TBL-51-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:0</div>                                    </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-51-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Never report</div>                                                                            
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-51-5-"><td  style="white-space:normal; text-align:left;" id="TBL-51-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1:*</div>                                    </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-51-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Report at intervals</div>                                                                    
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-51-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-51-6-1"  
+class="td11">                          </td></tr></table>
+<!--l. 653--><p class="noindent" ></p> <table id="TBL-52" class="tabular" 
+ 
+><colgroup id="TBL-52-1g"><col 
+id="TBL-52-1" /></colgroup><colgroup id="TBL-52-2g"><col 
+id="TBL-52-2" /><col 
+id="TBL-52-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-52-1-"><td  style="white-space:normal; text-align:left;" id="TBL-52-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">storage_verbose</div>                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-52-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-52-1-3"  
+class="td01">                                 KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-52-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-52-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Report on memory assignment</span></div>                                                                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-52-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-52-3-1"  
+class="td11">          <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-52-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-52-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-52-4-"><td  style="white-space:normal; text-align:left;" id="TBL-52-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">yes</div>                                   </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-52-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Standard storage information</div>                                                      
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-52-5-"><td  style="white-space:normal; text-align:left;" id="TBL-52-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">report</div>
+                                         </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-52-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">”Provide a report of storage every storage_report_every iterations and
+  at termination”</div>                                                                        
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-52-6-"><td  style="white-space:normal; text-align:left;" id="TBL-52-6-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">no</div>                                    </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-52-6-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Provide no information</div>                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-52-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-52-7-1"  
+class="td11">                          </td></tr></table>
+<!--l. 661--><p class="noindent" ></p> <table id="TBL-53" class="tabular" 
+ 
+><colgroup id="TBL-53-1g"><col 
+id="TBL-53-1" /></colgroup><colgroup id="TBL-53-2g"><col 
+id="TBL-53-2" /><col 
+id="TBL-53-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-53-1-"><td  style="white-space:normal; text-align:left;" id="TBL-53-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">timer_output</div>                     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-53-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-53-1-3"  
+class="td01">                            BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-53-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-53-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Print time spent in communication</span></div>                                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-53-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-53-3-1"  
+class="td11">                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-53-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-53-3-3"  
+class="td01">                            <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-53-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-53-4-1"  
+class="td11">                          </td></tr></table>
+<!--l. 668--><p class="noindent" ></p> <table id="TBL-54" class="tabular" 
+ 
+><colgroup id="TBL-54-1g"><col 
+id="TBL-54-1" /></colgroup><colgroup id="TBL-54-2g"><col 
+id="TBL-54-2" /><col 
+id="TBL-54-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-54-1-"><td  style="white-space:normal; text-align:left;" id="TBL-54-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">periodic</div>                            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-54-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-54-1-3"  
+class="td01">                          BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-54-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-54-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Periodic boundary conditions</span></div>                                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-54-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-54-3-1"  
+class="td11">                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-54-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-54-3-3"  
+class="td01">                          <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-54-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-54-4-1"  
+class="td11">                          </td></tr></table>
+<!--l. 675--><p class="noindent" ></p> <table id="TBL-55" class="tabular" 
+ 
+><colgroup id="TBL-55-1g"><col 
+id="TBL-55-1" /></colgroup><colgroup id="TBL-55-2g"><col 
+id="TBL-55-2" /><col 
+id="TBL-55-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-55-1-"><td  style="white-space:normal; text-align:left;" id="TBL-55-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">periodic_x</div>                         </td><td  style="white-space:nowrap; text-align:left;" id="TBL-55-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-55-1-3"  
+class="td01">                          BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-55-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-55-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Periodic boundary conditions in x-direction</span></div>                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-55-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-55-3-1"  
+class="td11">                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-55-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-55-3-3"  
+class="td01">                         <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-55-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-55-4-1"  
+class="td11">                          </td></tr></table>
+<!--l. 682--><p class="noindent" ></p> <table id="TBL-56" class="tabular" 
+ 
+><colgroup id="TBL-56-1g"><col 
+id="TBL-56-1" /></colgroup><colgroup id="TBL-56-2g"><col 
+id="TBL-56-2" /><col 
+id="TBL-56-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-56-1-"><td  style="white-space:normal; text-align:left;" id="TBL-56-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">periodic_y</div>                         </td><td  style="white-space:nowrap; text-align:left;" id="TBL-56-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-56-1-3"  
+class="td01">                          BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-56-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-56-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Periodic boundary conditions in y-direction</span></div>                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-56-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-56-3-1"  
+class="td11">                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-56-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-56-3-3"  
+class="td01">                         <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-56-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-56-4-1"  
+class="td11">                          </td></tr></table>
+<!--l. 689--><p class="noindent" ></p> <table id="TBL-57" class="tabular" 
+ 
+><colgroup id="TBL-57-1g"><col 
+id="TBL-57-1" /></colgroup><colgroup id="TBL-57-2g"><col 
+id="TBL-57-2" /><col 
+id="TBL-57-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-57-1-"><td  style="white-space:normal; text-align:left;" id="TBL-57-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">periodic_z</div>                         </td><td  style="white-space:nowrap; text-align:left;" id="TBL-57-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-57-1-3"  
+class="td01">                          BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-57-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-57-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Periodic boundary conditions in z-direction</span></div>                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-57-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-57-3-1"  
+class="td11">                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-57-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-57-3-3"  
+class="td01">                         <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-57-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-57-4-1"  
+class="td11">                          </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 696--><p class="noindent" ></p> <table id="TBL-58" class="tabular" 
+ 
+><colgroup id="TBL-58-1g"><col 
+id="TBL-58-1" /></colgroup><colgroup id="TBL-58-2g"><col 
+id="TBL-58-2" /><col 
+id="TBL-58-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-58-1-"><td  style="white-space:normal; text-align:left;" id="TBL-58-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">cctk_final_time</div>                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-58-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from CACTUS</td><td  style="white-space:nowrap; text-align:right;" id="TBL-58-1-3"  
+class="td01">REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-58-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-58-2-1"  
+class="td11">                          </td></tr></table>
+<!--l. 701--><p class="noindent" ></p> <table id="TBL-59" class="tabular" 
+ 
+><colgroup id="TBL-59-1g"><col 
+id="TBL-59-1" /></colgroup><colgroup id="TBL-59-2g"><col 
+id="TBL-59-2" /><col 
+id="TBL-59-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-59-1-"><td  style="white-space:normal; text-align:left;" id="TBL-59-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">cctk_initial_time</div>                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-59-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from CACTUS</td><td  style="white-space:nowrap; text-align:right;" id="TBL-59-1-3"  
+class="td01">REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-59-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-59-2-1"  
+class="td11">                          </td></tr></table>
+<!--l. 706--><p class="noindent" ></p> <table id="TBL-60" class="tabular" 
+ 
+><colgroup id="TBL-60-1g"><col 
+id="TBL-60-1" /></colgroup><colgroup id="TBL-60-2g"><col 
+id="TBL-60-2" /><col 
+id="TBL-60-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-60-1-"><td  style="white-space:normal; text-align:left;" id="TBL-60-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">cctk_itlast</div>                         </td><td  style="white-space:nowrap; text-align:left;" id="TBL-60-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from CACTUS</td><td  style="white-space:nowrap; text-align:right;" id="TBL-60-1-3"  
+class="td01">INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-60-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-60-2-1"  
+class="td11">                          </td></tr></table>
+<!--l. 711--><p class="noindent" ></p> <table id="TBL-61" class="tabular" 
+ 
+><colgroup id="TBL-61-1g"><col 
+id="TBL-61-1" /></colgroup><colgroup id="TBL-61-2g"><col 
+id="TBL-61-2" /><col 
+id="TBL-61-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-61-1-"><td  style="white-space:normal; text-align:left;" id="TBL-61-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">max_runtime</div>                     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-61-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from CACTUS</td><td  style="white-space:nowrap; text-align:right;" id="TBL-61-1-3"  
+class="td01">REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-61-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-61-2-1"  
+class="td11">                          </td></tr></table>
+<!--l. 716--><p class="noindent" ></p> <table id="TBL-62" class="tabular" 
+ 
+><colgroup id="TBL-62-1g"><col 
+id="TBL-62-1" /></colgroup><colgroup id="TBL-62-2g"><col 
+id="TBL-62-2" /><col 
+id="TBL-62-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-62-1-"><td  style="white-space:normal; text-align:left;" id="TBL-62-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">terminate</div>                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-62-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from CACTUS</td><td  style="white-space:nowrap; text-align:right;" id="TBL-62-1-3"  
+class="td01">KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-62-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-62-2-1"  
+class="td11">                          </td></tr></table>
+<!--l. 721--><p class="noindent" ></p> <table id="TBL-63" class="tabular" 
+ 
+><colgroup id="TBL-63-1g"><col 
+id="TBL-63-1" /></colgroup><colgroup id="TBL-63-2g"><col 
+id="TBL-63-2" /><col 
+id="TBL-63-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-63-1-"><td  style="white-space:normal; text-align:left;" id="TBL-63-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">terminate_next</div>                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-63-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from CACTUS</td><td  style="white-space:nowrap; text-align:right;" id="TBL-63-1-3"  
+class="td01">BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-63-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-63-2-1"  
+class="td11">                          </td></tr></table>
+<!--l. 728--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">9   </span> <a 
+ id="x1-90009"></a>Interfaces</h3>
+<!--l. 733--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-10000"></a>General</h4>
+<!--l. 735--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 737--><p class="noindent" >driver
+</p><!--l. 742--><p class="noindent" ><span 
+class="cmbx-10">Adds header</span>:
+</p><!--l. 746--><p class="noindent" >Register.h to pugh_Register.h
+</p><!--l. 749--><p class="noindent" ><span 
+class="cmbx-10">Uses header</span>:
+</p><!--l. 751--><p class="noindent" >pugh_Register.h
+</p><!--l. 753--><p class="noindent" >vectors.h
+</p><!--l. 756--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">10   </span> <a 
+ id="x1-1100010"></a>Schedule</h3>
+<!--l. 762--><p class="noindent" >This section lists all the variables which are assigned storage by thorn CactusPUGH/PUGH. Storage can
+either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+                                                                                       
+                                                                                       
+</p><!--l. 765--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-12000"></a>Storage</h4>
+<!--l. 765--><p class="noindent" >NONE
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-13000"></a>Scheduled Functions</h4>
+<!--l. 769--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_STARTUP</span>
+</p><!--l. 771--><p class="noindent" >      pugh_startup
+</p><!--l. 773--><p class="noindent" >     <span 
+class="cmti-10">startup routine</span>
+</p><!--l. 776--><p class="noindent" > 
+</p><!--l. 778--><p class="noindent" ></p> <table id="TBL-64" class="tabular" 
+ 
+><colgroup id="TBL-64-1g"><col 
+id="TBL-64-1" /><col 
+id="TBL-64-2" /><col 
+id="TBL-64-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-64-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-64-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-64-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-64-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-64-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-64-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-64-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-64-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-64-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-64-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 786--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_STARTUP</span>
+</p><!--l. 788--><p class="noindent" >      pugh_registerpughp2lroutines
+</p><!--l. 790--><p class="noindent" >     <span 
+class="cmti-10">register physical to logical process mapping routines</span>
+</p><!--l. 793--><p class="noindent" > 
+</p><!--l. 795--><p class="noindent" ></p> <table id="TBL-65" class="tabular" 
+ 
+><colgroup id="TBL-65-1g"><col 
+id="TBL-65-1" /><col 
+id="TBL-65-2" /><col 
+id="TBL-65-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-65-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-65-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-65-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-65-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-65-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-65-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-65-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-65-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-65-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-65-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 803--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_STARTUP</span>
+</p><!--l. 805--><p class="noindent" >      pugh_registerpughtopologyroutines
+</p><!--l. 807--><p class="noindent" >     <span 
+class="cmti-10">register topology generation routines routines</span>
+</p><!--l. 810--><p class="noindent" > 
+</p><!--l. 812--><p class="noindent" ></p> <table id="TBL-66" class="tabular" 
+ 
+><colgroup id="TBL-66-1g"><col 
+id="TBL-66-1" /><col 
+id="TBL-66-2" /><col 
+id="TBL-66-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-66-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-66-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-66-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-66-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-66-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-66-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-66-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-66-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-66-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-66-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 820--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_BASEGRID</span>
+</p><!--l. 822--><p class="noindent" >      pugh_report
+</p><!--l. 824--><p class="noindent" >     <span 
+class="cmti-10">report on pugh set up</span>
+</p><!--l. 827--><p class="noindent" > 
+</p><!--l. 829--><p class="noindent" ></p> <table id="TBL-67" class="tabular" 
+ 
+><colgroup id="TBL-67-1g"><col 
+id="TBL-67-1" /><col 
+id="TBL-67-2" /><col 
+id="TBL-67-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-67-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-67-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-67-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-67-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-67-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-67-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-67-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-67-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-67-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-67-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 837--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_TERMINATE </span>(conditional)
+</p><!--l. 839--><p class="noindent" >      pugh_printtiminginfo
+</p><!--l. 841--><p class="noindent" >     <span 
+class="cmti-10">print time spent in communication</span>
+</p><!--l. 844--><p class="noindent" > 
+</p><!--l. 846--><p class="noindent" ></p> <table id="TBL-68" class="tabular" 
+ 
+><colgroup id="TBL-68-1g"><col 
+id="TBL-68-1" /><col 
+id="TBL-68-2" /><col 
+id="TBL-68-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-68-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-68-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-68-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-68-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-68-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-68-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-68-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-68-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-68-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-68-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 854--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_TERMINATE </span>(conditional)
+</p><!--l. 856--><p class="noindent" >      pugh_printfinalstoragereport
+</p><!--l. 858--><p class="noindent" >     <span 
+class="cmti-10">print storage information</span>
+</p><!--l. 861--><p class="noindent" > 
+</p><!--l. 863--><p class="noindent" ></p> <table id="TBL-69" class="tabular" 
+ 
+><colgroup id="TBL-69-1g"><col 
+id="TBL-69-1" /><col 
+id="TBL-69-2" /><col 
+id="TBL-69-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-69-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-69-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-69-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-69-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-69-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-69-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-69-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-69-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-69-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-69-3-1"  
+class="td11">    </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 871--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_POSTSTEP </span>(conditional)
+</p><!--l. 873--><p class="noindent" >      pugh_printstoragereport
+</p><!--l. 875--><p class="noindent" >     <span 
+class="cmti-10">print storage information</span>
+</p><!--l. 878--><p class="noindent" > 
+</p><!--l. 880--><p class="noindent" ></p> <table id="TBL-70" class="tabular" 
+ 
+><colgroup id="TBL-70-1g"><col 
+id="TBL-70-1" /><col 
+id="TBL-70-2" /><col 
+id="TBL-70-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-70-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-70-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-70-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-70-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-70-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-70-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-70-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-70-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-70-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-70-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 888--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_TERMINATE</span>
+</p><!--l. 890--><p class="noindent" >      pugh_terminate
+</p><!--l. 892--><p class="noindent" >     <span 
+class="cmti-10">termination routine</span>
+</p><!--l. 895--><p class="noindent" > 
+</p><!--l. 897--><p class="noindent" ></p> <table id="TBL-71" class="tabular" 
+ 
+><colgroup id="TBL-71-1g"><col 
+id="TBL-71-1" /><col 
+id="TBL-71-2" /><col 
+id="TBL-71-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-71-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-71-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-71-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-71-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-71-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-71-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-71-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-71-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-71-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-71-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 903--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-14000"></a>Aliased Functions</h4>
+<!--l. 905--><p class="noindent" > 
+</p><!--l. 907--><p class="noindent" ></p> <table id="TBL-72" class="tabular" 
+ 
+><colgroup id="TBL-72-1g"><col 
+id="TBL-72-1" /><col 
+id="TBL-72-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-72-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-72-1-1"  
+class="td11"> <span 
+class="cmbx-10">Alias Name: </span>         </td><td  style="white-space:nowrap; text-align:left;" id="TBL-72-1-2"  
+class="td11"> <span 
+class="cmbx-10">Function Name:  </span></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-72-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-72-2-1"  
+class="td11"> PUGH_Startup </td><td  style="white-space:nowrap; text-align:left;" id="TBL-72-2-2"  
+class="td11"> Driver_Startup</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-72-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-72-3-1"  
+class="td11"> PUGH_Terminate         </td><td  style="white-space:nowrap; text-align:left;" id="TBL-72-3-2"  
+class="td11"> Driver_Terminate   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-72-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-72-4-1"  
+class="td11">                      </td></tr></table>
+ 
+</body></html> 
+
+                                                                                       
+
+
