@@ -1,0 +1,1582 @@
+\documentclass{article}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+\title{GRHydro\_Init\_Data}
+\author{Luca Baiotti, Ian Hawke, Scott Hawley}
+\date{24/07/2008}
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+\abstract{GRHydro\_Init\_Data - some initial data for {\tt GRHydro}}
+
+\section{Introduction}
+\label{sec:intro}
+
+This thorn generates some initial data for the GRHydro code. There are more (and more physically
+interesting) initial-data codes in other thorns. As with the GRHydro code itself, please feel free to
+add, alter or extend any part of this code. However please keep the documentation up to date (even,
+or especially, if it's just to say what doesn't work).
+
+Currently this thorn contains a few tests that should really be test suites, some shock-tube
+initial data, 
+%some (largely untested and unmaintained; please use the TOV initial-data codes in the
+%dedicated thorns) TOV initial data solver routines, 
+a routine to set atmopshere everywhere on the
+grid (for tests), a routine to read initial data from files (not very generic, tough) and a routine
+to set up the simple-wave initial data .
+
+
+\subsection{Tests}
+\label{sec:tests}
+
+There are tests of the TVD reconstruction routine and of the routines
+that convert between conservative and primitive variables. These all
+just produce output to the screen or to {\tt fort.*} files. The
+reconstruction test outputs the function to be reconstructed and the
+boundary-extended values. The conservative-to-primitive test just
+outputs the two sets of variables. If you haven't altered the code an if you set
+\begin{verbatim}
+eos_polytrope::eos_gamma =   2.0
+eos_polytrope::eos_k     = 100.0
+\end{verbatim}
+(which are the defaults), the output should be
+% I checked that in 2008 the number were still right (but one gets them with eos_gamma=2.0 and 
+% eos_k ~ 0.1865) and committed the new ones for the default eos parameter values.
+
+\begin{verbatim}
+    primitive variables: 
+    rho   :   1.29047172182043     
+    velx  :   9.902578465178671E-004
+    vely  :   9.902578465178671E-004
+    velz  :   9.902578465178671E-004
+    eps   :   0.374770481293314     
+    press : 166.531726481819     
+    w_lor :   1.00000147091915  
+\end{verbatim}
+The conservative to primitive to conservative test outputs the initial
+and final data which should agree.
+
+\subsection{Shocktube tests}
+\label{sec:shock}
+
+There are three possible shock-tube problems, referred to as {\tt Sod},
+{\tt Simple} and {\tt Blast}, with initial data
+\begin{center}
+  \begin{tabular}[c]{|c|c|c|c|c|c|c|}
+    \hline Type & $\rho_{_L}$ & $v^i_{_L}$ & $\varepsilon_{_L}$ & $\rho_{_R}$ & $v^i_{_R}$
+    & $\varepsilon_{_R}$ \\ \hline
+    Sod & 1 & 0 & 1.5 & 0.125 & 0 & 0.15 \\
+    Simple & 10 & 0 & 20 & 1 & 0 & $10^{-6}$ \\
+    Blast & 1 & 0 & 1500 & 1 & 0 & $1.5\cdot 10^{-2}$ \\ \hline
+  \end{tabular}
+\end{center}
+The shock shape can be planar (along each axis or along the main diagonal) or spherical and the
+position of the plane or of the center of the sphere can be chosen though parameters.
+If a diagonal shock is selected, the initial data is set to either the left or right
+state depending on where the centre of the cell falls. Cleverer
+routines that weight the initial data to avoid ``staircasing'' may be
+added if there is demand. For more discussion on shock tubes
+see~\cite{livrevsrrfd}. 
+
+
+%\subsection{TOV stars}
+%\label{sec:tov}
+%
+%The Tolman-Oppenheimer-Volkoff solution is a spherically symmetric
+%fluid ball matched to a Schwarzschild exterior. Typically an
+%atmosphere is placed in the exterior to stop the equations of motion
+%of the fluid being singular. Given an equation of state, the central
+%density $\rho_c$ is specified. Then the solution is found by
+%integrating the radial equations
+%\begin{eqnarray}
+%  \label{eq:tov}
+%  \frac{\partial P(r)}{\partial r} & = & - \frac{(\rho + \rho \epsilon
+%  + P)(m + 4\pi r^3 P)}{r (r - 2m)} \\
+%  \frac{\partial (\log \alpha (r))}{\partial r} & = & \frac{m + 4 \pi
+%  r^3 P}{r (r - 2m)} \\
+%  \frac{\partial m(r)}{\partial r} & = & 4 \pi r^2 (\rho + \rho
+%  \epsilon) \\ 
+%  \gamma_{rr}(r) & = & \left( 1-\frac{2m(r)}{r} \right)^{-1},
+%\end{eqnarray}
+%where $m$ is the mass energy contained in a sphere radius $r$,
+%$\gamma_{ij}$ the 3-metric, and $\alpha$ the lapse in standard
+%Schwarzschild like coordinates. For more details see~\cite{hydro1}. 
+%
+%The routines here, written by Scott Hawley, use the LSODA library to
+%integrate the equations and then interpolate onto the Cartesian
+%grid. 
+%
+%This routine is untested and unmaintained: please use other thorns providing TOV initial data. They
+%are located in dedicated thorns of this arrangement.
+
+\subsection{Only atmosphere}
+\label{sec:only-atmo}
+
+For testing purposes, this routine sets all the points to the values of the atmosphere.
+
+
+\subsection{Simple wave}
+\label{sec:simple-wave}
+
+This routine testes initial data for a simple wave with sinusoidal initial function for the velocity,
+as described in Anile, Miller, Motta, {\it Formation and damping of relativistic strong
+  shocks},Phys. Fluids {\bf 26}, 1450 (1983).
+
+
+
+\begin{thebibliography}{1}
+
+\bibitem{livrevsrrfd}
+J.~M. Mart{\'{\i}} and E.~M{\"u}ller.
+\newblock Numerical hydrodynamics in {S}pecial {R}elativity.
+\newblock {\em Living Rev. Relativity}, {\bf 3}, 1999.
+\newblock [Article in online journal], cited on 31/7/01,
+  http://www.livingreviews.org/Articles/Volume2/1999-3marti/index.html.
+
+\bibitem{hydro1}
+J.~A. Font, M. Miller, W. Suen and M. Tobias.
+\newblock Three Dimensional Numerical General Relativistic
+Hydrodynamics I: Formulations, Methods, and Code Tests
+\newblock {\em Phys. Rev.}, {\bf D61}, 044011, 2000.
+
+\end{thebibliography}
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{temperature\_evolution\_method}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{advectedloop\_case} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em V\^z=0 or not?}} \\
+\hline{\bf Range} & &  {\bf Default:} V\^z=0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering V\^z=0} & \multicolumn{2}{p{\paraWidth}|}{Useful to evaluate divB deviations} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering V\^z/=0} & \multicolumn{2}{p{\paraWidth}|}{Useful to evaluate con2prim robustness in keeping V\^z const.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{advectedloop\_dela} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How to calculate B\^i field from the potential A\^b}} \\
+\hline{\bf Range} & &  {\bf Default:} Exact \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Exact} & \multicolumn{2}{p{\paraWidth}|}{Analytic, exact closed formula applied} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Numeric} & \multicolumn{2}{p{\paraWidth}|}{Finite difference approximation of the derivatives applied} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{advectedloop\_type} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em 2-dimensional or 3-dimensional?}} \\
+\hline{\bf Range} & &  {\bf Default:} 2D \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 2D} & \multicolumn{2}{p{\paraWidth}|}{2-dimensional (B\^z=0)} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 3D} & \multicolumn{2}{p{\paraWidth}|}{3-dimensional (B\^3=0, where B\^3 || oblique cylinder axis.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{alfvenwave\_pressure} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em P\_gas for the Alfven wave}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{positive} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{alfvenwave\_type} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em 1-dimensional or 2-dimensional?}} \\
+\hline{\bf Range} & &  {\bf Default:} 1D \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1D} & \multicolumn{2}{p{\paraWidth}|}{1-dimensional} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 2D} & \multicolumn{2}{p{\paraWidth}|}{2-dimensional (in x-y plane)} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{atmosphere\_vel} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Velocity of the atmosphere if non-trivial}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Anything} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{attenuate\_atmosphere} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Attenuate the velocity in the atmosphere}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bh\_bondi\_pos\_x} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em X-coordinate of black hole in Bondi solution}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{anything} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bh\_bondi\_pos\_y} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Y-coordinate of black hole in Bondi solution}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{anything} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bh\_bondi\_pos\_z} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Z-coordinate of black hole in Bondi solution}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{anything} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bondi\_beta\_sonicpt} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Plasma beta parameter at the sonic point. Calculate bondi\_bmag afterwards.}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{positive} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bondi\_bmag} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em B\_0 parameter for magnetized Bondi}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.01 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Anything positive} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bondi\_bvec\_method} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em how to compute the magnetic field vector}} \\
+\hline{\bf Range} & &  {\bf Default:} direct \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering direct} & \multicolumn{2}{p{\paraWidth}|}{directly from Cartesian metric} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering transform} & \multicolumn{2}{p{\paraWidth}|}{transform Schwarzschild solution to Kerr Schild} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bondi\_central\_mass} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Mass of central object to find Bondi solution about  }} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{positive} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bondi\_central\_spin} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Dimensionless spin of central object within Bondi solution }} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (-1.:1.)} & \multicolumn{2}{p{\paraWidth}|}{dimensionless spin so any real number between -1 and 1} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bondi\_coordinates} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Which coordinate system to use}} \\
+\hline{\bf Range} & &  {\bf Default:} Isotropic \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Boyer-Lindquist} & \multicolumn{2}{p{\paraWidth}|}{Schwarzschild or Boyer-Lindquist (Cartesian) Coordinates} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Kerr-Schild} & \multicolumn{2}{p{\paraWidth}|}{Kerr-Schild (Cartesian) Coordinates} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Isotropic} & \multicolumn{2}{p{\paraWidth}|}{Isotropic (Cartesian) Coordinates} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bondi\_evolve\_only\_annulus} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em reset to initial data outside of bondi\_freeze\_inner\_radius and bondi\_freeze\_outer\_radius}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bondi\_freeze\_inner\_radius} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em reset to initial at radii below this}} \\
+\hline{\bf Range} & &  {\bf Default:} -1. \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any value} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bondi\_freeze\_outer\_radius} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em reset to initial at radii above this}} \\
+\hline{\bf Range} & &  {\bf Default:} 1e300 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any value} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bondi\_overwrite\_boundary} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em reset data to initial data in outer boundary in boundary condition}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bondi\_radial\_offset} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em redefine r\_grid=r\_KS-r0 to avoid singularity on grid}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Any positive number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bondi\_rmax} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Largest radius in units of central mass at which the solution is found}} \\
+\hline{\bf Range} & &  {\bf Default:} 400. \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{dimensionless outer radius for Bondi solution} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bondi\_rmin} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Smallest radius in units of central mass at which the solution is found}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.e-15 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{dimensionless inner radius for Bondi solution} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bx\_init} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial B-field in the x-dir}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Anything} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{by\_init} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial B-field in the y-dir}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Anything} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bz\_init} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial B-field in the z-dir}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Anything} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{change\_shock\_direction} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Change the shock direction}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{cyl\_press\_inner} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em pressure in inner core}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.d0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{any positive number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{cyl\_press\_outer} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em pressure in outer region}} \\
+\hline{\bf Range} & &  {\bf Default:} 3.d-5 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{any positive number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{cyl\_r\_inner} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Inner Radius}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.8 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{Any positive number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{cyl\_r\_outer} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Outer Radius}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{Any positive number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{cyl\_rho\_inner} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em density in inner core}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.d-2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{any positive number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{cyl\_rho\_outer} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em density in outer region}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.d-4 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{any positive number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{dens\_init} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial conserved mass density}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.29047362 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{Anything positive.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{eps\_init} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial specific internal energy}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0d-6 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{Anything positive.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{gxx\_init} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial xx metric componenent}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Anything, but be carefull to set a positive definite 3-metric!} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{gxy\_init} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial xy metric componenent}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Anything, but be carefull to set a positive definite 3-metric!} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{gxz\_init} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial xz metric componenent}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Anything, but be carefull to set a positive definite 3-metric!} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{gyy\_init} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial yy metric componenent}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Anything, but be carefull to set a positive definite 3-metric!} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{gyz\_init} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial yz metric componenent}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Anything, but be carefull to set a positive definite 3-metric!} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{gzz\_init} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial zz metric componenent}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Anything, but be carefull to set a positive definite 3-metric!} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{mdot\_sonicpt\_bondi} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Accretion rate at sonic point in hydro units}} \\
+\hline{\bf Range} & &  {\bf Default:} 12.566370614359172954 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{positive} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{monopole\_point\_bx} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Pointlike Monopole Bx value}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Any number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{monopole\_type} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Which kind of monopole?}} \\
+\hline{\bf Range} & &  {\bf Default:} Point \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Point} & \multicolumn{2}{p{\paraWidth}|}{Single point with Bx /= 0} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Gauss} & \multicolumn{2}{p{\paraWidth}|}{Gaussian w/radius R\_Gauss} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1dalt} & \multicolumn{2}{p{\paraWidth}|}{1-d alternating} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 2dalt} & \multicolumn{2}{p{\paraWidth}|}{2-d alternating} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 3dalt} & \multicolumn{2}{p{\paraWidth}|}{3-d alternating} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{n\_bondi\_pts} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Number of points to use in determining global Bondi solution}} \\
+\hline{\bf Range} & &  {\bf Default:} 2000 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (1:*} & \multicolumn{2}{p{\paraWidth}|}{number of points in global Bondi solution} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{num\_bondi\_sols} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Number of central masses about which to calculate Bondi solutions}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:100} & \multicolumn{2}{p{\paraWidth}|}{positive} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{poloidal\_a\_b} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Vector potential strength}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Anything.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{poloidal\_n\_p} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Vector potential strength}} \\
+\hline{\bf Range} & &  {\bf Default:} 3 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Any positive integer.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{poloidal\_p\_cut} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Pressure used to confine the B field inside a star}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0e-8 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{Anything positive.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{poloidal\_p\_p} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Index of pressure factor}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{Any non-negative integer} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{poloidal\_rho\_max} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Maximum initial density}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0e-3 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{Anything positive.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{press\_init} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial pressure}} \\
+\hline{\bf Range} & &  {\bf Default:} 6.666666666666667d-7 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{Anything positive.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{r\_gauss} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Radius for a Gaussian monopole}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Any positive number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{r\_sonicpt\_bondi} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Radial distance of the sonic point from the black hole in units of mass\_bh\_bondi}} \\
+\hline{\bf Range} & &  {\bf Default:} 8.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{positive} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rho\_init} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial rest mass density}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0d-6 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{Anything positive.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rotor\_bvcxl} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em intial component of Bvec[0]}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rotor\_bvcyl} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em intial component of Bvec[1]}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rotor\_bvczl} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em intial component of Bvec[2]}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rotor\_pressin} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em initial pressure inside rotor}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.d0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{any positive number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rotor\_pressout} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em initial pressure outside rotor}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.d0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{any positive number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rotor\_r\_rot} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em radius of rotor}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{any positive number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rotor\_rhoin} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em initial density inside rotor}} \\
+\hline{\bf Range} & &  {\bf Default:} 10.d0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{any positive number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rotor\_rhoout} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em initial density outside rotor}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.d0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{any positive number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rotor\_rsmooth\_rel} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Define the radius in relative terms if so}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.05 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{any positive number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rotor\_use\_smoothing} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Smooth the edge?}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rotor\_v\_max} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Maximum velocity}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.995 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (-1:1)} & \multicolumn{2}{p{\paraWidth}|}{any subluminal speed (negative is clockwise)} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rotor\_xc} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em center of rotation}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.5 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Any location} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rotor\_yc} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em center of rotation}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.5 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Any location} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{set\_bondi\_beta\_sonicpt} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Set plasma beta parameter instead of bondi\_bmag}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{shock\_case} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Simple, Sod's problem or other?}} \\
+\hline{\bf Range} & &  {\bf Default:} Sod \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Simple} & \multicolumn{2}{p{\paraWidth}|}{GRAstro\_Hydro test case} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Sod} & \multicolumn{2}{p{\paraWidth}|}{Sod's problem} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Blast} & \multicolumn{2}{p{\paraWidth}|}{Strong blast wave} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Balsaralike1} & \multicolumn{2}{p{\paraWidth}|}{Hydro version of Balsara Test \#1} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Balsara0} & \multicolumn{2}{p{\paraWidth}|}{Balsara Test \#1, but unmagnetized} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Balsara1} & \multicolumn{2}{p{\paraWidth}|}{Balsara Test \#1} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Balsara2} & \multicolumn{2}{p{\paraWidth}|}{Balsara Test \#2} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Balsara3} & \multicolumn{2}{p{\paraWidth}|}{Balsara Test \#3} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Balsara4} & \multicolumn{2}{p{\paraWidth}|}{Balsara Test \#4} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Balsara5} & \multicolumn{2}{p{\paraWidth}|}{Balsara Test \#5} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Alfven} & \multicolumn{2}{p{\paraWidth}|}{Generical Alfven Test} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Komissarov1} & \multicolumn{2}{p{\paraWidth}|}{Komissarov Test \#1} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Komissarov2} & \multicolumn{2}{p{\paraWidth}|}{Komissarov Test \#2} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Komissarov3} & \multicolumn{2}{p{\paraWidth}|}{Komissarov Test \#3} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Komissarov4} & \multicolumn{2}{p{\paraWidth}|}{Komissarov Test \#4} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Komissarov5} & \multicolumn{2}{p{\paraWidth}|}{Komissarov Test \#5} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Komissarov6} & \multicolumn{2}{p{\paraWidth}|}{Komissarov Test \#6} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Komissarov7} & \multicolumn{2}{p{\paraWidth}|}{Komissarov Test \#7} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Komissarov8} & \multicolumn{2}{p{\paraWidth}|}{Komissarov Test \#8} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Komissarov9} & \multicolumn{2}{p{\paraWidth}|}{Komissarov Test \#9} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{shock\_radius} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Radius of sperical shock}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:*} & \multicolumn{2}{p{\paraWidth}|}{Anything positive} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{shock\_xpos} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Position of shock plane: x}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Anything} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{shock\_ypos} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Position of shock plane: y}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Anything} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{shock\_zpos} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Position of shock plane: z}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Anything} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{shocktube\_type} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Diagonal or parallel shock?}} \\
+\hline{\bf Range} & &  {\bf Default:} xshock \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering diagshock} & \multicolumn{2}{p{\paraWidth}|}{Diagonal across all axes} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering diagshock2d} & \multicolumn{2}{p{\paraWidth}|}{Diagonal across x-y axes} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering xshock} & \multicolumn{2}{p{\paraWidth}|}{Parallel to x axis} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering yshock} & \multicolumn{2}{p{\paraWidth}|}{Parallel to y axis} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering zshock} & \multicolumn{2}{p{\paraWidth}|}{Parallel to z axis} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering sphere} & \multicolumn{2}{p{\paraWidth}|}{spherically symmetric shock} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{simple\_wave\_constant\_c\_0} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em The c\_0 constant in Anile Miller Motta, Phys.Fluids. 26, 1450 (1983)}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.3 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:1} & \multicolumn{2}{p{\paraWidth}|}{It is the sound speed where the fluid velocity is zero} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{simple\_wave\_v\_max} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em The v\_max constant in Anile Miller Motta, Phys.Fluids. 26, 1450 (1983)}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.7 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:1} & \multicolumn{2}{p{\paraWidth}|}{It is the maximum velocity in the initial configuration (see p. 1457, bottom of first column)} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{sx\_init} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial x component of conserved momentum density}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.166666658 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Anything.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{sy\_init} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial y component of conserved momentum density}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.166666658 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Anything.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{sz\_init} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial z component of conserved momentum density}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.166666658 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Anything.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{tau\_init} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial conserved total energy density}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.484123939 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{Anything positive.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{use\_c2p\_with\_entropy\_eqn} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Use the con2prim routine that uses the entropy equation instead of the energy equation}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{velx\_init} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial x velocity}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0d-1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Anything.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{vely\_init} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial y velocity}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0d-1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Anything.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{velz\_init} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial z velocity}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0d-1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Anything.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bvec\_evolution\_method} & {\bf Scope:} shared from HYDROBASE & KEYWORD \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{entropy\_evolution\_method} & {\bf Scope:} shared from HYDROBASE & KEYWORD \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{initial\_avec} & {\bf Scope:} shared from HYDROBASE & KEYWORD \\\hline
+\multicolumn{3}{|l|}{\bf Extends ranges:}\\ 
+\hline\multicolumn{1}{|p{\maxVarWidth}|}{\centering poloidalmagfield} & \multicolumn{2}{p{\paraWidth}|}{Poloidal Magnetic Field} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{initial\_bvec} & {\bf Scope:} shared from HYDROBASE & KEYWORD \\\hline
+\multicolumn{3}{|l|}{\bf Extends ranges:}\\ 
+\hline\multicolumn{1}{|p{\maxVarWidth}|}{\centering shocktube} & \multicolumn{2}{p{\paraWidth}|}{Shocktube type} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering cylexp} & \multicolumn{2}{p{\paraWidth}|}{Poloidal Magnetic Field} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering poloidalmagfield} & \multicolumn{2}{p{\paraWidth}|}{Poloidal Magnetic Field} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering magnetized Bondi} & \multicolumn{2}{p{\paraWidth}|}{radial magnetic field appropriate for Bondi test} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{initial\_entropy} & {\bf Scope:} shared from HYDROBASE & KEYWORD \\\hline
+\multicolumn{3}{|l|}{\bf Extends ranges:}\\ 
+\hline\multicolumn{1}{|p{\maxVarWidth}|}{\centering magnetized Bondi} & \multicolumn{2}{p{\paraWidth}|}{Initial entropy for a radial magnetic field appropriate for Bondi test} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{initial\_hydro} & {\bf Scope:} shared from HYDROBASE & KEYWORD \\\hline
+\multicolumn{3}{|l|}{\bf Extends ranges:}\\ 
+\hline\multicolumn{1}{|p{\maxVarWidth}|}{\centering shocktube} & \multicolumn{2}{p{\paraWidth}|}{Shocktube type} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering shocktube\_hot} & \multicolumn{2}{p{\paraWidth}|}{Shocktube with hot nuclear EOS} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering only\_atmo} & \multicolumn{2}{p{\paraWidth}|}{Set only a low atmosphere} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering read\_conformal} & \multicolumn{2}{p{\paraWidth}|}{After reading in initial alp, rho and gxx from h5 files, sets the other quantities} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering simple\_wave} & \multicolumn{2}{p{\paraWidth}|}{Set initial data from Anile Miller Motta, Phys.Fluids. 26, 1450 (1983)} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering monopole} & \multicolumn{2}{p{\paraWidth}|}{Monopole at the center} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering cylexp} & \multicolumn{2}{p{\paraWidth}|}{Cylindrical Explosion} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering rotor} & \multicolumn{2}{p{\paraWidth}|}{"Magnetic Rotor test from DelZanna,Bucciantini 
+, and Londrillo A\&A 400, 397-413 (2003)"} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering advectedloop} & \multicolumn{2}{p{\paraWidth}|}{Magnetic advected loop test} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering alfvenwave} & \multicolumn{2}{p{\paraWidth}|}{Circularly polarized Alfven wave} \\\multicolumn{1}{|p{\maxVarWidth}|}{see [1] below} & \multicolumn{2}{p{\paraWidth}|}{Spherical single black hole Bondi solution} \\\multicolumn{1}{|p{\maxVarWidth}|}{see [1] below} & \multicolumn{2}{p{\paraWidth}|}{Spherical single black hole Bondi solution - TEST ISO CASE!!!!!!} \\\multicolumn{1}{|p{\maxVarWidth}|}{see [1] below} & \multicolumn{2}{p{\paraWidth}|}{Magnetized Spherical single black hole Bondi solution} \\\multicolumn{1}{|p{\maxVarWidth}|}{see [1] below} & \multicolumn{2}{p{\paraWidth}|}{Magnetized Spherical single black hole Bondi solution - TEST ISO CASE!!!!!!} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent {\bf [1]} \noindent \begin{verbatim}hydro\_bondi\_solution\end{verbatim}\noindent {\bf [1]} \noindent \begin{verbatim}hydro\_bondi\_solution\_iso\end{verbatim}\noindent {\bf [1]} \noindent \begin{verbatim}magnetized\_bondi\_solution\end{verbatim}\noindent {\bf [1]} \noindent \begin{verbatim}magnetized\_bondi\_solution\_iso\end{verbatim}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{temperature\_evolution\_method} & {\bf Scope:} shared from HYDROBASE & KEYWORD \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{timelevels} & {\bf Scope:} shared from HYDROBASE & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{y\_e\_evolution\_method} & {\bf Scope:} shared from HYDROBASE & KEYWORD \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+grhydro\_init\_data
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+grhydro
+
+grid
+
+eos\_omni
+\vspace{2mm}
+\subsection*{Grid Variables}
+\vspace{5mm}\subsubsection{PRIVATE GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+grhydro\_init\_data\_reflevel & GRHydro\_init\_data\_reflevel & compact & 0 \\ 
+ &  & description & Refinement level GRHydro is working on right now \\ 
+ &  & dimensions & 0 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & tags & checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & INT \\ 
+\hline 
+\end{tabular*} 
+
+
+\vspace{5mm}\subsubsection{PROTECTED GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+simple\_wave\_grid\_functions &  & compact & 0 \\ 
+ & simple\_tmp & description & 1D arrays for the simple-wave routine \\ 
+ & c\_s & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+simple\_wave\_scalars &  & compact & 0 \\ 
+ & simple\_rho\_0 & description & values at v=0 \\ 
+ & simple\_eps\_0 & dimensions & 0 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+simple\_wave\_output &  & compact & 0 \\ 
+ & simple\_rho & description & output variables for the simple-wave routine \\ 
+ & simple\_eps & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+
+\noindent {\bf Uses header}: 
+
+SpaceMask.h
+\vspace{2mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn EinsteinEvolve/GRHydro\_InitData.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+~& {\bf Conditional:} \\ 
+~ &  GRHydro\_init\_data\_reflevel\\ 
+~ &  GRHydro\_init\_data\_reflevel\\ 
+~ &  GRHydro\_init\_data\_reflevel\\ 
+~ &  GRHydro\_init\_data\_reflevel\\ 
+~ &  simple\_wave\_grid\_functions\\ 
+~ &  simple\_wave\_scalars\\ 
+~ &  simple\_wave\_output\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PARAMCHECK} 
+
+\hspace{5mm} grhydro\_initdata\_checkparameters 
+
+\hspace{5mm}{\it check parameters } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Initial}   (conditional) 
+
+\hspace{5mm} grhydro\_monopolem 
+
+\hspace{5mm}{\it monopole initial data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Initial}   (conditional) 
+
+\hspace{5mm} grhydro\_shocktube 
+
+\hspace{5mm}{\it shocktube initial data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Initial}   (conditional) 
+
+\hspace{5mm} grhydro\_cylindricalexplosionm 
+
+\hspace{5mm}{\it cylindrical explosion initial data - mhd-only } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Initial}   (conditional) 
+
+\hspace{5mm} grhydro\_init\_data\_refinementlevel 
+
+\hspace{5mm}{\it calculate current refinement level } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & grhydro\_con2primtest \\ 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Initial}   (conditional) 
+
+\hspace{5mm} grhydro\_con2primtest 
+
+\hspace{5mm}{\it testing the conservative to primitive solver } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Initial}   (conditional) 
+
+\hspace{5mm} grhydro\_init\_data\_refinementlevel 
+
+\hspace{5mm}{\it calculate current refinement level } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & c2p2c\_call \\ 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Initial}   (conditional) 
+
+\hspace{5mm} c2p2cm 
+
+\hspace{5mm}{\it testing conservative to primitive to conservative - mhd version } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Initial}   (conditional) 
+
+\hspace{5mm} c2p2c 
+
+\hspace{5mm}{\it testing conservative to primitive to conservative } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Initial}   (conditional) 
+
+\hspace{5mm} grhydro\_init\_data\_refinementlevel 
+
+\hspace{5mm}{\it calculate current refinement level } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & p2c2p\_call \\ 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Initial}   (conditional) 
+
+\hspace{5mm} p2c2pm 
+
+\hspace{5mm}{\it testing primitive to conservative to primitive - mhd version } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Initial}   (conditional) 
+
+\hspace{5mm} p2c2p 
+
+\hspace{5mm}{\it testing primitive to conservative to primitive } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Initial}   (conditional) 
+
+\hspace{5mm} grhydro\_rotorm 
+
+\hspace{5mm}{\it mhd rotor initial data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Initial}   (conditional) 
+
+\hspace{5mm} grhydro\_init\_data\_refinementlevel 
+
+\hspace{5mm}{\it calculate current refinement level } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & p2c2p\_call \\ 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Initial}   (conditional) 
+
+\hspace{5mm} p2c2pm\_polytype 
+
+\hspace{5mm}{\it testing primitive to conservative to primitive - mhd polytype version } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Initial}   (conditional) 
+
+\hspace{5mm} grhydro\_reconstruction\_test 
+
+\hspace{5mm}{\it testing the reconstruction } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Options:  & global \\ 
+~& ~ &loop-local\\ 
+~ & Storage:  & grhydro\_prim\_bext \\ 
+~& ~ &grhydro\_scalars\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Initial}   (conditional) 
+
+\hspace{5mm} grhydro\_only\_atmo 
+
+\hspace{5mm}{\it only atmosphere as initial data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Initial}   (conditional) 
+
+\hspace{5mm} grhydro\_readconformaldata 
+
+\hspace{5mm}{\it set the missing quantities, after reading in from file initial data from conformally-flat codes (garching) } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Initial}   (conditional) 
+
+\hspace{5mm} grhydro\_simplewave 
+
+\hspace{5mm}{\it set initial data from anile miller motta, phys.fluids. 26, 1450 (1983) } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_ANALYSIS}   (conditional) 
+
+\hspace{5mm} grhydro\_simplewave\_analysis 
+
+\hspace{5mm}{\it compute some output variables for the simple wave } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & grhydro\_entropy \\ 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Initial}   (conditional) 
+
+\hspace{5mm} grhydro\_bondi\_iso 
+
+\hspace{5mm}{\it setup grhydro vars for the hydrodynamic bondi solution } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & hydrobase\_excisionmasksetup \\ 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Initial}   (conditional) 
+
+\hspace{5mm} grhydro\_bondim\_iso 
+
+\hspace{5mm}{\it setup grhydro vars for the magnetized bondi solution } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & hydrobase\_excisionmasksetup \\ 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Initial}   (conditional) 
+
+\hspace{5mm} grhydro\_bondi 
+
+\hspace{5mm}{\it setup grhydro vars for the hydrodynamic bondi solution } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & hydrobase\_excisionmasksetup \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Initial}   (conditional) 
+
+\hspace{5mm} grhydro\_advectedloopm 
+
+\hspace{5mm}{\it mhd advected loop initial data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Initial}   (conditional) 
+
+\hspace{5mm} grhydro\_bondim 
+
+\hspace{5mm}{\it setup grhydro vars for the magnetized bondi solution } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & hydrobase\_excisionmasksetup \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Con2Prim}   (conditional) 
+
+\hspace{5mm} grhydro\_bondim\_range 
+
+\hspace{5mm}{\it force analytic solution outside anulus } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & con2prim \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Boundaries}   (conditional) 
+
+\hspace{5mm} grhydro\_bondim\_boundary 
+
+\hspace{5mm}{\it force analytic solution in boundaries } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & hydrobase\_select\_boundaries \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_INITIAL}   (conditional) 
+
+\hspace{5mm} grhydro\_poloidalmagfieldm 
+
+\hspace{5mm}{\it set up a poloidal magnetic field. it expects the other fluid variables already to be set, as for example in the tov solution } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & hydrobase\_initial \\ 
+~ & Before:  & grhydrotransformprimtolocalbasis \\ 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_INITIAL}   (conditional) 
+
+\hspace{5mm} hydrobase\_boundaries 
+
+\hspace{5mm}{\it call boundary conditions after magnetic field initial data setup } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & grhydro\_poloidalmagfieldm \\ 
+~ & Before:  & grhydrotransformprimtolocalbasis \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Initial}   (conditional) 
+
+\hspace{5mm} grhydro\_alfvenwavem 
+
+\hspace{5mm}{\it circularly polarized alfven wave initial data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Initial}   (conditional) 
+
+\hspace{5mm} grhydro\_shocktube\_hot 
+
+\hspace{5mm}{\it hot shocktube initial data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & hydrobase\_y\_e\_one \\ 
+~& ~ &hydrobase\_zero\\ 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf HydroBase\_Initial}   (conditional) 
+
+\hspace{5mm} grhydro\_shocktubem 
+
+\hspace{5mm}{\it shocktube initial data - mhd version } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf ApplyBCs}   (conditional) 
+
+\hspace{5mm} grhydro\_diagshock\_boundarym 
+
+\hspace{5mm}{\it diagonal shock boundary conditions } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & boundaryconditions \\ 
+~& ~ &boundary::boundary\_clearselection\\ 
+~ & Language:  & fortran \\ 
+~ & Sync:  & grhydro::dens \\ 
+~& ~ &grhydro::tau\\ 
+~& ~ &grhydro::scon\\ 
+~& ~ &grhydro::bcons\\ 
+~& ~ &grhydro::psidc\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf ApplyBCs}   (conditional) 
+
+\hspace{5mm} grhydro\_diagshock\_boundarym 
+
+\hspace{5mm}{\it diagonal shock boundary conditions } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & boundaryconditions \\ 
+~& ~ &boundary::boundary\_clearselection\\ 
+~ & Language:  & fortran \\ 
+~ & Sync:  & grhydro::dens \\ 
+~& ~ &grhydro::tau\\ 
+~& ~ &grhydro::scon\\ 
+~& ~ &grhydro::bcons\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf ApplyBCs}   (conditional) 
+
+\hspace{5mm} grhydro\_diagshock2d\_boundarym 
+
+\hspace{5mm}{\it 2-d diagonal shock boundary conditions } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & boundaryconditions \\ 
+~& ~ &boundary::boundary\_clearselection\\ 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\subsection*{Aliased Functions}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Alias Name:} ~~~~~~~ & {\bf Function Name:} \\ 
+c2p2c & c2p2c\_call \\ 
+c2p2cM & c2p2c\_call \\ 
+p2c2p & p2c2p\_call \\ 
+p2c2pM & p2c2p\_call \\ 
+p2c2pM\_polytype & p2c2p\_call \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

@@ -1,0 +1,420 @@
+\documentclass{article}
+
+\usepackage{../../../../doc/latex/cactus}
+
+\begin{document}
+
+\author{Barry Wardell and Ian Hinder}
+\title{EinsteinExact}
+\date{10 May 2012}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+\begin{abstract}
+The \textsc{EinsteinExact} arrangement provides a collection of thorns which compute
+exact solutions to the Einstein equation and set the $3+1$ ADM variables
+provided by the \textsc{ADMBase} thorn. The solutions may be computed either as initial
+data, or at each iteration of an evolution. The computation is done analytically
+from expressions for the metric which are taken from a database of solutions
+provided by the \textsc{Metrics} package for \textsc{Mathematica}. Adding new
+solutions to \textsc{EinsteinExact} only requires that the metric be added to this
+database.
+\end{abstract}
+
+\section{Introduction}
+The \textsc{EinsteinExact} code relies on the fact that a given analytic
+expression for the $4$-metric $g_{ab}$ (and its inverse $g^{ab}$) of a spacetime
+may be decomposed into the $3+1$ ADM variables,
+\begin{equation}
+g_{ab} =
+\left(
+\begin{array}{cc}
+ -\alpha^2 + \beta_k \beta^k & \beta_i \\
+ \beta_i & \gamma_{ij}\\
+\end{array}
+\right),\quad
+g^{ab} =
+\left(
+\begin{array}{cc}
+ -1/\alpha^2 & \beta^i / \alpha^2 \\
+ \beta^i / \alpha^2 & \gamma^{ij} - \beta^i \beta^j / \alpha^2\\
+\end{array}
+\right),
+\end{equation}
+where $\alpha$ is the lapse, $\beta^i$ is the shift and $\gamma_{ij}$
+is the three metric on the slice. The \textsc{ADMBase} variables for the
+lapse, shift and three metric may therefore be directly obtained from
+components of the four metric and its inverse:
+\begin{equation}
+\alpha = \frac{1}{\sqrt{-g_{00}}},\quad
+\beta^i = \alpha^2 g^{0i},\quad
+\gamma_{ij} = g_{ij}.
+\end{equation}
+Another \textsc{ADMBase} variable which must be set is the extrinsic
+curvature $K_{ij}$. This may be written as
+\begin{equation}
+K_{ij} = -\frac{1}{2\alpha} \mathcal{L}_{\alpha \vec{n}} \gamma_{ij}
+\end{equation}
+where $\mathcal{L}$ is the Lie derivative and $\vec{n}$ is the normal to the
+slice. Explicitly expanding this out gives
+\begin{align}
+K_{ij} = & \frac{1}{2\alpha} (-\partial_t \gamma_{ij} + D_i \beta_j + D_j \beta_i) \nonumber \\
+ = &  \frac{1}{2\alpha} (-\partial_t \gamma_{ij}
+        + \beta^k \partial_k \gamma_{ij}
+        + \gamma_{ik} \partial_j \beta^k
+        + \gamma_{kj} \partial_i \beta^k
+      )
+\end{align}
+which is readily computed from the previous analytic expressions for $\alpha$,
+$\beta^i$ and $\gamma_{ij}$. Finally, the \textsc{ADMBase} variables for the time
+derivatives for the lapse and shift are computed by analytically differentiating
+$\alpha$ and $\beta^i$ with respect to $t$.
+
+\section{Obtaining EinsteinExact}
+The latest version of \textsc{EinsteinExact} will always be available from the
+project git repository:
+
+\code{git clone git://github.com/barrywardell/EinsteinExact}
+
+\section{Using EinsteinExact}
+The \textsc{EinsteinExact} thorns are designed to work with \textsc{Cactus} as
+part of the \textsc{Einstein Toolkit}. All requirements are therefore already included
+with the \textsc{Einstein Toolkit}.
+
+To use an \textsc{EinsteinExact} thorn, include the thorn for your desired spacetime in your
+thornlist and in the \code{ActiveThorns} section of your parameter file and set either
+the \code{ADMBase::initial\_data} or \code{ADMBase::evolution\_method}
+parameters (or both) described below. It is also necessary to set the \code{ADMBase::initial\_lapse},
+\code{ADMBase::initial\_dtlapse}, \code{ADMBase::initial\_shift} and \code{ADMBase::initial\_dtshift}
+parameters in order for storage to be allocated for all \textsc{ADMBase} variables set by EinsteinExact.
+
+As each thorn sets the ADM variables for a
+specific spacetime in some particular coordinate system it only makes sense to
+have one thorn in the arrangement activated at a time.
+
+\section{Common parameters}
+Although there is a separate \textsc{Cactus} thorn for each supported spacetime, all
+thorns are generated from the same \textsc{Kranc} script and therefore share some
+common parameters. The parameters supported by all thorns are listed in this
+section.
+
+\subsubsection{\code{ADMBase::initial\_data}}
+The ADM variables can be set by \textsc{EinsteinExact}
+as initial data for an evolution. Each
+\textsc{EinsteinExact} thorn extends the \code{ADMBase::initial\_data}
+keyword parameter with another option corresponding to the name of the thorn.
+If the parameter is set to the thorn name, then initial data for the ADM
+variables will be set by the thorn in the \code{ADMBase\_InitialData} schedule
+bin.
+
+\subsubsection{\code{ADMBase::evolution\_method}}
+The setting of the ADM variables can optionally be done at each step in an
+evolution. Each \textsc{EinsteinExact} thorn extends the
+\code{ADMBase::evolution\_method}
+keyword parameter with another option corresponding to the name of the thorn.
+If the parameter is set to the thorn name, then the ADM variables will be set
+by the thorn at each iteration during the \code{ANALYSIS} schedule bin.
+
+\subsubsection{\code{ADMBase::initial\_lapse}}
+Each EinsteinExact thorn extends this keyword parameter with another option
+corresponding to the name of the thorn. This parameter is currently ignored
+by the EinsteinExact code but must be set nonetheless in order to ensure
+storage is allocated for the lapse variable.
+
+\subsubsection{\code{ADMBase::initial\_shift}}
+Each EinsteinExact thorn extends this keyword parameter with another option
+corresponding to the name of the thorn. This parameter is currently ignored
+by the EinsteinExact code but must be set nonetheless in order to ensure
+storage is allocated for the shift variables.
+
+\subsubsection{\code{ADMBase::initial\_dtlapse}}
+Each EinsteinExact thorn extends this keyword parameter with another option
+corresponding to the name of the thorn. This parameter is currently ignored
+by the EinsteinExact code but must be set nonetheless in order to ensure
+storage is allocated for the dtlapse variable.
+
+\subsubsection{\code{ADMBase::initial\_dtshift}}
+Each EinsteinExact thorn extends this keyword parameter with another option
+corresponding to the name of the thorn. This parameter is currently ignored
+by the EinsteinExact code but must be set nonetheless in order to ensure
+storage is allocated for the dtshift variables.
+
+\subsubsection{Origin: \code{timeoffset}, \code{positionx}, \code{positiony}, \code{positionz}}
+These parameters specify the position at which the origin of the spacetime
+should be located.
+
+\subsubsection{Lapse: \code{lapsefactor}}
+Factor that should rescale the lapse such that
+$\alpha' = \tfrac{1}{\code{lapsefactor}}~ \alpha$. This has the effect of rescaling the time
+coordinate so that $t' = \code{lapsefactor}~ t$. Note that this also has the
+effect of rescaling the shift by a factor $\tfrac{1}{\code{lapsefactor}}$ (see xform.nb
+for more details).
+
+\subsubsection{Shift: \code{shiftaddx}, \code{shiftaddy}, \code{shiftaddz}}
+Shift that should be added to the metric. This has the effect of adding an
+offset to the spatial coordinates so that $x' = x - \code{shiftaddx}~ t'$,
+$y' = y - \code{shiftaddy}~ t'$,  $z' = z - \code{shiftaddz}~ t'$ (see xform.nb
+for more details).
+
+\subsubsection{Lorentz Boost: \code{boostx}, \code{boosty}, \code{boostz}}
+Lorentz-boost the spacetime by a velocity
+$v^i = [\code{boostx}, \code{boosty}, \code{boostz}]$. This applies a
+Lorentz boost transformation to the coordinates of the form
+\begin{equation}
+\begin{bmatrix}
+t' \\
+\mathbf{r'}
+\end{bmatrix}
+=
+\begin{bmatrix}
+\gamma & - \gamma \boldsymbol{\beta}^{\mathrm{T}} \\
+-\gamma\boldsymbol{\beta} & \mathbf{I} + \gamma^2 / (\gamma+1) \boldsymbol{\beta}\boldsymbol{\beta}^{\mathrm{T}}  \\
+\end{bmatrix}
+\begin{bmatrix}
+t  \\
+\mathbf{r}
+\end{bmatrix}.
+\end{equation}
+
+
+\subsubsection{Rotation: \code{theta}, \code{phi}, \code{psi}}
+The spacetime may have an arbitrary $3$D rigid rotation applied to it. This
+rotation is specified by the \code{theta}, \code{phi} and \code{psi} parameters
+which correspond to the Euler angles of the rotation. The conventions used are
+such that the rotations are given by the three rotation matrices \cite{EinsteinExact_Euler}:
+\begin{align}
+R_\phi =& 
+\left(
+\begin{array}{ccc}
+ \cos (\phi ) & \sin (\phi ) & 0 \\
+ -\sin (\phi ) & \cos (\phi ) & 0 \\
+ 0 & 0 & 1 \\
+\end{array}
+\right), \nonumber \\
+R_\theta =&
+\left(
+\begin{array}{ccc}
+ 1 & 0 & 0 \\
+ 0 & \cos (\theta ) & \sin (\theta ) \\
+ 0 & -\sin (\theta ) & \cos (\theta ) \\
+\end{array}
+\right), \nonumber \\
+R_\psi =&
+\left(
+\begin{array}{ccc}
+ \cos (\psi ) & \sin (\psi ) & 0 \\
+ -\sin (\psi ) & \cos (\psi ) & 0 \\
+ 0 & 0 & 1 \\
+\end{array}
+\right).
+\end{align}
+
+\section{Included spacetimes}
+
+This section lists all spacetimes currently supported by \textsc{EinsteinExact}.
+
+
+\subsection{GaugeWave}
+{\bf Description:}  \text{4D flat spacetime in Cartesian gauge wave coordinates} \\
+{\bf Thorn name:} GaugeWave \\
+{\bf Parameters:} \code{\text{amp}}, \code{\text{period}} \\
+{\bf Metric:} \\
+\begin{equation}
+g_{ab} =
+\left(
+\begin{array}{cccc}
+ \text{amp} \sin \left(\frac{2 \pi  (x-t)}{\text{period}}\right)-1 & 0 & 0 & 0 \\
+ 0 & 1-\text{amp} \sin \left(\frac{2 \pi  (x-t)}{\text{period}}\right) & 0 & 0 \\
+ 0 & 0 & 1 & 0 \\
+ 0 & 0 & 0 & 1 \\
+\end{array}
+\right)
+\end{equation}
+
+\subsection{KerrSchild}
+{\bf Description:}  \text{Kerr spacetime in Kerr-Schild coordinates} \\
+{\bf Thorn name:} KerrSchild \\
+{\bf Parameters:} \code{M}, \code{a} \\
+{\bf Metric:} \\
+\begin{equation}
+g_{ab} =
+\left(
+\begin{array}{cccc}
+ \frac{2 M r^3}{a^2 z^2+r^4}-1 & \frac{2 M r^3 (a y+r x)}{\left(a^2+r^2\right) \left(a^2 z^2+r^4\right)} & \frac{2 M r^3 (r y-a x)}{\left(a^2+r^2\right) \left(a^2 z^2+r^4\right)} & \frac{2 M r^2 z}{a^2 z^2+r^4} \\
+ \frac{2 M r^3 (a y+r x)}{\left(a^2+r^2\right) \left(a^2 z^2+r^4\right)} & \frac{2 M r^3 (a y+r x)^2}{\left(a^2+r^2\right)^2 \left(a^2 z^2+r^4\right)}+1 & \frac{2 M r^3 (a y+r x) (r y-a x)}{\left(a^2+r^2\right)^2 \left(a^2 z^2+r^4\right)} & \frac{2 M r^2 z (a y+r x)}{\left(a^2+r^2\right) \left(a^2 z^2+r^4\right)} \\
+ \frac{2 M r^3 (r y-a x)}{\left(a^2+r^2\right) \left(a^2 z^2+r^4\right)} & \frac{2 M r^3 (a y+r x) (r y-a x)}{\left(a^2+r^2\right)^2 \left(a^2 z^2+r^4\right)} & \frac{2 M r^3 (r y-a x)^2}{\left(a^2+r^2\right)^2 \left(a^2 z^2+r^4\right)}+1 & \frac{2 M r^2 z (r y-a x)}{\left(a^2+r^2\right) \left(a^2 z^2+r^4\right)} \\
+ \frac{2 M r^2 z}{a^2 z^2+r^4} & \frac{2 M r^2 z (a y+r x)}{\left(a^2+r^2\right) \left(a^2 z^2+r^4\right)} & \frac{2 M r^2 z (r y-a x)}{\left(a^2+r^2\right) \left(a^2 z^2+r^4\right)} & \frac{2 M r z^2}{a^2 z^2+r^4}+1 \\
+\end{array}
+\right)
+\end{equation}
+where
+\begin{equation}
+r(x,y,z)=\frac{\sqrt{\sqrt{\left(-a^2+x^2+y^2+z^2\right)^2+4 a^2 z^2}-a^2+x^2+y^2+z^2}}{\sqrt{2}}
+\end{equation}
+
+\subsection{Minkowski}
+{\bf Description:}  \text{4D flat spacetime in Cartesian coordinates} \\
+{\bf Thorn name:} Minkowski \\
+{\bf Metric:} \\
+\begin{equation}
+g_{ab} =
+\left(
+\begin{array}{cccc}
+ -1 & 0 & 0 & 0 \\
+ 0 & 1 & 0 & 0 \\
+ 0 & 0 & 1 & 0 \\
+ 0 & 0 & 0 & 1 \\
+\end{array}
+\right)
+\end{equation}
+
+\subsection{ShiftedGaugeWave}
+{\bf Description:}  \text{4D flat spacetime in Cartesian shifted gauge wave coordinates} \\
+{\bf Thorn name:} ShiftedGaugeWave \\
+{\bf Parameters:} \code{\text{amp}}, \code{\text{period}} \\
+{\bf Metric:} \\
+\begin{equation}
+g_{ab} =
+\left(
+\begin{array}{cccc}
+ \text{amp} \sin \left(\frac{2 \pi  (x-t)}{\text{period}}\right)-1 & -\text{amp} \sin \left(\frac{2 \pi  (x-t)}{\text{period}}\right) & 0 & 0 \\
+ -\text{amp} \sin \left(\frac{2 \pi  (x-t)}{\text{period}}\right) & \text{amp} \sin \left(\frac{2 \pi  (x-t)}{\text{period}}\right)+1 & 0 & 0 \\
+ 0 & 0 & 1 & 0 \\
+ 0 & 0 & 0 & 1 \\
+\end{array}
+\right)
+\end{equation}
+
+\subsection{Vaidya}
+{\bf Description:}  \text{A Vaidya spacetime with mass function m(v) = M (1 + Tanh[v dM / M]${}^{\wedge}$2)} \\
+{\bf Thorn name:} Vaidya2 \\
+{\bf Parameters:} \code{M}, \code{\text{dM}} \\
+{\bf Metric:} \\
+\begin{equation}
+g_{ab} =
+\left(
+\begin{array}{cccc}
+ \frac{2 m}{r}-1 & \frac{2 m x}{r^2} & \frac{2 m y}{r^2} & \frac{2 m z}{r^2} \\
+ \frac{2 m x}{r^2} & \frac{2 m x^2}{r^3}+1 & \frac{2 m x y}{r^3} & \frac{2 m x z}{r^3} \\
+ \frac{2 m y}{r^2} & \frac{2 m x y}{r^3} & \frac{2 m y^2}{r^3}+1 & \frac{2 m y z}{r^3} \\
+ \frac{2 m z}{r^2} & \frac{2 m x z}{r^3} & \frac{2 m y z}{r^3} & \frac{2 m z^2}{r^3}+1 \\
+\end{array}
+\right)
+\end{equation}
+where
+\begin{equation}
+r(x,y,z)=\sqrt{x^2+y^2+z^2}
+\end{equation}
+\begin{equation}
+m(t,x,y,z)=M \left(\tanh ^2\left(\frac{\text{dM} \left(t+\sqrt{x^2+y^2+z^2}\right)}{M}\right)+1\right)
+\end{equation}
+
+\subsection{ModifiedSchwarzschildBL}
+{\bf Description:}  \text{Modified Schwarzschild spacetime in Brill-Lindquist coordinates with a radially dependent mass inside the black hole} \\
+{\bf Thorn name:} ModifiedSchwarzschildBL \\
+{\bf Parameters:} \code{M}, \code{epsilon} \\
+{\bf Metric:} \\
+\begin{equation}
+g_{ab} =
+\left(
+\begin{array}{cccc}
+ -1 & 0 & 0 & 0 \\
+ 0 & \left(1+\frac{M(r)}{2 r}\right)^4 & 0 & 0 \\
+ 0 & 0 & \left(1+\frac{M(r)}{2 r}\right)^4 & 0 \\
+ 0 & 0 & 0 & \left(1+\frac{M(r)}{2 r}\right)^4 \\
+\end{array}
+\right)
+\end{equation}
+where
+\begin{equation}
+r(x,y,z)=\sqrt{x^2+y^2+z^2}
+\end{equation}
+\begin{equation}
+M(r) = \left\{
+     \begin{array}{lr}
+       4 r - \frac{8 \frac{r^2}{2} + [\cos(\frac{4 \pi r}{M}) - 1] \left(\frac{M}{4 \pi}\right)^2}{M} & : r < M/2\\
+       M & : r \ge M/2
+     \end{array}
+   \right.
+\end{equation}
+
+\section{Modifying EinsteinExact}
+
+\subsection{Generating the code}
+The script which generates the thorns requires the \textsc{Kranc} and
+\textsc{Metrics} \textsc{Mathematica} packages to be installed. \textsc{Kranc}
+is included with the Einstein Toolkit and the \textsc{Metrics} package is
+included in the \code{Metrics} directory.
+
+To regenerate the code \code{make} from within the \code{m} directory.
+
+\subsection{Adding a spacetime}
+To add a new spacetime to \textsc{EinsteinExact}, simply create a new file
+for the spacetime under \code{m/Metrics/metrics/} and then add this spacetime
+to the \code{thorns = \ldots} and \code{spacetimes = \ldots} lines at the end
+of the \textsc{Kranc} script in \code{m/EinsteinExact.m}. Also consider adding
+a regression test to the \code{EinsteinExact\_test} thorn and correctness tests
+under the \code{tests} directory.
+
+If you think this spacetime would be of use to others, please consider 
+submitting a patch. As all of the spacetimes in the \textsc{EinsteinExact}
+arrangement come from them \textsc{Metrics} database it is highly preferable to
+have new spacetimes added to the upstream repository for the \textsc{Metrics}
+package. The version of the \textsc{Metrics} package used by
+\textsc{EinsteinExact} can then be updated.
+
+\subsection{Updating the Metrics database}
+The \textsc{Metrics} database exists as a separate git repository. For
+convenience, a version of it is included with \textsc{EinsteinExact} under
+the \code{m/Metrics} directory. This is a version of the standalone
+\textsc{Metrics} repository which has been merged using the \code{git-subtree}
+command\footnote{\code{git-subtree} is included in the latest version of git.
+For older versions of git, it may be obtained from
+\url{http://github.com/apenwarr/git-subtree}}.
+
+If a new version of the \textsc{Metrics} package becomes available, the version
+in the \textsc{EinsteinExact} repository may be updated using the following
+command:
+\begin{verbatim}
+git subtree pull --prefix=m/Metrics --squash git://github.com/barrywardell/Metrics master
+\end{verbatim}
+This will pull in new changes from the \textsc{Metrics} repository and merge
+them with the \textsc{EinsteinExact} repository under the \code{m/Metrics}
+directory.
+
+\section{Tests}
+
+\subsection{Correctness tests}
+There are correctness tests for the \textsc{EinsteinExact} thorns under the
+\code{tests} directory. These tests include:
+\begin{itemize}
+\item Checks that the solutions provided by the \textsc{Exact} thorn converge
+  to those provided by each of the \textsc{EinsteinExact} thorns at the appropriate order.
+\item Checks that the constraints for the solutions provided by each of the
+ \textsc{EinsteinExact} converge to $0$ at the appropriate order.
+\end{itemize}
+In addition, the \textsc{Metrics} package has independent correctness tests
+which check that the provided metrics are correct.
+
+\subsection{Regression tests}
+Each thorn provided by \textsc{EinsteinExact} has a corresponding regression
+test in the \code{EinsteinExact\_code} thorn which checks that no new bugs are
+introduced in the code.
+
+\section{Acknowledgments}
+Erik Schnetter contributed helpful comments and suggestions, along with some
+patches for the code.
+
+\begin{thebibliography}{{Pen}}
+
+\bibitem{EinsteinExact_Euler}
+{Eric W. Weisstein, {\em Euler Angles}, MathWorld--A Wolfram Web Resource. \url{http://mathworld.wolfram.com/EulerAngles.html}}
+
+\end{thebibliography}
+
+% END CACTUS THORNGUIDE
+
+\end{document}
