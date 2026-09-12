@@ -1,0 +1,2904 @@
+% *======================================================================*
+%  Cactus Thorn template for ThornGuide documentation
+%  Author: Ian Kelley
+%  Date: Sun Jun 02, 2002
+%  $Header$
+%
+%  Thorn documentation in the latex file doc/documentation.tex 
+%  will be included in ThornGuides built with the Cactus make system.
+%  The scripts employed by the make system automatically include 
+%  pages about variables, parameters and scheduling parsed from the 
+%  relevent thorn CCL files.
+%  
+%  This template contains guidelines which help to assure that your     
+%  documentation will be correctly added to ThornGuides. More 
+%  information is available in the Cactus UsersGuide.
+%                                                    
+%  Guidelines:
+%   - Do not change anything before the line
+%       % BEGIN CACTUS THORNGUIDE",
+%     except for filling in the title, author, date etc. fields.
+%        - Each of these fields should only be on ONE line.
+%        - Author names should be sparated with a \\ or a comma
+%   - You can define your own macros are OK, but they must appear after
+%     the BEGIN CACTUS THORNGUIDE line, and do not redefine standard 
+%     latex commands.
+%   - To avoid name clashes with other thorns, 'labels', 'citations', 
+%     'references', and 'image' names should conform to the following 
+%     convention:          
+%       ARRANGEMENT_THORN_LABEL
+%     For example, an image wave.eps in the arrangement CactusWave and 
+%     thorn WaveToyC should be renamed to CactusWave_WaveToyC_wave.eps
+%   - Graphics should only be included using the graphix package. 
+%     More specifically, with the "includegraphics" command. Do
+%     not specify any graphic file extensions in your .tex file. This 
+%     will allow us (later) to create a PDF version of the ThornGuide
+%     via pdflatex. |
+%   - References should be included with the latex "bibitem" command. 
+%   - use \begin{abstract}...\end{abstract} instead of \abstract{...}
+%   - For the benefit of our Perl scripts, and for future extensions, 
+%     please use simple latex.     
+%
+% *======================================================================* 
+% 
+% Example of including a graphic image:
+%    \begin{figure}[ht]
+% 	\begin{center}
+%    	   \includegraphics[width=6cm]{/home/runner/work/tests/tests/arrangements/EinsteinInitialData/Exact/doc/MyArrangement_MyThorn_MyFigure}
+% 	\end{center}
+% 	\caption{Illustration of this and that}
+% 	\label{MyArrangement_MyThorn_MyLabel}
+%    \end{figure}
+%
+% Example of using a label:
+%   \label{MyArrangement_MyThorn_MyLabel}
+%
+% Example of a citation:
+%    \cite{MyArrangement_MyThorn_Author99}
+%
+% Example of including a reference
+%   \bibitem{MyArrangement_MyThorn_Author99}
+%   {J. Author, {\em The Title of the Book, Journal, or periodical}, 1 (1999), 
+%   1--16. {\tt http://www.nowhere.com/}}
+%
+% *======================================================================* 
+
+% If you are using CVS use this line to give version information
+% $Header$
+
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a 
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+\author{Original code by Carsten Gundlach and Miguel Alcubierre, \\
+        exact solutions added by many other people,	\\
+	this documentation by Jonathan Thornburg,
+        and by other people}
+
+% The title of the document (not necessarily the name of the Thorn)
+\title{Thorn Guide for the {\bf Exact} Thorn}
+
+% the date your document was last changed, if your document is in CVS, 
+% please us:
+%    \date{$ $Date$ $}
+\date{$ $Date$ $}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+% Add all definitions used in this documentation here 
+%   \def\mydef etc
+
+\def\thorn#1{{\bf #1}}
+\def\defn#1{{\bf #1}}
+
+% force a line break in a itemize/description/enumerate environment
+\def\forcelinebreak{\mbox{}\\[-\baselineskip]}
+
+\def\eg{e.g.\hbox{}}
+\def\ie{i.e.\hbox{}}
+\def\etal{{\it et~al.\/\hbox{}}}
+\def\nb{n.b.\hbox{}}
+\def\Nb{N.b.\hbox{}}
+
+% math stuff
+\def\dfrac#1#2{{\displaystyle\frac{#1}{#2}}}
+\def\tfrac#1#2{{\textstyle   \frac{#1}{#2}}}
+\def\diag{\text{diag}}
+\def\Gaussian{{\sf G}}
+\def\half{\tfrac{1}{2}}
+\def\sech{\text{sech}}
+
+% Add an abstract for this thorn's documentation
+\begin{abstract}
+This thorn sets up the $3+1$ ADM variables for any of a number
+of exact spacetimes/coordinates, and even some non-Einstein
+spcetimes/coordinates.  It's easy to add more spacetimes/coordinates:
+all you have to supply is the 4-metric $g_{ab}$ and the inverse 4-metric
+$g^{ab}$ (this thorn automagically calculates all the ADM variables
+from these).  Optionally, any 4-metric can be Lorentz-boosted in any
+direction.  As another option, the ADM variables can be calculated on an
+arbitrary slice through the spacetime, using arbitrary coordinates on
+the slice.  Given a lapse and shift, the slice can be evolved through
+the exact solution, in order to check on an evolution code, or in
+order to test gauge conditions without the need for an evolution code.
+\end{abstract}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Introduction}
+
+This thorn sets up the ADM variables for any of a number of
+different spacetimes/coordinates (we call the combination of a
+spacetime and a coordinate system a \defn{model}), as specified by the
+\verb|Exact::exact_model| parameter.
+
+By default, this thorn sets up the ADM variables on an initial
+slice only.  However, setting\\
+\verb|ADMBase::evolution_method = "exact"|
+makes this thorn set up the ADM variables at \verb|CCTK_PRESTEP|
+every time step of an evolution, so you get an exact {\em spacetime\/},
+not just a single slice.
+
+There is an option to Lorentz-boost any vacuum model
+(more precisely any model which doesn't set the stress-energy tensor;
+see table~\ref{AEIThorns/Exact/tab-all-models} and
+section~\ref{AEIThorns/Exact/sect-Lorentz-boosting-a-spacetime}
+for details) in any direction.
+
+There is also a more general option to set up the ADM variables
+on an arbitrary slice through the spacetime, using arbitrary
+coordinates on the slice.  Given a lapse and shift computed by some
+other thorn(s), the slice can be evolved through the exact solution,
+in order to check on an evolution code, or in order to test gauge
+conditions without the need for an evolution code.  This option is
+documented in \verb|doc/slice_evolver.tex|.
+
+This thorn is mainly written in a mixture of Fortran~77 and Fortran~90;
+a few routines are written in C.  At present Fortran~90 is used only
+for the ``arbitrary slice'' option (described in the previous paragraph).
+If this option isn't needed, then the Fortran~90 code can all be
+\verb|#ifdef|-ed out, allowing this thorn to be compiled on a system
+having only Fortran~77 and C compilers (\ie{} no Fortran~90 compiler).
+This can be done by changing a single line in \verb|src/include/Exact.inc|;
+see the comments there for details.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Models Supported}
+
+Table~\ref{AEIThorns/Exact/tab-all-models} shows the models supported
+by thorn~\thorn{Exact}.%%%
+\footnote{%%%
+	 To add a new model, you have to modify a
+	 number of files in this thorn.  See the file
+	 {\tt how\_to\_add\_a\_new\_model} in the
+	 {\tt doc/} directory for a detailed list of
+	 what to do.  Please follow the naming conventions
+	 given in the next subsection.
+	 }%%%
+{}  As a general policy, this thorn includes only cases where the full
+4-metric $g_{ab}$ (and its inverse, although we could dispense with
+that if needed) is known throughout the spacetime.  Cases where this
+is only known on one specific slice, should live in separate initial
+data thorns.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{table}[htbp]
+\begin{center}
+\hyphenpenalty=10000	% forbid hyphenation
+\begin{tabular}{@{\qquad}lcp{80mm}}
+Model Name
+	& $T_{\mu\nu}$?
+		& Description						\\
+\hline %----------------------------------------------------------------
+%
+\multicolumn{3}{l}{\bf Minkowski spacetime}				\\
+{\tt "Minkowski"}
+	& --	& Minkowski spacetime					\\
+{\tt "Minkowski/shift"}
+	& --	& Minkowski spacetime with time-dependent shift vector	\\
+{\tt "Minkowski/funny"}
+	& --	& Minkowski spacetime in non-trivial spatial coordinates\\
+{\tt "Minkowski/gauge wave"}
+	& --	& Minkowski spacetime in gauge-wave coordinates		\\
+{\tt "Minkowski/shifted gauge wave"}
+	& --	& Minkowski spacetime in shifted gauge-wave coordinates	\\
+{\tt "Minkowski/conf wave"}
+	& --	& Minkowski spacetime with $\sin$ in conformal factor	\\[1ex]
+%
+\multicolumn{3}{l}{\bf Black hole spacetimes}				\\
+{\tt "Schwarzschild/EF"}
+	& --	& Schwarzschild spacetime
+		  in Eddington-Finkelstein coordinates			\\
+{\tt "Schwarzschild/PG"}
+	& --	& Schwarzschild spacetime in Painlev\'{e}-Gullstrand
+		  coordinates (these have a flat 3-metric)		\\
+{\tt "Schwarzschild/BL"}
+	& --	& Schwarzschild spacetime in Brill-Lindquist coordinates\\
+{\tt "Schwarzschild/Novikov"}
+	& --	& Schwarzschild spacetime in Novikov coordinates	\\
+{\tt "Kerr/Boyer-Lindquist"}
+	& --	& Kerr spacetime in Boyer-Lindquist coordinates		\\
+{\tt "Kerr/Kerr-Schild"}
+	& --	& Kerr spacetime in Kerr-Schild coordinates		\\
+{\tt "Schwarzschild-Lemaitre"}
+	& Yes	& Schwarzschild-Lemaitre spacetime (Schwarzschild
+		  black hole with a cosmological constant)		\\
+{\tt "multi-BH"}
+	& --	& Majumdar-Papapetrou or Kastor-Traschen
+		  maximally-charged (extreme Reissner-Nordstrom)
+		  multi-BH solutions					\\
+{\tt "Alvi"}
+	& --	& Alvi post-Newtonian 2BH spacetime
+		  (not fully implemented yet)				\\
+{\tt "Thorne-fakebinary"}
+	& --	& Thorne's ``fake binary'' spacetime (non-Einstein)	\\[1ex]
+%
+\multicolumn{3}{l}{\bf Cosmological spacetimes}				\\
+{\tt "Lemaitre"}
+	& Yes	& Lemaitre-type spacetime				\\
+%%{\tt "Robertson-Walker"}
+%%	& Yes	& Robertson-Walker spacetime				\\
+{\tt "de Sitter"}
+	& Yes	& de~Sitter spacetime					\\
+{\tt "de Sitter+Lambda"}
+	& Yes	& de~Sitter spacetime with cosmological constant	\\
+{\tt "anti-de Sitter+Lambda"}
+	& Yes	& anti-de~Sitter spacetime with cosmological constant	\\
+{\tt "Bianchi I"}
+	& --	& approximate Bianchi type~I spacetime			\\
+{\tt "Goedel"}
+	& --	& G\"{o}del spacetime					\\
+{\tt "Bertotti"}
+	& Yes	& Bertotti spacetime					\\
+{\tt "Kasner"}
+	& Yes	& Kasner-like spacetime					\\
+{\tt "Kasner-axisymmetric"}
+	& --	& axisymmetric Kasner spacetime				\\
+{\tt "Kasner-generalized"}
+	& Yes	& generalized Kasner spacetime				\\
+{\tt "Gowdy-wave"}
+	& --	& Gowdy metric (polarized wave in an expanding universe)\\
+{\tt "Milne"}
+	& --	& Milne spacetime for pre-big-bang cosmology		\\[1ex]
+%
+\multicolumn{3}{l}{\bf Miscellaneous spacetimes}			\\
+{\tt "boost-rotation symmetric"}
+	& --	& boost-rotation symmetric spacetime			\\
+{\tt "bowl"}
+	& --	& bowl (``bag of gold'') spacetime (non-Einstein)	\\
+{\tt "constant density star"}
+	& Yes	& constant density (Schwarzschild) star			%%%\\
+\end{tabular}
+\end{center}
+\caption{
+	This table shows all the models currently supported by
+	thorn \thorn{Exact}.  The $T_{\mu\nu}$ column shows which
+	models set the Cactus stress-energy tensor; as discussed in
+	section~\ref{AEIThorns/Exact/cosmological-constant+stress-energy-tensor}
+	this includes both all non-vacuum models and all models
+	with a cosmological constant.
+	}
+\label{AEIThorns/Exact/tab-all-models}
+\end{table}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Naming Conventions}
+
+This thorn includes many different spacetimes and coordinate systems,
+so we use the following naming conventions to help keep the different
+models and parameters clear:
+\begin{itemize}
+\item	If we have multiple coordinate systems for a given spacetime,
+	the models are named with the pattern
+	\hbox{{\tt "}spacetime{\tt /}coordinates{\tt "}}.
+	For example, the model \verb|"Schwarzschild/EF"| is Schwarzschild
+	spacetime in Eddington-Finkelstein coordinates.%%%
+\footnote{%%%
+	 We abbreviate the coordinate names both for
+	 convenience, and because the unabbreviated
+	 names would make the variable names in the
+	 code (which are the same as the parameter names)
+	 too long -- C only guarantees 31~characters for
+	 variable names, and the Fortran~95 standard
+	 explicitly limits variable names to this same
+	 maximum length.
+	 }%%%
+\item	If we have spacetimes which are identical or very similar,
+	except that one has a cosmological constant and the other
+	doesn't, we name the with-cosmological-constant one by appending
+	\verb|+Lambda| to the without-cosmological-constant spacetime
+	name.  For example, the cosmological-constant variant of
+	anti-de Sitter spacetime is the model \verb|"anti-de Sitter+Lambda"|.
+\item	All the parameters for individual models have names which begin
+	with the model name (with any slash (\verb|/|) or hyphen (\verb|-|)
+	characters converted to underscores (\verb|_|)), followed by
+	a double underscore (\verb|__|).
+\item	The description comment for each parameter in the \verb|param.ccl|
+	file begins with the model name follwed by a colon (\verb|:|).
+	For example,
+\begin{verbatim}
+REAL Schwarzschild_EF__mass "Schwarzschild/EF: BH mass"
+{
+*:* :: "any real number"
+} 1.0
+\end{verbatim}
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{The Cosmological Constant and the Stress-Energy Tensor}
+\label{AEIThorns/Exact/cosmological-constant+stress-energy-tensor}
+
+A number of these models have a cosmological constant.  To use these
+with the Cactus code (which generally is written for the case of no
+cosmological constant), we use a simple trick: we transfer the term
+with the cosmological constant to the right hand side of the Einstein
+equations, introducing fictitious ``matter'' terms in the stress-energy 
+tensor.
+
+This thorn uses the standard Cactus ``\verb|CalcTmunu|'' interface
+for introducing terms into the stress-energy tensor.  See Ian Hawke's
+documentation for the \thorn{ADMCoupling} thorn for details.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Accuracy}
+
+\begingroup
+\bf\mathversion{bold}
+This thorn has been found to set up its initial data less accurately
+than you might think.  In particular, \dots
+
+Denis Pollney has found that if this thorn is used to set up a
+Schwarzschild or Kerr solution
+(\verb|Schwarzschild/EF| or \verb|Kerr/Kerr-Schild| model),
+there are low-level ($\sim 10^{-12}$) asymmetries between the
+field variables in the supposedly-symmetric octants.
+
+Jonathan Thornburg has found that for at least the \verb|Schwarzschild/EF|
+and \verb|Kerr/Kerr-Schild| models (and quite likely for all models),
+this thorn's values of the extrinsic curvature $K_{ij}$ have random
+point-to-point errors of about $\sim {\textstyle\frac{1}{2}} \times 10^{-10}$
+(in regions where the metric is $O(1)$.
+\endgroup
+
+We suspect that these problems may be due to this thorn's internally
+first setting up the 4-metric, then computing the Bona-Masso variables
+by numerically finite differencing the 4-metric%%%
+\footnote{%%%
+	 This seems to be done using centered
+	 2nd~order finite differencing with a
+	 hard-wired $10^{-6}$ grid spacing.
+	 }%%%
+, then computing the ADM variables from this.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Time Levels}
+
+In the context of Cactus grid functions with (potentially) multiple
+time levels,
+\textbf{this thorn only sets the initial data on the current time level!}.
+This is a bug. :(
+
+If you're doing a time evolution using the standard Cactus \thorn{MoL}
+thorn,
+\begin{itemize}
+\item	Variables that you're going to \emph{evolve}
+	(for example the ADM 3-metric if you're evolving
+	it directly) only need initial data to be set
+	on the current time level.
+\item	Other variables that are used by the evolution system,
+	but aren't themselves evolved (for example the ADM 3-metric
+	if you're evolving some other fields on a fixed background)
+	must have initial data set on \emph{all} time levels.
+	\thorn{MoL} calls these ``save-and-restore'' variables.
+\end{itemize}
+
+\thorn{MoL} offers a useful option to help work around problems
+of this sort (only the current time level is set, when you need
+all time levels):  If you set
+\begin{verbatim}
+MoL::initial_data_is_crap = true
+\end{verbatim}
+then \thorn{MoL} will copy the current time level to all other time
+levels, for all grid functions that are registered as ``evolved'',
+``save-and-restore'', and/or ``constrained'' variables.  This happens
+in the \verb|POSTINITIAL| schedule bin.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Further Sources of Information}
+
+This documentation is at best a secondary source of information about
+this thorn -- the primary sources are the \verb|param.ccl| file and
+the source code itself.  In particular, much of this documentation
+was developed by reverse-engineering from these primary sources, so
+it's quite possible (indeed even likely!) that there are errors or
+omissions here.  Caveat Lector!
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Lorentz-Boosting a Spacetime}
+\label{AEIThorns/Exact/sect-Lorentz-boosting-a-spacetime}
+
+For any of the models which don't set the stress-energy tensor
+(\ie{} which are vacuum and have no cosmological constant;
+see section~\ref{AEIThorns/Exact/cosmological-constant+stress-energy-tensor}
+and table~\ref{AEIThorns/Exact/tab-all-models} for details),%%%
+\footnote{%%%
+	 Only $g_{ab}$ and $g^{ab}$ are transformed, not the
+	 stress-energy tensor, which is why this only works
+	 for models which don't set the stress-energy tensor.
+	 }%%%
+{} you can optionally Lorentz-boost the model by a specified 3-velocity
+$v^i$.  The parameters for this are \verb|boost_vx|, \verb|boost_vy|,
+and \verb|boost_vz|.
+
+We define the Cactus spacetime coordinates to be $(t,x^i)$,
+while the model is at rest in coordinates $(T,X^i)$.  The model's
+``origin'' $X^i = 0$ is located at the Cactus coordinates $x^i = v^i t$.  
+
+The boost Lorentz transformation is defined by
+\begin{equation}
+\renewcommand{\arraystretch}{1.333}
+\begin{array}{lcl}
+T		& = &	\gamma (t - \eta_{ij} v^i x^j)		\\
+X^i_\parallel	& = &	\gamma (x^i_\parallel - v^i t)		\\
+X^i_\perp	& = &	x^i_\perp				%%%\\
+\end{array}
+\end{equation}
+and the inverse transformation by
+\begin{equation}
+\renewcommand{\arraystretch}{1.333}
+\begin{array}{lcl}
+t		& = &	\gamma (T + \eta_{ij} v^i X^j)		\\
+x^i_\parallel	& = &	\gamma (X^i_\parallel + v^i T)		\\
+x^i_\perp	& = &	X^i_\perp				%%%\\
+\end{array}
+\end{equation}
+where $\gamma \equiv (1 - v^2)^{-1/2}$ is the usual Lorentz factor,
+$\eta_{ij}$ is the flat metric, and $\parallel$ and $\perp$ refer
+to the (flat-space) components of $x^i$ parallel and perpendicular
+to $v^i$, respectively.
+
+In more detail, define the unit vector $n^i = v^i / \sqrt{\eta_{jk} v^j v^k}$
+and the (flat-space) projection operators
+\begin{equation}
+\renewcommand{\arraystretch}{1.333}
+\begin{array}{lclcl}
+\parallel^i{}\!_j
+		& = &	\eta_{jk} n^i n^k				\\
+		& \equiv &
+			n^i n_j
+			\qquad
+			\hbox{(using $\eta_{ij}$ to raise/lower indices)}
+									\\
+\perp^i{}\!_j	& = &	\delta^i{}_j - \parallel^i{}\!_j		%%%\\
+\end{array}
+\end{equation}
+Then the Lorentz transformations are
+\begin{equation}
+\renewcommand{\arraystretch}{1.333}
+\begin{array}{lcl}
+T	& = &	\gamma (t - \eta_{ij} v^i x^j)				\\
+X^i	& = &	\gamma (\parallel^i{}\!_j x^j - v^i t)
+		+ \perp^i{}\!_j x^j					%%%\\
+\end{array}
+\end{equation}
+and
+\begin{equation}
+\renewcommand{\arraystretch}{1.333}
+\begin{array}{lcl}
+t	& = &	\gamma (T + \eta_{ij} v^i X^j)				\\
+x	& = &	\gamma (\parallel^i{}\!_j X^j + v^i T)
+		+ \perp^i{}\!_j X^j					%%%\\
+\end{array}
+\end{equation}
+so their coordinate partial derivatives for transforming $g_{ab}$
+and $g^{ab}$ are
+\begin{equation}
+\renewcommand{\arraystretch}{2.5}
+\begin{array}{lcl@{\qquad\qquad\qquad}lcl}
+\dfrac{\partial T}{\partial t}		& = &	\gamma
+	&
+\dfrac{\partial T}{\partial x^j}	& = &	- \gamma v^j		\\
+\dfrac{\partial X^i}{\partial t}	& = &	- \gamma v^i
+	&
+\dfrac{\partial X^i}{\partial x^j}	& = &	\gamma \parallel^i{}\!_j
+						+ \perp^i{}\!_j		%%%\\
+\end{array}
+\end{equation}
+and
+\begin{equation}
+\renewcommand{\arraystretch}{2.5}
+\begin{array}{lcl@{\qquad\qquad\qquad}lcl}
+\dfrac{\partial t}{\partial T}		& = &	\gamma
+	&
+\dfrac{\partial t}{\partial X^j}	& = &	\gamma v^j		\\
+\dfrac{\partial x^i}{\partial T}	& = &	\gamma v^i
+	&
+\dfrac{\partial x^i}{\partial X^j}	& = &	\gamma \parallel^i{}\!_j
+						+ \perp^i{}\!_j		%%%\\
+\end{array}
+\end{equation}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Minkowski Spacetime}
+
+This thorn can set up Minkowski spacetime using several different
+types of coordinates:
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Minkowski Spacetime}
+
+\verb|Exact::exact_model = "Minkowski"| specifies Minkowski spacetime
+in the usual Minkowski coordinates:
+\begin{equation}
+g_{ab} = \diag \left[
+	 \begin{array}{cccc}
+	 -1	& 1	& 1	& 1	%%%\\
+	 \end{array}
+	 \right]
+\end{equation}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Minkowski Spacetime in Non-Trivial Spatial coordinates}
+
+\verb|Exact::exact_model = "Minkowski/funny"| specifies Minkowski spacetime
+with the usual Minkowski time slicing, but using the nontrivial spatial
+coordinates defined as follows:  First take the flat metric in polar
+spherical coordinates, then define a new radial coordinate by
+\begin{equation}
+r = r_{\text{w}} \big(1 - a \Gaussian(r_{\text{w}})\big)
+\end{equation}
+where 
+$\Gaussian(r) = \exp(-\half r^2/\sigma^2)$ is a Gaussian centered at $r=0$.
+
+The parameters are the perturbation amplitude
+$a = \verb|Exact::Minkowski_funny__amplitude|$
+and the perturbation width $\sigma = \verb|Exact::Minkowski_funny__sigma|$.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Minkowski Spacetime in Non-Trivial Slices with Shift}
+
+\verb|Exact::exact_model = "Minkowski/shift"| specifies Minkowski spacetime
+with the nontrivial time slicing and spatial coordinates defined as
+follows:  First take the flat 4-metric in polar spherical coordinates,
+then define a new time coordinate by
+\begin{equation}
+t_{\text{w}} = t - a \Gaussian(r)
+\end{equation}
+$\Gaussian(r) = \exp(-\half r^2/\sigma^2)$ is a Gaussian centered at $r=0$.
+Note this gives a time-indpendent 4-metric.
+
+The parameters are the perturbation amplitude
+$a = \verb|Exact::Minkowski_shift__amplitude|$
+and the perturbation width $\sigma = \verb|Exact::Minkowski_shift__sigma|$.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Minkowski Spacetime in gauge-wave coordinates}
+
+\verb|Exact::exact_model = "Minkowski/gauge wave"| specifies Minkowski
+spacetime with the ``gauge-wave'' coordinates suggested by Carlos Bona:
+The line element is
+\begin{equation}
+ds^2=-H dt^2 +Hdx^2+dy^2+dz^2,
+\end{equation}
+where $H=H(x-t)$, for instance $H=1-A\sin\left((x-t)/\Lambda\right)$.
+This is a flat spacetime, but the slice is a planar wave travelling
+along the x axis.
+
+This thorn implements several possible choices for the $H$ function,
+controlled by the \verb|Minkowski_gauge_wave__what_fn| parameter:
+\begin{eqnarray}
+H(x-t)	&=& 1 - A \sin \left(\frac{x-\omega t}{\Lambda} - \delta\right)	\\
+H(x-t)	&=& \exp \left(- A \sin \left(\frac{x-\omega t}{\Lambda}
+                                      - \delta\right)\right)		\\
+H(x-t)	&=& 1 - A \exp(-x^2)						%%%\\
+\end{eqnarray}
+The parameters are
+\begin{itemize}
+\item	$A = \verb|Minkowski_gauge_wave__amplitude|$, the amplitude
+\item	$\omega = \verb|Minkowski_gauge_wave__omega|$, the angular frequency
+\item	$\lambda = \verb|Minkowski_gauge_wave__lambda|$, the wavelength
+\item	$\delta = \verb|Minkowski_gauge_wave__phase|$, the phase shift
+\end{itemize}
+A plane wave has $\omega = \pm \lambda$ for a wave that travels in the
+$x$ direction, and $\omega = \pm \lambda \sqrt{2}$ for a diagonal wave.
+
+If the Boolean parameter \verb|Minkowski_gauge_wave__diagonal| is true,
+then we make the gauge wave travel diagonally across the grid by the
+coordinate transformation
+\begin{eqnarray}
+x &=& \frac{1}{\sqrt{2}}(x^\prime - y^\prime)				\\
+y &=& \frac{1}{\sqrt{2}}(x^\prime + y^\prime)				%%%\\
+\end{eqnarray}
+For code testing, the idea is to test evolving this with periodic boundary
+conditions, to see whether the code is able to cope with that.
+The tricky part is to make the wave fit the grid exactly (otherwise the
+periodic boundary wouldn't make sence), especially in the diagonal case.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Minkowski Spacetime in shifted gauge-wave coordinates}
+
+\verb|Exact::exact_model = "Minkowski/shifted gauge wave"| specifies Minkowski
+spacetime with the ``shifted gauge-wave'' coordinates suggested by
+Jeff Winicour:
+The line element is
+\begin{equation}
+ds^2 = (H-1)\, dt^2 + (H+1)\, dx^2 - 2H\, dt\, dx + dy^2 + dz^2
+\end{equation}
+where $H=H(x-t)$, for instance $H=A\sin\left((x-t)/\Lambda\right)$.
+This is a flat spacetime, but the slice is a planar wave travelling
+along the x axis.
+
+This thorn implements one choice for the $H$ function, controlled by
+the \verb|Minkowski_gauge_wave__what_fn| parameter:
+\begin{eqnarray}
+H(x-t)	&=& 1 - A \sin \left(\frac{x-\omega t}{\Lambda} - \delta\right)
+\end{eqnarray}
+
+The parameters are
+\begin{itemize}
+\item	$A = \verb|Minkowski_gauge_wave__amplitude|$, the amplitude
+\item	$\omega = \verb|Minkowski_gauge_wave__omega|$, the angular frequency
+\item	$\lambda = \verb|Minkowski_gauge_wave__lambda|$, the wavelength
+\item	$\delta = \verb|Minkowski_gauge_wave__phase|$, the phase shift
+\end{itemize}
+A plane wave has $\omega = \pm \lambda$ for a wave that travels in the
+$x$ direction, and $\omega = \pm \lambda \sqrt{2}$ for a diagonal
+wave.
+
+If the Boolean parameter \verb|Minkowski_gauge_wave__diagonal| is
+true, then we make the gauge wave travel diagonally across the grid by
+the coordinate transformation
+\begin{eqnarray}
+x &=& \frac{1}{\sqrt{2}}(x^\prime - y^\prime)				\\
+y &=& \frac{1}{\sqrt{2}}(x^\prime + y^\prime)				%%%\\
+\end{eqnarray}
+For code testing, the idea is to test evolving this with periodic
+boundary conditions, to see whether the code is able to cope with
+that.  The tricky part is to make the wave fit the grid exactly
+(otherwise the periodic boundary wouldn't make sence), especially in
+the diagonal case.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Minkowski Spacetime with $\sin$ term in conformal factor}
+
+\verb|Exact::exact_model = "Minkowski/conf wave"| specifies Minkowski
+spacetime with a $\sin$~term in the Cactus static conformal factor.
+You have three parameters:
+\begin{itemize}
+ \item Minkowski\_conf\_wave\_\_amplitude ($a$)
+ \item Minkowski\_conf\_wave\_\_wavelength ($l$)
+ \item Minkowski\_conf\_wave\_\_direction ($d$)
+\end{itemize}
+These control $\Psi$ in the following form:
+\begin{equation}
+ \Psi=a\sin\left(\frac{2\pi}{l}D\right)+1
+\end{equation}
+Here $D$ is x, y or z according to d of 0, 1 or 2.
+
+Alas, the ``arbitrary slice evolver'' option
+(documented in \verb|doc/slice_evolver.tex|)
+doesn't work with this model.  There's no warning,
+you'll just silently get wrong results.  Sigh\dots
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Black Hole Spacetimes}
+
+This thorn can set up Schwarzschild and Kerr spacetimes in several
+different types of coordinates, and also a couple of multiple-black-hole
+spacetimes:
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Schwarzschild Spacetime in Eddington-Finkelstein coordinates}
+
+\verb|Exact::exact_model = "Schwarzschild/EF"| specifies Schwarzschild
+spacetime in (ingoing) Eddington-Finkelstein coordinates, as described
+in MTW box~31.2 and figure~32.1.  The only physics parameter is
+the black hole mass $m = \verb|Schwarzschild_EF__mass|$.
+
+There is also a numerical parameter \verb|Schwarzschild_EF__epsilon|
+which is used to avoid division by zero if a grid point falls exactly
+at the origin; the default setting should be ok for most purposes.
+
+In the usual polar spherical $(t,r,\theta,\phi)$ coordinates, the 4-metric
+and ADM variables are
+\begin{eqnarray}
+g_{ab}	& = &
+	\left[
+	 \begin{array}{cccc}
+	 - \left( 1 - \frac{2m}{r} \right)
+			& \frac{2m}{r}	& 0	& 0	\\
+	 \frac{2m}{r}	& 1 + \frac{2m}{r}
+					& 0	& 0	\\
+	 0		& 0		& r^2	& 0	\\
+	 0		& 0		& 0	& r^2 \sin^2 \theta
+							%%%\\
+	 \end{array}
+	 \right]
+									\\
+g_{ij}	& = &
+	\diag
+	\left[
+	\begin{array}{ccc}
+	1 + \frac{2m}{r}	& r^2	& r^2 \sin^2 \theta	%%%\\
+	\end{array}
+	\right]
+									\\
+K_{ij}	& = &
+	\diag
+	\left[
+	\begin{array}{ccc}
+	- \frac{2m^2}{r^2} \frac {1 + \frac{m}{r}} {\sqrt{1 + \frac{2m}{r}}}
+				& \frac{2m^2}{\sqrt{1 + \frac{2m}{r}}}
+					& \frac{2m^2}{\sqrt{1 + \frac{2m}{r}}}
+					  \sin^2 \theta		%%%\\
+	\end{array}
+	\right]
+									\\
+\alpha	& = &
+	\frac{1}{\sqrt{1 + \frac{2m}{r}}}
+									\\
+\beta^i	& = &
+	\left[
+	\begin{array}{ccc}
+	\frac{2m}{r} \frac{1}{\sqrt{1 + \frac{2m}{r}}}
+				& 0	& 0			%%%\\
+	\end{array}
+	\right]
+									%%%\\
+\end{eqnarray}
+(Various other $3+1$ variables for Schwarzschild spacetime in these
+coordinates are tabulated in appendix~2 of Jonathan Thornburg's Ph.D
+thesis, \verb|http://www.aei.mpg.de/~jthorn/phd/html/phd.html|.)
+
+In the Cactus $(t,x,y,z)$ Cartesian-topology coordinates the 4-metric is
+\begin{equation}
+g_{ab} = \left[
+	 \begin{array}{cccc}
+	 - \left( 1 - \frac{2m}{r} \right)
+			& \frac{2m}{r} \frac{x}{r}
+				& \frac{2m}{r} \frac{y}{r}
+					& \frac{2m}{r} \frac{z}{r}	\\
+	 \frac{2m}{r} \frac{x}{r}
+			& 1 + \frac{2m}{r} \frac{x^2}{r^2}
+				& \frac{2m}{r} \frac{xy}{r^2}
+					& \frac{2m}{r} \frac{xz}{r^2}	\\
+	 \frac{2m}{r} \frac{y}{r}
+			& \frac{2m}{r} \frac{xy}{r^2}
+				& 1 + \frac{2m}{r} \frac{y^2}{r^2}
+					& \frac{2m}{r} \frac{yz}{r^2}	\\
+	 \frac{2m}{r} \frac{z}{r}
+			& \frac{2m}{r} \frac{xz}{r^2}
+				& \frac{2m}{r} \frac{yz}{r^2}
+					& 1 + \frac{2m}{r} \frac{z^2}{r^2}
+									%%%\\
+	 \end{array}
+	 \right]
+\end{equation}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Schwarzschild spacetime in Painlev\'{e}-Gullstrand coordinates}
+
+\verb|Exact::exact_model = "Schwarzschild/PG"| specifies Schwarzschild
+spacetime in Painlev\'{e}-Gullstrand coordinates, as described by
+Martel and Poisson, gr-qc/0001069.  These coordinates have the
+interesting property that the spatial metric is {\em flat\/}.
+The only physics parameter is the black hole mass
+$m = \verb|Schwarzschild_PG__mass|$.
+
+There is also a numerical parameter \verb|Schwarzschild_PG__epsilon|
+which is used to avoid division by zero if a grid point falls exactly
+at the origin; the default setting should be ok for most purposes.
+
+In the usual Cactus $(t,x,y,z)$ Cartesian-topology coordinates, the
+4-metric is
+\begin{equation}
+g_{ab} = \left[
+	 \begin{array}{cccc}
+	 -1 + \frac{2m}{r}
+		& \sqrt{\frac{2m}{r}} \frac{x}{r}
+			& \sqrt{\frac{2m}{r}} \frac{y}{r}
+				& \sqrt{\frac{2m}{r}} \frac{z}{r}
+									\\
+	 \sqrt{\frac{2m}{r}} \frac{x}{r}
+		& 1	& 0	& 0					\\
+	 \sqrt{\frac{2m}{r}} \frac{y}{r}
+		& 0	& 1	& 0					\\
+	 \sqrt{\frac{2m}{r}} \frac{z}{r}
+		& 0	& 0	& 1					%%%\\
+	 \end{array}
+	 \right]
+\end{equation}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Schwarzschild spacetime in Brill--Lindquist coordinates}
+
+\verb|Exact::exact_model = "Schwarzschild/BL"| specifies Schwarzschild
+spacetime in Brill--Lindquist coordinates.  These coordinates have the
+interesting property that the spatial metric is conformally flat and
+time-symmetric for the initial data.  The only physics parameter is
+the black hole mass $m = \verb|Schwarzschild_BL__mass|$.
+
+There is also a numerical parameter \verb|Schwarzschild_BL__epsilon|
+which is used to avoid division by zero if a grid point falls exactly
+at the origin; the default setting should be ok for most purposes.
+
+In the usual Cactus $(t,x,y,z)$ Cartesian-topology coordinates, the
+4-metric is given by
+\begin{eqnarray}
+   \alpha & = & 1
+\\
+   \beta^i & = & 0
+\\
+   \gamma_{ij} & = & \Psi^4\, \delta_{ij}
+\end{eqnarray}
+with the conformal factor
+\begin{eqnarray}
+   \Psi & = & 1 + \frac{m}{2r}
+\end{eqnarray}
+where $r$ is the coordinate radius.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Schwarzschild Spacetime in Novikov coordinates}
+
+\verb|Exact::exact_model = "Novikov"| specifies the unit-mass Schwarzschild
+spacetime in Novikov coordinates, as described in gr-qc/9608050
+(see also MTW section~31.4 and figure~31.2).
+The only physics parameter is the black hole mass
+$m = \verb|Schwarzschild_Novikov__mass|$.
+
+There is also a numerical parameter \verb|Schwarzschild_Novikov__epsilon|
+which is used to avoid division by zero if a grid point falls exactly
+at the origin; the default setting should be ok for most purposes.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Kerr Spacetime in Boyer-Lindquist coordinates}
+
+\verb|Exact::exact_model = "Kerr/Boyer-Lindquist"| specifies Kerr
+spacetime in (cartesian) Boyer-Lindquist coordinates, as described
+in MTW box~33.2 (the spin axis is the $z$~axis).  The physics parameters
+are the black hole mass $m = \verb|Kerr_BoyerLindquist__mass|$, and the
+dimensionless spin parameter $a = J/m^2 = \verb|Kerr_BoyerLindquist__spin|$.
+
+Mitica Vulcanov says: this metric still need some work in order to
+run properly. Major problems: the convergence and calibration of the
+units for the parameters and variables.  
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Kerr-Schild form of Boosted Rotating Black Hole}
+
+\verb|Exact::exact_model = "Kerr/Kerr-Schild"| specifies Kerr spacetime
+in Kerr-Schild coordinates, as described in MTW exercise~33.8 (the spin
+axis is the $z$~axis), Lorentz boosted in the $z$ direction so the
+black hole is centered at the position $z = vt$.  The physics parameters
+are the black hole mass $m = \verb|Kerr_KerrSchild__mass|$, the
+dimensionless spin parameter $a = J/m^2 = \verb|Kerr_KerrSchild__spin|$,
+and the boost velocity $v = \verb|Kerr_KerrSchild__boost_v|$.
+
+There is also a numerical parameter \verb|Kerr_KerrSchild__epsilon|
+which is used to avoid division by zero if a grid point falls exactly
+at the black hole center; the default setting should be ok for most
+purposes.
+
+Kerr-Schild coordinates use the same time slicing (\nb{} non-maximal!)
+and $z$~spatial coordinate as Kerr coordinates $(x_K, y_K, z_K)$, but
+define new spatial coordinates $x \equiv x_{KS}$ and~$y \equiv y_{KS}$
+by
+\begin{equation}
+x_{KS} + iy_{KS} = (r + ia) e^{i\phi} \sin\theta
+\end{equation}
+so that
+\begin{eqnarray}
+x_{KS}	& = & x_K - a \sin\theta \sin\phi				\\
+y_{KS}	& = & y_K + a \sin\theta \cos\phi				%%%\\
+\end{eqnarray}
+
+In Kerr-Schild coordinates the 4-metric can be written
+\begin{equation}
+g_{ab} = \eta_{ab} + 2 H k_a k_b
+\end{equation}
+where
+\begin{equation}
+H = \frac{mr}{r^2 + a^2z^2/r^2}
+\end{equation}
+and where
+\begin{equation}
+k^a = - \frac{r(x\,dx + y\,dy) - a(x\,dy - y\,dx)}{r^2 + a^2}
+      - \frac{z\,dz}{r}
+      - dt
+\end{equation}
+is a null vector.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Schwarzschild-Lemaitre spacetime
+	    (Schwarzschild black hole with cosmological constant}
+
+\verb|Exact::exact_model = "Schwarzschild/Lemaitre"|%%%
+is a metric proposed by Lemaitre in 1932 as a version of the
+Schwarzschild solution in a universe with cosmological constant.
+For a history of this metric and a good review see the chapter of
+Jean Eisenstaedt, ``Lemaitre and the Schwarzschild solution'' in the
+book ``The attraction of Gravitation: New Studies in the History of
+General Relativity'', by J.~Earman, et.al.  Birk\"{a}user, 1993.
+The line element is 
+\begin{equation}
+ds^2 = - \left( 1-\frac{2m}{r} - \frac{\Lambda}{3}r^2\right) \, dt^2
+       + \left( 1-\frac{2m}{r} -\frac{\Lambda}{3}r^2 \right)^{-1} \, dr^2
+       + r^2 \, d\theta^2
+       + r^2 \sin(\theta)^2 \, d\phi^2
+\end{equation}
+Notice that for $\Lambda = 0$ this reduces to Schwarzschild spacetime
+in the usual Schwarzschild coordinates.
+
+The physics parameters are the black hole mass
+$m = \verb|Schwarzschild_Lemaitre__mass|$, and the
+cosmological constant $\Lambda = \verb|Schwarzschild_Lemaitre__Lambda|$.
+
+The fictitious ``matter'' stress-energy tensor representing $\Lambda$ is
+\begin{equation}
+T_{ij}= - \frac{\Lambda}{8 \pi} g_{ij}
+      = \left(
+	\begin{array}{cccc}
+	-\frac{1}{24}\frac{\Lambda A}{r\pi} & 0 & 0 & 0\\
+	0 & \frac{3}{8}\frac{r\Lambda}{8\pi A }& 0 & 0\\
+	0 & 0 &-\frac{1}{8}\frac{\Lambda r^2}{\pi }&  0\\
+	0 & 0 & 0 & -\frac{1}{8}\frac{\Lambda r^2 \sin(\theta)^2}{\pi}
+	\end{array}
+	\right)
+\end{equation}
+where $A = (-3r +6m+\Lambda r^3)$.
+
+Alas, this metric doesn't seem to give proper finite difference
+convergence for $\Lambda \ne 0$.  It works fine for $\Lambda = 0$.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Majumdar-Papapetrou or Kastor-Traschen
+	    Maximally-Charged (extreme Reissner-Nordstrom) multi-BH Solutions}
+
+\verb|Exact::exact_model = "multi-BH"| specifies the Majumdar-Papapetrou
+or Kastor-Traschen solution.  The file \verb|KTsol.tex| in the
+documentation directory of this thorn gives more details/references
+about these solutions.
+
+The Majumdar-Papapetrou solution is a multi-black-hole static solution
+to Einstein's equation, containing $N$ maximally charged ($Q=M$, \ie{}
+extreme Reissner-Nordstrom) black holes.  The balance between
+gravitational attraction and electrostatic repulsion among the
+black holes causes each to maintain its position relative to the
+others eternally, so the spacetime is static.  (The Majumdar-Papapetrou
+solution somewhat resembles Brill-Lindquist initial data, but with the
+black holes being charged.)  The line element is
+\begin{equation}
+ds^2=-\frac{1}{\Omega^2} dt^2+ \Omega^2(dx^2+dy^2+dz^2)
+\end{equation}
+where
+\begin{eqnarray}
+\Omega	&=& 1+\sum_{i=1}^N \frac{M_i}{r_i}				\\
+r_i	&=& \sqrt{(x-x_i)^2+(y-y_i)^2+(z-z_i)^2}				%%%\\
+\end{eqnarray}
+where $M_i$ and $(x_i, y_i, z_i) \in \Re^3$ are the masses and
+locations of the individual black holes.
+
+The Kastor-Traschen solution is a cosmological generalization of the
+Majumdar-Papapetrou solution, where there is a cosmological constant
+and the black holes participate in an overall De~Sitter expansion or
+contraction.  For $\Lambda = 0$ the Kastor-Traschen solution reduces
+to the Majumdar-Papapetrou solution.
+
+The Kastor-Traschen line element is
+\begin{equation}
+ds^2=-\frac{1}{\Omega^2} dt^2+a(t)^2 \Omega^2(dx^2+dy^2+dz^2)
+\end{equation}
+where
+\begin{eqnarray}
+\Omega	&=& 1+\sum_{i=1}^N {\frac{M_i}{a r_i}}				\\
+a	&=& e^{Ht}							\\
+H	&=& \pm \sqrt{\frac{\Lambda}{3}}				\\
+r_i	&=& \sqrt{(x-x_i)^2 + (y-y_i)^2 + (z-z_i)^2}			%%%\\
+\end{eqnarray}
+This solution represents ``incoming'' (``outgoing'') charged BHs
+if $H < 0$ ($H > 0$).  We interpret $M_i$ as the mass of the
+$i{\rm th}$ black hole, although we have neither an asymptotically
+flat region nor event horizons available to convert this naive
+interpretation into a rigorous one.
+
+This thorn supports up to 4~black holes.  The physics parameters are
+the number of black holes $N = \verb|multi_BH__nBH|$ and the Hubble constant
+$H = \verb|multi_BH__Hubble|$, and then for each black hole $i = 1, \dots, N$,
+the mass $m_i = \verb|multi_BH__mass|\,i$ and the $x$, $y$, and $z$ positions
+$x_i = \verb|multi_BH__x|\,i$, $y_i = \verb|multi_BH__y|\,i$,
+and $z_i = \verb|multi_BH__z|\,i$ respectively.
+
+Note that this thorn does {\bf not} set $T_{\mu\nu}$.
+{\bf FIXME: does treating this metric as vacuum still give a solution
+to the Einstein equations?}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Alvi post-Newtonian 2BH spacetime (not fully implemented yet)}
+
+\verb|Exact::exact_model = "Alvi"| specifies the Alvi post-Newtonian
+binary black hole metric, as described in gr-qc/9912113.  This
+uses different approxamintion methods to describe different regions
+of a binary black hole system: Near the holes, one uses a distorted
+Schwarzschild black hole metric, while in the region around them
+(divided into a near zone and a wave zone) one uses a 1st~order
+post-Newtonian approximation. There are discontinuities at the
+boundaries between the zones. 
+
+This model has physics parameters giving the masses of the two black
+holes, $m_1 = \verb|Alvi__mass1|$ and $m_2 = \verb|Alvi__mass2|$, and
+their spatial separation $b = \verb|Alvi__separation|$.
+
+Unfortunately, this metric isn't fully implemented yet.
+See Nina Jansen for details.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Thorne's ``Fake Binary'' Approximate Spacetime}
+
+\verb|Exact::exact_model = "fakebinary"| specifies Thorne's ``fake binary''
+approximate binary-black-hole spacetime, as described in gr-qc/9808024.
+This is not an exact solution of the Einstein equations, but has
+qualitative features designed to mimic those of an inspiralling
+binary black hole spacetime.  The physics parameters are:
+\begin{itemize}
+\item	$m = \verb|Thorne_fakebinary__mass|$, the mass\\
+	(FIXME: is this the mass of the whole spacetime,
+	or of an individual BH?)
+\item	$a_0 = \verb|Thorne_fakebinary__separation|$, the initial binary
+	separation
+\item	$\Omega_0 = \verb|Thorne_fakebinary__Omega0|$, the initial
+	angular frequency of the binary orbit
+\item	\verb|Thorne_fakebinary__retarded|, a Boolean parameter which
+	controls whether or not to use a retarded time coordinate
+\item	\verb|Thorne_fakebinary__atype|, a keyword parameter to
+	select a constant (\verb|"constant"|)
+	or quadrupole (\verb|"quadrupole"|) solution
+\item	\verb|Thorne_fakebinary__smoothing|, a smoothing length for
+	the Newtonian potential
+\end{itemize}
+
+There is also a numerical parameter \verb|Thorne_fakebinary__epsilon|
+which is used to avoid division by zero if a grid point falls exactly
+at either black hole's center; the default setting should be ok for
+most purposes.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Cosmological Spacetimes}
+
+The code for most of these models was written by
+Mitica Vulcanov \verb|<vulcan@aei.mpg.de>|.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Lemaitre-type spacetime}
+
+\verb|Exact::exact_model="Lemaitre"| specifies a Lemairre spacetime,
+version of the Friedmann-Robertson-Walker model with flat space
+(\ie{} $k=0$), possibly a cosmological constant, $\Lambda$, and a
+linear dependence between the energy density $\epsilon$ and the
+pressure, $p$, namely $p=\kappa \epsilon$. Thus the metric is the
+Robertson-Walker metric
+%%(see section~\ref{AEIThorns/Exact/sect-Robertson-Walker})
+with $k =0$ and (see gr-qc/0110030, astro-ph/9910093 and references
+cited here),
+\begin{equation}
+R(t) = R_0 \left[ \cosh \left(\frac{\sqrt{3\Lambda}}{2}(\kappa+1) t \right)
+		  +
+		  \sqrt{1+\frac{8\pi G\,\epsilon_{0}}{\Lambda}}
+		  \sinh \left( \frac{\sqrt{3\Lambda}}{2}(\kappa+1) t \right)
+		  \right]^{2/3(\kappa+1)}   
+\end{equation}
+where $R_0$ is the scale factor of the universe (``radius'') at $t=0$;
+the density of energy reads
+\begin{equation}\label{dens}
+\epsilon(t)=\epsilon_0\,a(t)^{-3(\kappa+1)}\,.
+\end{equation}
+The stress-enegy tensor is one of a perfect fluid,
+\begin{equation}
+T_{\mu}^{\nu}=(\epsilon+p)u^{\nu}u_{\mu}-p \delta_{\mu}^{\nu}\,, 
+\end{equation}
+which depends on the covariant four-velocity  $u^{\mu}=dx^{\mu}/ds$
+(remember $p=\kappa \epsilon$).
+
+The physics parameters are
+the equation of state parameter $\kappa = \verb|Lemaitre__kappa|$,
+the cosmological constant $\Lambda = \verb|Lemaitre__Lambda|$,
+the energy density of the universe at time $t = 0$,
+$\epsilon_0 = \verb|Lemaitre__epsilon0|$,
+and the scale factor (radius) of the universe at time $t = 0$,
+$R_0 = \verb|Lemaitre__R0|$.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%%\subsection{Robertson-Walker spacetime}
+%%\label{AEIThorns/Exact/sect-Robertson-Walker}
+%%
+%%\verb|Exact::exact_model = "Robertson-Walker"| specifies a 
+%%Robertson-Walker spacetime  as described in Hawking and Ellis section~5.3
+%%and MTW section~27.11 (see also gr-qc/0110031),
+%%transformed to the usual Cactus $(t,x,y,z)$ Cartesian-topology coordinates.
+%%The general Robertson-Walker line element in $(t,r,\theta,\phi)$ coordinates
+%%is
+%%\begin{equation}
+%%ds^2 = -dt^2 + R(t)^2 \left[ \frac{dr^2}{1 - kr^2} + r^2 \, d\Omega^2 \right]
+%%\end{equation}
+%%
+%%The physics parameters are
+%%the scale factor $R(t)$ at time $t = 0$, $R_0 = \verb|Robertson_Walker__R0|$,
+%%a parameter $\rho = \verb|Robertson_Walker__rho|$ which is related to
+%%the actual value of the matter density in the Universe,
+%%the geometry curvature parameter $k = \verb|Robertson_Walker__k|$,
+%%which can take (only) the values $k=-1$, $0$, or $+1$, corresponding
+%%to open, flat, or closed 3-geometries, and finally
+%%the Boolean parameter \verb|Robertson_Walker__pressure| to select
+%%whether or not to include pressure terms in the model.  If pressure
+%%is included we have a radiation-dominated universe $p = \frac{1}{3} \rho$;
+%%if pressure is not included we have a matter-dominated universe $p=0$.
+%%
+%%For a good simulation it is necessary to give good numerical values
+%%for the above parameters (they are very strictly related, through the
+%%Einstein equations).  See gr-qc/0110031 for some examples.
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{de~Sitter spacetime}
+
+\verb|Exact::exact_model = "de Sitter"| specifies an Einstein-de~Sitter 
+spacetime (a zero-pressure spatially-flat Robertson-Walker spacetime),
+as described in Hawking and Ellis section~5.3 and MTW section~27.11
+(see also gr-qc/0110031 for some tests of Cactus with this model).
+The only physics parameter is the multiplicative scale
+factor $a = \verb|de_Sitter__scale|$.
+
+The Einstein-De~Sitter spacetime is the special case
+$R(t) = \sqrt{a}\,t^{2/3}$, $k = 0$ of the more general Robertson-Walker
+spacetime, so the line element in $(t,r,\theta,\phi)$ coordinates is
+\begin{equation}
+ds^2 = -dt^2 + a t^{4/3} \left[ dr^2 + r^2 \, d\Omega^2 \right]
+\end{equation}
+The only non-vanishing component of the stress-energy tensor is
+\begin{equation}
+T_{tt} = \frac{1}{6 \pi t^2}
+\end{equation}
+This is properly set up by this thorn. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{de~Sitter spacetime with cosmological constant}
+
+\verb|Exact::exact_model="de Sitter+Lambda"| specifies an Einstein-de~Sitter
+spacetime with a cosmological constant, with the line element
+\begin{equation}
+ds^2 = - dt^2 + e^{2/3\sqrt{3\Lambda}t} \left ( dx^2 + dy^2 + dz^2 \right) 
+\end{equation}
+where $\Lambda$ is the cosmological constant.
+FIXME: how is $\Lambda$ determined?
+
+The only physics parameter is the multiplicative scale
+factor $a = \verb|de_Sitter_Lambda__scale|$.
+
+The fictitious ``matter'' stress-energy tensor representing $\Lambda$ is
+\begin{equation}
+T_{ij}= - \frac{\Lambda}{8 \pi} g_{ij} = \left ( \begin{array}{cccc}
+\frac{1}{8}\frac{\Lambda}{\pi} & 0 & 0 & 0\\
+0 & -\frac{1}{8}\frac{\Lambda  e^{2/3 \sqrt{3\Lambda}t}}{\pi }& 0 & 0\\
+0 & 0 &-\frac{1}{8}\frac{\Lambda e^{2/3 \sqrt{3\Lambda}t}}{\pi }&  0\\
+0 & 0 & 0 & -\frac{1}{8}\frac{\Lambda  e^{2/3 
+\sqrt{3\Lambda}t}}{\pi}\end{array}\right ) \, 
+\end{equation}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{anti-de~Sitter spacetime with cosmological constant}
+
+\verb|Exact::exact_model="anti-de Sitter+Lambda"| specifies an
+anti-de~Sitter spacetime with a cosmological constant, with the line
+element
+\begin{equation}
+ds^2 =  dx^2 + e^{2/3\sqrt{-3\Lambda}t} \left ( -dt^2 + dy^2 + dz^2 \right)  
+\end{equation}
+FIXME: how is $\Lambda$ determined?
+
+The only physics parameter is the multiplicative scale
+factor $a = \verb|anti_de_Sitter_Lambda__scale|$.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Approximate Bianchi type~I spacetime}
+
+\verb|Exact::exact_model = "Bianchi I"| specifies an approximation to
+a Bianchi type~I spacetime, setting the spacetime metric components
+as harmonic functions. Thus this is not a proper solution of Einstein
+equations.  The only physics parameter is the multiplicative scale
+factor $a = \verb|Bianchi_I__scale|$.
+
+{\bf This solution doesn't work properly yet.  See Mitica Vulcanov for
+further information.}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{G\"{o}del spacetime}
+
+\verb|Exact::exact_model = "Goedel"| specifies a G\"{o}del spacetime,
+as described in Hawking and Ellis section~5.7.  The only physics parameter
+is the multiplicative scale factor $a = \verb|Goedel__scale|$.
+
+At present this thorn doesn't set up the stress-energy tensor;
+you have to do this ``by hand''.
+
+{\bf This solution doesn't work properly yet.  See Mitica Vulcanov for
+further information.}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Bertotti spacetime}
+
+\verb|Exact::exact_model = "Bertotti"| specifies a Bertotti spacetime.
+This a spacetime metric with cosmological constant (see Gravitation
+and Geometry by Rindler and Trautman, Bibliopolis, Napoli, 1987,
+page~309), with the line element
+\begin{equation}
+ds^2 = -e^{2\sqrt{-\Lambda}x}dt^2 +dx^2 +  e^{2\sqrt{-\Lambda}z}du^2 + dz^2
+\end{equation}
+The only physics parameter is the cosmological constant
+$\Lambda = \verb|Bertotti__Lambda|$.
+
+The fictitious ``matter'' stress-energy tensor representing $\Lambda$ is
+\begin{equation}
+T_{ij}= - \frac{\Lambda}{8 \pi} g_{ij} = \left ( \begin{array}{cccc}
+\frac{1}{8}\frac{\Lambda e^{2\sqrt{-\Lambda} x}}{\pi} & 0 & 0 & 0\\
+0 & -\frac{1}{8}\frac{\Lambda}{\pi }& 0 & 0\\
+0 & 0 &-\frac{1}{8}\frac{\Lambda e^{2\sqrt{-\Lambda}z}}{\pi }&  0\\
+0 & 0 & 0 & -\frac{1}{8}\frac{\Lambda}{\pi}\end{array}\right ) \, 
+\end{equation}
+
+Mitica Vulcanov says:
+This metric is not working properly. We suspect that it is not a solution
+of the vacuum Einstein equations with cosmological constant, thus
+somebody else can try to calculate properly the above components
+of the $T_{ij}$ - ask Mitica D.N. Vulcanov for more details.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Kasner-like spacetime}
+
+\verb|Exact::exact_model="Kasner-like"| is the so-called
+``Kasner-like'' metric, as described in L.~Pimentel,
+Int.\ Journ.\ of Theor.\ Physics, {\bf 32},  No.~6, p.~979, (1993)
+and the references cited here.  (See also MTW section~30.2,
+gr-qc/0110031, and S.~Gotlober \etal{},
+``Early Evolution of the Universe and Formation [of] Structure'',
+Akad.\ Verlag, 1990.)
+The Kasner-like line element is
+\begin{equation}
+ds^2 = -dt^2 + t^{2q} (dx^2 +dy^2) + t^{2 - 4q}dz^2
+\end{equation}
+Here we have a stress-energy tensor which has all off-diagonal components 
+vanishing:
+\begin{eqnarray}
+T_{ij} = \left(
+	 \begin{array}{cccc}
+	 q\frac{(2-3 q)}{8 \pi t^2} & 0 & 0 & 0 \\
+	 0 & q\frac{(2-3 q)t^{2q}}{8 \pi t^2} & 0 & 0\\
+	 0 & 0 & q\frac{(2-3 q)t^{2q}}{8 \pi t^2} & 0\\
+	 0 & 0 & 0 & q\frac{(2-3q)t^{2-4q}}{8 \pi t^2}%%%\\
+	 \end{array}
+	 \right)
+\end{eqnarray}
+
+There is one parameter $q = \verb|Kasner_like__q|$.
+
+This metric forms a one parameter family of solutions of Einstein's
+equations with a perfect stiff fluid. The parameter $q$ is related to
+the energy density, as is obvious from the last equation. The
+qualitative features of the expansion depend on $q$ in the following
+way: for $q > 1/2$ the universe expands from a ``cigar'' singularity;
+for $q = 1/2$, the universe expands purely transversally from an
+initial ``barrel'' singularity; for $0 < q < 1/2$ the initial
+singularity is ``point-like'' and if $q \leq 0$ we have a ``pancake''
+singularity. The case $q=1/3$ corresponds to an isotropic universe
+with a stiff fluid; the case $q=0$ is a region of Minkowski spacetime
+in non-Cartesian coordinates. This family of metrics is ``Kasner-like''
+in the sense that the sum of the exponents is equal to one, but the
+sum of the squares is not equal to one except in the cases when $q=0$
+or $q=2/3$, when we have the vacuum case.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{axisymmetric Kasner spacetime}
+
+\verb|Exact::exact_model="Kasner-axisymmetric"| specifies an
+axisymmetric Kasner spacetime, as described in
+S.~D.~Hern, {\it Numerical Relativity and Inhomogeneous  Cosmologies\/},
+PhD thesis, Cambridge (gr-qc/0004036), and 
+S.~D.~Hern, J.~M.~Stewart, Class.\ Quantum Grav, {\bf 15}, 1581, (1998).
+The line element is
+\begin{equation}
+ds^2 = -\frac{dt^2}{\sqrt{t}} + \frac{dx^2}{\sqrt{t}} + t dy^2
++ t dz^2
+\end{equation}
+This is an exact solution of the vacuum Einstein equations, explicitly
+homogeneous, and features a cosmological singularity at $t=0$.
+
+There are no parameters for this model.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{generalized Kasner spacetime}
+\verb|Exact::exact_model="Kasner-generalized"| specifies a
+generalized Kasner spacetime, as described in MTW section~30.2,
+where the line element is
+\begin{equation}
+ds^2 = -dt^2 +t^{2p_1}dx^2 + t^{2p_2}dy^2 + t^{2p_3}dz^2
+\end{equation}
+The Kasner parameters $p_1$, $p_2$ and $p_3$ must satisfy the relations
+$p_1+p_2+p_3 = 1$ and
+$p_1^2+p_2^2+p_3^2 = 1$.
+Restricting ourselves only to two parameters, $p_1$ and $p_2$,
+we have the following stress-energy tensor:
+\begin{equation}
+T_{ij} = \left(
+	 \begin{array}{cccc}
+	 \frac{A}{8\pi t^2} & 0 & 0 & 0\\
+	 0 & \frac{A t^{2p_1-2}}{8 \pi} & 0 & 0\\
+	 0 & 0 & \frac{A t^{2p_2-2}}{8\pi} & 0 \\
+	 0 & 0 & 0 & \frac{A t^{-2p_1-2p_2}}{8 \pi}%%%
+	 \end{array}
+	 \right)
+\end{equation}
+where $A = p_1 - p_1^2 +p_2 - p_2^2 - p_1 p_2$ (note the use of the above
+first condition on the parameters, thus we have $p_3 = 1-p_1-p_2$).  
+
+The parameters are $p_1 = \verb|Kasner_generalized__p1|$
+and $p_2 = \verb|Kasner_generalized__p2|$.
+
+Mitica Vulcanov has done several simulations with various Kasner
+spacetimes, see gr-qc/0110031. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Gowdy-wave Spacetime}
+
+\verb|Exact::exact_model = "Gowdy-wave"| specifies a Gowdy spacetime,
+which gives a polarized wave in an expanding universe.  See
+K.~New, K.~Watt, C.~W.~Misner, and J.~Centrella,
+``Stable 3-level leapfrog integration in numerical relativity'',
+PRD 58, 064022.
+
+There is only a single parameter, the wave amplitude
+\verb|Gowdy_wave__amplitude|.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Milne Spacetime for Pre-Big-Bang Cosmology}
+
+\verb|Exact::exact_model = "Milne"| specifies a Milne spacetime,
+as described by gr-qc/9802001 (see in particular reference~14, which
+in turn points to Zeldovich and Novikov volume~2 section~2.4):
+\begin{equation}
+g_{ab} = \left[
+	 \begin{array}{cccc}
+	 -1	& 0		& 0		& 0		\\
+	 0	& V(1+y^2+z^2)	& -Vxy		& -Vxz		\\
+	 0	& -Vxy		& V(1+x^2+z^2)	& -Vyz		\\
+	 0	& -Vxz		& -Vyz		& V(1+x^2+y^2)	%%%\\
+	 \end{array}
+	 \right]
+\end{equation}
+where
+\begin{equation}
+V = \frac{t^2}{1 + x^2 + y^2 + z^2}
+\end{equation}
+
+{\bf The $g_{ab}$ given here is indeed what the code computes, but
+alas noone seems to know whether this is indeed a Milne  spacetime.}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Miscellaneous Spacetimes}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Boost Rotation Symmetric Spacetime}
+
+\verb|Exact::exactmodel = "starSchwarz"| specifies a boost-rotation
+symmetric spacetime, as described in Jiri Bicak and Bernd Schmidt,
+"Asymptotically flat radiative space-times with boost-rotation symmetry",
+Physical Review~D {\bf 40}, 1827 (1989).
+Pravda and Pravdov\'{a}, gr-qc/0003067, give a
+general review of boost-rotation symmetric spacetimes.  
+
+FIXME: the parameters are \dots
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Schwarzschild (Constant Density) Star}
+
+\verb|Exact::exact_model = "constant density star"| specifies a
+constant-density ``Schwarzschild'' star, as described in MTW~Box 23.2.
+The stress-energy tensor is also properly set up.
+
+The parameters are the star's mass \verb|constant_density_star__mass|
+and its radius \verb|constant_density_star__radius|.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Non-Einstein Bowl (``Bag of Gold'') Spacetime}
+
+\verb|Exact::exact_model = "bowl"| specifies a ``bag of Gold'' metric,
+as described in gr-qc/9809004.  This is useful for testing purposes,
+but isn't a solution of the Einstein equations.
+The line element in $(t,r,\theta,\phi)$ coordinates is
+\begin{equation}
+ds^2 = -dt^2 + dr^2 + R^2(r) \, d\Omega^2
+\end{equation}
+
+We choose $R(r)$ such that $\displaystyle \lim_{r \ll 1} R(r) = r$
+and $\displaystyle \lim_{r \gg 1} R(r) = r$, so we have a flat 3-metric
+(and hence 4-metric too) for very small~$r$ and for very large~$r$.
+For intermediate values of~$r$, we take $0 < R(r) < r$; this deficit
+in areal radius produces the ``bag of gold'' geometry.
+
+The physics parameters are
+\begin{itemize}
+\item	$a = \verb|bowl__strength|$, the deformation strength
+\item	$c = \verb|bowl__center|$, the deformation center
+\item	\verb|bowl__shape| is a keyword parameter to specify
+	the type of function to use to specify the bowl (see below)
+\item	$\sigma = \verb|bowl__sigma|$, the deformation width
+	(\Nb{} for \verb|bowl__shape = "Gaussian"| the function
+	is actually $\exp \big( \!-(x-c)^2/\sigma^2 \big)$, not
+	$\exp \big( -\half(x-c)^2/\sigma^2 \big)$.  Thus for
+	this case $\sigma$ is actually $\sqrt{2}$ times the
+	standard deviation of the Gaussian.)
+\item	\verb|bowl__x_scale|, \verb|bowl__y_scale|, and \verb|bowl__z_scale|,
+	which set the $x$, $y,$ and $z$ scales of the bowl
+	(\ie{} all the computations actually use $x/\verb|bowl__x_scale|$,
+	$y/\verb|bowl__y_scale|$, and $z/\verb|bowl__z_scale|$)
+\item	\verb|bowl__evolve| is a Boolean parameter which controls
+	whether the bowl should be time-dependent; the remaining
+	parameters are only used if \verb|bowl__evolve| is true
+\item	$t_0 = \verb|bowl__t0|$, the center of the Fermi step in time
+\item	$\sigma_t = \verb|bowl__sigma_t|$, the width of the Fermi step in time
+\end{itemize}
+
+The size of the deviation from a flat geometry is controled by the
+parameter $a = \verb|bowl__strength|$.  If $a = 0$, we are in flat spacetime.
+The width of the curved region is controled by $\sigma = \verb|bowl__sigma|$,
+and the place where the curvature becomes significant (the center of
+the deformation) is controlled by $c = \verb|bowl__center|$.
+
+In detail, we choose
+\begin{equation}
+R(r) = r - A f(r) g(r)
+\end{equation}
+Here $A = a$ if \verb|bowl_evolve = "false"|, but is multiplied by
+a Fermi factor
+\begin{equation}
+A = \frac{a}{1 + \exp(-\sigma_t(t-t_0))}
+\end{equation}
+if \verb|bowl_evolve = "true"|.  For this latter case we have
+flat spacetime far in the past, and a static bowl far in the future.
+$f(r)$ is either a Gaussian or a Fermi function,
+\begin{equation}
+f(r) = \left\{
+       \begin{array}{ll}
+       \displaystyle
+       \exp \big( (r-c)^2/\sigma^2 \big)
+			& \hbox{if {\tt bowl\_type = "Gaussian"}}	\\[1ex]
+       \displaystyle
+       \frac{1}{1 + \exp(-\sigma(r-c))}
+			& \hbox{if {\tt bowl\_type = "Fermi"}}		%%%\\
+       \end{array}
+       \right.
+\end{equation}
+$g(r) = 1 - \sech 4r$ is a fixup factor to ensure that
+$\displaystyle \lim_{r \to 0} R(r) = r$.
+
+The three paramters \verb|bowl__x_scale|, \verb|bowl__y_scale|, and
+\verb|bowl__z_scale| scale the $(x,y,z)$ axes respectively.  Their
+default values are all~1.  These parameters are useful to hide the
+spherical symmetry of the metric.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Acknowledgments}
+
+The original code, including the boost-rotation symmetric metric
+and the slice evolver, was written by Carsten Gundlach and Miguel Alcubierre.
+Many different people have contributed exact solutions.
+The Schwarzschild/Lemaitre solution
+and most (all?) of the cosmological solutions
+were written by Mitica Vulcanov.
+The Minkowski/gauge wave model was written by Michael Koppitz.
+In May-June 2002 Jonathan Thornburg cleaned up a lot of the code,
+systematized the spacetime/coordinate and parameter names, and
+wrote most of this documentation (based on the comments in the code,
+some reverse-engineering, and querying various people about how the
+code works.)
+The description of the Kastor-Traschen maximally charged multi-BH
+model is adapted from the file \verb|KTsol.tex| in this same directory,
+by Hisa-aki Shinkai.
+The Gowdy model was written by Denis Pollney.
+The \verb|ADMBase::evolution_method = "exact"| code was written
+by Peter Diener.
+The ``boost any vacuum solution'' code was written by Jonathan Thornburg.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{boost\_rotation\_symmetric\_\_min\_d}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{boost\_vx} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em x component of boost velocity}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{boost\_vy} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em y component of boost velocity}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{boost\_vz} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em z component of boost velocity}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{exact\_eps} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em finite differencing stencil size}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0e-6 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0.0:*} & \multicolumn{2}{p{\paraWidth}|}{Positive please} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{exact\_order} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em finite differencing order}} \\
+\hline{\bf Range} & &  {\bf Default:} 2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 2} & \multicolumn{2}{p{\paraWidth}|}{2} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 4} & \multicolumn{2}{p{\paraWidth}|}{4} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{exblend\_gauge} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Blend the lapse and shift with the exact solution?}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{exblend\_gs} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Blend the g variables with the exact solution?}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{exblend\_ks} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Blend the K variables with the exact solution?}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{exblend\_rout} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Outer boundary of blending region}} \\
+\hline{\bf Range} & &  {\bf Default:} -1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Positive means radial value, negative means use outer bound of grid} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{exblend\_width} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Width of blending zone}} \\
+\hline{\bf Range} & &  {\bf Default:} -3.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Positive means width in radius, negative means width = exbeldn\_width*dx} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{overwrite\_boundary} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Overwrite g and K on the boundary}} \\
+\hline{\bf Range} & &  {\bf Default:} no \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering no} & \multicolumn{2}{p{\paraWidth}|}{Do nothing} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering exact} & \multicolumn{2}{p{\paraWidth}|}{Use boundary data from an exact solution on a trivial slice} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rotation\_euler\_phi} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Euler angle phi (first rotation, about z axis) (irrelevant for axisymmetric models)}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rotation\_euler\_psi} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Euler angle psi (third rotation, about z axis)}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rotation\_euler\_theta} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Euler angle theta (second rotation, about x axis)}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{shift\_add\_x} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em x component of added shift}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{shift\_add\_y} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em y component of added shift}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{shift\_add\_z} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em z component of added shift}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{slice\_gauss\_ampl} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Amplitude of Gauss slice in exact}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:*} & \multicolumn{2}{p{\paraWidth}|}{Positive please} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{slice\_gauss\_width} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Width of Gauss slice in exact}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:*} & \multicolumn{2}{p{\paraWidth}|}{Positive please} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{alvi\_\_mass1} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Alvi: mass of BH number 1}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any real number {\textgreater}= 0} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{alvi\_\_mass2} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Alvi: mass of BH number 2}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any real number {\textgreater}= 0} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{alvi\_\_separation} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Alvi: spatial separation of the black holes}} \\
+\hline{\bf Range} & &  {\bf Default:} 20.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:*} & \multicolumn{2}{p{\paraWidth}|}{must be greater than m1+m2 + 2 sqrt(m1 m2)} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{anti\_de\_sitter\_lambda\_\_scale} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em anti-de Sitter+Lambda: multiplicative scale factor}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any positive real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bertotti\_\_lambda} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Bertotti: cosmological constant}} \\
+\hline{\bf Range} & &  {\bf Default:} -1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bianchi\_i\_\_scale} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Bianchi I: multiplicative scale factor}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any positive real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{boost\_rotation\_symmetric\_\_amp} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em boost-rotation symmetric: dimensionless amplitude}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:*} & \multicolumn{2}{p{\paraWidth}|}{Positive please} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{boost\_rotation\_symmetric\_\_min\_d} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em boost-rotation symmetric: dimensionless safety distance}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.01 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any positive real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{boost\_rotation\_symmetric\_\_scale} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em boost-rotation symmetric: length scale}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:*} & \multicolumn{2}{p{\paraWidth}|}{Positive please} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bowl\_\_center} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em bowl: deformation center}} \\
+\hline{\bf Range} & &  {\bf Default:} 2.5 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any positive real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bowl\_\_evolve} & {\bf Scope:} restricted & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em bowl: are we evolving the metric?}} \\
+\hline & & {\bf Default:} false \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bowl\_\_shape} & {\bf Scope:} restricted & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em bowl: what shape of bowl should we use?}} \\
+\hline{\bf Range} & &  {\bf Default:} Gaussian \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Gaussian} & \multicolumn{2}{p{\paraWidth}|}{Gaussian bowl} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Fermi} & \multicolumn{2}{p{\paraWidth}|}{Fermi-function bowl} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bowl\_\_sigma} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em bowl: width of deformation}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any positive real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bowl\_\_sigma\_t} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em bowl: width of Fermi step in time}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any positive real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bowl\_\_strength} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em bowl: deformation strength}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.5 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any real number {\textgreater}= 0} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bowl\_\_t0} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em bowl: center of Fermi step in time}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bowl\_\_x\_scale} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em bowl: scale for x coordinate}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any positive real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bowl\_\_y\_scale} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em bowl: scale for y coordinate}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any positive real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bowl\_\_z\_scale} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em bowl: scale for z coordinate}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any positive real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{constant\_density\_star\_\_mass} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em constant density star: mass of star}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any positive real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{constant\_density\_star\_\_radius} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em constant density star: radius of star}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any positive real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{de\_sitter\_\_scale} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em de Sitter: multiplicative scale factor}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any positive real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{de\_sitter\_lambda\_\_scale} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em de Sitter+Lambda: multiplicative scale factor}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any positive real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{exact\_model} & {\bf Scope:} restricted & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em The exact solution/coordinates used in thorn exact}} \\
+\hline{\bf Range} & &  {\bf Default:} Minkowski \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Minkowski} & \multicolumn{2}{p{\paraWidth}|}{Minkowski spacetime} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Minkowski/shift} & \multicolumn{2}{p{\paraWidth}|}{Minkowski spacetime with time-dependent shift vector} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Minkowski/funny} & \multicolumn{2}{p{\paraWidth}|}{Minkowski spacetime in non-trivial spatial coordinates} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Minkowski/gauge wave} & \multicolumn{2}{p{\paraWidth}|}{Minkowski spacetime in gauge-wave coordinates} \\\multicolumn{1}{|p{\maxVarWidth}|}{see [1] below} & \multicolumn{2}{p{\paraWidth}|}{Minkowski spacetime in shifted gauge-wave coordinates} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Minkowski/conf wave} & \multicolumn{2}{p{\paraWidth}|}{Minkowski spacetime with 'waves' in conformal factor} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Schwarzschild/EF} & \multicolumn{2}{p{\paraWidth}|}{"Schwarzschild spacetime in Eddington-Finkelstei 
+n coordinates"} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Schwarzschild/PG} & \multicolumn{2}{p{\paraWidth}|}{Schwarzschild spacetime in Painleve-Gullstrand coordinates} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Schwarzschild/BL} & \multicolumn{2}{p{\paraWidth}|}{Schwarzschild spacetime in Brill-Lindquist coordinates} \\\multicolumn{1}{|p{\maxVarWidth}|}{see [1] below} & \multicolumn{2}{p{\paraWidth}|}{Schwarzschild spacetime in Novikov coordinates} \\\multicolumn{1}{|p{\maxVarWidth}|}{see [1] below} & \multicolumn{2}{p{\paraWidth}|}{Schwarzschild metric in Schwarzschild coordinates, with cosmological constant} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Kerr/Boyer-Lindquist} & \multicolumn{2}{p{\paraWidth}|}{Kerr spacetime in Boyer-Lindquist coordinates} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Kerr/Kerr-Schild} & \multicolumn{2}{p{\paraWidth}|}{Kerr spacetime in Kerr-Schild coordinates} \\\multicolumn{1}{|p{\maxVarWidth}|}{see [1] below} & \multicolumn{2}{p{\paraWidth}|}{Kerr spacetime in distorted Kerr-Schild coordinates such that the horizon is a coordinate sphere} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering multi-BH} & \multicolumn{2}{p{\paraWidth}|}{"Majumdar-Papapetrou 
+ or Kastor-Traschen maximally charged multi BH solutions"} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Alvi} & \multicolumn{2}{p{\paraWidth}|}{Alvi post-Newtonian 2BH spacetime (not fully implemented yet)} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Thorne-fakebinary} & \multicolumn{2}{p{\paraWidth}|}{Thorne's fake-binary spacetime (non-Einstein)} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Lemaitre} & \multicolumn{2}{p{\paraWidth}|}{Lemaitre-type spacetime} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering de Sitter} & \multicolumn{2}{p{\paraWidth}|}{de Sitter spacetime (R-W cosmology, near t=0, p=0)} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering de Sitter+Lambda} & \multicolumn{2}{p{\paraWidth}|}{de Sitter spacetime with cosmological constant} \\\multicolumn{1}{|p{\maxVarWidth}|}{see [1] below} & \multicolumn{2}{p{\paraWidth}|}{anti-de Sitter spacetime with cosmological constant} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Bianchi I} & \multicolumn{2}{p{\paraWidth}|}{approximate Bianchi type I spacetime} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Goedel} & \multicolumn{2}{p{\paraWidth}|}{Goedel spacetime} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Bertotti} & \multicolumn{2}{p{\paraWidth}|}{Bertotti spacetime} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Kasner-like} & \multicolumn{2}{p{\paraWidth}|}{Kasner-like spacetime} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Kasner-axisymmetric} & \multicolumn{2}{p{\paraWidth}|}{axisymmetric Kasner spacetime} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Kasner-generalized} & \multicolumn{2}{p{\paraWidth}|}{generalized Kasner spacetime} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Gowdy-wave} & \multicolumn{2}{p{\paraWidth}|}{Gowdy spacetime with polarized wave on a torus} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Milne} & \multicolumn{2}{p{\paraWidth}|}{Milne spacetime for pre-big-bang cosmology} \\\multicolumn{1}{|p{\maxVarWidth}|}{see [1] below} & \multicolumn{2}{p{\paraWidth}|}{boost-rotation symmetric spacetime} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering bowl} & \multicolumn{2}{p{\paraWidth}|}{bowl (bag-of-gold) spacetime (non-Einstein)} \\\multicolumn{1}{|p{\maxVarWidth}|}{see [1] below} & \multicolumn{2}{p{\paraWidth}|}{constant density (Schwarzschild) star} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent {\bf [1]} \noindent \begin{verbatim}Minkowski/shifted gauge wave\end{verbatim}\noindent {\bf [1]} \noindent \begin{verbatim}Schwarzschild/Novikov\end{verbatim}\noindent {\bf [1]} \noindent \begin{verbatim}Schwarzschild-Lemaitre\end{verbatim}\noindent {\bf [1]} \noindent \begin{verbatim}Kerr/Kerr-Schild/spherical\end{verbatim}\noindent {\bf [1]} \noindent \begin{verbatim}anti-de Sitter+Lambda\end{verbatim}\noindent {\bf [1]} \noindent \begin{verbatim}boost-rotation symmetric\end{verbatim}\noindent {\bf [1]} \noindent \begin{verbatim}constant density star\end{verbatim}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{goedel\_\_scale} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Goedel: multiplicative scale factor}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any positive real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{gowdy\_wave\_\_amplitude} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Gowdy-wave: amplitude parameter}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{kasner\_generalized\_\_p1} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Kasner-generalized: x exponent parameter}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1.0:1.0} & \multicolumn{2}{p{\paraWidth}|}{any real number in the range [-1,1]} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{kasner\_generalized\_\_p2} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Kasner-generalized: y exponent parameter}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1.0:1.0} & \multicolumn{2}{p{\paraWidth}|}{any real number in the range [-1,1]} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{kasner\_like\_\_q} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Kasner-like: q parameter}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.66666666666666666666 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{kerr\_boyerlindquist\_\_mass} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Kerr/Boyer-Lindquist: BH mass}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any real number {\textgreater} 0} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{kerr\_boyerlindquist\_\_spin} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Kerr/Boyer-Lindquist: dimensionless spin parameter a = J/m\^2}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.6 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1.0:1.0} & \multicolumn{2}{p{\paraWidth}|}{dimensionless spin parameter a = J/m\^2 for Kerr black hole} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{kerr\_kerrschild\_\_boost\_v} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Kerr/Kerr-Schild: boost velocity of black hole in z direction}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (-1:1)} & \multicolumn{2}{p{\paraWidth}|}{any real number with absolute value {\textless} 1} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{kerr\_kerrschild\_\_epsilon} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Kerr/Kerr-Schild: numerical fudge}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.e-16 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any real number {\textgreater}= 0.0} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{kerr\_kerrschild\_\_mass} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Kerr/Kerr-Schild: BH mass}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any real number {\textgreater} 0} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{kerr\_kerrschild\_\_parabolic} & {\bf Scope:} restricted & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Kerr/Kerr-Schild: use a parabolic singularity-avoiding term}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{kerr\_kerrschild\_\_power} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Kerr/Kerr-Schild: power (exponent) of numerical fudge}} \\
+\hline{\bf Range} & &  {\bf Default:} 4 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{kerr\_kerrschild\_\_spin} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Kerr/Kerr-Schild: dimensionless spin parameter a = J/m\^2}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.6 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1.0:1.0} & \multicolumn{2}{p{\paraWidth}|}{dimensionless spin parameter a = J/m\^2 for Kerr black hole} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{kerr\_kerrschild\_\_t} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Kerr/Kerr-Schild: time offset of black hole}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (*:*)} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{kerr\_kerrschild\_\_x} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Kerr/Kerr-Schild: x-coordinate of black hole}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (*:*)} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{kerr\_kerrschild\_\_y} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Kerr/Kerr-Schild: y-coordinate of black hole}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (*:*)} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{kerr\_kerrschild\_\_z} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Kerr/Kerr-Schild: z-coordinate of black hole}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (*:*)} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{lemaitre\_\_epsilon0} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Lemaitre: density of the universe at time t=0}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any real number {\textgreater}= 0} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{lemaitre\_\_kappa} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Lemaitre: multiplicative factor in equation of state}} \\
+\hline{\bf Range} & &  {\bf Default:} -0.5 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{lemaitre\_\_lambda} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Lemaitre: cosmological constant}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{lemaitre\_\_r0} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Lemaitre: scale factor (radius) of the universe at time t=0}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any positive real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{minkowski\_conf\_wave\_\_amplitude} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Minkowski/conf wave: amplitude of the variation of the conformal factor}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.5 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{any positive real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{minkowski\_conf\_wave\_\_direction} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Minkowski/conf wave: direction of 'wave' 0,1,2 : x,y,z}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:2} & \multicolumn{2}{p{\paraWidth}|}{0, 1 or 2 for x, y or z} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{minkowski\_conf\_wave\_\_wavelength} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Minkowski/conf wave: wave length in cactus units}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{any positive real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{minkowski\_funny\_\_amplitude} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Minkowski/funny: amplitude of Gaussian}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.5 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:1.0)} & \multicolumn{2}{p{\paraWidth}|}{any real number in the range [0,1)} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{minkowski\_funny\_\_sigma} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Minkowski/funny: width of Gaussian}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0.0:} & \multicolumn{2}{p{\paraWidth}|}{any real number {\textgreater} 0} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{minkowski\_gauge\_wave\_\_amplitude} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Minkowski/gauge wave: amplitude of the wave}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.5 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{minkowski\_gauge\_wave\_\_diagonal} & {\bf Scope:} restricted & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Minkowski/gauge wave: should the wave run diagonally across the grid?}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{minkowski\_gauge\_wave\_\_lambda} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Minkowski/gauge wave: wavelength of waves}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.5 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{minkowski\_gauge\_wave\_\_omega} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Minkowski/gauge wave: angular frequency of the wave in time}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{minkowski\_gauge\_wave\_\_phase} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Minkowski/gauge wave: phase shift of wave}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{minkowski\_gauge\_wave\_\_what\_fn} & {\bf Scope:} restricted & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Minkowski/gauge wave: what function to use}} \\
+\hline{\bf Range} & &  {\bf Default:} sin \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering sin} & \multicolumn{2}{p{\paraWidth}|}{1-a*sin(x)} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering expsin} & \multicolumn{2}{p{\paraWidth}|}{"exp(a*sin(x)*cos(t) 
+)"} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Gaussian} & \multicolumn{2}{p{\paraWidth}|}{1-a*exp(-x**2)} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{minkowski\_shift\_\_amplitude} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Minkowski/shift: amplitude of Gaussian}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.5 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (-1:1)} & \multicolumn{2}{p{\paraWidth}|}{any real number {\textless} 1 in absolute value} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{minkowski\_shift\_\_sigma} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Minkowski/shift: width of Gaussian}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any real number {\textgreater} 0} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{multi\_bh\_\_hubble} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em multi-BH: Hubble constant = +/- sqrt\{Lambda/3\}}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{multi\_bh\_\_mass1} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em multi-BH: mass of black hole number 1}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:} & \multicolumn{2}{p{\paraWidth}|}{any real number {\textgreater}= 0} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{multi\_bh\_\_mass2} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em multi-BH: mass of black hole number 2}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:} & \multicolumn{2}{p{\paraWidth}|}{any real number {\textgreater}= 0} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{multi\_bh\_\_mass3} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em multi-BH: mass of black hole number 3}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:} & \multicolumn{2}{p{\paraWidth}|}{any real number {\textgreater}= 0} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{multi\_bh\_\_mass4} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em multi-BH: mass of black hole number 4}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any real number {\textgreater}= 0} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{multi\_bh\_\_nbh} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em multi-BH: number of black holes 0-4}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:4} & \multicolumn{2}{p{\paraWidth}|}{any integer in the range [0,4]} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{multi\_bh\_\_x1} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em multi-BH: x coord of black hole number 1}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{multi\_bh\_\_x2} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em multi-BH: x coord of black hole number 2}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{multi\_bh\_\_x3} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em multi-BH: x coord of black hole number 3}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{multi\_bh\_\_x4} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em multi-BH: x coord of black hole number 4}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{multi\_bh\_\_y1} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em multi-BH: y coord of black hole number 1}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{multi\_bh\_\_y2} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em multi-BH: y coord of black hole number 2}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{multi\_bh\_\_y3} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em multi-BH: y coord of black hole number 3}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{multi\_bh\_\_y4} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em multi-BH: y coord of black hole number 4}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{multi\_bh\_\_z1} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em multi-BH: z coord of black hole number 1}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{multi\_bh\_\_z2} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em multi-BH: z coord of black hole number 2}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{multi\_bh\_\_z3} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em multi-BH: z coord of black hole number 3}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{multi\_bh\_\_z4} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em multi-BH: z coord of black hole number 4}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{schwarzschild\_bl\_\_epsilon} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Schwarzschild/BL: numerical fudge}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.e-16 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any real number {\textgreater}= 0.0} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{schwarzschild\_bl\_\_mass} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Schwarzschild/BL: BH mass}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any real number {\textgreater} 0.0} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{schwarzschild\_ef\_\_epsilon} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Schwarzschild/EF: numerical fudge}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.e-16 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any real number {\textgreater}= 0.0} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{schwarzschild\_ef\_\_mass} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Schwarzschild/EF: BH mass}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{schwarzschild\_lemaitre\_\_lambda} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Schwarzschild-Lemaitre: cosmological constant}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{schwarzschild\_lemaitre\_\_mass} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Schwarzschild-Lemaitre: BH mass}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any real number {\textgreater} 0} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{schwarzschild\_novikov\_\_epsilon} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Schwarzschild/Novikov: numerical fudge}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.e-16 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any real number {\textgreater}= 0.0} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{schwarzschild\_novikov\_\_mass} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Schwarzschild/Novikov: BH mass}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any real number {\textgreater} 0.0} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{schwarzschild\_pg\_\_epsilon} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Schwarzschild/PG: numerical fudge}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.e-16 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any real number {\textgreater}= 0.0} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{schwarzschild\_pg\_\_mass} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Schwarzschild/PG: BH mass}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any real number {\textgreater} 0.0} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{thorne\_fakebinary\_\_atype} & {\bf Scope:} restricted & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Thorne-fakebinary: binary type}} \\
+\hline{\bf Range} & &  {\bf Default:} constant \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering constant} & \multicolumn{2}{p{\paraWidth}|}{} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering quadrupole} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{thorne\_fakebinary\_\_epsilon} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Thorne-fakebinary: numerical fudge}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.e-16 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any real number {\textgreater}= 0.0} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{thorne\_fakebinary\_\_mass} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Thorne-fakebinary: mass}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any real number {\textgreater} 0} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{thorne\_fakebinary\_\_omega0} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Thorne-fakebinary: initial angular frequency}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any real number {\textgreater} 0} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{thorne\_fakebinary\_\_retarded} & {\bf Scope:} restricted & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Thorne-fakebinary: use retarded time?}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{thorne\_fakebinary\_\_separation} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Thorne-fakebinary: initial separation}} \\
+\hline{\bf Range} & &  {\bf Default:} 5.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any real number {\textgreater} 0} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{thorne\_fakebinary\_\_smoothing} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Thorne-fakebinary: smoothing for Newtonian potential}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:*} & \multicolumn{2}{p{\paraWidth}|}{any real number {\textgreater}= 0} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{conformal\_storage} & {\bf Scope:} shared from STATICCONFORMAL & KEYWORD \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+exact
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+admbase
+
+grid
+
+coordgauge
+
+staticconformal
+\vspace{2mm}
+\subsection*{Grid Variables}
+\vspace{5mm}\subsubsection{PRIVATE GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+exact\_slice &  & compact & 0 \\ 
+ & slicex & description & Position of an arbitrary slice in exact solution spacetime \\ 
+ & slicey & dimensions & 3 \\ 
+ & slicez & distribution & DEFAULT \\ 
+ & slicet & group type & GF \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+exact\_slicetemp1 &  & compact & 0 \\ 
+ & slicetmp1x & description & Temporary grid functions 1 \\ 
+ & slicetmp1y & dimensions & 3 \\ 
+ & slicetmp1z & distribution & DEFAULT \\ 
+ & slicetmp1t & group type & GF \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+exact\_slicetemp2 &  & compact & 0 \\ 
+ & slicetmp2x & description & Temporary grid functions 2 \\ 
+ & slicetmp2y & dimensions & 3 \\ 
+ & slicetmp2z & distribution & DEFAULT \\ 
+ & slicetmp2t & group type & GF \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+\vspace{5mm}\subsubsection{PROTECTED GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+exact\_pars\_int &  & compact & 0 \\ 
+ & decoded\_exact\_model & description & parameters copied to grid scalars so CalcTmunu code sees them in evolution thorns \\ 
+ &  & dimensions & 0 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & INT \\ 
+\hline 
+exact\_pars\_real &  & compact & 0 \\ 
+ & Schwarzschild\_Lemaitre\_\_\_Lambda & description & parameters copied to grid scalars so CalcTmunu code sees them in evolution thorns \\ 
+ & Schwarzschild\_Lemaitre\_\_\_mass & dimensions & 0 \\ 
+ & Lemaitre\_\_\_kappa & distribution & CONSTANT \\ 
+ & Lemaitre\_\_\_Lambda & group type & SCALAR \\ 
+ & Lemaitre\_\_\_epsilon0 & timelevels & 1 \\ 
+ & Lemaitre\_\_\_R0 & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+
+\noindent {\bf Uses header}: 
+
+Slicing.h
+\vspace{2mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn EinsteinInitialData/Exact.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Always:}& {\bf Conditional:} \\ 
+ Exact\_pars\_int &  Exact\_slice\\ 
+ Exact\_pars\_real &  Exact\_slicetemp1\\ 
+~ &  Exact\_slicetemp2\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PARAMCHECK} 
+
+\hspace{5mm} exact\_paramcheck 
+
+\hspace{5mm}{\it do consistency checks on our parameters } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf ADMBase\_InitialData}   (conditional) 
+
+\hspace{5mm} exact\_\_decode\_pars 
+
+\hspace{5mm}{\it decode/copy thorn exact parameters into grid scalars } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & exact::decoded\_exact\_model(everywhere) \\ 
+~& ~ &exact::exact\_pars\_real(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PRESTEP}   (conditional) 
+
+\hspace{5mm} exact\_\_initialize 
+
+\hspace{5mm}{\it set data from exact solution on an exact slice } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Reads:  & grid::x \\ 
+~& ~ &grid::y\\ 
+~& ~ &grid::z\\ 
+~& ~ &exact::decoded\_exact\_model\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & admbase::metric(everywhere) \\ 
+~& ~ &admbase::curv(everywhere)\\ 
+~& ~ &staticconformal::psi(everywhere)\\ 
+~& ~ &staticconformal::confac\_1derivs(everywhere)\\ 
+~& ~ &staticconformal::confac\_2derivs(everywhere)\\ 
+~& ~ &staticconformal::conformal\_state(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_PostStep}   (conditional) 
+
+\hspace{5mm} exact\_\_initialize 
+
+\hspace{5mm}{\it set data from exact solution on an exact slice } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & admbase\_setadmvars \\ 
+~ & Language:  & fortran \\ 
+~ & Reads:  & grid::x \\ 
+~& ~ &grid::y\\ 
+~& ~ &grid::z\\ 
+~& ~ &exact::decoded\_exact\_model\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & admbase::metric(everywhere) \\ 
+~& ~ &admbase::curv(everywhere)\\ 
+~& ~ &staticconformal::psi(everywhere)\\ 
+~& ~ &staticconformal::confac\_1derivs(everywhere)\\ 
+~& ~ &staticconformal::confac\_2derivs(everywhere)\\ 
+~& ~ &staticconformal::conformal\_state(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTSTEP}   (conditional) 
+
+\hspace{5mm} exact\_\_boundary 
+
+\hspace{5mm}{\it overwrite g and k on the boundary with exact solution data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Reads:  & grid::x \\ 
+~& ~ &grid::y\\ 
+~& ~ &grid::z\\ 
+~& ~ &staticconformal::conformal\_state(everywhere)\\ 
+~& ~ &exact::decoded\_exact\_model(everywhere)\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & admbase::metric(boundary) \\ 
+~& ~ &admbase::curv(boundary)\\ 
+~& ~ &admbase::alp(boundary)\\ 
+~& ~ &admbase::shift(boundary)\\ 
+~& ~ &admbase::dtalp(boundary)\\ 
+~& ~ &admbase::dtshift(boundary)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf AddToTmunu} 
+
+\hspace{5mm} exact\_addtotmunu 
+
+\hspace{5mm}{\it set stress energy tansor based on exact solution } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Reads:  & grid::x \\ 
+~& ~ &grid::y\\ 
+~& ~ &grid::z\\ 
+~& ~ &staticconformal::conformal\_state(everywhere)\\ 
+~& ~ &exact::decoded\_exact\_model(everywhere)\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf } 
+
+\hspace{5mm} exact\_\_slice\_data 
+
+\hspace{5mm}{\it  } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Reads:  & grid::x \\ 
+~& ~ &grid::y\\ 
+~& ~ &grid::z\\ 
+~& ~ &exact::exact\_slice(interior)\\ 
+~& ~ &admbase::shift(interior)\\ 
+~& ~ &admbase::alp(interior)\\ 
+~& ~ &staticconformal::conformal\_state(everywhere)\\ 
+~& ~ &exact::decoded\_exact\_model(everywhere)\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & admbase::metric(everywhere) \\ 
+~& ~ &admbase::curv(everywhere)\\ 
+~& ~ &exact::exact\_slicetemp2(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf } 
+
+\hspace{5mm} exact\_\_linear\_extrap\_one\_bndry 
+
+\hspace{5mm}{\it  } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf ADMBase\_InitialData}   (conditional) 
+
+\hspace{5mm} exact\_\_initialize 
+
+\hspace{5mm}{\it set initial data from exact solution on a trivial slice } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & exact\_\_decode\_pars \\ 
+~ & Language:  & fortran \\ 
+~ & Reads:  & grid::x \\ 
+~& ~ &grid::y\\ 
+~& ~ &grid::z\\ 
+~& ~ &exact::decoded\_exact\_model\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & admbase::metric(everywhere) \\ 
+~& ~ &admbase::curv(everywhere)\\ 
+~& ~ &staticconformal::psi(everywhere)\\ 
+~& ~ &staticconformal::confac\_1derivs(everywhere)\\ 
+~& ~ &staticconformal::confac\_2derivs(everywhere)\\ 
+~& ~ &staticconformal::conformal\_state(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf ADMBase\_InitialData}   (conditional) 
+
+\hspace{5mm} exact\_\_slice\_initialize 
+
+\hspace{5mm}{\it set initial data from exact solution on an arbitrary slice } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & exact\_\_decode\_pars \\ 
+~ & Language:  & fortran \\ 
+~ & Reads:  & grid::x \\ 
+~& ~ &grid::y\\ 
+~& ~ &grid::z\\ 
+~& ~ &admbase::shift(interior)\\ 
+~& ~ &admbase::alp(interior)\\ 
+~& ~ &staticconformal::conformal\_state\\ 
+~& ~ &exact::decoded\_exact\_model\\ 
+~ & Storage:  & exact\_slice \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & admbase::metric(everywhere) \\ 
+~& ~ &admbase::curv(everywhere)\\ 
+~& ~ &exact::exact\_slice(everywhere)\\ 
+~& ~ &exact::exact\_slicetemp2(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf ADMBase\_InitialGauge}   (conditional) 
+
+\hspace{5mm} exact\_\_gauge 
+
+\hspace{5mm}{\it set initial lapse and/or shift from exact solution on a trivial slice } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Reads:  & grid::x \\ 
+~& ~ &grid::y\\ 
+~& ~ &grid::z\\ 
+~& ~ &staticconformal::conformal\_state\\ 
+~& ~ &exact::decoded\_exact\_model\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & admbase::alp(everywhere) \\ 
+~& ~ &admbase::shift(everywhere)\\ 
+~& ~ &admbase::dtalp(everywhere)\\ 
+~& ~ &admbase::dtshift(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_STARTUP}   (conditional) 
+
+\hspace{5mm} exact\_\_registerslicing 
+
+\hspace{5mm}{\it register slicings } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PRESTEP}   (conditional) 
+
+\hspace{5mm} exact\_\_gauge 
+
+\hspace{5mm}{\it set evolution lapse and/or shift from exact solution on a trivial slice } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Reads:  & grid::x \\ 
+~& ~ &grid::y\\ 
+~& ~ &grid::z\\ 
+~& ~ &staticconformal::conformal\_state\\ 
+~& ~ &exact::decoded\_exact\_model\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & admbase::alp(everywhere) \\ 
+~& ~ &admbase::shift(everywhere)\\ 
+~& ~ &admbase::dtalp(everywhere)\\ 
+~& ~ &admbase::dtshift(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_PostStep}   (conditional) 
+
+\hspace{5mm} exact\_\_gauge 
+
+\hspace{5mm}{\it set evolution lapse and/or shift from exact solution on a trivial slice } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & admbase\_setadmvars \\ 
+~ & Language:  & fortran \\ 
+~ & Reads:  & grid::x \\ 
+~& ~ &grid::y\\ 
+~& ~ &grid::z\\ 
+~& ~ &staticconformal::conformal\_state\\ 
+~& ~ &exact::decoded\_exact\_model\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & admbase::alp(everywhere) \\ 
+~& ~ &admbase::shift(everywhere)\\ 
+~& ~ &admbase::dtalp(everywhere)\\ 
+~& ~ &admbase::dtshift(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf ADMBase\_InitialData}   (conditional) 
+
+\hspace{5mm} exact\_\_slice\_initialize 
+
+\hspace{5mm}{\it set initial data from exact solution on arbitrary slice } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & exact\_\_decode\_pars \\ 
+~ & Language:  & fortran \\ 
+~ & Reads:  & grid::x \\ 
+~& ~ &grid::y\\ 
+~& ~ &grid::z\\ 
+~& ~ &admbase::shift(interior)\\ 
+~& ~ &admbase::alp(interior)\\ 
+~& ~ &staticconformal::conformal\_state\\ 
+~& ~ &exact::decoded\_exact\_model\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & admbase::metric(interior) \\ 
+~& ~ &admbase::curv(interior)\\ 
+~& ~ &exact::exact\_slice(everywhere)\\ 
+~& ~ &exact::exact\_slicetemp2(interior)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_EVOL}   (conditional) 
+
+\hspace{5mm} exact\_\_slice\_evolve 
+
+\hspace{5mm}{\it evolve arbitrary slice and extract cauchy data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Reads:  & grid::x \\ 
+~& ~ &grid::y\\ 
+~& ~ &grid::z\\ 
+~& ~ &admbase::shift(interior)\\ 
+~& ~ &admbase::alp(interior)\\ 
+~& ~ &exact::exact\_slice(everywhere)\\ 
+~& ~ &exact::exact\_slicetemp2(everywhere)\\ 
+~& ~ &staticconformal::conformal\_state(everywhere)\\ 
+~& ~ &exact::decoded\_exact\_model(everywhere)\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & admbase::metric(everywhere) \\ 
+~& ~ &admbase::curv(everywhere)\\ 
+~& ~ &exact::exact\_slice(everywhere)\\ 
+~& ~ &exact::exact\_slicetemp1(everywhere)\\ 
+~& ~ &exact::exact\_slicetemp2(everywhere)\\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

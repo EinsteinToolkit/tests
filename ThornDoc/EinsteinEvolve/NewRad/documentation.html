@@ -1,0 +1,410 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>NewRad</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">NewRad</h2>
+ <div class="author" ><span 
+class="cmr-12">Roland Haas </span><span 
+class="cmmi-12">&#x003C;</span><span 
+class="cmr-12">rhaas@ncsa.illinois.edu</span><span 
+class="cmmi-12">&#x003E;</span></div>
+<br />
+<div class="date" ><span 
+class="cmr-12">August 3 2018</span></div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 102--><p class="noindent" ><span 
+class="cmr-9">This thorn implements the radiative boundary condition originally introduced by the BSSN</span><span 
+class="cmr-9">_MoL</span>
+     <span 
+class="cmr-9">thorn.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Introduction</h3>
+<!--l. 110--><p class="noindent" >This thorn provides routines to implement radiative boundary conditions as described in section VI of <span class="cite">[<a 
+href="#XEinsteinEvolve_NewRad_Alcubierre:2002kk">1</a>]</span>: \begin {equation}  f = f_0 + u(r - v t)/r\mbox {,} \label {eqn:EinsteinEvolve_NewRad_bc}  \end {equation}<a 
+ id="x1-1001r1"></a> in its
+differential form \begin {equation}  \partial _t f + v \partial _r f - v\,(f - f_0) = 0\mbox {,} \label {eqn:EinsteinEvolve_NewRad_diff_bc}  \end {equation}<a 
+ id="x1-1002r2"></a> where \(v\) is the asymptotic propagation speed of the field \(f\) and \(f_0\) is its asymptotic
+value.
+</p><!--l. 124--><p class="noindent" >
+</p>
+                                                                                       
+                                                                                       
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a>Physical System</h3>
+<!--l. 126--><p class="noindent" >Quoting <span class="cite">[<a 
+href="#XEinsteinEvolve_NewRad_Alcubierre:2002kk">1</a>]</span>:
+</p><!--l. 128--><p class="noindent" >At the outer boundary we use a radiation (Sommerfeld) boundary condition. We start from the
+assumption that near the boundary all fields behave as spherical waves, namely we impose the
+condition \begin {equation}  f = f_0 + u(r-vt)/r . \label {eq:radiation}  \end {equation}<a 
+ id="x1-2001r3"></a> Where \(f_0\) is the asymptotic value of a given dynamical variable (typically 1 for the lapse
+and diagonal metric components, and zero for everything else), and \(v\) is some wave speed. If our
+boundary is sufficiently far away one can safely assume that the speed of light is 1, so \(v=1\) for most fields.
+However, the gauge variables can easily propagate with a different speed implying a different value of
+\(v\).
+</p><!--l. 143--><p class="noindent" >In practice, we do not use the boundary condition (<a 
+href="#x1-2001r3">3<!--tex4ht:ref: eq:radiation --></a>) as it stands, but rather we use it in differential form: \begin {equation}  \partial _t f + v \partial _r f - v \, (f - f_0)/r = 0 .  \end {equation}<a 
+ id="x1-2002r4"></a>
+Since our code is written in Cartesian coordinates, we transform the last condition to \begin {equation}  \frac {x_i}{r} \, \partial _t f + v \partial _i f + \frac {v x_i}{r^2} \, \left ( f - f_0 \right ) = 0 .  \end {equation}<a 
+ id="x1-2003r5"></a> We finite difference this
+condition consistently to second order in both space and time and apply it to all dynamic variables (with
+possible different values of \(f_0\) and \(v\)) at all boundaries.
+</p><!--l. 158--><p class="noindent" >There is a final subtlety in our boundary treatment. Wave propagation is not the only reason why fields evolve
+near a boundary. Simple infall of the coordinate observers will cause some small evolution as well, and such
+evolution is poorly modeled by a propagating wave. This is particularly important at early times, when the
+radiative boundary condition introduces a bad transient effect. In order to minimize the error at
+our boundaries introduced by such non-wavelike evolution, we allow for boundary behavior of the
+form: \begin {equation}  f = f_0 + u(r-vt)/r + h(t)/r^n , \label {eq:radpower}  \end {equation}<a 
+ id="x1-2004r6"></a> with \(h\) a function of \(t\) alone and \(n\) some unknown power. This leads to the differential equation
+</p><div class="eqnarray">\begin {eqnarray}  \partial _t f + v \partial _r f - \frac {v}{r} \, (f - f_0) &amp;=&amp; \frac {v h(t)}{r^{n+1}} \left ( 1 - n v \right ) + \frac {h'(t)}{r^n} \nonumber \\ &amp;\simeq &amp; \frac {h'(t)}{r^n} \qquad \mathrm {for\ large\ } r ,  \end {eqnarray}</div>
+<!--l. 179--><p class="noindent" >or in Cartesian coordinates \begin {equation}  \frac {x_i}{r} \, \partial _t f + v \partial _i f + \frac {v x_i}{r^2} \, \left ( f - f_0 \right ) \simeq \frac {x_i h'(t)}{r^{n+1}} . \label {eqn:EinsteinEvolve_NewRad_num_bc}  \end {equation}<a 
+ id="x1-2005r7"></a>
+</p><!--l. 186--><p class="noindent" >This expression still contains the unknown function \(h'(t)\). Having chosen a value of \(n\), one can evaluate the above
+expression one point away from the boundary to solve for \(h'(t)\), and then use this value at the boundary itself.
+Empirically, we have found that taking \(n=3\) almost completely eliminates the bad transient caused by the radiative
+boundary condition on its own.
+</p><!--l. 193--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-30003"></a>Numerical Implementation</h3>
+<!--l. 194--><p class="noindent" >The thorn implements to ingredients for the evolution.
+     </p><ol  class="enumerate1" >
+<li 
+  class="enumerate" id="x1-3002x1">
+     <!--l. 196--><p class="noindent" >the boundary condition (<a 
+href="#x1-2005r7">7<!--tex4ht:ref: eqn:EinsteinEvolve_NewRad_num_bc --></a>),
+     </p></li>
+<li 
+  class="enumerate" id="x1-3004x2">
+     <!--l. 197--><p class="noindent" >a routine to extrapolate the contracted Christoffel symbols \(g^{jk} \Gamma ^i_{jk}\) (<span 
+class="cmtt-10">Xt1</span>…<span 
+class="cmtt-10">Xt3</span> in the code) into the outer
+     boundaries at \(t=0\).</p></li></ol>
+                                                                                       
+                                                                                       
+<!--l. 202--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">3.1   </span> <a 
+ id="x1-40003.1"></a>Extrapolation</h4>
+<!--l. 203--><p class="noindent" >At outer boundary points, as determined by <span 
+class="cmtt-10">GenericFD</span>’s routine <span 
+class="cmtt-10">GenericFD</span><span 
+class="cmtt-10">_GetBoundaryInfo</span> we use cubic
+polynomials along the normal of the boundary to extrapolate data from the interior into the boundary region.
+Due to the use of cubic polynomial we require at least four (4) points of valid data to be available for the
+extrapolation. This <span 
+class="cmti-10">includes </span>ghost zones, which are assumed to contain valid data in the interior of the
+domain.
+</p><!--l. 211--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">3.2   </span> <a 
+ id="x1-50003.2"></a>Radiative boundary condition</h4>
+<!--l. 212--><p class="noindent" >The derivatives \(\partial _i f\) appearing in (<a 
+href="#x1-2005r7">7<!--tex4ht:ref: eqn:EinsteinEvolve_NewRad_num_bc --></a>) are approximated as 2<sup class="textsuperscript"><span 
+class="cmr-9">nd</span></sup> order accurate finite difference expressions using
+centred expressions \begin {equation}  f'(x) \approx \frac {f(x-\Delta x) - f(x+\Delta x)}{2\Delta x}  \end {equation}<a 
+ id="x1-5001r8"></a> and one sided expressions \begin {equation}  f'(x) \approx \pm \frac {3 f(x) - 4 f(x\mp \Delta x) + f(x\mp 2\Delta x)}{2\Delta x}\mbox {,}  \end {equation}<a 
+ id="x1-5002r9"></a> for boundaries around the \(\pm \) coordinate direction.
+</p><!--l. 228--><p class="noindent" >Finally we try to extrapolate for the part of the boundary that does not behave as a pure wave (i.e. Coulomb
+type terms caused by infall of the coordinate lines).
+</p><!--l. 232--><p class="noindent" >This we do by comparing the source term one grid point away from the boundary (which we already have), to
+what we would have obtained if we had used the boundary condition there. The difference gives
+us an idea of the missing part and we extrapolate that to the boundary assuming a power-law
+decay.
+</p><!--l. 239--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-60004"></a>Using This Thorn</h3>
+<!--l. 240--><p class="noindent" >The thorn exports two aliased functions <span 
+class="cmtt-10">ExtrapolateGammas</span> and <span 
+class="cmtt-10">NewRad</span><span 
+class="cmtt-10">_Apply</span> that should be used in <span 
+class="cmtt-10">INITIAL</span>
+and <span 
+class="cmtt-10">MoL</span><span 
+class="cmtt-10">_CalcRHS</span> respectively to extrapolate the contracted Christoffel symbols and apply radiative boundary
+conditions to evolved variables respectively.
+</p><!--l. 246--><p class="noindent" >There call signatures are:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-1">
+CCTK_INT FUNCTION                         \
+    ExtrapolateGammas                     \
+        (CCTK_POINTER_TO_CONST IN cctkGH, \
+         CCTK_REAL ARRAY INOUT var)
+
+CCTK_INT FUNCTION                         \
+    NewRad_Apply                          \
+        (CCTK_POINTER_TO_CONST IN cctkGH, \
+         CCTK_REAL ARRAY IN var,          \
+         CCTK_REAL ARRAY INOUT rhs,       \
+         CCTK_REAL IN var0,               \
+         CCTK_REAL IN v0,                 \
+         CCTK_INT IN radpower)
+</pre>
+<!--l. 261--><p class="nopar" > where <span 
+class="cmtt-10">var0</span> corresponds to \(f_0\), <span 
+class="cmtt-10">v0</span> is \(v\) and <span 
+class="cmtt-10">radpower</span> is the assumed decay exponent \(n\).
+</p><!--l. 265--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">4.1   </span> <a 
+ id="x1-70004.1"></a>Obtaining This Thorn</h4>
+<!--l. 266--><p class="noindent" >The thorn is part of the EinsteinEvolve arrangement available on bitbucket.
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-2">
+git clone git@bitbucket.org:einsteintoolkit/einsteinevolve.git
+</pre>
+<!--l. 270--><p class="nopar" >
+</p><!--l. 272--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">4.2   </span> <a 
+ id="x1-80004.2"></a>Basic Usage</h4>
+<!--l. 274--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">4.3   </span> <a 
+ id="x1-90004.3"></a>Special Behaviour</h4>
+<!--l. 275--><p class="noindent" >If the parameter <span 
+class="cmtt-10">z</span><span 
+class="cmtt-10">_is</span><span 
+class="cmtt-10">_radial</span> is set it assumes that the \(z\) direction is a radial direction and uses this to evaluate
+the radial derivative in (<a 
+href="#x1-2005r7">7<!--tex4ht:ref: eqn:EinsteinEvolve_NewRad_num_bc --></a>). This is the case for the multi-patch coordinate systems provided by the <span 
+class="cmtt-10">Llama</span> <span class="cite">[<a 
+href="#XEinsteinEvolve_NewRad_llamacode">3</a>]</span>
+infrastructure.
+</p><!--l. 281--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">4.4   </span> <a 
+ id="x1-100004.4"></a>Interaction With Other Thorns</h4>
+<!--l. 282--><p class="noindent" >This thorn requires thorn <span 
+class="cmtt-10">GenericFD</span> which is part of <span 
+class="cmtt-10">Kranc</span> <span class="cite">[<a 
+href="#XEinsteinEvolve_NewRad_kranccode">2</a>]</span>.
+</p><!--l. 285--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">4.5   </span> <a 
+ id="x1-110004.5"></a>Examples</h4>
+<!--l. 286--><p class="noindent" >The best example is likely to inspect the source code <span 
+class="cmtt-10">ML</span><span 
+class="cmtt-10">_BSSN</span> and <span 
+class="cmtt-10">ML</span><span 
+class="cmtt-10">_BSSN</span><span 
+class="cmtt-10">_Helper</span>, namely:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-3">
+&#x003C;interface.ccl&#x003E;
+CCTK_INT FUNCTION                         \
+    NewRad_Apply                          \
+        (CCTK_POINTER_TO_CONST IN cctkGH, \
+         CCTK_REAL ARRAY IN var,          \
+         CCTK_REAL ARRAY INOUT rhs,       \
+         CCTK_REAL IN var0,               \
+         CCTK_REAL IN v0,                 \
+         CCTK_INT IN radpower)
+USES FUNCTION NewRad_Apply
+</pre>
+<!--l. 300--><p class="nopar" >
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-4">
+&#x003C;schedule.ccl&#x003E;
+SCHEDULE ML_BSSN_NewRad IN MoL_CalcRHS AFTER ML_BSSN_EvolutionInterior
+{
+  LANG: C
+  # No need to sync here -- the RHS variables are never synced
+} &#x0022;Apply NewRad boundary conditions to RHS&#x0022;
+</pre>
+<!--l. 309--><p class="nopar" >
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-5">
+&#x003C;NewRad.cc&#x003E;
+#include &#x0022;cctk_Arguments.h&#x0022;
+#include &#x0022;cctk_Functions.h&#x0022;
+
+void ML_BSSN_NewRad(CCTK_ARGUMENTS)
+{
+  DECLARE_CCTK_ARGUMENTS;
+
+  const int radpower = 2; // for example
+
+  NewRad_Apply(cctkGH, gt12, gt12rhs, 0.0, 1.0, radpower);
+}
+</pre>
+<!--l. 324--><p class="nopar" >
+</p><!--l. 326--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">4.6   </span> <a 
+ id="x1-120004.6"></a>Support and Feedback</h4>
+<!--l. 327--><p class="noindent" >Please use the Einstein Toolkit mailing list <a 
+href="users@einsteintoolkit.org" class="url" ><span 
+class="cmtt-10">users@einsteintoolkit.org</span></a> to report issues and ask for
+help.
+</p><!--l. 330--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-130005"></a>History</h3>
+<!--l. 332--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">5.1   </span> <a 
+ id="x1-140005.1"></a>Thorn Source Code</h4>
+     <ul class="itemize1">
+                                                                                       
+                                                                                       
+     <li class="itemize">
+     <!--l. 334--><p class="noindent" >Initial version of method likely by Miguel Alcubierre
+     </p></li>
+     <li class="itemize">
+     <!--l. 335--><p class="noindent" >Current version of code by Erik Schnetter</p></li></ul>
+<!--l. 338--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">5.2   </span> <a 
+ id="x1-150005.2"></a>Thorn Documentation</h4>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 340--><p class="noindent" >Initial version by Roland Haas using text by Miguel, Erik.</p></li></ul>
+<!--l. 343--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">5.3   </span> <a 
+ id="x1-160005.3"></a>Acknowledgements</h4>
+<!--l. 344--><p class="noindent" >This documentation copies text from comments in the source code as well as the paper <span class="cite">[<a 
+href="#XEinsteinEvolve_NewRad_Alcubierre:2002kk">1</a>]</span>.
+</p><!--l. 347--><p class="noindent" >
+</p>
+<h3 class="likesectionHead"><a 
+ id="x1-17000"></a>References</h3>
+<!--l. 347--><p class="noindent" >
+   </p><div class="thebibliography">
+   <p class="bibitem" ><span class="biblabel">
+ [1]<span class="bibsp">   </span></span><a 
+ id="XEinsteinEvolve_NewRad_Alcubierre:2002kk"></a>M. Alcubierre, B. Bruegmann, P. Diener, M. Koppitz, D. Pollney, E. Seidel and R. Takahashi,
+   “Gauge conditions for long term numerical black hole evolutions without excision,” Phys. Rev. D
+   <span 
+class="cmbx-10">67</span>, 084023 (2003) doi:10.1103/PhysRevD.67.084023 [gr-qc/0206072].
+   </p>
+   <p class="bibitem" ><span class="biblabel">
+ [2]<span class="bibsp">   </span></span><a 
+ id="XEinsteinEvolve_NewRad_kranccode"></a>“Kranc: Kranc assembles numerical code“, <a 
+href="http://kranccode.org/" class="url" ><span 
+class="cmtt-10">http://kranccode.org/</span></a>.
+                                                                                       
+                                                                                       
+   </p>
+   <p class="bibitem" ><span class="biblabel">
+ [3]<span class="bibsp">   </span></span><a 
+ id="XEinsteinEvolve_NewRad_llamacode"></a>“The Llama code“, <a 
+href="https://llamacode.bitbucket.io/" class="url" ><span 
+class="cmtt-10">https://llamacode.bitbucket.io/</span></a>.
+</p>
+   </div>
+<!--l. 365--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">6   </span> <a 
+ id="x1-180006"></a>Parameters</h3>
+<!--l. 384--><p class="noindent" ></p> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /></colgroup><colgroup id="TBL-2-2g"><col 
+id="TBL-2-2" /><col 
+id="TBL-2-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:normal; text-align:left;" id="TBL-2-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">z_is_radial</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-1-3"  
+class="td01">                                             BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-2-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Consider the local z direction to be the radial one; use with Llama</span></div>                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-1"  
+class="td11">          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-3-3"  
+class="td01">                                            <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-4-1"  
+class="td11">          </td></tr></table>
+<!--l. 393--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">7   </span> <a 
+ id="x1-190007"></a>Interfaces</h3>
+<!--l. 398--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-20000"></a>General</h4>
+<!--l. 400--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 402--><p class="noindent" >newrad
+</p><!--l. 407--><p class="noindent" ><span 
+class="cmbx-10">Uses header</span>:
+</p><!--l. 409--><p class="noindent" >GenericFD.h
+</p><!--l. 412--><p class="noindent" ><span 
+class="cmbx-10">Provides</span>:
+</p><!--l. 416--><p class="noindent" >ExtrapolateGammas to
+</p><!--l. 418--><p class="noindent" >NewRad_Apply to
+</p><!--l. 421--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">8   </span> <a 
+ id="x1-210008"></a>Schedule</h3>
+<!--l. 427--><p class="noindent" >This section lists all the variables which are assigned storage by thorn EinsteinEvolve/NewRad. Storage can
+either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+                                                                                       
+                                                                                       
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 430--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-22000"></a>Storage</h4>
+<!--l. 430--><p class="noindent" >NONE
+</p>
+ 
+</body></html> 
+
+                                                                                       
+
+

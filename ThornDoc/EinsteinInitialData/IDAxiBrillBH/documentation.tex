@@ -1,0 +1,623 @@
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a 
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+\title{IDAxiBrillBH}
+\author{Paul Walker, Steve Brandt,\\some cleanups by Jonathan Thornburg}
+\date{$ $Date$ $}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+% Add all definitions used in this documentation here
+%   \def\mydef etc
+
+\def\thorn#1{\textbf{#1}}
+\def\arrangement#1{\textbf{#1}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{abstract}
+  Thorn \thorn{IDAxiBrillBH} provides analytic initial data for a vacuum
+  black hole spacetime:  a single Schwarzschild black hole in
+  isotropic coordinates plus Brill wave.  This initial data is
+  provided for \thorn{ADMBase} 3-metric and extrinsic curvature,
+  and optionally also for the \thorn{StaticConformal} conformal
+  factor and its 1st and 2nd~spatial derivatives.
+\end{abstract}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Purpose}
+
+The pioneer, Bernstein, studied a single black hole which is
+non-rotating and distorted in azimuthal line symmetry of 2 dimensional 
+case \cite{Bernstein93a}. In this non-rotating case, one chooses the
+condition, $K_{ij} = 0$,  and 
+\begin{equation}
+\gamma_{ab} = \psi^4 \hat \gamma_{ab},
+\end{equation}
+where $\gamma_{ab}$ is the physical three metric and
+$\hat{\gamma}_{ab}$ is some chosen conformal three metric.
+
+The Hamiltonian constraint reduces to
+\begin{equation}
+\hat \Delta \psi = \frac{1}{8}\psi \hat R,
+				\label{IDAxiBrillBH/eqn:conformal-hamiltonian}
+\end{equation}
+where $\hat \Delta$ is the covariant Laplacian and $\hat R$ is the
+Ricci tensor for the conformal three metric. This form allows
+us to choose an arbitrary conformal three metric, and then solve an
+elliptic equation for the conformal factor, therefore satisfying the
+constraint equations ($K_{ij} = 0$ trivially satisfies the momentum
+constraints in vacuum).  This approach was used to create
+``Brill waves'' in a spacetime without black holes \cite{Brill59}.
+Bernstein extended this to the black hole spacetime.  Using
+spherical-polar coordinates, one can write the 3-metric,
+\begin{equation}
+				\label{IDAxiBrillBH/eqn:sph-coord}
+ds^2 = \psi^4 (e^{2q} (dr^2 + r^2 d \theta^2) + r^2 \sin \theta d
+\phi^2),
+\end{equation}
+where $q$ is the Brill ``packet'' which takes some functional form.
+Using this ansatz with (\ref{IDAxiBrillBH/eqn:conformal-hamiltonian})
+leads to an elliptic equation for $\psi$ which must be solved
+numerically. Applying the isometry condition on $\psi$ at a finite
+radius, and applying $M/2r$ falloff conditions on $\psi$ at the
+outer boundary (the ``Robin'' condition), along with a packet which
+obeys the appropriate symmetries (including being invariant under the
+isometry operator), will make this solution describe a black hole with
+an incident gravitational wave.  The choice of $q=0$ produces the
+Schwarzschild solution.   The typical $q$ function used in
+axisymmetry, and considered here in the non-rotating case, is 
+\begin{equation}
+				\label{IDAxiBrillBH/eqn:Q}
+q = Q_0 \sin^n \theta \left [ \exp\left(\frac{\eta -
+      \eta_0^2}{\sigma^2}\right ) + \exp\left(\frac{\eta +
+      \eta_0^2}{\sigma^2}\right ) \right ].
+\end{equation}
+Note regularity along the axis requires that the exponent $n$ must be
+even.  Choosing a logarithmic radial coordinate
+\begin{equation}
+				\label{IDAxiBrillBH/eta-coord}
+\eta = \ln{\frac{2r}{m}}.
+\end{equation}
+(where $m$ is a scale parameter), one can rewrite
+(\ref{IDAxiBrillBH/eqn:sph-coord}) as
+\begin{equation}
+ds^2 = \psi(\eta)^4 [ e^{2 q} (d \eta^2 +  d\theta^2) +  \sin^2
+\theta d\phi^2].
+\end{equation}
+
+The scale parameter $m$ is equal to the mass of the Schwarzschild
+black hole, if $q=0$.  In this coordinate, the 3-metric is
+\begin{equation}
+				\label{IDAxiBrillBH/eqn:metric-brill-eta}
+ds^2 = \tilde{\psi}^4 (e^{2q} (d\eta^2+d\theta^2)+\sin^2 \theta
+d\phi^2),
+\end{equation}
+and the Schwarzschild solution is 
+\begin{equation}
+				\label{IDAxiBrillBH/eqn:psi}
+\tilde{\psi} = \sqrt{2M} \cosh (\frac{\eta}{2}).
+\end{equation}
+We also change the notation of $\psi$ for the conformal factor is same 
+as $\tilde{\psi}$ \cite{Camarda97a}, for the $\eta$ coordinate has the
+factor $r^{1/2}$ in the conformal factor.  Clearly $\psi(\eta)$ and
+$\psi$ differ by a factor of $\sqrt{r}$.  The Hamiltonian 
+constraint is
+\begin{equation}
+				\label{IDAxiBrillBH/eqn:ham}
+\frac{\partial^2 \tilde{\psi}}{\partial \eta^2} + \frac{\partial^2
+  \tilde{\psi}}{\partial \theta^2} + \cot \theta \frac{\partial
+  \tilde{\psi}}{\partial \theta} = - \frac{1}{4} \tilde{\psi}
+(\frac{\partial^2 q}{\partial \eta^2} + \frac{\partial^2 q}{\partial
+  \theta^2} -1).
+\end{equation}
+
+For solving this Hamiltonian constraint numerically.  At first
+we substitute
+\begin{eqnarray}
+\delta \tilde{\psi} & = & \tilde{\psi}+\tilde{\psi}_0 \\
+                    & = & \tilde{\psi}-\sqrt{2m} \cosh(\frac{\eta}{2}).
+\end{eqnarray}
+to the equation~(\ref{IDAxiBrillBH/eqn:ham}), then we can linearize it as
+\begin{equation}
+\frac{\partial^2 \delta\tilde{\psi}}{\partial \eta^2} + \frac{\partial^2
+  \delta\tilde{\psi}}{\partial \theta^2} + \cot \theta \frac{\partial
+  \delta\tilde{\psi}}{\partial \theta} = - \frac{1}{4}
+(\delta\tilde{\psi} + \tilde{\psi}_0) (\frac{\partial^2 q}{\partial
+  \eta^2} + \frac{\partial^2 q}{\partial \theta^2} -1).
+				\label{IDAxiBrillBH/eqn:ham-linear}
+\end{equation}
+For the boundary conditions, we use for the inner boundary condition
+an isometry condition:
+\begin{equation}
+\frac{\partial \tilde{\psi}}{\partial \eta}|_{\eta = 0} = 0,
+				\label{IDAxiBrillBH/eqn:isometry-inner-BC}
+\end{equation}
+and outer boundary condition, a Robin condition:
+\begin{equation}
+(\frac{\partial \tilde{\psi}}{\partial \eta} + \frac{1}{2}
+\tilde{\psi})|_{\eta=\eta_{max}} = 0.
+\end{equation}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{The Resulting Slice}
+
+This thorn normalizes things so that if there is no perturbation,
+it produces a Schwarzschild ($=$ Brill-Lindquist) slice of the $m=2$
+Schwarzschild spacetime.%%%
+\footnote{%%%
+	 This slice has an apparent horizon at a
+	 coordinate radius $r=m/2=1$.
+	 }%%%
+{}  You can't change this mass. :(
+
+In any case (perturbation or not), this thorn also reports an ADM mass
+for the slice.  This seems to be pretty reliable.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{2-D Grid and Interpolation Parameters}
+
+This thorn solves equation~(\ref{IDAxiBrillBH/eqn:ham-linear}) on a 2-D
+$(\eta,\theta)$ grid.  However, Cactus needs a 3-D grid, typically with
+Cartesian coordinates.  Therefore, this thorn \emph{interpolates} $\psi$
+and its $(\eta,\theta)$ derivatives to the Cartesian grid.  More precisely,
+for each Cactus grid point, this thorn calculates the corresponding
+$(\eta,\theta)$ coordinates, and interpolates the 2-D solution to
+that point.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Size of the 2-D Grid}
+
+Because of the isometry condition~\eqref{IDAxiBrillBH/eqn:isometry-inner-BC},
+the 2-D grid need only cover the region $\eta \ge 0$; the code just
+takes the absolute value of $\eta$ before interpolating.
+
+The 2-D grid covers the region $|\eta| \in [0,\code{etamax}]$,
+$\theta \in [0,\pi]$, where the parameter \verb|etamax| defaults to 5.
+If any 3-D grid point's $(|\eta|,\theta)$ is outside this 2-D grid,
+this thorn will abort with a fatal error message from the interpolator.
+In practice, the most common cause of such an out-of-range point is
+the 3-D grid having a grid point at, or very near to, the origin.
+For example:
+\begin{verbatim}
+WARNING level 1 in thorn AEILocalInterp processor 0 host ic0087 (line 1007
+of /nfs/nethome/pollney/runs/CactusDev/arrangements/AEIThorns/AEILocalInterp/src
+/Lagrange-tensor-product/../template.c):
+  ->
+   CCTK_InterpLocalUniform():
+        interpolation point is either outside the grid,
+        or inside but too close to the grid boundary!
+        0-origin interpolation point number pt=307062 of N_interp_points=614125
+        interpolation point (x,y)=(36.1875,0.955317)
+        grid x_min(delta_x)x_max = -0.0199336(0.0199336)6.01993
+        grid y_min(delta_y)y_max = -0.0290888(0.0581776)3.17068
+
+WARNING level 0 in thorn IDAxiBrillBH processor 0 host ic0087
+  (line 484 of IDAxiBrillBH.F):
+  -> error in interpolator: ierror=   -1002
+\end{verbatim}
+
+Here the 3-D grid had a point right at the origin
+(which by virtue of~\eqref{IDAxiBrillBH/eta-coord} would have given
+$\eta = -\infty$), but some software moved the grid point by $10^{-16}m$
+or so (the standard Cactus work-around to try to avoid divisions by zero),
+giving $\eta \equiv \ln (2 \,{\times}\, 10^{-16}) \approx -36$.
+The absolute value of this is the ``$x$'' coordinate the
+interpolator is complaining about.
+
+In an ideal world, someone would enhance \thorn{IDAxiBrillBH} so it
+could handle a grid point at (or very near to) the origin.%%%
+\footnote{%%%
+	 See the file \texttt{doc/TODO} in the \thorn{IDAxiBrillBH}
+	 source code for some ideas on how this might be done.
+	 }%%%
+{}  However, so far noone has volunteered to do this.
+
+In the meantime, a staggered grid is the ``standard'' work-around
+for this problem.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Resolution of the 2-D Grid}
+
+The parameters \verb|neta| and \verb|nq| specify the resolution of
+this thorn's 2-D grid in $\eta$ and $\theta$ respectively.%%%
+\footnote{%%%
+	 Internally, this thorn uses ``$q$'' to refer
+	 to $\theta$ in Fortran code, with the $q$ function
+	 of~$(\protect\ref{IDAxiBrillBH/eqn:Q})$ being hidden
+	 in the Mathematica files (and not present in the Fortran
+	 code).  Noone seems to know \emph{why} the code does
+	 things this way\dots{}  Unfortunately, this renaming
+	 has leaked out into the parameter names\dots
+	 }%%%
+{}  The default values are a reasonable starting point, but you may
+need to increase them substantially if you need very high accuracy
+(very small constraint violations).
+
+To help judge what resolution may be needed, this thorn has an option
+to write out $\psi(\eta)$ and $\psi$ on the 2-D grid to an ASCII data file
+where it can be examined and/or plotted.  To do this, set the Boolean
+parameter \verb|output_psi2D|, and possibly also the string parameter
+\verb|output_psi2D_file_name|.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Interpolation Parameters}
+
+This thorn uses the standard Cactus \verb|CCTK_InterpLocalUniform()|
+local interpolation system for this interpolation.  The interpolation
+operator is specified with the \verb|interpolator_name| parameter
+(this defaults to \verb|"uniform cartesian"|, the interpolation
+operator provided by thorn \textbf{CactusBase/LocalInterp}).
+
+The interpolation order and/or other parameters can be specified
+in either of two ways:%%%
+\footnote{%%%
+	 Notice that, for historical reasons, the
+	 interpolation parameter names are a bit
+	 inconsistent: \texttt{interpolat\underline{ion}\_order}
+	 versus \texttt{interpolat\underline{or}\_name}
+	 and \texttt{interpolat\underline{or}\_pars}.
+	 }%%%
+\begin{itemize}
+\item	The integer parameter \verb|interpolation_order| may be
+	used directly to specify the interpolation order.
+\item	More generally, the string parameter \verb|interpolator_pars|
+	may be set to any nonempty string (it defaults to the empty string).
+	If this is done, this parameter overrides \verb|interpolation_order|,
+	and explicitly specifies a parameter string for the interpolator.
+\end{itemize}
+Note that the default interpolator parameters specify \emph{linear}
+interpolation.  This is rather inaccurate, and (due to aliasing effects
+between the 2-D and 3-D grids) will give a fair bit of noise in the
+metric components.  You may want to specify a higher-order interpolator
+to reduce this noise.
+
+For example, for one test series where I (JT) needed very accurate
+initial data (I wanted the initial-data errors to be much less than
+the errors from 4th~order finite differencing on the 3-D Cactus grid),
+I had to use a resolution of $1000$ in $\eta$ and $2000$ in $\theta$,
+together with either 4th~order Lagrange or 3rd~order Hermite interpolation
+(provided by thorn \textbf{AEIThorns/AEILocalInterp}) to get sufficient
+accuracy.
+
+One problem with such high resolutions is that \thorn{IDAxiBrillBH}
+uses an internal multigrid solver which allocates local arrays on the
+stack, whose size depends on the $\eta$ and $\theta$ resolutions.
+For high resolutions these arrays may exceed system- and/or shell-imposed
+limits on the maximum stack size, causing the code to crash (core-dump).
+In an ideal world, someone would fix the offending code to allocate
+large arrays on the heap.  Unless/until that happens, you can either
+use lower resolution :(, or try raising the operating-system and/or
+shell stack-size limits.
+For example, using \verb|tcsh| the shell command \verb|limit|
+shows the current limits, and \verb|limit stacksize unlimited|
+raises your limit to as much as the operating system will allow.
+Using \verb|bash| the corresponding commands are \verb|ulimit -a|
+and \verb|ulimit -s unlimited|.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Physical or Conformal Metric}
+
+By default, \thorn{IDAxiBrillBH} generates initial data which uses
+a nontrivial static conformal factor (as defined by thorn
+\thorn{StaticConformal}).  This initial data includes both the
+conformal factor and its 1st and 2nd~spatial derivatives,
+so \thorn{IDAxiBrillBH} sets \verb|conformal_state| to 3.
+
+However, if the Boolean parameter \verb|generate_StaticConformal_metric|
+is set to \verb|false|, then \thorn{IDAxiBrillBH} generates a pure
+physical 3-metric (and sets \verb|conformal_state| to 0).  This is
+useful if you have other thorns which don't grok a conformal metric.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Debugging Parameters}
+
+This thorn has options to print very detailed debugging information
+about internal quantities at selected grid points.  This is enabled
+by setting the integer parameter \verb|debug| to a positive value
+(the default is $0$, which means no debugging output).  See
+\verb|param.ccl| and the source code \verb|src/IDAxiBrillBH.F| for details.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\bibliographystyle{prsty}
+\begin{thebibliography}{10}
+\bibitem{Bernstein93a}
+  D. Bernstein, Ph.D thesis University of Illinois Urbana-Champaign,
+  (1993)
+\bibitem{Brill59}
+  D. S. Brill,Ann. Phys.{\bf 7}, 466 (1959)
+\bibitem{Camarda97a}
+  K. Camarda, Ph.D thesis University of Illinois Urbana-Champaign, (1998)
+\end{thebibliography}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{generate\_staticconformal\_metric}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{amp} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Brill wave amplitude}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{No restriction} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{debug} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em level of debugging information to print                                 (0 = none, 2 = a little, 6 = a lot, 10 = huge amounts)}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{any integer {\textgreater}= 0} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{debug\_i} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em i coordinate for per-grid-point debug printing}} \\
+\hline{\bf Range} & &  {\bf Default:} 14 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any integer} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{debug\_ii} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em i coordinate for per-2D-grid-point debug printing}} \\
+\hline{\bf Range} & &  {\bf Default:} 14 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any integer} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{debug\_j} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em j coordinate for per-grid-point debug printing}} \\
+\hline{\bf Range} & &  {\bf Default:} 15 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any integer} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{debug\_jj} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em j coordinate for per-2D-grid-point debug printing}} \\
+\hline{\bf Range} & &  {\bf Default:} 15 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any integer} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{debug\_k} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em k coordinate for per-grid-point debug printing}} \\
+\hline{\bf Range} & &  {\bf Default:} 10 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{any integer} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{error\_tolerance} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em tolerance parameter for elliptic solver}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0e-12 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{any positive real number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{eta0} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Brill wave center (in eta coords)}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{No restriction} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{etamax} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em eta value for outer edge of grid}} \\
+\hline{\bf Range} & &  {\bf Default:} 5.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{No restriction} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{generate\_staticconformal\_metric} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em should we generate a StaticConformal conformal metric (true),	   or a pure ADMBase physical metric (false)}} \\
+\hline & & {\bf Default:} true \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{interpolation\_order} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Order for interpolation}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:9} & \multicolumn{2}{p{\paraWidth}|}{any integer accepted by the interpolator} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{interpolator\_name} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em name of CCTK\_InterpLocalUniform() interpolation operator}} \\
+\hline{\bf Range} & &  {\bf Default:} uniform cartesian \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{any string} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{interpolator\_pars} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em parameters for the interpolation operator}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{"any nonempty string acceptable to Util\_TableSetFromStr 
+ing()		   and to the interpolator, or the empty string to use 'order=n',	   where  n  is specified by the  interpolation\_order  parameter"} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{n} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em sin\^n theta in Brill wave}} \\
+\hline{\bf Range} & &  {\bf Default:} 2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{No restriction} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{ne} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em eta resolution for solve}} \\
+\hline{\bf Range} & &  {\bf Default:} 300 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{No restriction} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{nq} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em theta resolution for solve}} \\
+\hline{\bf Range} & &  {\bf Default:} 50 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{No restriction} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{output\_psi2d} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em should we output the conformal factor psi on the 2D grid?}} \\
+\hline & & {\bf Default:} false \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{output\_psi2d\_file\_name} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em if we output the conformal factor psi on the 2D grid,		   what file name should we use for the output file?}} \\
+\hline{\bf Range} & &  {\bf Default:} psi2D.dat \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .+} & \multicolumn{2}{p{\paraWidth}|}{any non-empty string that's a valid file name} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{sigma} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Brill wave width (in eta)}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{No restriction} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{initial\_data} & {\bf Scope:} shared from ADMBASE & KEYWORD \\\hline
+\multicolumn{3}{|l|}{\bf Extends ranges:}\\ 
+\hline\multicolumn{1}{|p{\maxVarWidth}|}{\centering axibrillbh} & \multicolumn{2}{p{\paraWidth}|}{Axisymmetry Initial data for Black hole + Brill wave} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{initial\_lapse} & {\bf Scope:} shared from ADMBASE & KEYWORD \\\hline
+\multicolumn{3}{|l|}{\bf Extends ranges:}\\ 
+\hline\multicolumn{1}{|p{\maxVarWidth}|}{\centering schwarz} & \multicolumn{2}{p{\paraWidth}|}{Set lapse to Schwarzschild} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{metric\_type} & {\bf Scope:} shared from ADMBASE & KEYWORD \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+idaxibrillbh
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+admbase
+
+grid
+
+staticconformal
+\vspace{2mm}
+
+\vspace{5mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn EinsteinInitialData/IDAxiBrillBH.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}NONE
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PARAMCHECK}   (conditional) 
+
+\hspace{5mm} idaxibrillbh\_paramchecker 
+
+\hspace{5mm}{\it check that the metric\_type is recognised } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf ADMBase\_InitialData}   (conditional) 
+
+\hspace{5mm} idaxibrillbh 
+
+\hspace{5mm}{\it construct idaxibrillbh } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Reads:  & grid::coordinates(everywhere) \\ 
+~ & Storage:  & staticconformal::confac \\ 
+~& ~ &staticconformal::confac\_1derivs\\ 
+~& ~ &staticconformal::confac\_2derivs\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & admbase::metric(everywhere) \\ 
+~& ~ &admbase::curv(everywhere)\\ 
+~& ~ &admbase::lapse(everywhere)\\ 
+~& ~ &admbase::shift(everywhere)\\ 
+~& ~ &staticconformal::confac(everywhere)\\ 
+~& ~ &staticconformal::confac\_1derivs(everywhere)\\ 
+~& ~ &staticconformal::confac\_2derivs(everywhere)\\ 
+~& ~ &staticconformal::conformal\_state(everywhere)\\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

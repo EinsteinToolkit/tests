@@ -1,0 +1,1049 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>IOHDF5</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">IOHDF5</h2>
+ <div class="author" ><span 
+class="cmr-12">Thomas Radke</span></div>
+<br />
+<div class="date" >\( \)<span 
+class="cmr-12">Date</span>\( \)</div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 27--><p class="noindent" ><span 
+class="cmr-9">Thorn </span><span 
+class="cmti-9">IOHDF5</span><span 
+class="cmr-9"> provides an I/O method to output variables in HDF5 file format. It also implements</span>
+     <span 
+class="cmr-9">checkpointing/recovery functionality using HDF5.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Purpose</h3>
+<!--l. 34--><p class="noindent" >Thorn  <span 
+class="cmti-10">IOHDF5</span> uses  the  standard  I/O  library
+HDF5<span class="footnote-mark"><a 
+href="documentation2.html#fn1x0"><sup class="textsuperscript">1</sup></a></span><a 
+ id="x1-1001f1"></a> 
+to output any type of CCTK grid variables (grid scalars, grid functions, and grid arrays of arbitrary dimension)
+in the HDF5 file format.<br 
+class="newline" />
+                                                                                       
+                                                                                       
+</p><!--l. 39--><p class="noindent" >Output is done by invoking the <span 
+class="cmti-10">IOHDF5</span> I/O method which thorn <span 
+class="cmti-10">IOHDF5</span>registers with the flesh’s I/O
+interface at startup.<br 
+class="newline" />
+</p><!--l. 42--><p class="noindent" >Data is written into files named <span 
+class="cmtt-10">&#x0022;&#x003C;varname&#x003E;.h5&#x0022;</span>. Such datafiles can be used for further postprocessing (eg.
+visualization) or fed back into Cactus via the filereader capabilities of thorn <span 
+class="cmbx-10">IOUtil</span>.
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a><span 
+class="cmti-10">IOHDF5</span> Parameters</h3>
+<!--l. 49--><p class="noindent" >Parameters to control the <span 
+class="cmti-10">IOHDF5</span> I/O method are: </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 51--><p class="noindent" ><span 
+class="cmtt-10">IOHDF5::out</span><span 
+class="cmtt-10">_every </span>(steerable)<br 
+class="newline" />How often to do periodic <span 
+class="cmti-10">IOHDF5</span> output. If this parameter is set in the parameter file, it will
+     override the setting of the shared <span 
+class="cmtt-10">IO::out</span><span 
+class="cmtt-10">_every </span>parameter. The output frequency can also be
+     set  for  individual  variables  using  the  <span 
+class="cmtt-10">out</span><span 
+class="cmtt-10">_every </span>option  in  an  option  string  appended  to  the
+     <span 
+class="cmtt-10">IOHDF5::out</span><span 
+class="cmtt-10">_vars </span>parameter.
+     </p></li>
+     <li class="itemize">
+     <!--l. 57--><p class="noindent" ><span 
+class="cmtt-10">IOHDF5::out</span><span 
+class="cmtt-10">_vars </span>(steerable)<br 
+class="newline" />The list of variables to output using the <span 
+class="cmti-10">IOHDF5</span> I/O method. The variables must be given by
+     their fully qualified variable or group name. The special keyword <span 
+class="cmti-10">all </span>requests <span 
+class="cmti-10">IOHDF5</span> output for
+     all variables. Multiple names must be separated by whitespaces.<br 
+class="newline" />An option string can be appended in curly braces to a group/variable name. Supported options are
+     <span 
+class="cmtt-10">out</span><span 
+class="cmtt-10">_every </span>(to set the output frequency for individual variables) and hyperslab options (see section
+     <a 
+href="#x1-40004">4<!--tex4ht:ref: IOHDF5_output_hyperslabs --></a> for details).
+     </p></li>
+     <li class="itemize">
+     <!--l. 66--><p class="noindent" ><span 
+class="cmtt-10">IOHDF5::out</span><span 
+class="cmtt-10">_dir</span><br 
+class="newline" />The directory in which to place the <span 
+class="cmti-10">IOHDF5</span> output files. If the directory doesn’t exist at startup
+     it will be created.<br 
+class="newline" />If this parameter is set to an empty string <span 
+class="cmti-10">IOHDF5</span> output will go to the standard output directory
+     as specified in <span 
+class="cmtt-10">IO::out</span><span 
+class="cmtt-10">_dir</span>.</p></li></ul>
+<!--l. 74--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-30003"></a>Serial versus Parallel Output</h3>
+<!--l. 76--><p class="noindent" >According to the ouptput mode parameter settings (<span 
+class="cmtt-10">IO::out</span><span 
+class="cmtt-10">_mode</span>, <span 
+class="cmtt-10">IO::out</span><span 
+class="cmtt-10">_unchunked</span>,<br 
+class="newline" /><span 
+class="cmtt-10">IO::out</span><span 
+class="cmtt-10">_proc</span><span 
+class="cmtt-10">_every</span>) of thorn <span 
+class="cmbx-10">IOUtil</span>, thorn <span 
+class="cmti-10">IOHDF5</span> will output distributed data either </p>
+                                                                                       
+                                                                                       
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 80--><p class="noindent" >in serial into a single unchunked file
+                                                                                       
+                                                                                       
+</p>
+     <pre class="verbatim" id="verbatim-1">
+       IO::out_mode      = &#x0022;onefile&#x0022;
+       IO::out_unchunked = &#x0022;yes&#x0022;
+</pre>
+     <!--l. 84--><p class="nopar" >
+     </p></li>
+     <li class="itemize">
+     <!--l. 85--><p class="noindent" >in parallel, that is, into separate files containing chunks of the individual processors’ patches of the
+     distributed array
+                                                                                       
+                                                                                       
+</p>
+     <pre class="verbatim" id="verbatim-2">
+       IO::out_mode      = &#x0022;proc|np&#x0022;
+</pre>
+     <!--l. 89--><p class="nopar" ></p></li></ul>
+<!--l. 91--><p class="noindent" >The default is to output data in parallel, in order to get maximum I/O performance. If needed, you can
+recombine the resulting chunked datafiles into a single unchunked file using the recombiner utility program. See
+section <a 
+href="#x1-90009">9<!--tex4ht:ref: IOHDF5_utility_programs --></a> for information how to build the recombiner program.
+</p><!--l. 98--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-40004"></a>Output of Hyperslab Data</h3>
+<!--l. 101--><p class="noindent" >By default, thorn <span 
+class="cmti-10">IOHDF5</span> outputs multidimensional Cactus variables with their full contents resulting in
+maximum data output. This can be changed for individual variables by specifying a hyperslab as a subset of the
+data within the N-dimensional volume. Such a subset (called a <span 
+class="cmti-10">hyperslab</span>) is generally defined as an orthogonal
+region into the multidimensional dataset, with an origin (lower left corner of the hyperslab), direction vectors
+(defining the number of hyperslab dimensions and spanning the hyperslab within the N-dimensional grid),
+an extent (the length of the hyperslab in each of its dimensions), and an optional downsampling
+factor.
+</p><!--l. 111--><p class="noindent" >Hyperslab parameters can be set for individual variables using an option string appended to the variables’ full
+names in the <span 
+class="cmtt-10">IOHDF5::out</span><span 
+class="cmtt-10">_vars </span>parameter.
+</p><!--l. 114--><p class="noindent" >Here is an example which outputs two 3D grid functions <span 
+class="cmtt-10">Grid::r </span>and <span 
+class="cmtt-10">Wavetoy::phi</span>. While the first is output
+with their full contents at every 5th iteration (overriding the <span 
+class="cmtt-10">IOHDF5::out</span><span 
+class="cmtt-10">_every </span>parameter for this variable), a
+two-dimensional hyperslab is defined for the second grid function. This hyperslab defines a subvolume to output,
+starting with a 5 grid points offset into the grid, spanning in the yz-plane, with an extent of 10 and 20 grid
+points in y- and z-direction respectively. For this hyperslab, only every other grid point will be
+output.
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-3">
+  IOHDF5::out_every = 1
+  IOHDF5::out_vars  = &#x0022;Grid::x{ out_every = 5 }
+                       Wavetoy::phi{ origin     = {4 4 4}
+                                     direction  = {0 1 0
+                                                   0 0 1}
+                                     extent     = {10 20}
+                                     downsample = {2 2}   }&#x0022;
+</pre>
+<!--l. 131--><p class="nopar" >
+</p><!--l. 133--><p class="noindent" >The hyperslab parameters which can be set in an option string are: </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 135--><p class="noindent" ><span 
+class="cmtt-10">origin[N]</span><br 
+class="newline" />This specifies the origin of the hyperslab. It must be given as an array of integer values with \(N\)
+     elements. Each value specifies the offset in grid points in this dimension into the N-dimensional
+     volume of the grid variable.<br 
+class="newline" />If the origin for a hyperslab is not given, if will default to 0.
+     </p></li>
+     <li class="itemize">
+     <!--l. 141--><p class="noindent" ><span 
+class="cmtt-10">direction[N][M]</span><br 
+class="newline" />The direction vectors specify both the directions in which the hyperslab should be spanned (each
+     vector defines one direction of the hyperslab) and its dimensionality (\(=\) the total number of dimension
+     vectors). The direction vectors must be given as a concatenated array of integer values. The direction
+     vectors must not be a linear combination of each other or null vectors.<br 
+class="newline" />If the direction vectors for a hyperslab are not given, the hyperslab dimensions will default to \(N\), and
+     its directions are parallel to the underlying grid.
+     </p></li>
+     <li class="itemize">
+     <!--l. 151--><p class="noindent" ><span 
+class="cmtt-10">extent[M]</span><br 
+class="newline" />This specifies the extent of the hyperslab in each of its dimensions as a number of grid points.
+     It must be given as an array of integer values with \(M\) elements (\(M\) being the number of hyperslab
+     dimensions).<br 
+class="newline" />If the extent for a hyperslab is not given, it will default to the grid variable’s extent. Note that if
+     the origin is set to a non-zero value, you should also set the hyperslab extent otherwise the default
+     extent would possibly exceed the variable’s grid extent.
+     </p></li>
+     <li class="itemize">
+     <!--l. 159--><p class="noindent" ><span 
+class="cmtt-10">downsample[M]</span><br 
+class="newline" />To select only every so many grid points from the hyperslab you can set the downsample option.
+                                                                                       
+                                                                                       
+     It must be given as an array of integer values with \(M\) elements (\(M\) being the number of hyperslab
+     dimensions).<br 
+class="newline" />If the downsample option is not given, it will default to the settings of the general downsampling
+     parameters <span 
+class="cmtt-10">IO::out</span><span 
+class="cmtt-10">_downsample</span><span 
+class="cmtt-10">_[xyz] </span>as defined by thorn <span 
+class="cmbx-10">IOUtil</span>.</p></li></ul>
+<!--l. 169--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-50005"></a><span 
+class="cmti-10">IOHDF5</span> Output Restrictions</h3>
+<!--l. 171--><p class="noindent" >Due to the naming scheme used to build unique names for HDF5 datasets (see <a 
+href="#x1-70007">7<!--tex4ht:ref: IOHDF5_import_data --></a>, the <span 
+class="cmti-10">IOHDF5</span> I/O method
+currently has the restriction that it can output a given variable (with a specific timelevel) – or a hyperslab of it –
+only once per iteration.
+</p><!--l. 176--><p class="noindent" >As a workaround, you should request output in such a case by using the flesh’s I/O API <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_OutputVarAsByMethod()</span>
+routine with a different alias name for each output. Note that this will create multiple output files for the same
+variable then.
+</p><!--l. 181--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">6   </span> <a 
+ id="x1-60006"></a>Checkpointing &#x0026; Recovery</h3>
+<!--l. 183--><p class="noindent" >Thorn <span 
+class="cmti-10">IOHDF5</span> can also be used for creating HDF5 checkpoint files and recovering from such files later
+on.
+</p><!--l. 186--><p class="noindent" >Checkpoint routines are scheduled at several timebins so that you can save the current state of your simulation
+after the initial data phase, during evolution, or at termination. Checkpointing for thorn <span 
+class="cmti-10">IOHDF5</span> is enabled by
+setting the parameter <span 
+class="cmtt-10">IOHDF5::checkpoint = &#x0022;yes&#x0022;</span>.
+</p><!--l. 191--><p class="noindent" >A recovery routine is registered with thorn <span 
+class="cmbx-10">IOUtil </span>in order to restart a new simulation from a given HDF5
+checkpoint. The very same recovery mechanism is used to implement a filereader functionality to feed back data
+into Cactus.
+</p><!--l. 196--><p class="noindent" >Checkpointing and recovery are controlled by corresponding checkpoint/recovery parameters of thorn <span 
+class="cmbx-10">IOUtil</span>
+(for a description of these parameters please refer to this thorn’s documentation). The parameter
+<span 
+class="cmtt-10">IO::checkpoint</span><span 
+class="cmtt-10">_every</span><span 
+class="cmtt-10">_walltime</span><span 
+class="cmtt-10">_hours </span>is not (yet) supported.
+</p><!--l. 202--><p class="noindent" >
+</p>
+                                                                                       
+                                                                                       
+<h3 class="sectionHead"><span class="titlemark">7   </span> <a 
+ id="x1-70007"></a>Importing External Data Into Cactus With <span 
+class="cmti-10">IOHDF5</span></h3>
+<!--l. 205--><p class="noindent" >In order to import external data into Cactus (eg. to initialize some variable) you first need to convert this data
+into an HDF5 datafile which then can be processed by the registered recovery routine of thorn
+<span 
+class="cmti-10">IOHDF5</span>.
+</p><!--l. 209--><p class="noindent" >The following description explains the HDF5 file layout of an unchunked datafile which thorn <span 
+class="cmti-10">IOHDF5</span> expects
+in order to restore Cactus variables from it properly. There is also a well-documented example C program
+provided (<span 
+class="cmtt-10">IOHDF5/doc/CreateIOHDF5datafile.c</span>) which illustrates how to create a datafile with
+<span 
+class="cmti-10">IOHDF5</span> file layout. This working example can be used as a template for building your own data converter
+program.<br 
+class="newline" />
+</p><!--l. 216--><p class="noindent" >
+     </p><ol  class="enumerate1" >
+<li 
+  class="enumerate" id="x1-7002x1">
+     <!--l. 217--><p class="noindent" >Actual data is stored as multidimensional datasets in an HDF5 file. There is no nested grouping structure,
+     every dataset is located in the root group.<br 
+class="newline" />A dataset’s name must match the following naming pattern which guarantees to generate unique
+     names:
+                                                                                       
+                                                                                       
+</p>
+     <pre class="verbatim" id="verbatim-4">
+       &#x0022;&#x003C;full variable name&#x003E; timelevel &#x003C;timelevel&#x003E; at iteration &#x003C;iteration&#x003E;&#x0022;
+</pre>
+     <!--l. 224--><p class="nopar" > <span 
+class="cmti-10">IOHDF5</span>’s recovery routine parses a dataset’s name according to this pattern to determine the Cactus
+     variable to restore, along with its timelevel. The iteration number is just informative and not needed
+     here.
+     </p></li>
+<li 
+  class="enumerate" id="x1-7004x2">
+     <!--l. 229--><p class="noindent" >The type of your data as well as its dimensions are already inherited by a dataset itself as
+     metainformation. But this is not enough for <span 
+class="cmti-10">IOHDF5</span> to safely match it against a specific Cactus variable.
+     For that reason, the variable’s groupname, its grouptype, and the total number of timelevels must be
+     attached to every dataset as attribute information.
+     </p></li>
+<li 
+  class="enumerate" id="x1-7006x3">
+     <!--l. 236--><p class="noindent" >Finally, the recovery routine needs to know how the datafile to recover from was created:
+     </p>
+         <ul class="itemize1">
+         <li class="itemize">
+         <!--l. 239--><p class="noindent" >Does the file contain chunked or unchunked data ?
+         </p></li>
+         <li class="itemize">
+         <!--l. 240--><p class="noindent" >How many processors were used to produce the data ?
+         </p></li>
+         <li class="itemize">
+         <!--l. 241--><p class="noindent" >How many I/O processors were used to write the data ?
+         </p></li>
+         <li class="itemize">
+         <!--l. 242--><p class="noindent" >What Cactus version is this datafile compatible with ?</p></li></ul>
+     <!--l. 244--><p class="noindent" >Such information is put into as attributes into a group named <span 
+class="cmtt-10">&#x0022;Global Attributes&#x0022;</span>. Since we assume
+     unchunked data here the processor information isn’t relevant — unchunked data can be fed back into a
+     Cactus simulation running on an arbitrary number of processors.<br 
+class="newline" />The Cactus version ID must be present to indicate that grid variables with multiple timelevels should be
+     recovered following the new timelevel scheme (as introduced in Cactus beta 10).</p></li></ol>
+<!--l. 254--><p class="noindent" >The example C program goes through all of these steps and creates a datafile <span 
+class="cmtt-10">x.h5 </span>in <span 
+class="cmti-10">IOHDF5</span> file layout
+which contains a single dataset named <span 
+class="cmtt-10">&#x0022;grid::x timelevel 0 at iteration 0&#x0022;</span>, with groupname
+<span 
+class="cmtt-10">&#x0022;grid::coordinates&#x0022;</span>, grouptype <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_GF </span>(thus identifying the variable as a grid function), and the total
+number of timelevels set to 1.
+</p><!--l. 260--><p class="noindent" >The global attributes are set to <span 
+class="cmtt-10">&#x0022;unchunked&#x0022;</span> \(=\) <span 
+class="cmtt-10">&#x0022;yes&#x0022;, nprocs</span> \(=\) <span 
+class="cmtt-10">1, </span>and <span 
+class="cmtt-10">ioproc</span><span 
+class="cmtt-10">_every</span> \(=\) <span 
+class="cmtt-10">1</span>.<br 
+class="newline" />
+</p><!--l. 263--><p class="noindent" >Once you’ve built and ran the program you can easily verify if it worked properly with
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-5">
+  h5dump x.h5
+</pre>
+<!--l. 267--><p class="nopar" > which lists all objects in the datafile along with their values. It will also dump the contents of the 3D dataset.
+Since it only contains zeros it would probably not make much sense to feed this datafile into Cactus for
+initializing your x coordinate grid function :-)
+</p>
+<h3 class="sectionHead"><span class="titlemark">8   </span> <a 
+ id="x1-80008"></a>Building A Cactus Configuration with <span 
+class="cmti-10">IOHDF5</span></h3>
+<!--l. 276--><p class="noindent" >The Cactus distribution does not contain the HDF5 header files and library which is used by thorn <span 
+class="cmti-10">IOHDF5</span>.
+You have to include the thorn HDF5 (located in the Cactus ExternalLibraries arrangement). This thorn will
+either build its own HDF5 library, or use an installed version in some cases.
+</p><!--l. 281--><p class="noindent" >Thorn <span 
+class="cmti-10">IOHDF5</span> inherits from <span 
+class="cmti-10">IOUtil </span>and <span 
+class="cmti-10">IOHDF5Util </span>so you need to include these thorns in your thorn list to
+build a configuration with <span 
+class="cmti-10">IOHDF5</span>.
+</p>
+<h3 class="sectionHead"><span class="titlemark">9   </span> <a 
+ id="x1-90009"></a>Utility Programs provided by <span 
+class="cmti-10">IOHDF5</span></h3>
+<!--l. 290--><p class="noindent" >Thorn <span 
+class="cmti-10">IOHDF5</span> provides the following utility programs: </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 293--><p class="noindent" ><span 
+class="cmtt-10">hdf5</span><span 
+class="cmtt-10">_recombiner</span><br 
+class="newline" />Recombines chunked HDF5 datafile(s) into a single unchunked HDF5 datafile. By applying the
+     <span 
+class="cmtt-10">-single</span><span 
+class="cmtt-10">_precision </span>command line option, double precision floating-point datasets can be converted
+     into single precision during the recombination.
+     </p></li>
+     <li class="itemize">
+     <!--l. 298--><p class="noindent" ><span 
+class="cmtt-10">hdf5</span><span 
+class="cmtt-10">_convert</span><span 
+class="cmtt-10">_from</span><span 
+class="cmtt-10">_ieeeio</span><br 
+class="newline" />Converts a datafile created by thorn <span 
+class="cmbx-10">IOFlexIO </span>into an HDF5 datafile. Your thornlist must include
+     this thorn in its thornlist in order to build the FlexIO-to-HDF5 utility program.
+     </p></li>
+     <li class="itemize">
+     <!--l. 301--><p class="noindent" ><span 
+class="cmtt-10">hdf5</span><span 
+class="cmtt-10">_convert</span><span 
+class="cmtt-10">_from</span><span 
+class="cmtt-10">_sdf</span><br 
+class="newline" />Converts a datafile created by thorn <span 
+class="cmbx-10">CactusIO/IOSDF </span>or other Cactus-external programs into
+     an HDF5 datafile. Your thornlist must include this thorn in its thornlist in order to build the
+     SDF-to-HDF5 utility program.</p></li></ul>
+<!--l. 306--><p class="noindent" >All utility programs are located in the <span 
+class="cmtt-10">src/util/ </span>subdirectory of thorn <span 
+class="cmti-10">IOHDF5</span>. To build the utilities just do
+a
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-6">
+  make &#x003C;configuration&#x003E;-utils
+</pre>
+<!--l. 311--><p class="nopar" >
+</p><!--l. 313--><p class="noindent" >in the Cactus toplevel directory. The executables will then be placed in the <span 
+class="cmtt-10">exe/&#x003C;configuration&#x003E;/</span>
+subdirectory.
+</p><!--l. 316--><p class="noindent" >All utility programs are self-explaining – just call them without arguments to get a short usage info. If any of
+these utility programs is called without arguments it will print a usage message.
+</p><!--l. 326--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">10   </span> <a 
+ id="x1-1000010"></a>Parameters</h3>
+<!--l. 345--><p class="noindent" ></p> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /></colgroup><colgroup id="TBL-2-2g"><col 
+id="TBL-2-2" /><col 
+id="TBL-2-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:normal; text-align:left;" id="TBL-2-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">checkpoint</div>                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-1-3"  
+class="td01">                                 BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-2-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Do checkpointing with HDF5</span></div>                                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-1"  
+class="td11">                      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-3-3"  
+class="td01">                                <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-4-1"  
+class="td11">                      </td></tr></table>
+<!--l. 352--><p class="noindent" ></p> <table id="TBL-3" class="tabular" 
+ 
+><colgroup id="TBL-3-1g"><col 
+id="TBL-3-1" /></colgroup><colgroup id="TBL-3-2g"><col 
+id="TBL-3-2" /><col 
+id="TBL-3-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-1-"><td  style="white-space:normal; text-align:left;" id="TBL-3-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">checkpoint_next</div>          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-1-3"  
+class="td01">                                 BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-3-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Checkpoint at next iteration</span></div>                                                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-3-1"  
+class="td11">                      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-3-3"  
+class="td01">                                <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-4-1"  
+class="td11">                      </td></tr></table>
+<!--l. 359--><p class="noindent" ></p> <table id="TBL-4" class="tabular" 
+ 
+><colgroup id="TBL-4-1g"><col 
+id="TBL-4-1" /></colgroup><colgroup id="TBL-4-2g"><col 
+id="TBL-4-2" /><col 
+id="TBL-4-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-1-"><td  style="white-space:normal; text-align:left;" id="TBL-4-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">out_dir</div>                      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-1-3"  
+class="td01">                                        STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-4-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Output directory for IOHDF5 files, overrides IO::out</span><span 
+class="cmti-10">_dir</span></div>                                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-3-1"  
+class="td11">        <span 
+class="cmbx-10">Range           </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-3-3"  
+class="td01">                                  <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-4-"><td  style="white-space:normal; text-align:left;" id="TBL-4-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.+</div>                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">A valid directory name</div>                                                                     
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-5-"><td  style="white-space:normal; text-align:left;" id="TBL-4-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><img 
+src="documentation0x.png" alt="ˆ$  "  class="circ"  /></div>                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">An empty string to choose the default from IO::out_dir</div>                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-6-1"  
+class="td11">                      </td></tr></table>
+<!--l. 366--><p class="noindent" ></p> <table id="TBL-5" class="tabular" 
+ 
+><colgroup id="TBL-5-1g"><col 
+id="TBL-5-1" /></colgroup><colgroup id="TBL-5-2g"><col 
+id="TBL-5-2" /><col 
+id="TBL-5-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-1-"><td  style="white-space:normal; text-align:left;" id="TBL-5-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">out_every</div>                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-1-3"  
+class="td01">                                            INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-5-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">How often to do IOHDF5 output, overrides IO::out</span><span 
+class="cmti-10">_every</span></div>                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-3-1"  
+class="td11">        <span 
+class="cmbx-10">Range           </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-3-3"  
+class="td01">                                      <span 
+class="cmbx-10">Default: </span>-1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-4-"><td  style="white-space:normal; text-align:left;" id="TBL-5-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1:*</div>                            </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-5-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Every so many iterations</div>                                                                   
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-5-"><td  style="white-space:normal; text-align:left;" id="TBL-5-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:</div>                              </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-5-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Disable IOHDF5 output</div>                                                                    
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-6-"><td  style="white-space:normal; text-align:left;" id="TBL-5-6-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1:</div>                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-5-6-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Default to IO::out_every</div>                                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-7-1"  
+class="td11">                      </td></tr></table>
+<!--l. 373--><p class="noindent" ></p> <table id="TBL-6" class="tabular" 
+ 
+><colgroup id="TBL-6-1g"><col 
+id="TBL-6-1" /></colgroup><colgroup id="TBL-6-2g"><col 
+id="TBL-6-2" /><col 
+id="TBL-6-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-1-"><td  style="white-space:normal; text-align:left;" id="TBL-6-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">out_vars</div>                    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-1-3"  
+class="td01">                                        STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-6-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Variables to output in HDF5 file format</span></div>                                                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-3-1"  
+class="td11">        <span 
+class="cmbx-10">Range           </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-3-3"  
+class="td01">                                  <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-4-"><td  style="white-space:normal; text-align:left;" id="TBL-6-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.+</div>                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-6-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Space-separated list of fully qualified variable/group names</div>                      
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-5-"><td  style="white-space:normal; text-align:left;" id="TBL-6-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><img 
+src="documentation1x.png" alt="ˆ$  "  class="circ"  /></div>                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-6-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">An empty string to output nothing</div>                                                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-6-1"  
+class="td11">                      </td></tr></table>
+<!--l. 380--><p class="noindent" ></p> <table id="TBL-7" class="tabular" 
+ 
+><colgroup id="TBL-7-1g"><col 
+id="TBL-7-1" /></colgroup><colgroup id="TBL-7-2g"><col 
+id="TBL-7-2" /><col 
+id="TBL-7-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-1-"><td  style="white-space:normal; text-align:left;" id="TBL-7-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">checkpoint_every</div>         </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from IO</td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-1-3"  
+class="td01">INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-2-1"  
+class="td11">                      </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 385--><p class="noindent" ></p> <table id="TBL-8" class="tabular" 
+ 
+><colgroup id="TBL-8-1g"><col 
+id="TBL-8-1" /></colgroup><colgroup id="TBL-8-2g"><col 
+id="TBL-8-2" /><col 
+id="TBL-8-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-1-"><td  style="white-space:normal; text-align:left;" id="TBL-8-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">checkpoint_id</div>             </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from IO</td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-1-3"  
+class="td01">BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-2-1"  
+class="td11">                      </td></tr></table>
+<!--l. 390--><p class="noindent" ></p> <table id="TBL-9" class="tabular" 
+ 
+><colgroup id="TBL-9-1g"><col 
+id="TBL-9-1" /></colgroup><colgroup id="TBL-9-2g"><col 
+id="TBL-9-2" /><col 
+id="TBL-9-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-1-"><td  style="white-space:normal; text-align:left;" id="TBL-9-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">checkpoint_keep</div>          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from IO</td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-1-3"  
+class="td01">INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-2-1"  
+class="td11">                      </td></tr></table>
+<!--l. 395--><p class="noindent" ></p> <table id="TBL-10" class="tabular" 
+ 
+><colgroup id="TBL-10-1g"><col 
+id="TBL-10-1" /></colgroup><colgroup id="TBL-10-2g"><col 
+id="TBL-10-2" /><col 
+id="TBL-10-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-1-"><td  style="white-space:normal; text-align:left;" id="TBL-10-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">checkpoint_on_terminate</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from IO</td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-1-3"  
+class="td01">BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-2-1"  
+class="td11">                      </td></tr></table>
+<!--l. 400--><p class="noindent" ></p> <table id="TBL-11" class="tabular" 
+ 
+><colgroup id="TBL-11-1g"><col 
+id="TBL-11-1" /></colgroup><colgroup id="TBL-11-2g"><col 
+id="TBL-11-2" /><col 
+id="TBL-11-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-1-"><td  style="white-space:normal; text-align:left;" id="TBL-11-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">io_out_dir</div>                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from IO</td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-1-3"  
+class="td01">STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-2-1"  
+class="td11">                      </td></tr></table>
+<!--l. 405--><p class="noindent" ></p> <table id="TBL-12" class="tabular" 
+ 
+><colgroup id="TBL-12-1g"><col 
+id="TBL-12-1" /></colgroup><colgroup id="TBL-12-2g"><col 
+id="TBL-12-2" /><col 
+id="TBL-12-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-1-"><td  style="white-space:normal; text-align:left;" id="TBL-12-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">io_out_every</div>               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from IO</td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-1-3"  
+class="td01">INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-2-1"  
+class="td11">                      </td></tr></table>
+<!--l. 410--><p class="noindent" ></p> <table id="TBL-13" class="tabular" 
+ 
+><colgroup id="TBL-13-1g"><col 
+id="TBL-13-1" /></colgroup><colgroup id="TBL-13-2g"><col 
+id="TBL-13-2" /><col 
+id="TBL-13-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-1-"><td  style="white-space:normal; text-align:left;" id="TBL-13-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">out_mode</div>                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from IO</td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-1-3"  
+class="td01">KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-2-1"  
+class="td11">                      </td></tr></table>
+<!--l. 415--><p class="noindent" ></p> <table id="TBL-14" class="tabular" 
+ 
+><colgroup id="TBL-14-1g"><col 
+id="TBL-14-1" /></colgroup><colgroup id="TBL-14-2g"><col 
+id="TBL-14-2" /><col 
+id="TBL-14-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-1-"><td  style="white-space:normal; text-align:left;" id="TBL-14-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">out_save_parameters</div>    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from IO</td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-1-3"  
+class="td01">KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-2-1"  
+class="td11">                      </td></tr></table>
+<!--l. 420--><p class="noindent" ></p> <table id="TBL-15" class="tabular" 
+ 
+><colgroup id="TBL-15-1g"><col 
+id="TBL-15-1" /></colgroup><colgroup id="TBL-15-2g"><col 
+id="TBL-15-2" /><col 
+id="TBL-15-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-1-"><td  style="white-space:normal; text-align:left;" id="TBL-15-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">out_timesteps_per_file</div>  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from IO</td><td  style="white-space:nowrap; text-align:right;" id="TBL-15-1-3"  
+class="td01">INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-2-1"  
+class="td11">                      </td></tr></table>
+<!--l. 425--><p class="noindent" ></p> <table id="TBL-16" class="tabular" 
+ 
+><colgroup id="TBL-16-1g"><col 
+id="TBL-16-1" /></colgroup><colgroup id="TBL-16-2g"><col 
+id="TBL-16-2" /><col 
+id="TBL-16-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-1-"><td  style="white-space:normal; text-align:left;" id="TBL-16-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">print_timing_info</div>        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from IO</td><td  style="white-space:nowrap; text-align:right;" id="TBL-16-1-3"  
+class="td01">BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-2-1"  
+class="td11">                      </td></tr></table>
+<!--l. 430--><p class="noindent" ></p> <table id="TBL-17" class="tabular" 
+ 
+><colgroup id="TBL-17-1g"><col 
+id="TBL-17-1" /></colgroup><colgroup id="TBL-17-2g"><col 
+id="TBL-17-2" /><col 
+id="TBL-17-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-1-"><td  style="white-space:normal; text-align:left;" id="TBL-17-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">recover</div>                      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from IO</td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-1-3"  
+class="td01">KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-2-1"  
+class="td11">                      </td></tr></table>
+<!--l. 435--><p class="noindent" ></p> <table id="TBL-18" class="tabular" 
+ 
+><colgroup id="TBL-18-1g"><col 
+id="TBL-18-1" /></colgroup><colgroup id="TBL-18-2g"><col 
+id="TBL-18-2" /><col 
+id="TBL-18-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-1-"><td  style="white-space:normal; text-align:left;" id="TBL-18-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">recover_and_remove</div>     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from IO</td><td  style="white-space:nowrap; text-align:right;" id="TBL-18-1-3"  
+class="td01">BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-2-1"  
+class="td11">                      </td></tr></table>
+<!--l. 440--><p class="noindent" ></p> <table id="TBL-19" class="tabular" 
+ 
+><colgroup id="TBL-19-1g"><col 
+id="TBL-19-1" /></colgroup><colgroup id="TBL-19-2g"><col 
+id="TBL-19-2" /><col 
+id="TBL-19-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-1-"><td  style="white-space:normal; text-align:left;" id="TBL-19-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">recover_file</div>                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from IO</td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-1-3"  
+class="td01">STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-2-1"  
+class="td11">                      </td></tr></table>
+<!--l. 445--><p class="noindent" ></p> <table id="TBL-20" class="tabular" 
+ 
+><colgroup id="TBL-20-1g"><col 
+id="TBL-20-1" /></colgroup><colgroup id="TBL-20-2g"><col 
+id="TBL-20-2" /><col 
+id="TBL-20-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-1-"><td  style="white-space:normal; text-align:left;" id="TBL-20-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">strict_io_parameter_check</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from IO</td><td  style="white-space:nowrap; text-align:right;" id="TBL-20-1-3"  
+class="td01">BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-2-1"  
+class="td11">                      </td></tr></table>
+<!--l. 450--><p class="noindent" ></p> <table id="TBL-21" class="tabular" 
+ 
+><colgroup id="TBL-21-1g"><col 
+id="TBL-21-1" /></colgroup><colgroup id="TBL-21-2g"><col 
+id="TBL-21-2" /><col 
+id="TBL-21-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-1-"><td  style="white-space:normal; text-align:left;" id="TBL-21-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">verbose</div>                      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from IO</td><td  style="white-space:nowrap; text-align:right;" id="TBL-21-1-3"  
+class="td01">KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-2-1"  
+class="td11">                      </td></tr></table>
+<!--l. 457--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">11   </span> <a 
+ id="x1-1100011"></a>Interfaces</h3>
+<!--l. 462--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-12000"></a>General</h4>
+<!--l. 464--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 466--><p class="noindent" >iohdf5
+                                                                                       
+                                                                                       
+</p><!--l. 471--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">12   </span> <a 
+ id="x1-1300012"></a>Schedule</h3>
+<!--l. 477--><p class="noindent" >This section lists all the variables which are assigned storage by thorn CactusPUGHIO/IOHDF5. Storage can
+either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 480--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-14000"></a>Storage</h4>
+<!--l. 480--><p class="noindent" >NONE
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-15000"></a>Scheduled Functions</h4>
+<!--l. 484--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_STARTUP</span>
+</p><!--l. 486--><p class="noindent" >      iohdf5_startup
+</p><!--l. 488--><p class="noindent" >     <span 
+class="cmti-10">iohdf5 startup routine</span>
+</p><!--l. 491--><p class="noindent" > 
+</p><!--l. 493--><p class="noindent" ></p> <table id="TBL-22" class="tabular" 
+ 
+><colgroup id="TBL-22-1g"><col 
+id="TBL-22-1" /><col 
+id="TBL-22-2" /><col 
+id="TBL-22-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-22-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-1-3"  
+class="td11"> iohdf5util_startup  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-2-3"  
+class="td11"> c                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-3-3"  
+class="td11"> function               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 502--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_CPINITIAL</span>
+</p><!--l. 504--><p class="noindent" >      iohdf5_initialdatacheckpoint
+</p><!--l. 506--><p class="noindent" >     <span 
+class="cmti-10">initial data checkpoint routine</span>
+</p><!--l. 509--><p class="noindent" > 
+</p><!--l. 511--><p class="noindent" ></p> <table id="TBL-23" class="tabular" 
+ 
+><colgroup id="TBL-23-1g"><col 
+id="TBL-23-1" /><col 
+id="TBL-23-2" /><col 
+id="TBL-23-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-23-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 519--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_CHECKPOINT</span>
+</p><!--l. 521--><p class="noindent" >      iohdf5_evolutioncheckpoint
+</p><!--l. 523--><p class="noindent" >     <span 
+class="cmti-10">evolution data checkpoint routine</span>
+</p><!--l. 526--><p class="noindent" > 
+</p><!--l. 528--><p class="noindent" ></p> <table id="TBL-24" class="tabular" 
+ 
+><colgroup id="TBL-24-1g"><col 
+id="TBL-24-1" /><col 
+id="TBL-24-2" /><col 
+id="TBL-24-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-24-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 536--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_TERMINATE</span>
+</p><!--l. 538--><p class="noindent" >      iohdf5_terminationcheckpoint
+</p><!--l. 540--><p class="noindent" >     <span 
+class="cmti-10">termination checkpoint routine</span>
+</p><!--l. 543--><p class="noindent" > 
+</p><!--l. 545--><p class="noindent" ></p> <table id="TBL-25" class="tabular" 
+ 
+><colgroup id="TBL-25-1g"><col 
+id="TBL-25-1" /><col 
+id="TBL-25-2" /><col 
+id="TBL-25-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-25-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-1-2"  
+class="td11"> Before:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-1-3"  
+class="td11"> iohdf5util_terminate  </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-2-1"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-2-2"  
+class="td11"> Language: </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-2-3"  
+class="td11"> c</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-3-3"  
+class="td11"> function                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-4-1"  
+class="td11">    </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 554--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_RECOVER</span><span 
+class="cmbx-10">_PARAMETERS </span>(conditional)
+</p><!--l. 556--><p class="noindent" >      iohdf5_recoverparameters
+</p><!--l. 558--><p class="noindent" >     <span 
+class="cmti-10">parameter recovery routine</span>
+</p><!--l. 561--><p class="noindent" > 
+</p><!--l. 563--><p class="noindent" ></p> <table id="TBL-26" class="tabular" 
+ 
+><colgroup id="TBL-26-1g"><col 
+id="TBL-26-1" /><col 
+id="TBL-26-2" /><col 
+id="TBL-26-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-26-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-3-1"  
+class="td11">    </td></tr></table>
+ 
+</body></html> 
+
+                                                                                       
+
+

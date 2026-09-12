@@ -1,0 +1,158 @@
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+\title{PUGHReduce}
+\author{Gabrielle Allen, Thomas Radke}
+\date{$ $Date$ $}
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+\begin{abstract}
+Reductions operations which are performed using the PUGH driver
+\end{abstract}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Purpose}
+%
+This thorn registers a number of reduction operators with the flesh. The
+reductions are performed using internals of the PUGH driver, so that this
+thorn can only be used when {\tt CactusPUGH/PUGH} is active.\\
+
+The reduction operations this thorn registers are\\
+
+\begin{tabular}{|l|l|l|}
+\hline
+Reduction Operator & Calculates & By \\
+\hline
+{\tt average$^*$, mean$^*$}   & the average/mean of a grid variable & $ \sum{ GV }/N $ \\
+{\tt count}   & the number of grid points in a grid variable & $ N $ \\
+{\tt maximum$^*$}   & the maximum of a grid variable & $ \max{ GV } $ \\
+{\tt minimum$^*$}   & the minimum of a grid variable & $ \min{ GV } $ \\
+{\tt norm1, L1Norm}         & the L1 norm of a grid variable & $ \left(\Sigma |GV| \right)/N $ \\
+{\tt norm2, L2Norm}         & the L2 norm of a grid variable & $ \sqrt[2]{(\Sigma |GV|^2)/N} $ \\
+{\tt norm3, L3Norm}         & the L3 norm of a grid variable & $ \sqrt[3]{(\Sigma |GV|^3)/N} $ \\
+{\tt norm4, L4Norm}         & the L4 norm of a grid variable & $ \sqrt[4]{(\Sigma |GV|^4)/N} $ \\
+{\tt norm\_inf, LinfNorm}     & the Infinitity norm of a grid variable & $ \max{| GV |} $ \\
+{\tt sum$^*$}       & the sum of the elements of a grid variable & $ \sum{ GV } $ \\
+\hline
+\end{tabular}\\
+
+Reduction operators with multiple names are just synonyms for the same kind of
+reduction operation. In the formulas $GV$ is the grid variable to be reduced,
+and $N$ denotes the number of its elements. Reduction operators marked with
+$^*$ cannot be applied to grid variables of complex datatype.
+%
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Examples}
+%
+The following C example illustrates how the get the maximum value of a grid
+function.
+%
+\begin{verbatim}
+  int vindex;             /* grid variable index */
+  CCTK_REAL result;       /* resulting reduction value */
+  int target_proc;        /* processor to hold the result */
+  int reduction_handle;   /* handle for reduction operator */
+  char *reduction_name;   /* reduction operator to use */
+
+
+  /* want to get the maximum for the wavetoy grid function */
+  reduction_name = "maximum";
+  vindex = CCTK_VarIndex ("wavetoy::phi");
+
+  /* the reduction result will be obtained by processor 0 only */
+  target_proc = 0;
+
+  /* get the handle for the given reduction operator */
+  reduction_handle = CCTK_ReductionHandle (reduction_name);
+  if (reduction_handle >= 0)
+  {
+    /* now do the reduction using the flesh's generic reduction API
+      (passing in one input, expecting one output value of REAL type) */
+    if (CCTK_Reduce (cctkGH, target_proc, reduction_handle,
+                     1, CCTK_VARIABLE_REAL, &result, 1, vindex) == 0)
+    {
+      if (CCTK_MyProc (cctkGH) == target_proc)
+      {
+        printf ("%s reduction value is %f\n", reduction_name, result);
+      }
+    }
+    else
+    {
+      CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
+                  "%s reduction failed", reduction_name);
+    }
+  }
+  else
+  {
+    CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
+                "Invalid reduction operator '%s'", reduction_name);
+  }
+\end{verbatim}
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+reduce
+\vspace{2mm}
+
+\vspace{5mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn CactusPUGH/PUGHReduce.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}NONE
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_STARTUP} 
+
+\hspace{5mm} pughreduce\_startup 
+
+\hspace{5mm}{\it startup routine } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

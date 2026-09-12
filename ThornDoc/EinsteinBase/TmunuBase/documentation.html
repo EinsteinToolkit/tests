@@ -1,0 +1,832 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>TmunuBase</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">TmunuBase</h2>
+ <div class="author" ><span 
+class="cmr-12">Erik Schnetter </span><span 
+class="cmmi-12">&#x003C;</span><span 
+class="cmr-12">schnetter@cct.lsu.edu</span><span 
+class="cmmi-12">&#x003E;</span></div>
+<br />
+<div class="date" ><span 
+class="cmr-12">2008-04-07</span></div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 29--><p class="noindent" ><span 
+class="cmr-9">Provide grid functions for the stress-energy tensor</span> \(T_{\mu \nu }\)<span 
+class="cmr-9">, and schedule when these grid functions are</span>
+     <span 
+class="cmr-9">calculated. This allows different thorns to cooperate without explicitly depending on each other.</span>
+     <span 
+class="cmr-9">Thorn TmunuBase is for the stress-energy tensor what thorn ADMBase is for the metric tensor.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Introduction</h3>
+<!--l. 38--><p class="noindent" >Thorn <span 
+class="cmtt-10">TmunuBase </span>provides core infrastructure for thorns implementing some kind of energy or matter in general
+relativity, for example general relativistic hydrodynamics formulations. It provides the basic variables, i.e., the
+stress-energy tensor \(T_{\mu \nu }\), in addition to a set of parameters to regulate their use. These variables are used to
+communicate between (possibly multiple) thorns contributing to the stress-energy content of the
+spacetime, and thorns needing to evaluate the stress-energy tensor such as spacetime evolution
+methods. It also provides schedule groups to manage when \(T_{\mu \nu }\) is calculated and when it is ready for
+access.
+                                                                                       
+                                                                                       
+</p><!--l. 49--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a>Using TmunuBase</h3>
+<!--l. 51--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.1   </span> <a 
+ id="x1-30002.1"></a>Variables</h4>
+<!--l. 53--><p class="noindent" >TmunuBase weakly assumes (but does not require) that the spacetime is described in terms of a \(3+1\) decomposition.
+The variables provided by <span 
+class="cmtt-10">TmunuBase </span>are: </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 57--><p class="noindent" >The “scalar” part of \(T_{\mu \nu }\), its time-time component: <span 
+class="cmtt-10">eTtt</span>
+     </p></li>
+     <li class="itemize">
+     <!--l. 59--><p class="noindent" >The “vector” part of \(T_{\mu \nu }\), its time-space components: <span 
+class="cmtt-10">eTtx</span>, <span 
+class="cmtt-10">eTty</span>, <span 
+class="cmtt-10">eTtz</span>
+     </p></li>
+     <li class="itemize">
+     <!--l. 61--><p class="noindent" >The “tensor” part of \(T_{\mu \nu }\), its space-space components: <span 
+class="cmtt-10">eTxx</span>, <span 
+class="cmtt-10">eTxy</span>, <span 
+class="cmtt-10">eTxz</span>, <span 
+class="cmtt-10">eTyy</span>, <span 
+class="cmtt-10">eTyz</span>, <span 
+class="cmtt-10">eTzz</span></p></li></ul>
+<!--l. 65--><p class="noindent" >These components have the prefix <span 
+class="cmtt-10">e </span>to avoid naming conflicts with existing variables. Many thorns dealing with
+matter already use variable names such as <span 
+class="cmtt-10">Ttt</span>.
+</p><!--l. 69--><p class="noindent" >These variables have up to three time levels.
+</p><!--l. 71--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.2   </span> <a 
+ id="x1-40002.2"></a>Parameters</h4>
+<!--l. 73--><p class="noindent" >By default, the TmunuBase variables have no storage, and TmunuBase is inactive. This makes it
+possible to add a matter interface to existing vacuum spacetime methods without changing their
+behaviour.
+</p><!--l. 77--><p class="noindent" >Several parameters choose how TmunuBase behaves at run time: </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 79--><p class="noindent" >The parameter <span 
+class="cmtt-10">stress</span><span 
+class="cmtt-10">_energy</span><span 
+class="cmtt-10">_storage </span>activates storage for \(T_{\mu \nu }\) and enables the schedule groups
+     which calculate it.
+                                                                                       
+                                                                                       
+     </p></li>
+     <li class="itemize">
+     <!--l. 81--><p class="noindent" >The parameter <span 
+class="cmtt-10">stress</span><span 
+class="cmtt-10">_energy</span><span 
+class="cmtt-10">_at</span><span 
+class="cmtt-10">_RHS </span>moves calculating the \(T_{\mu \nu }\) from the <span 
+class="cmtt-10">evol </span>bin into the <span 
+class="cmtt-10">MoL</span><span 
+class="cmtt-10">_PostStep</span>
+     group. This increases the order of accuracy of the spacetime–matter coupling, but is only possible
+     when thorn MoL is used.<span class="footnote-mark"><a 
+href="documentation2.html#fn1x0"><sup class="textsuperscript">1</sup></a></span><a 
+ id="x1-4001f1"></a> 
+     Generally, this parameter should be set when MoL is used.
+     </p></li>
+     <li class="itemize">
+     <!--l. 88--><p class="noindent" >The parameter <span 
+class="cmtt-10">timelevels </span>chooses the number of time levels for \(T_{\mu \nu }\). The default is a single time
+     level, which is sufficient for unigrid simulation. Mesh refinement simulation may require several time
+     levels if mesh refinement boundaries require correct values.
+     </p></li>
+     <li class="itemize">
+     <!--l. 93--><p class="noindent" >The  parameter  <span 
+class="cmtt-10">prolongation</span><span 
+class="cmtt-10">_type </span>defines  the  prolongation  operator  for  mesh  refinement
+     boundaries. The default is Lagrange interpolation.</p></li></ul>
+<!--l. 98--><p class="noindent" >The grid scalar <span 
+class="cmtt-10">stress</span><span 
+class="cmtt-10">_energy</span><span 
+class="cmtt-10">_state </span>describes whether the \(T_{\mu \nu }\) variables have storage.
+</p><!--l. 101--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-50003"></a>Programming with TmunuBase</h3>
+<!--l. 103--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">3.1   </span> <a 
+ id="x1-60003.1"></a>Contributing to \(T_{\mu \nu }\)</h4>
+<!--l. 105--><p class="noindent" >There may be multiple thorns contributing to \(T_{\mu \nu }\). Therefore, thorn TmunuBase initialises \(T_{\mu \nu }\) to zero, and each thorn
+has to add to the existing values in \(T_{\mu \nu }\). The corresponding routine should be scheduled in the bin <span 
+class="cmtt-10">AddToTmunu</span>.
+<span 
+class="cmti-10">Note: </span>Do not schedule anything in the schedule bin <span 
+class="cmtt-10">SetTmunu</span>.
+</p><!--l. 112--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">3.2   </span> <a 
+ id="x1-70003.2"></a>Reading from \(T_{\mu \nu }\)</h4>
+<!--l. 114--><p class="noindent" >Since the values of \(T_{\mu \nu }\) change at each time step, or – if a thorn like <span 
+class="cmtt-10">MoL </span>is used – at each substep, \(T_{\mu \nu }\)
+needs to be recalculated frequently. This happens either in the schedule bin <span 
+class="cmtt-10">evol </span>or in the schedule
+                                                                                       
+                                                                                       
+group <span 
+class="cmtt-10">MoL</span><span 
+class="cmtt-10">_PostStep</span>. \(T_{\mu \nu }\) may only be accessed after it has been calculated, e.g. <span 
+class="cmtt-10">IN MoL</span><span 
+class="cmtt-10">_PostStep</span>
+<span 
+class="cmtt-10">AFTER SetTmunu</span>. \(T_{\mu \nu }\) can be freely accessed at other times, e.g. in <span 
+class="cmtt-10">MoL</span><span 
+class="cmtt-10">_CalcRHS </span>or at <span 
+class="cmtt-10">poststep </span>or
+<span 
+class="cmtt-10">analyisis</span>.
+</p><!--l. 123--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">3.3   </span> <a 
+ id="x1-80003.3"></a>Acknowledgements</h4>
+<!--l. 125--><p class="noindent" >We thank I. Hawke for designing and implementing thorn MoL, without which a generic high-order coupling
+between spacetime and hydrodynamics methods would not be possible.
+</p><!--l. 134--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-90004"></a>Parameters</h3>
+<!--l. 153--><p class="noindent" ></p> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /></colgroup><colgroup id="TBL-2-2g"><col 
+id="TBL-2-2" /><col 
+id="TBL-2-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:normal; text-align:left;" id="TBL-2-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">prolongation_type</div>                    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-1-3"  
+class="td01">                                STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-2-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">The kind of boundary prolongation for the stress-energy tensor</span></div>                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-1"  
+class="td11">            <span 
+class="cmbx-10">Range                </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-3-3"  
+class="td01">                        <span 
+class="cmbx-10">Default: </span>Lagrange  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-4-"><td  style="white-space:normal; text-align:left;" id="TBL-2-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><img 
+src="documentation0x.png" alt=" ˆ
+L  "  class="circ"  />agrange<span 
+class="tcrm-1000">$</span></div>                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-2-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">standard prolongation (requires several time levels)</div>                    
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-5-"><td  style="white-space:normal; text-align:left;" id="TBL-2-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><img 
+src="documentation1x.png" alt="nˆ  "  class="circ"  />one<span 
+class="tcrm-1000">$</span></div>
+                                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-2-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">no prolongation (use this if you do not have enough time levels
+  active)</div>                                                                              
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-6-"><td  style="white-space:normal; text-align:left;" id="TBL-2-6-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                            </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-2-6-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">any other supported prolongation type</div>                                    
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-7-1"  
+class="td11">                              </td></tr></table>
+<!--l. 160--><p class="noindent" ></p> <table id="TBL-3" class="tabular" 
+ 
+><colgroup id="TBL-3-1g"><col 
+id="TBL-3-1" /></colgroup><colgroup id="TBL-3-2g"><col 
+id="TBL-3-2" /><col 
+id="TBL-3-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-1-"><td  style="white-space:normal; text-align:left;" id="TBL-3-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">stress_energy_storage</div>                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-1-3"  
+class="td01">                         BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-3-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Should the stress-energy tensor have storage?</span></div>                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-3-1"  
+class="td11">                              </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-3-3"  
+class="td01">                        <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-4-1"  
+class="td11">                              </td></tr></table>
+<!--l. 167--><p class="noindent" ></p> <table id="TBL-4" class="tabular" 
+ 
+><colgroup id="TBL-4-1g"><col 
+id="TBL-4-1" /></colgroup><colgroup id="TBL-4-2g"><col 
+id="TBL-4-2" /><col 
+id="TBL-4-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-1-"><td  style="white-space:normal; text-align:left;" id="TBL-4-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">timelevels</div>                               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-1-3"  
+class="td01">                                    INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-4-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Number of time levels</span></div>                                                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-3-1"  
+class="td11">            <span 
+class="cmbx-10">Range                </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-3-3"  
+class="td01">                              <span 
+class="cmbx-10">Default: </span>1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-4-"><td  style="white-space:normal; text-align:left;" id="TBL-4-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:3</div>                                         </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-5-1"  
+class="td11">                              </td></tr></table>
+<!--l. 174--><p class="noindent" ></p> <table id="TBL-5" class="tabular" 
+ 
+><colgroup id="TBL-5-1g"><col 
+id="TBL-5-1" /></colgroup><colgroup id="TBL-5-2g"><col 
+id="TBL-5-2" /><col 
+id="TBL-5-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-1-"><td  style="white-space:normal; text-align:left;" id="TBL-5-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">stress_energy_at_rhs</div>                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-1-3"  
+class="td01">                       BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-5-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Should the stress-energy tensor be calculated for the RHS evaluation?</span></div>                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-3-1"  
+class="td11">                              </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-3-3"  
+class="td01">                      <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-4-1"  
+class="td11">                              </td></tr></table>
+<!--l. 181--><p class="noindent" ></p> <table id="TBL-6" class="tabular" 
+ 
+><colgroup id="TBL-6-1g"><col 
+id="TBL-6-1" /></colgroup><colgroup id="TBL-6-2g"><col 
+id="TBL-6-2" /><col 
+id="TBL-6-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-1-"><td  style="white-space:normal; text-align:left;" id="TBL-6-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">support_old_calctmunu_mechanism</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-1-3"  
+class="td01">                       BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-6-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Should the old CalcTmunu.inc mechanism be supported? This is deprecated.</span></div>          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-3-1"  
+class="td11">                              </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-3-3"  
+class="td01">                      <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-4-1"  
+class="td11">                              </td></tr></table>
+<!--l. 190--><p class="noindent" >
+</p>
+                                                                                       
+                                                                                       
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-100005"></a>Interfaces</h3>
+<!--l. 195--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-11000"></a>General</h4>
+<!--l. 197--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 199--><p class="noindent" >tmunubase
+</p><!--l. 202--><p class="noindent" ><span 
+class="cmbx-10">Inherits</span>:
+</p><!--l. 204--><p class="noindent" >admbase
+</p><!--l. 206--><p class="noindent" >staticconformal
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-12000"></a>Grid Variables</h4>
+<!--l. 209--><p class="noindent" >
+</p>
+<h5 class="subsubsectionHead"><span class="titlemark">5.0.1   </span> <a 
+ id="x1-130005.0.1"></a>PUBLIC GROUPS</h5>
+<!--l. 213--><p class="noindent" ></p> <table id="TBL-7" class="tabular" 
+ 
+><colgroup id="TBL-7-1g"><col 
+id="TBL-7-1" /></colgroup><colgroup id="TBL-7-2g"><col 
+id="TBL-7-2" /></colgroup><colgroup id="TBL-7-3g"><col 
+id="TBL-7-3" /><col 
+id="TBL-7-4" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-1-1"  
+class="td11">   <span 
+class="cmbx-10">Group Names </span>   </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-1-2"  
+class="td10">   <span 
+class="cmbx-10">Variable Names </span> </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-1-3"  
+class="td01">    <span 
+class="cmbx-10">Details </span>   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-4"  
+class="td11">                                                                                                                     </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-2-1"  
+class="td11">  stress_energy_state   </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-2-2"  
+class="td10">  stress_energy_state  </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-2-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-2-4"  
+class="td11"> 0                                                                                                                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-3-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-3-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-3-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-3-4"  
+class="td11"> State of storage for stress-energy tensor                                                                </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-4-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-4-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-4-3"  
+class="td01">   dimensions  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-4-4"  
+class="td11"> 0                                                                                                                   </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-5-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-5-2"  
+class="td10"> </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-5-3"  
+class="td01"> distribution </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-5-4"  
+class="td11"> CONSTANT </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-6-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-6-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-6-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-6-4"  
+class="td11"> SCALAR                                                                                                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-7-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-7-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-7-3"  
+class="td01">    timelevels  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-7-4"  
+class="td11"> 1                                                                                                                   </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-8-1"  
+class="td11">
+                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-8-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-8-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-8-4"  
+class="td11"> INT                                                                                                               </td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-9-1"  
+class="td11">
+ stress_energy_scalar  </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-9-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-9-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-9-4"  
+class="td11"> 0                                                                                                                   </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-10-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-10-1"  
+class="td11">
+                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-10-2"  
+class="td10">         eTtt            </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-10-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-10-4"  
+class="td11"> Stress-energy tensor                                                                                          </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-11-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-11-1"  
+class="td11">
+                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-11-2"  
+class="td10">                         </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-11-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-11-4"  
+class="td11"> 3-scalar part T_00                                                                                            </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-12-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-12-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-12-2"  
+class="td10"> </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-12-3"  
+class="td01"> dimensions </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-12-4"  
+class="td11"> 3 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-13-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-13-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-13-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-13-3"  
+class="td01">  distribution  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-13-4"  
+class="td11"> DEFAULT                                                                                                      </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-14-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-14-1"  
+class="td11">
+                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-14-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-14-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-14-4"  
+class="td11"> GF                                                                                                                </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-15-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-15-1"  
+class="td11">
+                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-15-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-15-3"  
+class="td01">         tags  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-15-4"  
+class="td11"> tensortypealias=”Scalar” ProlongationParameter=”TmunuBase::prolongation_type”     </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-16-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-16-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-16-2"  
+class="td10"> </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-16-3"  
+class="td01"> timelevels </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-16-4"  
+class="td11"> 3 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-17-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-17-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-17-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-17-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-17-4"  
+class="td11"> REAL                                                                                                            </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-18-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-18-1"  
+class="td11"> stress_energy_vector  </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-18-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-18-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-18-4"  
+class="td11"> 0                                                                                                                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-19-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-19-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-19-2"  
+class="td10">        eTtx           </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-19-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-19-4"  
+class="td11"> Stress-energy tensor                                                                                          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-20-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-20-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-20-2"  
+class="td10">                         </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-20-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-20-4"  
+class="td11"> 3-vector part T_0i                                                                                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-21-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-21-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-21-2"  
+class="td10">        eTty           </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-21-3"  
+class="td01">   dimensions  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-21-4"  
+class="td11"> 3                                                                                                                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-22-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-22-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-22-2"  
+class="td10">        eTtz            </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-22-3"  
+class="td01">  distribution  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-22-4"  
+class="td11"> DEFAULT                                                                                                      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-23-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-23-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-23-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-23-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-23-4"  
+class="td11"> GF                                                                                                                </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-24-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-24-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-24-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-24-3"  
+class="td01">         tags  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-24-4"  
+class="td11"> tensortypealias=”D” ProlongationParameter=”TmunuBase::prolongation_type”           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-25-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-25-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-25-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-25-3"  
+class="td01">    timelevels  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-25-4"  
+class="td11"> 3                                                                                                                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-26-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-26-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-26-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-26-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-26-4"  
+class="td11"> REAL                                                                                                            </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-27-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-27-1"  
+class="td11"> stress_energy_tensor  </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-27-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-27-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-27-4"  
+class="td11"> 0                                                                                                                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-28-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-28-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-28-2"  
+class="td10">        eTxx           </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-28-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-28-4"  
+class="td11"> Stress-energy tensor                                                                                          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-29-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-29-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-29-2"  
+class="td10">                         </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-29-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-29-4"  
+class="td11"> 3-tensor part T_ij                                                                                             </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-30-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-30-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-30-2"  
+class="td10">        eTxy           </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-30-3"  
+class="td01">   dimensions  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-30-4"  
+class="td11"> 3                                                                                                                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-31-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-31-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-31-2"  
+class="td10">        eTxz           </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-31-3"  
+class="td01">  distribution  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-31-4"  
+class="td11"> DEFAULT                                                                                                      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-32-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-32-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-32-2"  
+class="td10">        eTyy           </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-32-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-32-4"  
+class="td11"> GF                                                                                                                </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-33-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-33-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-33-2"  
+class="td10">        eTyz           </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-33-3"  
+class="td01">         tags  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-33-4"  
+class="td11"> tensortypealias=”DD_sym” ProlongationParameter=”TmunuBase::prolongation_type”  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-34-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-34-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-34-2"  
+class="td10">        eTzz           </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-34-3"  
+class="td01">    timelevels  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-34-4"  
+class="td11"> 3                                                                                                                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-35-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-35-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-35-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-35-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-35-4"  
+class="td11"> REAL                                                                                                            </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-36-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-36-1"  
+class="td11">                    </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 260--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">6   </span> <a 
+ id="x1-140006"></a>Schedule</h3>
+<!--l. 266--><p class="noindent" >This section lists all the variables which are assigned storage by thorn EinsteinBase/TmunuBase. Storage can
+either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 269--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-15000"></a>Storage</h4>
+<!--l. 271--><p class="noindent" > 
+</p><!--l. 273--><p class="noindent" ></p> <table id="TBL-8" class="tabular" 
+ 
+><colgroup id="TBL-8-1g"><col 
+id="TBL-8-1" /><col 
+id="TBL-8-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-8-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-8-1-1"  
+class="td11"> <span 
+class="cmbx-10">Always:             </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-1-2"  
+class="td11"> <span 
+class="cmbx-10">Conditional:                      </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-8-2-1"  
+class="td11"> stress_energy_state  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-2-2"  
+class="td11"> stress_energy_scalar[timelevels]  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-8-3-1"  
+class="td11">                            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-3-2"  
+class="td11"> stress_energy_vector[timelevels]  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-8-4-1"  
+class="td11">                            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-4-2"  
+class="td11"> stress_energy_tensor[timelevels]  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-5-"><td  style="white-space:nowrap; text-align:left;" id="TBL-8-5-1"  
+class="td11">                            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-5-2"  
+class="td11">                                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-6-"><td  style="white-space:nowrap; text-align:left;" id="TBL-8-6-1"  
+class="td11">                  </td></tr></table>
+<!--l. 283--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-16000"></a>Scheduled Functions</h4>
+<!--l. 286--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_WRAGH</span>
+</p><!--l. 288--><p class="noindent" >      tmunubase_setstressenergystate
+</p><!--l. 290--><p class="noindent" >     <span 
+class="cmti-10">set the stress</span><span 
+class="cmti-10">_energy</span><span 
+class="cmti-10">_state variable</span>
+</p><!--l. 293--><p class="noindent" > 
+</p><!--l. 295--><p class="noindent" ></p> <table id="TBL-9" class="tabular" 
+ 
+><colgroup id="TBL-9-1g"><col 
+id="TBL-9-1" /><col 
+id="TBL-9-2" /><col 
+id="TBL-9-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-9-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-1-2"  
+class="td11"> Before:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-1-3"  
+class="td11"> mol_register                                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-2-3"  
+class="td11"> fortran                                                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-3-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-3-3"  
+class="td11"> global                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-4-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-4-3"  
+class="td11"> function                                                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-5-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-5-3"  
+class="td11"> tmunubase::stress_energy_state(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-6-1"  
+class="td11">    </td></tr></table>
+<!--l. 306--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_PARAMCHECK</span>
+</p><!--l. 308--><p class="noindent" >      tmunubase_paramcheck
+</p><!--l. 310--><p class="noindent" >     <span 
+class="cmti-10">check that no deprecated parameters are used.</span>
+</p><!--l. 313--><p class="noindent" > 
+</p><!--l. 315--><p class="noindent" ></p> <table id="TBL-10" class="tabular" 
+ 
+><colgroup id="TBL-10-1g"><col 
+id="TBL-10-1" /><col 
+id="TBL-10-2" /><col 
+id="TBL-10-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-10-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-2-3"  
+class="td11"> global     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-3-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 324--><p class="noindent" ><span 
+class="cmbx-10">MoL</span><span 
+class="cmbx-10">_PostStep </span>(conditional)
+</p><!--l. 326--><p class="noindent" >      settmunu
+</p><!--l. 328--><p class="noindent" >     <span 
+class="cmti-10">group for calculating the stress-energy tensor</span>
+</p><!--l. 331--><p class="noindent" > 
+</p><!--l. 333--><p class="noindent" ></p> <table id="TBL-11" class="tabular" 
+ 
+><colgroup id="TBL-11-1g"><col 
+id="TBL-11-1" /><col 
+id="TBL-11-2" /><col 
+id="TBL-11-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-11-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-1-2"  
+class="td11"> After:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-1-3"  
+class="td11"> admbase_setadmvars  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-2-2"  
+class="td11"> Type:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-2-3"  
+class="td11"> group                      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 341--><p class="noindent" ><span 
+class="cmbx-10">SetTmunu </span>(conditional)
+</p><!--l. 343--><p class="noindent" >      tmunubase_zerotmunu
+</p><!--l. 345--><p class="noindent" >     <span 
+class="cmti-10">initialise the stress-energy tensor to zero</span>
+                                                                                       
+                                                                                       
+</p><!--l. 348--><p class="noindent" > 
+</p><!--l. 350--><p class="noindent" ></p> <table id="TBL-12" class="tabular" 
+ 
+><colgroup id="TBL-12-1g"><col 
+id="TBL-12-1" /><col 
+id="TBL-12-2" /><col 
+id="TBL-12-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-12-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-1-3"  
+class="td11"> fortran                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-2-3"  
+class="td11"> function                                                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-3-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-3-3"  
+class="td11"> tmunubase::stress_energy_scalar(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-4-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-4-3"  
+class="td11"> tmunubase::stress_energy_vector(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-5-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-5-3"  
+class="td11"> tmunubase::stress_energy_tensor(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-6-1"  
+class="td11">    </td></tr></table>
+<!--l. 361--><p class="noindent" ><span 
+class="cmbx-10">SetTmunu </span>(conditional)
+</p><!--l. 363--><p class="noindent" >      addtotmunu
+</p><!--l. 365--><p class="noindent" >     <span 
+class="cmti-10">add to the stress-energy tensor here</span>
+</p><!--l. 368--><p class="noindent" > 
+</p><!--l. 370--><p class="noindent" ></p> <table id="TBL-13" class="tabular" 
+ 
+><colgroup id="TBL-13-1g"><col 
+id="TBL-13-1" /><col 
+id="TBL-13-2" /><col 
+id="TBL-13-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-13-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-1-2"  
+class="td11"> After:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-1-3"  
+class="td11"> tmunubase_settmunu   </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-2-1"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-2-2"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-2-3"  
+class="td11"> tmunubase_zerotmunu</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-3-2"  
+class="td11"> Type:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-3-3"  
+class="td11"> group                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-4-1"  
+class="td11">    </td></tr></table>
+ 
+</body></html> 
+
+                                                                                       
+
+

@@ -1,0 +1,1670 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>Thorn Guide for the AEILocalInterp Thorn</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">Thorn Guide for the AEILocalInterp Thorn</h2>
+ <div class="author" ><span 
+class="cmr-12">Jonathan Thornburg, incorporating code from Thomas Radke</span></div>
+<br />
+<div class="date" >\( \)<span 
+class="cmr-12">Date</span>\( \)</div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 116--><p class="noindent" ><span 
+class="cmr-9">This  thorn  provides  the  </span><span class="obeylines-h"><code class="verb">CCTK_InterpLocalUniform()</code></span> <span 
+class="cmr-9">API  for  processor-local  interpolation  of</span>
+     <span 
+class="cmr-9">N-dimensional data arrays. The data arrays (in general there may be many of them) must be defined</span>
+     <span 
+class="cmr-9">on a uniformly spaced grid.</span>
+     </p><!--l. 121--><p class="indent" >   <span 
+class="cmr-9">This  thorn  provides  several  variants  of  Lagrange  and  Hermite  interpolation.  At  present  the</span>
+     <span 
+class="cmr-9">Lagrange interpolation operators support orders</span><span 
+class="cmr-9"> 1 through</span><span 
+class="cmr-9"> 6 for 1-D interpolation, and</span><span 
+class="cmr-9"> 1 through</span><span 
+class="cmr-9"> 4</span>
+     <span 
+class="cmr-9">for 2-D and 3-D interpolation. The Hermite interpolation operators support orders</span><span 
+class="cmr-9"> 2, 3, and</span><span 
+class="cmr-9"> 4 for</span>
+     <span 
+class="cmr-9">1-D interpolation, and</span><span 
+class="cmr-9"> 2 and</span><span 
+class="cmr-9"> 3 for 2-D and 3-D interpolation.</span>
+     </p><!--l. 128--><p class="indent" >   <span 
+class="cmr-9">This  thorn  supports  a  number  of  interpolation  options,  including  parameter-table  entries  to</span>
+     <span 
+class="cmr-9">control the handling of grid boundaries and out-of-range points, non-contiguous input arrays, taking</span>
+     <span 
+class="cmr-9">derivatives as part of the interpolation, and querying the Jacobian of the interpolation operation.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Introduction</h3>
+<!--l. 139--><p class="noindent" >This interpolator provides: </p>
+                                                                                       
+                                                                                       
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 141--><p class="noindent" >Lagrange polynomial interpolation of orders 1–6 for 1-D interpolation and 1–4 for 2-D and 3-D
+     interpolation. This interpolator actually provides two slightly different flavors of Lagrange interpolation,
+     <span 
+class="cmbx-10">tensor product </span>and <span 
+class="cmbx-10">maximum degree</span>, registered under the operator names
+                                                                                       
+                                                                                       
+</p>
+     <pre class="verbatim" id="verbatim-1">
+        &#x0022;Lagrange polynomial interpolation (tensor product)&#x0022;
+        &#x0022;Lagrange polynomial interpolation (maximum degree)&#x0022;
+      
+</pre>
+     <!--l. 149--><p class="nopar" > Section <a 
+href="#x1-140002.5">2.5<!--tex4ht:ref: AEIThorns/AEILocalInterp/sect-multi-dim-interp --></a> of this thorn guide explains the two variants in detail, but for most purposes the
+     tensor-product variant is preferable. For convenience this is also registered under the operator
+     name
+                                                                                       
+                                                                                       
+</p>
+     <pre class="verbatim" id="verbatim-2">
+        &#x0022;Lagrange polynomial interpolation&#x0022;
+      
+</pre>
+     <!--l. 157--><p class="nopar" > and this is probably the best interpolation operator for general-purpose
+     use.<span class="footnote-mark"><a 
+href="documentation2.html#fn1x0"><sup class="textsuperscript">1</sup></a></span><a 
+ id="x1-1001f1"></a> 
+     </p></li>
+     <li class="itemize">
+     <!--l. 166--><p class="noindent" >Hermite polynomial interpolation of orders 2-4 for 1-D interpolation, and 2–3 for 2-D and 3-D
+     interpolation, registered under the operator name
+                                                                                       
+                                                                                       
+</p>
+     <pre class="verbatim" id="verbatim-3">
+        &#x0022;Hermite polynomial interpolation&#x0022;
+      
+</pre>
+     <!--l. 171--><p class="nopar" ></p></li></ul>
+<!--l. 173--><p class="noindent" >The code allows arbitrarily-shaped interpolation molecules, but at the moment only hypercube-shaped molecules
+are implemented. It would be easy to add additional orders and/or dimensions if desired.
+</p><!--l. 177--><p class="noindent" >This interpolator supports a number of options specified by a <span 
+class="cmbx-10">parameter table </span>(a Cactus key-value table,
+manipulated by the <span class="obeylines-h"><code class="verb">Util_Table*()</code></span> APIs). Note that all the interpolator options described here apply only to
+the current interpolator call: there is no visible state kept inside the interpolator from one call to
+another.
+</p><!--l. 185--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">1.1   </span> <a 
+ id="x1-20001.1"></a>History</h4>
+<!--l. 187--><p class="noindent" >This interpolator was written by Jonathan Thornburg in winter 2001–2002. Between then and July 2003 it lived
+in the <span 
+class="cmbx-10">LocalInterp </span>thorn in the <span 
+class="cmbx-10">CactusBase </span>arrangement, but in July 2003 it was moved to the (new)
+<span 
+class="cmbx-10">AEILocalInterp </span>thorn in the <span 
+class="cmbx-10">AEIThorns </span>arrangement so it could stay GPL (Cactus policies forbid GPL code
+in the CactusBase arrangement).
+</p><!--l. 197--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">1.2   </span> <a 
+ id="x1-30001.2"></a>Basic Terminology</h4>
+<!--l. 200--><p class="noindent" >Within Cactus, each interpolator has a character-string name; this is mapped to a Cactus <span 
+class="cmbx-10">interpolator handle</span>
+by <span class="obeylines-h"><code class="verb">CCTK_InterpHandle()</code></span>. For any given interpolator handle, there may be a separate interpolator defined for
+each of the interpolation APIs (both the processor-local ones provided by this thorn, and the global ones
+provided by driver-specific interpolator thorns such as <span 
+class="cmbx-10">PUGHInterp</span>).
+</p><!--l. 208--><p class="noindent" >Terminology for interpolation seems to differ a bit from one author to another. Here we refer to the
+<span 
+class="cmbx-10">point-centered </span>interpolation of a set of <span 
+class="cmbx-10">input arrays </span>(defining data on a uniformly or nonuniformly spaced
+<span 
+class="cmbx-10">grid </span>of <span 
+class="cmbx-10">data points</span>) to a set of <span 
+class="cmbx-10">interpolation points </span>(specified by a corresponding set of <span 
+class="cmbx-10">interpolation</span>
+<span 
+class="cmbx-10">coordinates</span>), with the results being stored in a corresponding set of <span 
+class="cmbx-10">output arrays</span>. Alternatively, we may
+refer to <span 
+class="cmbx-10">cell-centered </span>interpolation, using a grid of <span 
+class="cmbx-10">data cells </span>and a set of <span 
+class="cmbx-10">interpolation cells</span>. (This latter
+terminology is common in hydrodynamics interpolators.)
+</p><!--l. 219--><p class="noindent" >At present all the interpolators do polynomial interpolation, and allow the interpolation of multiple
+                                                                                       
+                                                                                       
+input arrays (to the same set of interpolation points) in a single interpolator call, using the basic
+algorithm:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-4">
+for each interpolation point
+{
+choose an interpolation molecule position somewhere near the interpolation point
+
+        for each output array
+        {
+        compute an interpolating polynomial
+          which approximates the input data at the molecule points
+        output = polynomial(interpolation point)
+        }
+}
+</pre>
+<!--l. 235--><p class="nopar" > In the future, we may add other interpolators where the choice of molecule is data-dependent (and thus
+may vary from one input array to the next), and/or where the entire input grid is used in each
+interpolation.
+</p><!--l. 240--><p class="noindent" >We define the <span 
+class="cmbx-10">order </span>of the interpolation to be the order of the fitted polynomial. That is, in our terminology
+linear interpolation is order 1, quadratic is order 2, cubic is order 3, etc. An order \(n\) interpolator thus has \(O\big ((\Delta x)^{n+1})\big )\)
+interpolation errors for generic smooth input data. Section <a 
+href="#x1-140002.5">2.5<!--tex4ht:ref: AEIThorns/AEILocalInterp/sect-multi-dim-interp --></a> explains how the interpolating polynomial is
+defined for multi-dimensional interpolation.
+</p><!--l. 250--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">1.3   </span> <a 
+ id="x1-40001.3"></a>The Non-Smoothness of Interpolation Errors</h4>
+<!--l. 252--><p class="noindent" >Because the interpolating polynomial generally changes if the interpolation point moves from one
+grid cell to another, unless something special is done the interpolating function isn’t smooth,
+i.e. its 1st derivative is generically <span 
+class="cmti-10">discontinuous</span>, with \(O(\Delta x^n)\) jump discontinuities each time the
+interpolating polynomial changes. Correspondingly, the interpolation error is generically
+a “bump function” which is zero at each grid point and rises to a local maximum in each grid
+cell.<span class="footnote-mark"><a 
+href="documentation3.html#fn2x0"><sup class="textsuperscript">2</sup></a></span><a 
+ id="x1-4001f2"></a> 
+This is the case, for example, for tensor-product Lagrange polynomial interpolation.
+</p><!--l. 269--><p class="noindent" >[For maximum-degree Lagrange polynomial interpolation, the interpolation error may not be zero at the
+grid points, and the interpolant itself may not be continuous there. Section <a 
+href="#x1-140002.5">2.5<!--tex4ht:ref: AEIThorns/AEILocalInterp/sect-multi-dim-interp --></a> explains this in
+detail.]
+                                                                                       
+                                                                                       
+</p><!--l. 275--><p class="noindent" >This thorn also provides Hermite polynomial interpolation, which guarantees a smooth (\(C^1\)) interpolant and (for
+smooth input data) interpolation error. Unfortunately, this comes at the cost of a larger molecule size than the
+same-order Lagrange interplator, and a much larger interpolation error if the interpolation molecules are
+off-centered. (By default, the Hermite interpolator doesn’t allow off-centered molecules, though this can be
+changed via the <span class="obeylines-h"><code class="verb">boundary_off_centering_tolerance[]</code></span> and <span class="obeylines-h"><code class="verb">excision_off_centering_tolerance[]</code></span>
+parameter-table entries.)
+</p><!--l. 285--><p class="noindent" >For most purposes Lagrange polynomial interpolation is better; only use Hermite polynomial interpolation if you
+need a smooth interpolant.
+</p>
+<h4 class="subsectionHead"><span class="titlemark">1.4   </span> <a 
+ id="x1-50001.4"></a>More Terminology</h4>
+<!--l. 293--><p class="noindent" >As described in the Function Reference section of the Cactus User’s Guide, <span class="obeylines-h"><code class="verb">interp_coords</code></span>, <span class="obeylines-h"><code class="verb">input_arrays</code></span>, and
+<span class="obeylines-h"><code class="verb">output_arrays</code></span> are actually all pointers to arrays of <span class="obeylines-h"><code class="verb">void *</code></span> pointers, since we support a number of different
+Cactus data types. Internally, the interpolator casts these <span class="obeylines-h"><code class="verb">void *</code></span> pointers to <span class="obeylines-h"><code class="verb">CCTK_REAL *</code></span> or whatever the
+correct Cactus data types are. But when describing how the interpolator accesses the various arrays, for
+simplicity we usually gloss over this casting, i.e. we pretend that <span class="obeylines-h"><code class="verb">interp_coords</code></span>, <span class="obeylines-h"><code class="verb">input_arrays</code></span>, and
+<span class="obeylines-h"><code class="verb">output_arrays</code></span> are pointers to arrays of <span class="obeylines-h"><code class="verb">CCTK_REAL *</code></span> pointers. (This may become clearer once you read the
+next example.)
+</p><!--l. 305--><p class="noindent" >We use <span class="obeylines-h"><code class="verb">pt</code></span>, <span class="obeylines-h"><code class="verb">in</code></span>, and <span class="obeylines-h"><code class="verb">out</code></span> as generic 0-origin integer subscripts into the arrays of interpolation points, input arrays,
+and output arrays respectively. We use <span class="obeylines-h"><code class="verb">(i,j,k)</code></span> as a generic <span class="obeylines-h"><code class="verb">N_dims</code></span>-vector of integer subscripts into the input
+array <span class="obeylines-h"><code class="verb">input_arrays[in]</code></span>. (Thus <span 
+class="cmtt-10">(i,j,k) </span><span 
+class="cmbx-10">space </span>refers to the grid of data points.) We usually only write array
+subscripting expressions for the 3-D case; the restrictions/generalizations to other dimensions should be
+obvious.
+</p><!--l. 314--><p class="noindent" >For example, for 3-D interpolation, the (x,y,z) coordinates of a typical interpolation point are given
+by
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-5">
+x = interp_coords[0][pt]
+y = interp_coords[1][pt]
+z = interp_coords[2][pt]
+</pre>
+<!--l. 320--><p class="nopar" > (Notice here that as described above, we’ve implicitly taken <span class="obeylines-h"><code class="verb">interp_coords</code></span> to have the C type<br 
+class="newline" /><span class="obeylines-h"><code class="verb">const CCTK_REAL* interp_coords[]</code></span>, glossing over the casting from its actual C type of<br 
+class="newline" /><span class="obeylines-h"><code class="verb">const void* interp_coords[]</code></span>.)
+</p><!--l. 327--><p class="noindent" >We take <span class="obeylines-h"><code class="verb">axis</code></span> to be a 0-origin integer specifying a coordinate axis (dimension), i.e. 0 for \(x\), 1 for \(y\),
+2 for \(z\), …. We take <span class="obeylines-h"><code class="verb">ibndry</code></span> to be a 0-origin integer specifying the combination of a coordinate axis
+(dimension) and a minimum/maximum “end” of the grid; these are enumerated in the order \(x_{\min }\), \(x_{\max }\), \(y_{\min }\), \(y_{\max }\), \(z_{\min }\), \(z_{\max }\),
+….
+</p><!--l. 335--><p class="noindent" >When describing Jacobians and domains of dependence, it’s useful to introduce the notion of <span 
+class="cmbx-10">molecule</span>
+<span 
+class="cmbx-10">position</span>, a nominal reference point for the interpolation molecule in <span class="obeylines-h"><code class="verb">(i,j,k)</code></span> coordinate space. (For example,
+the molecule position might just be the <span class="obeylines-h"><code class="verb">(i,j,k)</code></span> coordinates of the molecule’s center.) We also introduce
+<span 
+class="cmbx-10">molecule coordinates </span><span class="obeylines-h"><code class="verb">(mi,mj,jk)</code></span>, which are just <span class="obeylines-h"><code class="verb">(i,j,k)</code></span> coordinates relative to the molecule position. We
+use <span class="obeylines-h"><code class="verb">m</code></span> as a generic molecule coordinate. Thus (in notation which should be obvious) a generic molecule
+operation can be written \begin {equation}  \verb |output| = \sum _{\tt m} \verb |coeff[posn+m]| \times \verb |input[posn+m]|  \end {equation}<a 
+ id="x1-5001r1"></a> Note that there is no requirement that the output be semantically located
+at the position <span class="obeylines-h"><code class="verb">posn</code></span>! (This may become clearer once you look at the example in section <a 
+href="#x1-200002.9.2">2.9.2<!--tex4ht:ref: AEIThorns/AEILocalInterp/sect-Jacobian/fixed-sized-hypercube --></a>.)
+However, by convention we do assume that \(\verb |m|=0\) is always a valid <span class="obeylines-h"><code class="verb">m</code></span> coordinate; this simplifies pointer
+arithmetic.
+</p><!--l. 355--><p class="noindent" >When describing various entries in the parameter table in, we use <span class="obeylines-h"><code class="verb">const</code></span> qualifiers on table entries to indicate
+that the interpolator treats them as <span class="obeylines-h"><code class="verb">const</code></span> variables/arrays, i.e. it promises not to change them. In contrast,
+table entries which are not shown as <span class="obeylines-h"><code class="verb">const</code></span> are considered read-write by the interpolator; it typically uses them
+to return outputs back to the caller.
+</p><!--l. 364--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-60002"></a>Interpolator Parameters</h3>
+<!--l. 366--><p class="noindent" >The <span class="obeylines-h"><code class="verb">CCTK_InterpLocalUniform()</code></span> interpolation API (described in detail in the “Function Reference” appendix
+of the Cactus Users’ Guide) includes a <span 
+class="cmbx-10">parameter table </span>(a Cactus key-value table, manipulated by the
+<span class="obeylines-h"><code class="verb">Util_Table*()</code></span> APIs) whose table handle is passed to the interpolator. This can be used to specify a number of
+options to the interpolator; it can also be used by the interpolator to return additional information back to the
+caller.
+                                                                                       
+                                                                                       
+</p><!--l. 377--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.1   </span> <a 
+ id="x1-70002.1"></a>Interpolation Order</h4>
+<!--l. 379--><p class="noindent" >The only mandatory parameter for this interpolator is the interpolation order:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-6">
+const CCTK_INT order;
+</pre>
+<!--l. 383--><p class="nopar" > As noted in section <a 
+href="#x1-30001.2">1.2<!--tex4ht:ref: AEIThorns/AEILocalInterp/sect-basic-terminology --></a>, in our terminology linear interpolation is order 1, quadratic is order 2, cubic is
+order 3, etc.
+</p><!--l. 390--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.2   </span> <a 
+ id="x1-80002.2"></a>Molecule Size and Centering</h4>
+<!--l. 393--><p class="noindent" >If no grid boundaries or excised points are nearby, the interpolator centers the molecules around the
+interpolation point as much as possible. Table <a 
+href="#x1-80011">1<!--tex4ht:ref: AEIThorns/AEILocalInterp/tab-molecule-size+centering --></a> gives the molecule size and details of the centering policy for
+each interpolation operator and order.
+</p>
+<div class="table">
+                                                                                       
+                                                                                       
+<!--l. 402--><p class="noindent" ><a 
+ id="x1-80011"></a></p><hr class="float" /><div class="float" 
+>
+                                                                                       
+                                                                                       
+<div class="flushleft" 
+>
+<!--l. 482--><p class="noindent" >
+<!--tex4ht:inline--></p><div class="tabular"> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /><col 
+id="TBL-2-2" /><col 
+id="TBL-2-3" /><col 
+id="TBL-2-4" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-1"  
+class="td01">                                                                                       </td><td  style="white-space:nowrap; text-align:center;" id="TBL-2-1-2"  
+class="td11">       </td><td  style="white-space:nowrap; text-align:center;" id="TBL-2-1-3"  
+class="td10"> Molecule                             </td><td  style="white-space:nowrap; text-align:center;" id="TBL-2-1-4"  
+class="td00">                                </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-2-2-1"  
+class="td01"></td></tr><tr><td colspan="4"></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-02-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-02-2-1"  
+class="td01"> </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-02-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-02-3-1"  
+class="td01">                                                                                        </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-02-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-02-4-1"  
+class="td01">Interpolation Operator</td><td  style="white-space:nowrap; text-align:center;" id="TBL-02-4-2"  
+class="td11"> Order  </td><td  style="white-space:nowrap; text-align:center;" id="TBL-02-4-3"  
+class="td10">   Size                                </td><td  style="white-space:nowrap; text-align:center;" id="TBL-02-4-4"  
+class="td00">MoleculeCentering Policy                       </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-02-5-"><td  style="white-space:nowrap; text-align:left;" id="TBL-02-5-1"  
+class="td01"><span class="obeylines-h"><code class="verb">&#x0022;Lagrange polynomial interpolation&#x0022;</code></span>                                                     </td><td  style="white-space:nowrap; text-align:center;" id="TBL-02-5-2"  
+class="td11">   1     </td><td  style="white-space:nowrap; text-align:center;" id="TBL-02-5-3"  
+class="td10">  2-point                              </td><td  style="white-space:nowrap; text-align:center;" id="TBL-02-5-4"  
+class="td00"><img 
+src="documentation0x.png" alt="PICT"  />
+                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-02-6-"><td  style="white-space:nowrap; text-align:left;" id="TBL-02-6-1"  
+class="td01"><span class="obeylines-h"><code class="verb">&#x0022;Lagrange polynomial interpolation&#x0022;</code></span>                                                     </td><td  style="white-space:nowrap; text-align:center;" id="TBL-02-6-2"  
+class="td11">   2     </td><td  style="white-space:nowrap; text-align:center;" id="TBL-02-6-3"  
+class="td10">  3-point                              </td><td  style="white-space:nowrap; text-align:center;" id="TBL-02-6-4"  
+class="td00"><img 
+src="documentation1x.png" alt="PICT"  />
+                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-02-7-"><td  style="white-space:nowrap; text-align:left;" id="TBL-02-7-1"  
+class="td01"><span class="obeylines-h"><code class="verb">&#x0022;Lagrange polynomial interpolation&#x0022;</code></span>                                                     </td><td  style="white-space:nowrap; text-align:center;" id="TBL-02-7-2"  
+class="td11">   3     </td><td  style="white-space:nowrap; text-align:center;" id="TBL-02-7-3"  
+class="td10">  4-point                              </td><td  style="white-space:nowrap; text-align:center;" id="TBL-02-7-4"  
+class="td00"><img 
+src="documentation2x.png" alt="PICT"  />
+                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-02-8-"><td  style="white-space:nowrap; text-align:left;" id="TBL-02-8-1"  
+class="td01"><span class="obeylines-h"><code class="verb">&#x0022;Lagrange polynomial interpolation&#x0022;</code></span>                                                     </td><td  style="white-space:nowrap; text-align:center;" id="TBL-02-8-2"  
+class="td11">   4     </td><td  style="white-space:nowrap; text-align:center;" id="TBL-02-8-3"  
+class="td10">  5-point                              </td><td  style="white-space:nowrap; text-align:center;" id="TBL-02-8-4"  
+class="td00"><img 
+src="documentation3x.png" alt="PICT"  />
+                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-02-9-"><td  style="white-space:nowrap; text-align:left;" id="TBL-02-9-1"  
+class="td01"><span class="obeylines-h"><code class="verb">&#x0022;Lagrange polynomial interpolation&#x0022;</code></span>                                                     </td><td  style="white-space:nowrap; text-align:center;" id="TBL-02-9-2"  
+class="td11">   5     </td><td  style="white-space:nowrap; text-align:center;" id="TBL-02-9-3"  
+class="td10">  6-point                              </td><td  style="white-space:nowrap; text-align:center;" id="TBL-02-9-4"  
+class="td00"><img 
+src="documentation4x.png" alt="PICT"  />
+                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-02-10-"><td  style="white-space:nowrap; text-align:left;" id="TBL-02-10-1"  
+class="td01"><span class="obeylines-h"><code class="verb">&#x0022;Lagrange polynomial interpolation&#x0022;</code></span>                                                     </td><td  style="white-space:nowrap; text-align:center;" id="TBL-02-10-2"  
+class="td11">   6     </td><td  style="white-space:nowrap; text-align:center;" id="TBL-02-10-3"  
+class="td10">  7-point                              </td><td  style="white-space:nowrap; text-align:center;" id="TBL-02-10-4"  
+class="td00"><img 
+src="documentation5x.png" alt="PICT"  />
+                            </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-02-11-"><td  style="white-space:nowrap; text-align:left;" id="TBL-02-11-1"  
+class="td01"><span class="obeylines-h"><code class="verb">&#x0022;Hermite polynomial interpolation&#x0022;</code></span>                                                      </td><td  style="white-space:nowrap; text-align:center;" id="TBL-02-11-2"  
+class="td11">   2     </td><td  style="white-space:nowrap; text-align:center;" id="TBL-02-11-3"  
+class="td10">  4-point                              </td><td  style="white-space:nowrap; text-align:center;" id="TBL-02-11-4"  
+class="td00"><img 
+src="documentation6x.png" alt="PICT"  />
+                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-02-12-"><td  style="white-space:nowrap; text-align:left;" id="TBL-02-12-1"  
+class="td01"><span class="obeylines-h"><code class="verb">&#x0022;Hermite polynomial interpolation&#x0022;</code></span>                                                      </td><td  style="white-space:nowrap; text-align:center;" id="TBL-02-12-2"  
+class="td11">   3     </td><td  style="white-space:nowrap; text-align:center;" id="TBL-02-12-3"  
+class="td10">  6-point                              </td><td  style="white-space:nowrap; text-align:center;" id="TBL-02-12-4"  
+class="td00"><img 
+src="documentation7x.png" alt="PICT"  />
+                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-02-13-"><td  style="white-space:nowrap; text-align:left;" id="TBL-02-13-1"  
+class="td01"><span class="obeylines-h"><code class="verb">&#x0022;Hermite polynomial interpolation&#x0022;</code></span>                                                      </td><td  style="white-space:nowrap; text-align:center;" id="TBL-02-13-2"  
+class="td11">   4     </td><td  style="white-space:nowrap; text-align:center;" id="TBL-02-13-3"  
+class="td10">  6-point                              </td><td  style="white-space:nowrap; text-align:center;" id="TBL-02-13-4"  
+class="td00"><img 
+src="documentation8x.png" alt="PICT"  />
+                            </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-02-14-"><td  style="white-space:nowrap; text-align:left;" id="TBL-02-14-1"  
+class="td01">                                                                                        </td></tr></table>                                                                   </div></div>
+<br /> <div class="caption" 
+><span class="id">Table 1: </span><span  
+class="content">This table gives the molecule size and centering for each interpolation operator and order.
+\(\bullet \) shows the input grid points, and \([ \quad )\) shows the interval of interpolation points (relative to the grid) for
+which the interpolator will use the molecule shown. For example, with grid points at integer coordinates,
+if the the interpolator is using 5-point molecules, it will use a molecule containing the grid points \(\{ -2, -1, 0, 1, 2 \}\) for all
+interpolation points in the range \([-0.5, 0.5)\). </span></div><!--tex4ht:label?: x1-80011 -->
+                                                                                       
+                                                                                       
+</div><hr class="endfloat" />
+</div>
+<h4 class="subsectionHead"><span class="titlemark">2.3   </span> <a 
+ id="x1-90002.3"></a>Handling of Grid Boundaries</h4>
+<!--l. 531--><p class="noindent" >If an interpolation point is too near a grid boundary and/or an excised region the interpolator can either
+off-center the interpolation molecule, or refuse to interpolate that point (returning a<br 
+class="newline" /><span class="obeylines-h"><code class="verb">CCTK_INTERP_ERROR_POINT_OUTSIDE</code></span><span class="footnote-mark"><a 
+href="documentation4.html#fn3x0"><sup class="textsuperscript">3</sup></a></span><a 
+ id="x1-9001f3"></a> 
+or <span class="obeylines-h"><code class="verb">CCTK_INTERP_ERROR_POINT_EXCISED</code></span> error code, and possibly also printing a warning message). This behavior
+is controlled by the (optional) parameter-table entries
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-7">
+const CCTK_INT N_boundary_points_to_omit[2*N_dims]
+const CCTK_REAL boundary_off_centering_tolerance[2*N_dims]
+const CCTK_REAL boundary_extrapolation_tolerance[2*N_dims]
+const CCTK_REAL excision_off_centering_tolerance[2*N_dims] # not implemented yet
+const CCTK_REAL excision_extrapolation_tolerance[2*N_dims] # not implemented yet
+</pre>
+<!--l. 551--><p class="nopar" > The elements of these arrays are matched up with the grid boundaries in the order<br 
+class="newline" />\([x_{\min }, x_{\max }, y_{\min }, y_{\max }, z_{\min }, z_{\max }, \dots ]\). (For <span class="obeylines-h"><code class="verb">excision_*_tolerance[]</code></span> the minimum/maximum are interpreted as the corresponding coordinate
+decreasing/increasing when moving out of the active region of the grid into the excised region.) We use <span class="obeylines-h"><code class="verb">ibndry</code></span>
+as a generic 0-origin index into these arrays.
+</p>
+<h5 class="subsubsectionHead"><span class="titlemark">2.3.1   </span> <a 
+ id="x1-100002.3.1"></a>Omitting Boundary Points</h5>
+<!--l. 564--><p class="noindent" >For any given grid boundary <span class="obeylines-h"><code class="verb">ibndry</code></span>, the interpolator doesn’t use input data from the<br 
+class="newline" /><span class="obeylines-h"><code class="verb">N_boundary_points_to_omit[ibndry]</code></span> grid points closest to the boundary. In other words, these points are
+effectively omitted from the input grid. For example: </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 570--><p class="noindent" >Setting this parameter to an array of all 0s means the interpolator may use data from all grid points.
+     This is the default if this parameter isn’t specified.
+     </p></li>
+     <li class="itemize">
+     <!--l. 573--><p class="noindent" >Setting this parameter to an array of all 1s means the interpolator may not use input data from
+     the outermost row/plane of grid points on any face.</p></li></ul>
+<!--l. 578--><p class="noindent" >More generally, this option may be useful for controlling the extent to which the interpolator uses input data
+from ghost and/or symmetry zones.
+</p><!--l. 585--><p class="noindent" >
+</p>
+<h5 class="subsubsectionHead"><span class="titlemark">2.3.2   </span> <a 
+ id="x1-110002.3.2"></a>Off-Centering Molecules near Grid Boundaries and/or Excision Regions</h5>
+<!--l. 587--><p class="noindent" >The (optional) parameter-table entries
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-8">
+const CCTK_REAL boundary_off_centering_tolerance[2*N_dims]
+const CCTK_REAL boundary_extrapolation_tolerance[2*N_dims]
+const CCTK_REAL excision_off_centering_tolerance[2*N_dims] # not implemented yet
+const CCTK_REAL excision_extrapolation_tolerance[2*N_dims] # not implemented yet
+</pre>
+<!--l. 593--><p class="nopar" > control the local interpolator’s willingness to off-center (change away from the default centering) its
+interpolation molecules near boundaries and excised points.
+</p><!--l. 598--><p class="noindent" >To describe how these parameters work, it’s useful to define two regions in the data coordinate
+space:
+     </p><dl class="description"><dt class="description">
+<span 
+class="cmbx-10">The valid-data region</span> </dt><dd 
+class="description">
+     <!--l. 601--><p class="noindent" >is the entire grid minus any ommited-on-boundary or excised points; to make this a region we take
+     the Lego-block bounding box of the non-excised grid points.
+     </p></dd><dt class="description">
+<span 
+class="cmbx-10">The default-centering region</span> </dt><dd 
+class="description">
+     <!--l. 605--><p class="noindent" >is that region in interpolation-point space where the interpolator can use the default molecule
+     centering (described in table <a 
+href="#x1-80011">1<!--tex4ht:ref: AEIThorns/AEILocalInterp/tab-molecule-size+centering --></a>), i.e. where the default-centering molecules require data only from
+     the data-valid region.</p></dd></dl>
+<!--l. 612--><p class="noindent" >Figure <a 
+href="#x1-110011">1<!--tex4ht:ref: AEIThorns/AEILocalInterp/fig-valid-data+default-centering --></a> shows an example of these regions.
+</p>
+<hr class="figure" /><div class="figure" 
+>
+                                                                                       
+                                                                                       
+<a 
+ id="x1-110011"></a>
+                                                                                       
+                                                                                       
+<div class="center" 
+>
+<!--l. 634--><p class="noindent" >
+</p><!--l. 635--><p class="center" ><img 
+src="documentation9x.png" alt="PICT"  /></p></div>
+<br /> <div class="caption" 
+><span class="id">Figure 1:  </span><span  
+class="content">This  figure  shows  an  example  of  the  valid-data  and  default-centering  regions  for  a
+2-D  grid.  \(\times \) marks  the  excised  points,  and  the  dashed  lines  show  the  boundaries  of  the  valid-data
+region. The solid lines show the boundaries of the default-centering regions for 3-point and 4-point
+molecules. The arrows on the default-centering region for 4-point molecules show which elements of
+the <span 
+class="cmtt-10">boundary</span><span 
+class="cmtt-10">_*</span><span 
+class="cmtt-10">_tolerance[ibndry]</span> and <span 
+class="cmtt-10">excision</span><span 
+class="cmtt-10">_*</span><span 
+class="cmtt-10">_tolerance[ibndry]</span> arrays apply to each line
+segment of the region boundary:<br 
+class="newline" /><div  
+class="centerline"><!--tex4ht:inline--><div class="tabular"> <table id="TBL-3" class="tabular" 
+ 
+><colgroup id="TBL-3-1g"><col 
+id="TBL-3-1" /><col 
+id="TBL-3-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-3-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-1-1"  
+class="td10"> \(\raise 0.50ex\hbox {\xmin \hskip 4mm}\)    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-1-2"  
+class="td01">\(x_{\min }\) (<span 
+class="cmtt-10">ibndry = 0</span>)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-2-1"  
+class="td10"> \(\raise 0.50ex\hbox {\hskip 4mm \xmax }\)    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-2-2"  
+class="td01">\(x_{\max }\) (<span 
+class="cmtt-10">ibndry = 1</span>)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-3-1"  
+class="td10"> \(\lower 1mm\hbox {\,\ymin \,}\)    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-3-2"  
+class="td01">\(y_{\min }\) (<span 
+class="cmtt-10">ibndry = 2</span>)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-4-1"  
+class="td10"> \(\raise 3mm\hbox {\,\ymax \,}\)    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-4-2"  
+class="td01">\(y_{\max }\) (<span 
+class="cmtt-10">ibndry = 3</span>)  </td></tr></table>                                                                </div></div>
+</span></div><!--tex4ht:label?: x1-110011 -->
+                                                                                       
+                                                                                       
+</div><hr class="endfigure" />
+<!--l. 747--><p class="noindent" >Near a boundary or excised regions, the interpolator will off-center its molecules (if and) only if the interpolation
+point is both </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 750--><p class="noindent" >within (\(\le \)) <span class="obeylines-h"><code class="verb">*_off_centering_tolerance[ibndry]</code></span> grid spacings of the default-centering region, <span 
+class="cmbx-10">and</span>
+     </p></li>
+     <li class="itemize">
+     <!--l. 752--><p class="noindent" >within (\(\le \)) <span class="obeylines-h"><code class="verb">*_extrapolation_tolerance[ibndry]</code></span> grid spacings of the valid-data region.</p></li></ul>
+<!--l. 755--><p class="noindent" >where we use “<span class="obeylines-h"><code class="verb">*</code></span>” to denote <span class="obeylines-h"><code class="verb">boundary</code></span> or <span class="obeylines-h"><code class="verb">excision</code></span> as appropriate.
+</p><!--l. 758--><p class="noindent" >There are four cases for these parameters:
+     </p><dl class="description"><dt class="description">
+ \(\text {\tt *\!\_off\_centering\_tolerance[ibdnry]} = 0.0\) <span 
+class="cmbx-10">and</span> \(\text {\tt *\!\_extrapolation\_tolerance[ibndry]} = 0.0\)<span 
+class="cmbx-10">:</span> </dt><dd 
+class="description">
+     <!--l. 762--><p class="noindent" ><br 
+class="newline" />No off-centering is allowed: the interpolator reports an error (<span class="obeylines-h"><code class="verb">CCTK_ERROR_INTERP_POINT_OUTSIDE</code></span>
+     or <span class="obeylines-h"><code class="verb">CCTK_ERROR_INTERP_POINT_EXCISED</code></span> return code as appropriate) if any interpolation point is
+     outside the default-centering region.
+     </p></dd><dt class="description">
+ \(\text {\tt *\!\_off\_centering\_tolerance[ibdnry]} &gt; 0.0\) <span 
+class="cmbx-10">and</span> \(\text {\tt *\!\_extrapolation\_tolerance[ibndry]} = 0.0\)<span 
+class="cmbx-10">:</span> </dt><dd 
+class="description">
+     <!--l. 770--><p class="noindent" ><br 
+class="newline" />The interpolator allows interpolation points to be up to (\(\le \)) <span class="obeylines-h"><code class="verb">*_off_centering_tolerance[ibndry]</code></span>
+     grid spacings outside the default-centering region in this direction. If an interpolation point is
+     beyond this limit in any direction, then the interpolator reports an error.
+     </p></dd><dt class="description">
+ \(\text {\tt *\!\_off\_centering\_tolerance[ibdnry]} = \infty \)<span class="footnote-mark"><a 
+href="documentation5.html#fn4x0"><sup class="textsuperscript">4</sup></a></span> <span 
+class="cmbx-10">and</span> \(\text {\tt *\!\_extrapolation\_tolerance[ibndry]} &gt; 0.0\)<span 
+class="cmbx-10">:</span> </dt><dd 
+class="description">
+     <!--l. 780--><p class="noindent" ><br 
+class="newline" /><a 
+ id="x1-11002f4"></a>The
+     interpolator allows interpolation points to be up to (\(\le \)) <span class="obeylines-h"><code class="verb">*_extrapolation_tolerance[ibndry]</code></span> grid
+     spacings outside the valid-data region in this direction. If an interpolation point is beyond this limit
+     in any direction, then the interpolator reports an error.
+     </p></dd><dt class="description">
+ \(\text {\tt *\!\_off\_centering\_tolerance[ibdnry]} = 0.0\) <span 
+class="cmbx-10">and</span> \(\text {\tt *\!\_extrapolation\_tolerance[ibndry]} &gt; 0.0\)<span 
+class="cmbx-10">:</span> </dt><dd 
+class="description">
+     <!--l. 793--><p class="noindent" ><br 
+class="newline" />In practice the default-centering region is always a (normally proper) subset of the valid-data region,
+     so this case is nonsensical: the positive value for <span class="obeylines-h"><code class="verb">*_extrapolation_tolerance[ibndry]</code></span> has no
+     effect because of the \(\verb |*_off_centering_tolerance[ibndry]| = 0.0\) setting. The interpolator gives a warning for this case.</p></dd></dl>
+<!--l. 802--><p class="noindent" >If any of these table entries aren’t specified, the defaults are
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-9">
+boundary_off_centering_tolerance[ibndry] = 999.0   # effectively infinity
+boundary_extrapolation_tolerance[ibndry] = 1.0e-10
+</pre>
+<!--l. 806--><p class="nopar" > In other words, the interpolation points may be anywhere within the valid-data region or up to \(10^{-10}\) grid spacing
+outside it. (The \(10^{-10}\) “fudge factor” helps to avoid spurious errors in case floating-point roundoff moves an
+interpolation point which was supposed to be just on the boundary of the valid-data region, slightly outside
+it.)
+</p><!--l. 813--><p class="noindent" >[In the near future these defaults may be changed: For Lagrange polynomial interpolation the new defaults
+would be
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-10">
+boundary_off_centering_tolerance[ibndry] = 999.0   # effectively infinity
+boundary_extrapolation_tolerance[ibndry] = 1.0e-10
+</pre>
+<!--l. 818--><p class="nopar" > while for Hermite polynomial interpolation they would be
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-11">
+boundary_off_centering_tolerance[ibndry] = 1.0e-10
+boundary_extrapolation_tolerance[ibndry] = 0.0
+</pre>
+<!--l. 823--><p class="nopar" > This would leave Lagrange interpolation unchanged, while for Hermite interpolation the defaults would forbid
+any significant off-centering of the interpolation molecules.]
+</p>
+<h5 class="subsubsectionHead"><span class="titlemark">2.3.3   </span> <a 
+ id="x1-120002.3.3"></a>Suppressing Warning Messages about Off-Centering</h5>
+<!--l. 832--><p class="noindent" >By default, <span 
+class="cmbx-10">AEILocalInterp </span>prints a Cactus level 1 warning message for each interpolation point which causes
+it to return a <span class="obeylines-h"><code class="verb">CCTK_INTERP_ERROR_POINT_OUTSIDE</code></span> or <span class="obeylines-h"><code class="verb">CCTK_INTERP_ERROR_POINT_EXCISED</code></span> error code. If the
+key <span class="obeylines-h"><code class="verb">suppress_warnings</code></span> is present in the parameter table (it may have any datatype and value), then these
+messages are not printed.
+</p><!--l. 842--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.4   </span> <a 
+ id="x1-130002.4"></a>Per-Point Status Reporting</h4>
+<!--l. 844--><p class="noindent" >By default, an interpolator just returns a single result, either 0 for success or some (negative) error code. If there
+are multiple interpolation points causing errors, an interpolator should return 0 for success, or the error code for
+the first point in error (the one with the smallest <span class="obeylines-h"><code class="verb">pt</code></span>).
+</p><!--l. 850--><p class="noindent" >However, sometimes you would like to know the status of the interpolation for <span 
+class="cmti-10">each </span>point. The following
+(optional) parameter-table entries may be used to request this, and to query if the interpolator supports
+this:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-12">
+/*
+ * To query whether the interpolator supports per-point status, set this
+ * to a NULL pointer.  To actually request per-point status, set this to
+ * a non-NULL pointer pointing to a buffer of  N_interp_points  CCTK_INTs
+ * into which the interpolator should store the per-point status.  The status
+ * for point  pt  is defined to be the result which CCTK_InterpLocalUnifom()
+ * would return if that were the only point being interpolated.
+ */
+CCTK_POINTER per_point_status;
+</pre>
+<!--l. 863--><p class="nopar" >
+</p><!--l. 865--><p class="noindent" >If the interpolator supports returning per-point status, and if the key <span class="obeylines-h"><code class="verb">per_point_status</code></span> is present in the
+parameter table, then the interpolator will set
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-13">
+CCTK_INT error_point_status;
+</pre>
+<!--l. 870--><p class="nopar" > in the parameter table. If \(\verb |per_point_status| = \verb |NULL|\), the interpolator will set <span class="obeylines-h"><code class="verb">error_point_status</code></span> to 0. Otherwise, the interpolator will
+set <span class="obeylines-h"><code class="verb">error_point_status</code></span> to the negative of the number of points for which the per-point status is
+non-zero.
+</p><!--l. 878--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.5   </span> <a 
+ id="x1-140002.5"></a>Multi-Dimensional Interpolation</h4>
+<!--l. 881--><p class="noindent" >In multiple dimensions, there are two plausible definitions for the generic interpolating polynomial of a given
+order (degree) \(n\). For convenience I’ll describe these for the 2-D case, but the generalization to any number of
+dimensions should be obvious:
+</p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 887--><p class="noindent" >The generic “<span 
+class="cmbx-10">tensor product</span>” polynomial of degree \(n\) is \begin {equation}  f(x,y) = \sum _{{0 \le i \le n} \atop {0 \le j \le n}} a_{ij} x^i y^j \label {AEIThorns/AEILocalInterp/eqn-polynomial-2d-TP}  \end {equation}<a 
+ id="x1-14001r2"></a>
+     </p></li>
+     <li class="itemize">
+     <!--l. 892--><p class="noindent" >The generic “<span 
+class="cmbx-10">maximum degree</span>” polynomial of degree \(n\) is \begin {equation}  g(x,y) = \sum _{0 \le i+j \le n} a_{ij} x^i y^j \label {AEIThorns/AEILocalInterp/eqn-polynomial-2d-MD}  \end {equation}<a 
+ id="x1-14002r3"></a></p></li></ul>
+<!--l. 899--><p class="noindent" >Because it has \((n+1)^2\) coefficients, the tensor-product polynomial \(f\) can (and does) pass through all the \((n+1)^2\) input data
+points in a square molecule of size \(n+1\). This implies that the interpolation error vanishes at the input grid points,
+and that the overall interpolating function is continuous (up to floating-point roundoff errors). However, \(f\) does
+have the slightly peculiar property of having terms up to \(x^n y^n\) despite being of “degree” \(n\). (For example, the “linear”
+interpolant for \(n=1\) would have \(xy\) terms, even though those are formally quadratic in the independent variables \(x\) and
+\(y\).)
+</p><!--l. 910--><p class="noindent" >In contrast, the maximum-degree polynomial \(g\) has only \(\frac {1}{2} (n+1)(n+2)\) coefficients, so for generic input data (i.e. input data
+which isn’t actually sampled from a polynomial of the form \((\ref {AEIThorns/AEILocalInterp/eqn-polynomial-2d-MD})\)) \(g\) can’t pass through all the \((n+1)^2\) input data points in a
+square molecule of size \(n+1\). The interpolator actually does a least-squares fit of the polymomial \(g\) to the
+input data in the molecule, so in general the molecule won’t pass through <span 
+class="cmti-10">any </span>of the data points!
+Moreover, each time the interpolation point crosses a grid square (for odd \(n\)) or the center lines of a
+grid square (for even \(n\)), the set of points used in the molecule changes (cf. section <a 
+href="#x1-80002.2">2.2<!--tex4ht:ref: AEIThorns/AEILocalInterp/sect-molecule-size+centering --></a>), so the
+interpolant generally has a jump discontinuity! For these reasons, the tensor-product choice \((\ref {AEIThorns/AEILocalInterp/eqn-polynomial-2d-TP})\) is generally
+preferable.
+                                                                                       
+                                                                                       
+</p><!--l. 929--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.6   </span> <a 
+ id="x1-150002.6"></a>Molecule Family</h4>
+<!--l. 932--><p class="noindent" >An interpolator may support different families/shapes of interpolation molecules. Hypercube-shaped molecules
+are the simplest and most common case, but one could also imagine (say) octagon-shaped molecules in 2-D, or
+some generalization of this in higher numbers of dimensions.
+</p><!--l. 937--><p class="noindent" >The (optional) parameter
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-14">
+/* set with Util_TableSetString() */
+const char molecule_family[];
+</pre>
+<!--l. 941--><p class="nopar" > may be used to set or query the molecule family.
+</p><!--l. 944--><p class="noindent" >If this key is present in the parameter table, the interpolator sets the molecule family/shape based on the value
+specified. If this key <span 
+class="cmti-10">isn’t </span>present in the parameter table, then the interpolator sets it to the molecule family
+being used.
+</p><!--l. 949--><p class="noindent" >At present only hypercubed-shaped molecules are implemented; these are specified by <span class="obeylines-h"><code class="verb">molecule_family</code></span> set to
+<span class="obeylines-h"><code class="verb">&#x0022;cube&#x0022;</code></span>.
+</p><!--l. 954--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.7   </span> <a 
+ id="x1-160002.7"></a>Non-Contiguous Input Arrays</h4>
+<!--l. 957--><p class="noindent" >Sometimes the input “arrays” used by the interpolator might not be contiguous in memory. For example, we
+might want to do 2-D interpolation within a plane of a 3-D grid array, but the plane might or might not be
+contiguous in memory. (Another example would be that the input arrays might be members of a compact
+group.)
+</p><!--l. 963--><p class="noindent" >The following (optional) parameter-table entries specify non-contiguous input arrays:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-15">
+const CCTK_INT input_array_offsets[N_input_arrays];
+
+/* the next 3 table entries are shared by all input arrays */
+const CCTK_INT input_array_strides       [N_dims];
+const CCTK_INT input_array_min_subscripts[N_dims];
+const CCTK_INT input_array_max_subscripts[N_dims];
+</pre>
+<!--l. 972--><p class="nopar" >
+</p><!--l. 974--><p class="noindent" >In general, the interpolator accesses the input using the generic subscripting expression
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-16">
+input_array[in][offset + i*stride_i + j*stride_j + k*stride_k]
+</pre>
+<!--l. 978--><p class="nopar" > where
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-17">
+offset = input_array_offsets[in]
+(stride_i,stride_j,stride_k) = input_array_strides[]
+</pre>
+<!--l. 983--><p class="nopar" > and where <span class="obeylines-h"><code class="verb">(i,j,k)</code></span> run from <span class="obeylines-h"><code class="verb">input_array_min_subscripts[]</code></span> to <span class="obeylines-h"><code class="verb">input_array_max_subscripts[]</code></span> inclusive
+(n.b. this is an <span 
+class="cmti-10">inclusive </span>range, i.e. \(\verb |min| \le \verb |(i,j,k)| \le \verb |max|\)).
+</p><!--l. 989--><p class="noindent" >The defaults are that each input array is contiguous in memory, i.e. <span class="obeylines-h"><code class="verb">input_array_offsets[]</code></span> = 0, <span class="obeylines-h"><code class="verb">stride</code></span>
+determined from <span class="obeylines-h"><code class="verb">input_array_dims[]</code></span> in the usual Fortran manner, <span class="obeylines-h"><code class="verb">input_array_min_subscripts[]</code></span> = all 0s,
+and <span class="obeylines-h"><code class="verb">input_array_max_subscripts[]</code></span> = <span class="obeylines-h"><code class="verb">input_array_dims[]</code></span>-1. If the stride and max subscript are both
+specified explicitly, then the explicit <span class="obeylines-h"><code class="verb">input_array_dims[]</code></span> argument to <span class="obeylines-h"><code class="verb">CCTK_InterpLocalUniform()</code></span> is
+ignored.
+</p><!--l. 1001--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.8   </span> <a 
+ id="x1-170002.8"></a>Derivatives</h4>
+<!--l. 1004--><p class="noindent" >If we view the input data as being samples of a smooth function, then instead of estimating values of that
+function at the interpolation points, the interpolator can instead or additionally estimate values of various
+derivatives of that function at the interpolation points. (We don’t currently implement it, but one could also
+imagine interpolating more general molecule operations such as Laplacians.)
+</p><!--l. 1011--><p class="noindent" >The following (optional) parameter-table entries are used to specify this:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-18">
+const CCTK_INT operand_indices[N_output_arrays];
+const CCTK_INT operation_codes[N_output_arrays];
+</pre>
+<!--l. 1016--><p class="nopar" > The semantics here are that
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-19">
+output_array[out] = op(input_array[operand_indices[out]])
+</pre>
+<!--l. 1020--><p class="nopar" > where <span class="obeylines-h"><code class="verb">op</code></span> is an operator specified by the <span class="obeylines-h"><code class="verb">operation_codes[out]</code></span> value as described below.
+</p><!--l. 1024--><p class="noindent" >Note that <span class="obeylines-h"><code class="verb">operand_indices[]</code></span> doesn’t directly name the inputs, but rather gives their (0-origin) subscripts in
+the list of inputs. This allows for a more efficient implementation in the (common) case where some of the input
+arrays have many different operations applied to them. (It’s most efficient to group all operations on a given
+input array together in the <span class="obeylines-h"><code class="verb">operand_indices</code></span> and <span class="obeylines-h"><code class="verb">operation_codes</code></span> arrays, as in the example in
+section <a 
+href="#x1-280005.2">5.2<!--tex4ht:ref: AEIThorns/AEILocalInterp/sect-example-derivatives --></a>.)
+</p><!--l. 1033--><p class="noindent" >Negative <span class="obeylines-h"><code class="verb">operation_codes[out]</code></span> values are reserved for future use. An <span class="obeylines-h"><code class="verb">operation_codes[out]</code></span> value which is \(\ge 0\)
+is taken as a decimal integer encoding a coordinate partial derivative: each decimal digit means to take the
+coordinate partial derivative along that (1-origin) axis; the order of the digits in a number is ignored. Table <a 
+href="#x1-170012">2<!--tex4ht:ref: AEIThorns/AEILocalInterp/tab-derivative-codes --></a>
+summarizes these resulting derivative codes.
+</p>
+<div class="table">
+                                                                                       
+                                                                                       
+<!--l. 1044--><p class="noindent" ><a 
+ id="x1-170012"></a></p><hr class="float" /><div class="float" 
+>
+                                                                                       
+                                                                                       
+<div class="center" 
+>
+<!--l. 1044--><p class="noindent" >
+</p>
+<div class="tabular"> <table id="TBL-4" class="tabular" 
+ 
+><colgroup id="TBL-4-1g"><col 
+id="TBL-4-1" /><col 
+id="TBL-4-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-4-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-1-1"  
+class="td11"> <span class="obeylines-h"><code class="verb">operation_codes[out]</code></span> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-2"  
+class="td11"> What it means                                             </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-2-1"  
+class="td11">           0                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-2-2"  
+class="td11"> interpolate the input array itself (no derivative)  </td>
+</tr><tr 
+class="vspace" style="font-size:4.30554pt"><td 
+>&nbsp;</td><td 
+>&nbsp;</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-3-1"  
+class="td11">           1                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-2"  
+class="td11"> interpolate \(\partial \big / \partial x^1\) of the input array                         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-4-1"  
+class="td11">           2                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-4-2"  
+class="td11"> interpolate \(\partial \big / \partial x^2\) of the input array                         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-5-1"  
+class="td11">           3                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-5-2"  
+class="td11"> interpolate \(\partial \big / \partial x^3\) of the input array                         </td>
+</tr><tr 
+class="vspace" style="font-size:4.30554pt"><td 
+>&nbsp;</td><td 
+>&nbsp;</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-6-1"  
+class="td11">        12 or 21             </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-6-2"  
+class="td11"> interpolate \(\partial ^2 \big / \partial x^1 \partial x^2\) of the input array                         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-7-1"  
+class="td11">        13 or 31             </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-7-2"  
+class="td11"> interpolate \(\partial ^2 \big / \partial x^1 \partial x^3\) of the input array                         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-8-1"  
+class="td11">        23 or 32             </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-8-2"  
+class="td11"> interpolate \(\partial ^2 \big / \partial x^2 \partial x^3\) of the input array                         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-9-1"  
+class="td11">           11                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-9-2"  
+class="td11"> interpolate \(\partial ^2 \big / \partial (x^1)^2\) of the input array                         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-10-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-10-1"  
+class="td11">           22                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-10-2"  
+class="td11"> interpolate \(\partial ^2 \big / \partial (x^2)^2\) of the input array                         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-11-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-11-1"  
+class="td11">           33                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-11-2"  
+class="td11"> interpolate \(\partial ^2 \big / \partial (x^3)^2\) of the input array                         </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-12-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-12-1"  
+class="td11">                       </td></tr></table>                                                              </div></div>
+<br /> <div class="caption" 
+><span class="id">Table 2: </span><span  
+class="content">This table gives the codes in <span 
+class="cmtt-10">operation</span><span 
+class="cmtt-10">_codes[out] </span>for each possible 1st or 2nd derivative in
+3-D; for 1-D or 2-D codes referring to nonexistent coordinates are invalid. </span></div><!--tex4ht:label?: x1-170012 -->
+                                                                                       
+                                                                                       
+</div><hr class="endfloat" />
+</div>
+<!--l. 1076--><p class="noindent" >At present we do <span 
+class="cmti-10">not </span>have any <span class="obeylines-h"><code class="verb">#define</code></span>s for the operation codes in the Cactus header files. However, you can
+avoid most of the software-engineering problems of having “magic numbers” for the operation codes, by using
+the macro
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-20">
+#define DERIV(op)   op
+</pre>
+<!--l. 1082--><p class="nopar" > to mark all such <span class="obeylines-h"><code class="verb">operation_codes[]</code></span> values in your code. There’s an example of this in section <a 
+href="#x1-280005.2">5.2<!--tex4ht:ref: AEIThorns/AEILocalInterp/sect-example-derivatives --></a>.
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.9   </span> <a 
+ id="x1-180002.9"></a>Jacobian and Domain of Dependence</h4>
+<!--l. 1092--><p class="noindent" >The Jacobian of the interpolator is defined as \begin {equation}  \frac {\partial \hbox {\tt output\_array[out][pt]}} {\partial \hbox {\tt input\_array[in][(i,j,k)]}} \label {AEIThorns/AEILocalInterp/eqn-Jacobian}  \end {equation}<a 
+ id="x1-18001r4"></a> We may want to know the Jacobian itself, and/or “just” the set of
+<span class="obeylines-h"><code class="verb">(i,j,k)</code></span> for which this is nonzero (i.e. the Jacobian’s sparsity structure, or equivalently the domain of
+dependence of the output result, or equivalently the interpolation molecule size and shape) for a given <span class="obeylines-h"><code class="verb">out</code></span>, <span class="obeylines-h"><code class="verb">in</code></span>,
+and <span class="obeylines-h"><code class="verb">pt</code></span>.<span class="footnote-mark"><a 
+href="documentation6.html#fn5x0"><sup class="textsuperscript">5</sup></a></span><a 
+ id="x1-18002f5"></a> 
+</p><!--l. 1111--><p class="noindent" >The complexity of doing this depends (strongly!) on the structure of the Jacobian, and in particular on the
+answers to the following questions: </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 1115--><p class="noindent" >What molecule family is being used?
+     </p></li>
+     <li class="itemize">
+     <!--l. 1116--><p class="noindent" >Does the interpolation molecule size and/or shape depend on where the interpolation points are in
+     the grid?<span class="footnote-mark"><a 
+href="documentation7.html#fn6x0"><sup class="textsuperscript">6</sup></a></span><a 
+ id="x1-18004f6"></a> 
+     </p></li>
+     <li class="itemize">
+     <!--l. 1126--><p class="noindent" >If this interpolator supports computing derivatives as described in section <a 
+href="#x1-170002.8">2.8<!--tex4ht:ref: AEIThorns/AEILocalInterp/sect-derivatives --></a>, does the interpolation
+     molecule size and/or shape depend on <span class="obeylines-h"><code class="verb">operation_codes[]</code></span>?
+     </p></li>
+     <li class="itemize">
+                                                                                       
+                                                                                       
+     <!--l. 1130--><p class="noindent" >Does  the  interpolation  molecule  size  and/or  shape  depend  on  the  actual  floating-point  values
+     being interpolated? (Examples of this might include ENO (essentially nonoscillatory) and/or TVD
+     (total-variation diminishing) interpolators for hydrodynamics calculations.)
+     </p></li>
+     <li class="itemize">
+     <!--l. 1135--><p class="noindent" >Do the actual floating-point values of the Jacobian depend on the actual floating-point values being
+     interpolated? Equivalently, is the interpolation nonlinear?</p></li></ul>
+<!--l. 1140--><p class="noindent" >Because the different cases differ so much in the amount of information required to describe the Jacobian, it’s
+hard to define a single API which covers all cases without burdening the simpler cases with excessive complexity.
+Instead, the interpolator defines a Jacobian-structure–query API to determine which case applies, together with
+(conceptually) several different APIs for the different cases. (At the moment only a single case is
+implemented.)
+</p>
+<h5 class="subsubsectionHead"><span class="titlemark">2.9.1   </span> <a 
+ id="x1-190002.9.1"></a>Determining the Jacobian’s structure</h5>
+<!--l. 1153--><p class="noindent" >The following parameter-table entries may be used to query which of the different Jacobian-structure cases
+applies:
+</p><!--l. 1156--><p class="noindent" >The parameter <span class="obeylines-h"><code class="verb">molecule_family</code></span> may may be used to query what molecule family is being used. This is
+described in detail in section <a 
+href="#x1-150002.6">2.6<!--tex4ht:ref: AEIThorns/AEILocalInterp/sect-molecule-family --></a>.
+</p><!--l. 1160--><p class="noindent" >If the interpolation molecule size and/or shape vary with the interpolation coordinates, the interpolator sets the
+parameter
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-21">
+CCTK_INT MSS_is_fn_of_interp_coords;
+</pre>
+<!--l. 1164--><p class="nopar" > to 1. Otherwise (i.e. if the interpolation molecule size and shape are independent of the interpolation
+coordinates) it should set this parameter to 0.
+</p><!--l. 1169--><p class="noindent" >If the interpolator supports computing derivatives as described in section <a 
+href="#x1-170002.8">2.8<!--tex4ht:ref: AEIThorns/AEILocalInterp/sect-derivatives --></a>, <span 
+class="cmti-10">and </span>if the interpolation molecule’s
+size and/or shape varies with <span class="obeylines-h"><code class="verb">operation_codes[]</code></span>, the interpolator sets the parameter
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-22">
+CCTK_INT MSS_is_fn_of_which_operation;
+</pre>
+<!--l. 1175--><p class="nopar" > to 1. Otherwise (i.e. if the interpolator doesn’t support computing derivatives, or if the interpolator does
+support computing derivatives but the interpolation molecule size and shape are independent of the
+<span class="obeylines-h"><code class="verb">operation_code[]</code></span> values), the interpolator sets this parameter to 0. Note that this query tests whether the
+molecule size and/or shape depend on <span class="obeylines-h"><code class="verb">operation_codes[]</code></span> in general, independent of whether there are in fact
+any distinct values (or even any values at all) passed in <span class="obeylines-h"><code class="verb">operation_codes[]</code></span> in this particular interpolator call.
+In other words, this is a query about the basic design of the interpolator, not about this particular
+call.
+</p><!--l. 1187--><p class="noindent" >If the interpolation molecule’s size and/or shape varies with the actual floating-point values of the input arrays,
+the interpolator sets the parameter
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-23">
+CCTK_INT MSS_is_fn_of_input_array_values;
+</pre>
+<!--l. 1192--><p class="nopar" > to 1. Otherwise (i.e. if the interpolation molecule size and shape are independent of the input array values; this
+is a necessary, but not sufficient, condition for the interpolation to be linear), the interpolator sets this parameter
+to 0.
+</p><!--l. 1198--><p class="noindent" >If the actual floating-point values of the Jacobian \((\ref {AEIThorns/AEILocalInterp/eqn-Jacobian})\) (for a given <span class="obeylines-h"><code class="verb">out</code></span>, <span class="obeylines-h"><code class="verb">in</code></span>, and <span class="obeylines-h"><code class="verb">pt</code></span>) depend on the actual
+floating-point values of the input arrays (i.e. if the interpolation is nonlinear), the interpolator sets the
+parameter
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-24">
+CCTK_INT Jacobian_is_fn_of_input_array_values;
+</pre>
+<!--l. 1205--><p class="nopar" > to 1. Otherwise (i.e. if the interpolation is linear) the interpolator sets this parameter to 0.
+</p><!--l. 1209--><p class="noindent" >The current implementation always sets
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-25">
+MSS_is_fn_of_interp_coords = 0
+MSS_is_fn_of_which_operation = 0
+MSS_is_fn_of_input_array_values = 0
+Jacobian_is_fn_of_input_array_values = 0
+</pre>
+<!--l. 1215--><p class="nopar" >
+</p><!--l. 1219--><p class="noindent" >
+</p>
+<h5 class="subsubsectionHead"><span class="titlemark">2.9.2   </span> <a 
+ id="x1-200002.9.2"></a>Fixed-Size Hypercube-Shaped Molecules</h5>
+<!--l. 1222--><p class="noindent" >The simplest case (and the only one for which we have defined an API at present) is when the molecules are
+hypercube-shaped and of (typically small) fixed size, independent of the interpolation coordinates and the actual
+floating-point values in the input arrays (though presumably depending on the interpolation order and on
+<span class="obeylines-h"><code class="verb">operation_code</code></span>). In other words, this case applies if (and only if) the Jacobian structure information described
+in section <a 
+href="#x1-190002.9.1">2.9.1<!--tex4ht:ref: AEIThorns/AEILocalInterp/sect-Jacobian/structure --></a> returns
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-26">
+MSS_is_fn_of_interp_coords = 0
+MSS_is_fn_of_which_operation = 0
+MSS_is_fn_of_input_array_values = 0
+Jacobian_is_fn_of_input_array_values = 0
+</pre>
+<!--l. 1236--><p class="nopar" > (These are precisely the values set by the current implementation.) In the rest of this section we describe the
+query API for this case.
+</p><!--l. 1240--><p class="noindent" >The following parameters may be used to query the molecule size:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-27">
+CCTK_INT const molecule_min_m[N_dims];
+CCTK_INT const molecule_max_m[N_dims];
+</pre>
+<!--l. 1244--><p class="nopar" > The semantics of these are that if both of these keys are present (the values and datatypes don’t matter), then
+the interpolator will (re)set the values to give the (inclusive) minimum and maximum <span class="obeylines-h"><code class="verb">m</code></span> molecule coordinates.
+(Note that either both of these keys should be present, or neither should be present. This simplifies the logic in
+the interpolator slightly.)
+</p><!--l. 1252--><p class="noindent" >The following parameter may be used to query the molecule positions:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-28">
+CCTK_INT* const molecule_positions[N_dims];
+</pre>
+<!--l. 1255--><p class="nopar" > The semantics of this is that the caller should set <span class="obeylines-h"><code class="verb">molecule_positions[]</code></span> to an array of <span class="obeylines-h"><code class="verb">N_dims</code></span> pointers to
+(caller-supplied) arrays of <span class="obeylines-h"><code class="verb">N_interp_points</code></span> <span class="obeylines-h"><code class="verb">CCTK_INT</code></span>s each. If this key exists, then the interpolator will store
+the molecule positions in the pointed-to arrays.
+</p><!--l. 1262--><p class="noindent" >The following parameters may be used to query the Jacobian \((\ref {AEIThorns/AEILocalInterp/eqn-Jacobian})\) itself:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-29">
+CCTK_REAL* const Jacobian_pointer[N_output_arrays];
+const CCTK_INT   Jacobian_offset [N_output_arrays];   # optional, default=all 0
+
+/* the next 3 table entries are shared by all Jacobians */
+const CCTK_INT Jacobian_interp_point_stride;
+const CCTK_INT Jacobian_m_strides[N_dims];
+const CCTK_INT Jacobian_part_stride;                  # optional, default=1
+</pre>
+<!--l. 1272--><p class="nopar" > If <span class="obeylines-h"><code class="verb">Jacobian_pointer</code></span> is present in the table, then <span class="obeylines-h"><code class="verb">Jacobian_interp_point_stride</code></span>
+and <span class="obeylines-h"><code class="verb">Jacobian_m_strides</code></span> must also be present. For each <span class="obeylines-h"><code class="verb">out</code></span> where
+<span class="obeylines-h"><code class="verb">Jacobian_pointer[out] != NULL</code></span>,<span class="footnote-mark"><a 
+href="documentation8.html#fn7x0"><sup class="textsuperscript">7</sup></a></span><a 
+ id="x1-20001f7"></a> 
+the interpolator would then store the Jacobian \((\ref {AEIThorns/AEILocalInterp/eqn-Jacobian})\) in
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-30">
+Jacobian_pointer[out][offset
+                      + pt*Jacobian_interp_point_stride
+                      + mi*stride_i + mj*stride_j + mk*stride_k
+                      + part*Jacobian_part_stride]
+</pre>
+<!--l. 1292--><p class="nopar" > where
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-31">
+offset = Jacobian_offset[out]
+(stride_i,stride_j,stride_k) = Jacobian_m_strides[]
+</pre>
+<!--l. 1297--><p class="nopar" > and where <span class="obeylines-h"><code class="verb">part</code></span> is 0 for real values and the real parts of complex values, and 1 for the imaginary parts of
+complex values.
+</p><!--l. 1301--><p class="noindent" >By appropriately setting the various stride parameters, this allows a fairly wide variety of possible storage
+layouts for the Jacobian.
+</p><!--l. 1304--><p class="noindent" >An example may help to clarify this: Suppose we have a 1-D grid with 11 grid points, with integer subscripts 0
+through 10 inclusive, and interpolation coordinates given by <span class="obeylines-h"><code class="verb">coord_origin = 0.0</code></span> and <span class="obeylines-h"><code class="verb">coord_delta = 0.1</code></span>.
+Suppose further that we’re doing Lagrange polynomial interpolation, with <span class="obeylines-h"><code class="verb">order = 2</code></span> and hence (by table <a 
+href="#x1-80011">1<!--tex4ht:ref: AEIThorns/AEILocalInterp/tab-molecule-size+centering --></a>)
+using 3-point molecules. Finally, suppose that we query the Jacobian molecule positions for the
+<span class="obeylines-h"><code class="verb">N_interp_points=14</code></span> interpolation points 0.0, 0.04, 0.06, 0.10, 0.14, 0.16, 0.20, 0.80, 0.84, 0.86, 0.90, 0.94, 0.96,
+1.00. Then the queries might return
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-32">
+interp_molecule_min_m = -1
+interp_molecule_max_m = +1
+                                         /* interp_x      molecule     */
+interp_molecule_positions[0][ 0] =  1    /*   0.00     [0.0, 0.1, 0.2] */
+interp_molecule_positions[0][ 1] =  1    /*   0.04     [0.0, 0.1, 0.2] */
+interp_molecule_positions[0][ 2] =  1    /*   0.06     [0.0, 0.1, 0.2] */
+interp_molecule_positions[0][ 3] =  1    /*   0.10     [0.0, 0.1, 0.2] */
+interp_molecule_positions[0][ 4] =  1    /*   0.14     [0.0, 0.1, 0.2] */
+interp_molecule_positions[0][ 5] =  2    /*   0.16     [0.1, 0.2, 0.3] */
+interp_molecule_positions[0][ 6] =  2    /*   0.20     [0.1, 0.2, 0.3] */
+interp_molecule_positions[0][ 7] =  8    /*   0.80     [0.7, 0.8, 0.9] */
+interp_molecule_positions[0][ 8] =  8    /*   0.84     [0.7, 0.8, 0.9] */
+interp_molecule_positions[0][ 9] =  9    /*   0.86     [0.8, 0.9, 1.0] */
+interp_molecule_positions[0][10] =  9    /*   0.90     [0.8, 0.9, 1.0] */
+interp_molecule_positions[0][11] =  9    /*   0.94     [0.8, 0.9, 1.0] */
+interp_molecule_positions[0][12] =  9    /*   0.96     [0.8, 0.9, 1.0] */
+interp_molecule_positions[0][13] =  9    /*   1.00     [0.8, 0.9, 1.0] */
+</pre>
+<!--l. 1334--><p class="nopar" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.10   </span> <a 
+ id="x1-210002.10"></a>Smoothing</h4>
+<!--l. 1340--><p class="noindent" >The way the generalized polynomial interpolator is implemented it’s easy to also do Savitzky-Golay
+smoothing.<span class="footnote-mark"><a 
+href="documentation9.html#fn8x0"><sup class="textsuperscript">8</sup></a></span><a 
+ id="x1-21001f8"></a> 
+This is best described by way of an example: Suppose we’re doing 1-D cubic interpolation, using (by
+table <a 
+href="#x1-80011">1<!--tex4ht:ref: AEIThorns/AEILocalInterp/tab-molecule-size+centering --></a>) 4-point molecules. In other words, at each interpolation point we use a cubic interpolation
+polynomial fitted to 4 surrounding data points. For Savitzky-Golay smoothing, we would instead
+<span 
+class="cmti-10">least-squares fit </span>a cubic polynomial to some <span 
+class="cmti-10">larger </span>number of surrounding data points. This combines
+interpolation with smoothing, so there’s less amplification of noise in the input data in the interpolation
+outputs.
+</p><!--l. 1357--><p class="noindent" >The optional input
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-33">
+const CCTK_INT smoothing;
+</pre>
+<!--l. 1360--><p class="nopar" > specifies how much (how many points) to enlarge the interpolation molecule for this. The default is 0 (no
+smoothing). 1 would mean to enlarge the molecule by 1 point (e.g. to use a 5-point molecule instead of the usual
+4-point one for cubic interpolation). 2 would mean to enlarge by 2 points, (e.g. to use a 6-point molecule for
+cubic interpolation). Etc etc.
+</p><!--l. 1368--><p class="noindent" >Note that in \(&gt;1\) dimension, the maximum-degree Lagrange interpolation already uses more data points than the
+number of free parameters in the interpolating polynomials, i.e. it already does some Savitzky-Golay smoothing.
+For example, in 2-D a generic cubic polynomial \(f(x,y) = \sum _{i+j \le 3} c_{ij} x^i y^j\) has 10 free parameters \(c_{ij}\), which we least-squares fit to the 16
+data points in the \(4 \times 4\) molecule.
+</p><!--l. 1376--><p class="noindent" >Savitzky-Golay smoothing is basically free apart from the increase in the molecule size, e.g. a <span class="obeylines-h"><code class="verb">smoothing</code></span>=2
+cubic interpolation has exactly the same cost as any other 6-point–molecule interpolation.
+</p><!--l. 1380--><p class="noindent" >The current implementation has all the framework for smoothing, but only the <span class="obeylines-h"><code class="verb">smoothing=0</code></span> case is
+implemented at the moment.
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.11   </span> <a 
+ id="x1-220002.11"></a>Debugging</h4>
+<!--l. 1387--><p class="noindent" >Setting the optional parameter
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-34">
+const CCTK_INT debug;
+</pre>
+<!--l. 1390--><p class="nopar" > to a positive value turns on various debug printing inside the interpolator. This is intended for
+debugging the interpolator itself; you need to look at the interpolator source code to interpret the
+output.
+</p><!--l. 1397--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.12   </span> <a 
+ id="x1-230002.12"></a>Logging</h4>
+<!--l. 1399--><p class="noindent" >This thorn has a Boolean parameter <span class="obeylines-h"><code class="verb">log_interp_coords</code></span>. If this is set to <span class="obeylines-h"><code class="verb">true</code></span>, this thorn will write a detailed
+log file giving the grid information and interpolation coordinates for each interpolator call. Each processor will
+write a separate log file, with the file name determined via
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-35">
+snprintf(buffer, length,
+         &#x0022;AEILocalInterp.proc%d.log&#x0022;
+         CCTK_MyProc(NULL))
+</pre>
+<!--l. 1408--><p class="nopar" >
+</p><!--l. 1410--><p class="noindent" >Each file begins with a header comment describing the file format in detail. After the header comment, there is
+one line in the file for each call on <span class="obeylines-h"><code class="verb">CCTK_InterpLocalUniform()</code></span> which is handled by this thorn (with
+<span class="obeylines-h"><code class="verb">log_interp_coords</code></span> set to <span class="obeylines-h"><code class="verb">true</code></span>).
+</p><!--l. 1415--><p class="noindent" >Note that these log files are typically quite large, and writing them may significantly slow the simulation – you
+should probably only use this option for debugging purposes.
+</p><!--l. 1421--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-240003"></a>Supressing Interpolation</h3>
+<!--l. 1423--><p class="noindent" >Sometimes you may want to call the interpolator, but not actually do any interpolation for some or all of the
+arrays: </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 1426--><p class="noindent" >you may be doing a query
+     </p></li>
+     <li class="itemize">
+     <!--l. 1427--><p class="noindent" >you may be just checking values in the parameter table
+     </p></li>
+     <li class="itemize">
+     <!--l. 1428--><p class="noindent" >you may want to interpolate varying subsets of some set of arrays
+     </p></li>
+     <li class="itemize">
+     <!--l. 1430--><p class="noindent" >you may have no interpolation points, yet still want to do the interpolator call for other reasons</p></li></ul>
+<!--l. 1434--><p class="noindent" >In such cases there are several possible ways you can supress some or all of the interpolations:
+     </p><dl class="description"><dt class="description">
+ <span 
+class="cmbx-10">Set</span> \(\text {\tt N\_interp\_points} = 0\)<span 
+class="cmbx-10">:</span> </dt><dd 
+class="description">
+                                                                                       
+                                                                                       
+     <!--l. 1438--><p class="noindent" ><br 
+class="newline" />This supresses all interpolation. In this case <span class="obeylines-h"><code class="verb">interp_coords</code></span> may also be <span class="obeylines-h"><code class="verb">NULL</code></span> if desired.
+     </p></dd><dt class="description">
+ <span 
+class="cmbx-10">Set</span> \(\text {\tt N\_input\_arrays} = 0\) <span 
+class="cmbx-10">and</span> \(\text {\tt N\_output\_arrays} = 0\)<span 
+class="cmbx-10">:</span> </dt><dd 
+class="description">
+     <!--l. 1443--><p class="noindent" ><br 
+class="newline" />This   suppresses   all   interpolation.   However,   note   that   some   parameter-table   entries   like
+     <span class="obeylines-h"><code class="verb">operand_indices</code></span> and  <span class="obeylines-h"><code class="verb">operation_codes</code></span> are  specified  as  being  arrays  whose  size  depends  on
+     <span class="obeylines-h"><code class="verb">N_output_arrays</code></span>, and it’s an error for these table entries to be present with the wrong size (in
+     this case, with any nonzero size).
+     </p></dd><dt class="description">
+ <span 
+class="cmbx-10">Set</span> \(\text {\tt output\_arrays[out]} = \text {\tt NULL}\)<span 
+class="cmbx-10">:</span> </dt><dd 
+class="description">
+     <!--l. 1451--><p class="noindent" ><br 
+class="newline" />This supresses the interpolation for this particular output array. This is probably the cleanest way
+     of selectively turning individual arrays on and off. If \(\verb |output_arrays[out]| = \verb |NULL|\) and the input arrays aren’t needed for any
+     queries you’re doing, then it’s useful to also set the corresponding \(\verb |input_arrays[in]| = \verb |NULL|\), to supress the interpolator
+     fetching data (which in this case will never be used) from the input arrays.</p></dd></dl>
+<!--l. 1463--><p class="noindent" >Note that the combination \(\verb |input_arrays[in]| = \verb |NULL|\) and \(\verb |output_arrays[out]| \ne \verb |NULL|\) is an error: conceptually you’re asking for an interpolation (the
+output array pointer is non-<span class="obeylines-h"><code class="verb">NULL</code></span>) but not supplying any input data (the input array pointer is
+<span class="obeylines-h"><code class="verb">NULL</code></span>).
+</p><!--l. 1472--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-250004"></a>Implementation</h3>
+<!--l. 1474--><p class="noindent" >This interpolator’s basic design is to use separate specialized code for each combination of
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-36">
+   (N_dims, molecule_family, order, smoothing)
+</pre>
+<!--l. 1478--><p class="nopar" > i.e. in practice for each distinct choice of interpolation molecule. Maple is used to generate all the
+interpolation coefficients. The C preprocessor is then used to generate all the specialized code from a single
+master “template” file. The template code uses <span class="obeylines-h"><code class="verb">#ifdef</code></span>s to handle lower dimensions with no extra
+overhead, e.g. 1-D/2-D interpolation is basically just as efficient as in a purpose-built 1-D/2-D
+interpolator, with no extra overhead imposed by the interpolator also supporting higher-dimensional
+interpolation.
+</p><!--l. 1488--><p class="noindent" >The Maple code which generates the interpolation coefficients is quite general-purpose, and can handle an
+arbitrary dimensionality and molecule size/shape. Generating new coefficients can be rather time-consuming,
+though, e.g. the current coefficients for 3-D for orders 1-4 take about 8 cpu minutes to generate using Maple 7
+on a 1.7 GHz P4.
+</p><!--l. 1494--><p class="noindent" >Note that when compiling the code in the directory <span class="obeylines-h"><code class="verb">src/GeneralizedPolynomial-Uniform</code></span>
+of this thorn, you may get compiler warnings about casts discarding <span class="obeylines-h"><code class="verb">const</code></span> qualifiers
+from pointers in (the <span class="obeylines-h"><code class="verb">#include</code></span>-ed file) <span class="obeylines-h"><code class="verb">template.c</code></span>. Don’t worry – the code is actually
+ok.<span class="footnote-mark"><a 
+href="documentation10.html#fn9x0"><sup class="textsuperscript">9</sup></a></span><a 
+ id="x1-25001f9"></a>  You
+may also get compiler warnings about unused variables in this same file; again don’t worry, the code is
+ok.
+</p><!--l. 1516--><p class="noindent" >See the <span class="obeylines-h"><code class="verb">README</code></span> file in the source code directory <span class="obeylines-h"><code class="verb">AEILocalInterp/src/</code></span> and in its subdirectories for further
+details on the implementation.
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-260005"></a>Examples</h3>
+<!--l. 1526--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">5.1   </span> <a 
+ id="x1-270005.1"></a>A Simple Example</h4>
+                                                                                       
+                                                                                       
+<!--l. 1528--><p class="noindent" >Here’s a simple example in C, of interpolating a <span class="obeylines-h"><code class="verb">CCTK_REAL</code></span> and a <span class="obeylines-h"><code class="verb">CCTK_COMPLEX</code></span> \(10 \times 20\) 2-D array, at 5 interpolation
+points, using cubic interpolation.
+</p><!--l. 1532--><p class="noindent" ><span 
+class="cmbx-10">Note: </span>Since C allows arrays to be initialized only if the initializer values are compile-time constants, we have to
+declare the <span class="obeylines-h"><code class="verb">interp_coords[]</code></span>, <span class="obeylines-h"><code class="verb">input_arrays[]</code></span>, and <span class="obeylines-h"><code class="verb">output_arrays[]</code></span> arrays as non-<span class="obeylines-h"><code class="verb">const</code></span>, and set their
+values with ordinary (run-time) assignment statements. In C<span 
+class="cmbx-5">++</span>, there’s no restriction on initializer values, so we
+could declare the arrays <span class="obeylines-h"><code class="verb">const</code></span> and initialize them as part of their declarations.
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-37">
+#define N_DIMS   2
+#define N_INTERP_POINTS   5
+#define N_INPUT_ARRAYS    2
+#define N_OUTPUT_ARRAYS   2
+
+/* (x,y) coordinates of data grid points */
+#define X_ORIGIN   ...
+#define X_DELTA    ...
+#define Y_ORIGIN   ...
+#define Y_DELTA    ...
+const CCTK_REAL origin[N_DIMS] = { X_ORIGIN, Y_ORIGIN };
+const CCTK_REAL delta [N_DIMS] = { X_DELTA,  Y_DELTA  };
+
+/* (x,y) coordinates of interpolation points */
+const CCTK_REAL interp_x[N_INTERP_POINTS];
+const CCTK_REAL interp_y[N_INTERP_POINTS];
+const void* interp_coords[N_DIMS];              /* see note above */
+
+/* input arrays */
+/* ... note Cactus uses Fortran storage ordering, i.e. X is contiguous */
+#define NX   10
+#define NY   20
+const CCTK_REAL    input_real   [NY][NX];
+const CCTK_COMPLEX input_complex[NY][NX];
+const CCTK_INT input_array_dims[N_DIMS] = { NX, NY };
+const CCTK_INT input_array_type_codes[N_INPUT_ARRAYS]
+        = { CCTK_VARIABLE_REAL, CCTK_VARIABLE_COMPLEX };
+const void* input_arrays[N_INPUT_ARRAYS];       /* see note above */
+
+/* output arrays */
+CCTK_REAL    output_real   [N_INTERP_POINTS];
+CCTK_COMPLEX output_complex[N_INTERP_POINTS];
+const CCTK_INT output_array_type_codes[N_OUTPUT_ARRAYS]
+        = { CCTK_VARIABLE_REAL, CCTK_VARIABLE_COMPLEX };
+void* output_arrays[N_OUTPUT_ARRAYS];           /* see note above */
+
+int operator_handle, param_table_handle;
+operator_handle = CCTK_InterpHandle(&#x0022;my interpolation operator&#x0022;);
+if (operator_handle &#x003C; 0)
+        CCTK_WARN(-1, &#x0022;can’t get interpolation handle!&#x0022;);
+param_table_handle = Util_TableCreateFromString(&#x0022;order=3&#x0022;);
+if (param_table_handle &#x003C; 0)
+        CCTK_WARN(-1, &#x0022;can’t create parameter table!&#x0022;);
+
+/* initialize the rest of the parameter arrays */
+                                                                                       
+                                                                                       
+interp_coords[0] = (const void *) interp_x;
+interp_coords[1] = (const void *) interp_y;
+input_arrays [0] = (const void *) input_real;
+input_arrays [1] = (const void *) input_complex;
+output_arrays[0] = (      void *) output_real;
+output_arrays[1] = (      void *) output_complex;
+
+/* do the actual interpolation, and check for error returns */
+if (CCTK_InterpLocalUniform(N_DIMS,
+                            operator_handle, param_table_handle,
+                            origin, delta,
+                            N_INTERP_POINTS,
+                               CCTK_VARIABLE_REAL,
+                               interp_coords,
+                            N_INPUT_ARRAYS,
+                               input_array_dims,
+                               input_array_type_codes,
+                               input_arrays,
+                            N_OUTPUT_ARRAYS,
+                               output_array_type_codes,
+                               output_arrays) &#x003C; 0)
+        CCTK_WARN(-1, &#x0022;error return from interpolator!&#x0022;);
+</pre>
+<!--l. 1609--><p class="nopar" >
+</p><!--l. 1613--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">5.2   </span> <a 
+ id="x1-280005.2"></a>An Example of Interpolating Derivatives</h4>
+<!--l. 1616--><p class="noindent" >In this example we interpolate the 3-metric and its 1st derivatives at a set of interpolation points on a
+2-sphere.
+</p><!--l. 1619--><p class="noindent" ><span 
+class="cmbx-10">Note: </span>Since we’re not using C<span 
+class="cmbx-5">++</span>, we again declare the pointer arrays non-<span class="obeylines-h"><code class="verb">const</code></span>, and “initialize” them with
+ordinary (run-time) assignment statements. However, in this example, for greater clarity we place these
+assignment statements right after the declarations. Since C allows declarations only at the start of a <span class="obeylines-h"><code class="verb">{ }</code></span> block,
+not in the middle of a block, we nest the rest of the program in extra blocks (with the <span class="obeylines-h"><code class="verb">{ }</code></span> indented 2 spaces to
+distinguish them from “normal” <span class="obeylines-h"><code class="verb">{ }</code></span> pairs) to allow for further declarations. The reader will have to decide for
+herself whether this style is more or less ugly than separating the declarations and initializations of the pointer
+arrays.
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-38">
+#define N_DIMS        3
+
+/* interpolation points */
+#define N_INTERP_POINTS 1000
+const CCTK_REAL interp_x[N_INTERP_POINTS],
+                interp_y[N_INTERP_POINTS],
+                interp_z[N_INTERP_POINTS];
+const void* interp_coords[N_DIMS];              /* see note above */
+interp_coords[0] = (const void *) interp_x;
+interp_coords[1] = (const void *) interp_y;
+interp_coords[2] = (const void *) interp_z;
+
+/* dimensions of the data grid */
+#define NX   30
+#define NY   40
+#define NZ   50
+
+  {
+/* input arrays */
+/* n.b. we use Fortran storage order: X is contiguous, Z least so */
+#define N_INPUT_ARRAYS  6
+const CCTK_REAL gxx_3D[NZ][NY][NX], gxy_3D[NZ][NY][NX], gxz_3D[NZ][NY][NX],
+                                    gyy_3D[NZ][NY][NX], gyz_3D[NZ][NY][NX],
+                                                        gzz_3D[NZ][NY][NX];
+
+const CCTK_INT input_array_dims[N_DIMS] = {NX, NY, NZ};
+const CCTK_INT input_array_type_codes[N_INPUT_ARRAYS]
+        = { CCTK_VARIABLE_REAL, CCTK_VARIABLE_REAL, CCTK_VARIABLE_REAL,
+                                CCTK_VARIABLE_REAL, CCTK_VARIABLE_REAL,
+                                                    CCTK_VARIABLE_REAL };
+const void* input_arrays[N_INPUT_ARRAYS];       /* see note above */
+input_arrays[0] = (const void *) gxx_3D;
+input_arrays[1] = (const void *) gxy_3D;
+input_arrays[2] = (const void *) gxz_3D;
+input_arrays[3] = (const void *) gyy_3D;
+input_arrays[4] = (const void *) gyz_3D;
+input_arrays[5] = (const void *) gzz_3D;
+
+  {
+/* output arrays */
+/* (for best efficiency we group all operations on a given input together) */
+#define N_OUTPUT_ARRAYS 24
+CCTK_REAL
+   gxx[N_INTERP_POINTS],
+      dx_gxx[N_INTERP_POINTS], dy_gxx[N_INTERP_POINTS], dz_gxx[N_INTERP_POINTS],
+                                                                                       
+                                                                                       
+   gxy[N_INTERP_POINTS],
+      dx_gxy[N_INTERP_POINTS], dy_gxy[N_INTERP_POINTS], dz_gxy[N_INTERP_POINTS],
+   gxz[N_INTERP_POINTS],
+      dx_gxz[N_INTERP_POINTS], dy_gxz[N_INTERP_POINTS], dz_gxz[N_INTERP_POINTS],
+   gyy[N_INTERP_POINTS],
+      dx_gyy[N_INTERP_POINTS], dy_gyy[N_INTERP_POINTS], dz_gyy[N_INTERP_POINTS],
+   gyz[N_INTERP_POINTS],
+      dx_gyz[N_INTERP_POINTS], dy_gyz[N_INTERP_POINTS], dz_gyz[N_INTERP_POINTS],
+   gzz[N_INTERP_POINTS],
+      dx_gzz[N_INTERP_POINTS], dy_gzz[N_INTERP_POINTS], dz_gzz[N_INTERP_POINTS];
+const CCTK_INT output_array_type_codes[N_OUTPUT_ARRAYS]
+   = { CCTK_VARIABLE_REAL,
+          CCTK_VARIABLE_REAL, CCTK_VARIABLE_REAL, CCTK_VARIABLE_REAL,
+       CCTK_VARIABLE_REAL,
+          CCTK_VARIABLE_REAL, CCTK_VARIABLE_REAL, CCTK_VARIABLE_REAL,
+       CCTK_VARIABLE_REAL,
+          CCTK_VARIABLE_REAL, CCTK_VARIABLE_REAL, CCTK_VARIABLE_REAL,
+       CCTK_VARIABLE_REAL,
+          CCTK_VARIABLE_REAL, CCTK_VARIABLE_REAL, CCTK_VARIABLE_REAL,
+       CCTK_VARIABLE_REAL,
+          CCTK_VARIABLE_REAL, CCTK_VARIABLE_REAL, CCTK_VARIABLE_REAL,
+       CCTK_VARIABLE_REAL,
+          CCTK_VARIABLE_REAL, CCTK_VARIABLE_REAL, CCTK_VARIABLE_REAL };
+void* output_arrays[N_OUTPUT_ARRAYS];           /* see note above */
+output_arrays[ 0] = (void *)    gxx;
+output_arrays[ 1] = (void *) dx_gxx;
+output_arrays[ 2] = (void *) dy_gxx;
+output_arrays[ 3] = (void *) dz_gxx;
+output_arrays[ 4] = (void *)    gxy;
+output_arrays[ 5] = (void *) dx_gxy;
+output_arrays[ 6] = (void *) dy_gxy;
+output_arrays[ 7] = (void *) dz_gxy;
+output_arrays[ 8] = (void *)    gxz;
+output_arrays[ 9] = (void *) dx_gxz;
+output_arrays[10] = (void *) dy_gxz;
+output_arrays[11] = (void *) dz_gxz;
+output_arrays[12] = (void *)    gyy;
+output_arrays[13] = (void *) dx_gyy;
+output_arrays[14] = (void *) dy_gyy;
+output_arrays[15] = (void *) dz_gyy;
+output_arrays[16] = (void *)    gyz;
+output_arrays[17] = (void *) dx_gyz;
+output_arrays[18] = (void *) dy_gyz;
+output_arrays[19] = (void *) dz_gyz;
+output_arrays[20] = (void *)    gzz;
+output_arrays[21] = (void *) dx_gzz;
+output_arrays[22] = (void *) dy_gzz;
+output_arrays[23] = (void *) dz_gzz;
+
+  {
+/* integer codes to specify the derivatives */
+const CCTK_INT operand_indices[N_OUTPUT_ARRAYS]
+                                                                                       
+                                                                                       
+   = { 0, 0, 0, 0,
+       1, 1, 1, 1,
+       2, 2, 2, 2,
+       3, 3, 3, 3,
+       4, 4, 4, 4,
+       5, 5, 5, 5 };
+#define DERIV(x)   x
+const CCTK_INT operation_codes[N_OUTPUT_ARRAYS]
+   = { DERIV(0), DERIV(1), DERIV(2), DERIV(3),
+       DERIV(0), DERIV(1), DERIV(2), DERIV(3),
+       DERIV(0), DERIV(1), DERIV(2), DERIV(3),
+       DERIV(0), DERIV(1), DERIV(2), DERIV(3),
+       DERIV(0), DERIV(1), DERIV(2), DERIV(3),
+       DERIV(0), DERIV(1), DERIV(2), DERIV(3) };
+
+int operator_handle, param_table_handle;
+operator_handle = CCTK_InterpHandle(&#x0022;my interpolation operator&#x0022;);
+if (operator_handle &#x003C; 0)
+        CCTK_WARN(-1, &#x0022;can’t get interpolation handle!&#x0022;);
+
+param_table_handle = Util_TableCreate(UTIL_TABLE_FLAGS_DEFAULT);
+if (param_table_handle &#x003C; 0)
+        CCTK_WARN(-1, &#x0022;can’t create parameter table!&#x0022;);
+if (Util_TableSetInt(param_table_handle, 3, &#x0022;order&#x0022;) &#x003C; 0)
+        CCTK_WARN(-1, &#x0022;can’t set order in parameter table!&#x0022;);
+if (Util_TableSetIntArray(param_table_handle,
+                          N_OUTPUT_ARRAYS, operand_indices,
+                          &#x0022;operand_indices&#x0022;) &#x003C; 0)
+        CCTK_WARN(-1, &#x0022;can’t set operand_indices array in parameter table!&#x0022;);
+if (Util_TableSetIntArray(param_table_handle,
+                          N_OUTPUT_ARRAYS, operation_codes,
+                          &#x0022;operation_codes&#x0022;) &#x003C; 0)
+        CCTK_WARN(-1, &#x0022;can’t set operation_codes array in parameter table!&#x0022;);
+
+if (CCTK_InterpLocalUniform(N_DIMS,
+                            operator_handle, param_table_handle,
+                            origin, delta,
+                            N_INTERP_POINTS,
+                               CCTK_VARIABLE_REAL,
+                               interp_coords,
+                            N_INPUT_ARRAYS,
+                               input_array_dims,
+                               input_array_type_codes,
+                               input_arrays,
+                            N_OUTPUT_ARRAYS,
+                               output_array_type_codes,
+                               output_arrays) &#x003C; 0)
+        CCTK_WARN(-1, &#x0022;error return from interpolator!&#x0022;);
+  }
+  }
+  }
+</pre>
+                                                                                       
+                                                                                       
+<!--l. 1781--><p class="nopar" >
+</p><!--l. 1785--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">6   </span> <a 
+ id="x1-290006"></a>Acknowledgments</h3>
+<!--l. 1787--><p class="noindent" >Thanks to Thomas Radke for our ongoing collaboration on Cactus interpolation, to Ian Hawke and Erik
+Schnetter for helpful comments on the documentation, to Tom Goodale and Thomas Radke for many
+useful design discussions, to Erik Schnetter for bug reports, and to all the Cactus crew for a great
+infrastructure!
+</p><!--l. 1801--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">7   </span> <a 
+ id="x1-300007"></a>Parameters</h3>
+<!--l. 1820--><p class="noindent" ></p> <table id="TBL-5" class="tabular" 
+ 
+><colgroup id="TBL-5-1g"><col 
+id="TBL-5-1" /></colgroup><colgroup id="TBL-5-2g"><col 
+id="TBL-5-2" /><col 
+id="TBL-5-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-1-"><td  style="white-space:normal; text-align:left;" id="TBL-5-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">log_interp_coords</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-1-3"  
+class="td01">                                       BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-5-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">should we log the grid min(delta)max and the interpolation coordinates for each call</span>
+  <span 
+class="cmti-10">on the interpolator?</span></div>                                                                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-3-1"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-3-3"  
+class="td01">                                     <span 
+class="cmbx-10">Default: </span>false  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-4-1"  
+class="td11">                </td></tr></table>
+<!--l. 1829--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">8   </span> <a 
+ id="x1-310008"></a>Interfaces</h3>
+<!--l. 1834--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-32000"></a>General</h4>
+<!--l. 1836--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 1838--><p class="noindent" >aeilocalinterp
+</p><!--l. 1843--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">9   </span> <a 
+ id="x1-330009"></a>Schedule</h3>
+                                                                                       
+                                                                                       
+<!--l. 1849--><p class="noindent" >This section lists all the variables which are assigned storage by thorn Numerical/AEILocalInterp. Storage can
+either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 1852--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-34000"></a>Storage</h4>
+<!--l. 1852--><p class="noindent" >NONE
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-35000"></a>Scheduled Functions</h4>
+<!--l. 1856--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_STARTUP</span>
+</p><!--l. 1858--><p class="noindent" >      aeilocalinterp_u_startup
+</p><!--l. 1860--><p class="noindent" >     <span 
+class="cmti-10">register cctk</span><span 
+class="cmti-10">_interplocaluniform() interpolation operators</span>
+</p><!--l. 1863--><p class="noindent" > 
+</p><!--l. 1865--><p class="noindent" ></p> <table id="TBL-6" class="tabular" 
+ 
+><colgroup id="TBL-6-1g"><col 
+id="TBL-6-1" /><col 
+id="TBL-6-2" /><col 
+id="TBL-6-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-6-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-3"  
+class="td11"> driver_startup  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-2-3"  
+class="td11"> c                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-3"  
+class="td11"> function          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-4-1"  
+class="td11">    </td></tr></table>
+ 
+</body></html> 
+
+                                                                                       
+
+

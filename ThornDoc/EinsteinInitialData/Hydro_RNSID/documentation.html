@@ -1,0 +1,1036 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>Hydro_NSID</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">Hydro_RNSID</h2>
+ <div class="author" ><span 
+class="cmr-12">Nik Stergioulas, Roberto De Pietri, Frank L</span><span 
+class="cmr-12">öfller</span></div>
+<br />
+<div class="date" ><span 
+class="cmr-12">August 1 2017</span></div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 96--><p class="noindent" ><span 
+class="cmr-9">Hydro</span><span 
+class="cmr-9">_RNSID - rotating relativistic neutron stars.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Introduction</h3>
+<!--l. 102--><p class="noindent" >This thorn generates neutron star initial data for the GRHydro code. As with the Einstein Toolkit code itself,
+please feel free to add, alter or extend any part of this code. However please keep the documentation up to date
+(even, or especially, if it’s just to say what doesn’t work).
+</p><!--l. 107--><p class="noindent" >This thorn effectively takes the public domain code <span 
+class="cmtt-10">RNSID </span>written by Nik Stergioulas and interpolates the
+output onto a Cartesian grid. This porting is based on an initila porting to Whisky by Luca Baiotti and Ian
+Hawke and has been adapted to GRHydro and Einstein Toolkit.
+                                                                                       
+                                                                                       
+</p><!--l. 114--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a>RNSID</h3>
+<!--l. 117--><p class="noindent" >RNSID, or rotating neutron star initial data, is a code based on the Komatsu-Eriguch-Hachisu (KEH) method
+for constructing models of rotating neutron stars. It allows for polytropic or tabulated equations of state. For
+more details of the how the code works see <span class="cite">[<a 
+href="#Xrnsid1">3</a>]</span>, <span class="cite">[<a 
+href="#Xnsthesis">4</a>]</span> (appendix A is particularly helpful) or especially <span class="cite">[<a 
+href="#Xnslivrev">5</a>]</span> which is
+the most up to date and lists other possible methods of constructing rotating neutron star initial
+data.
+</p><!--l. 126--><p class="noindent" >In short Hydro_RNSID is a thorn that generate initial model for rotating isolated stars described by a
+zero-temperature tabulated Equation of State or an iso-entrophic politropic EOS. The activation of the thorn for
+genereting ID (The thorns “Hydro_Base” and “GRHydro” are the two prerequisites)
+</p><!--l. 131--><p class="noindent" >The model are generated specifing the central baryonic density (rho_central), the oblatness of the Star
+(axes_ratio) and the rotational profile (rotation_type). Currently two kinds of rotational profiles are
+implemented: “uniform” for uniformly rotating stars and “diff” for differentially rotating stars, described by the
+j-law profile (parametrized by the parameter A_diff=\(\hat {A}\)): \begin {equation}  \Omega _c-\Omega = \frac {1}{\hat {A}^2 r_e^2} \left [ \frac {(\Omega -\omega ) r^2 \sin ^2 \theta e^{-2\nu }}{1-(\Omega -\omega )^2 r^2 \sin ^2 \theta e^{-2\nu }}\right ]  \end {equation}<a 
+ id="x1-2001r1"></a> where \(r_e\) is the equatorial radius of the star and \(\Omega \) is the
+rotational angular velocity \(\Omega =u^\phi /u^0\) and \(\Omega _c\) is \(\Omega \) at the center of the star.
+</p><!--l. 147--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-30003"></a>Parameters of Thorn</h3>
+<!--l. 150--><p class="noindent" >Here one can find definition of the main parameter the determine the behaviour of the Thorn. The activation of
+the RNSID initial data is achieved by the following line:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-1">
+ActiveThorns=&#x0022;Hydro_Base GRHydro Hydro_RNSID&#x0022;
+#####
+##### Setting for activating the ID
+#####
+ADMBase::initial_data  = &#x0022;hydro_rnsid&#x0022;
+ADMBase::initial_lapse = &#x0022;hydro_rnsid&#x0022;
+ADMBase::initial_shift = &#x0022;hydro_rnsid&#x0022;
+</pre>
+<!--l. 161--><p class="nopar" >
+</p><!--l. 163--><p class="noindent" >The correspongig section of the parameter file is:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-2">
+#####
+##### Basic Setting
+#####
+Hydro_rnsid::rho_central   = 1.28e-3  # central baryon density (G=c=1)
+Hydro_rnsid::axes_ratio    = 1        # radial/equatorial axes ratio
+Hydro_rnsid::rotation_type = diff     # uniform = uniform rotation
+Hydro_rnsid::A_diff        = 1        # Parameter of the diff rot-law.
+Hydro_rnsid::accuracy      = 1e-10    # accuracy goal for convergence
+</pre>
+<!--l. 173--><p class="nopar" >
+</p><!--l. 177--><p class="noindent" >Than a section for setting the Equation of State (EOS) should be added. If this section is missing a “poly” EOS
+will be used with default parameters. The two possibilities are:
+     </p><dl class="description"><dt class="description">
+ </dt><dd 
+class="description">
+     <!--l. 181--><p class="noindent" ><span 
+class="cmbx-10">Isentropic Polytrope:</span>
+     </p><!--l. 183--><p class="noindent" >In this case the base setting for the initial data are specified giving the following parameters:
+                                                                                       
+                                                                                       
+</p>
+     <pre class="verbatim" id="verbatim-3">
+     #####
+     ##### Setting for polytrope
+     #####
+     Hydro_rnsid::eos_type  = &#x0022;poly&#x0022;
+     Hydro_rnsid::RNS_Gamma = 2.0
+     Hydro_rnsid::RNS_K     = 165
+</pre>
+     <!--l. 192--><p class="nopar" > They correspond at the following implementation of the EOS that it is consistent with the 1st Law of
+     thermodinamics. </p><div class="eqnarray">\begin {eqnarray}  p &amp;=&amp; K \cdot \rho ^\Gamma \\ \epsilon &amp;=&amp; \frac {K}{\Gamma -1} \cdot \rho ^{\Gamma -1}  \end {eqnarray}</div>
+     <!--l. 199--><p class="noindent" >and for the above choice of parameters corresponding to the choice \(K=165\) (in units where \(G=c=M_\odot =1\)) and
+     \(\Gamma =2\).
+     </p></dd><dt class="description">
+ </dt><dd 
+class="description">
+     <!--l. 201--><p class="noindent" ><span 
+class="cmbx-10">Tabulated EOS:</span>
+     </p><!--l. 203--><p class="noindent" >In this case the (cold) EOS used to generate the initial data is read from a file
+                                                                                       
+                                                                                       
+</p>
+     <pre class="verbatim" id="verbatim-4">
+     #####
+     ##### Setting for tabulated EOS
+     #####
+     Hydro_rnsid::eos_type  = &#x0022;tab&#x0022;
+     Hydro_rnsid::eos_file  = &#x0022;full_path_name_of_the tabulated_EOS_file&#x0022;
+</pre>
+     <!--l. 212--><p class="nopar" > The syntax of the tabulated file is the same as for the original RNSID program and assumes that all
+     quantities are expressed in the cgs system of units. The first line contains the number of tabulated values (\(N\))
+     while the next \(N\) lines contain the values: \(e=\rho (1+\varepsilon )\), \(p\), \(\log h = c^2 \log _e((e+p)/\rho )\), and \(\rho \), respectively.</p></dd></dl>
+<!--l. 222--><p class="noindent" >An additional section allows one to start initial data from a previously generated binary file or to save the data
+generated at this time. Usually the best way to proceed is to specify where the initial data file should be
+located.
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-5">
+#####
+##### Setting for recover and saving of 2d models
+#####
+Hydro_rnsid::save_2Dmodel    = &#x0022;yes&#x0022;   # other possibility is no (default)
+Hydro_rnsid::recover_2Dmodel = &#x0022;yes&#x0022;   # other possibility is no (default)
+Hydro_rnsid::model2D_file    = &#x0022;full_file_name&#x0022;
+</pre>
+<!--l. 233--><p class="nopar" >
+</p><!--l. 235--><p class="noindent" >For examples of initial data generated using RNSID and their evolutions, see <span class="cite">[<a 
+href="#Xrotns1">1</a>, <a 
+href="#Xrotns2">2</a>]</span>. In the par directory,
+examples are provided as a perl file that produces the corresponding Cactus par files. These examples correspond
+to the evolutions described in <span class="cite">[<a 
+href="#Xrotns1">1</a>, <a 
+href="#Xrotns2">2</a>]</span>.
+</p><!--l. 241--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-40004"></a>Utility program</h3>
+<!--l. 243--><p class="noindent" >Together with the Thorn, we distribute a self-executable version of the initial data routine RNSID that accepts
+the same parameters as the thorn and is able to create a binary file of the 2d initial data that
+can be directly imported into the evolution code. Moreover, the program RNS_readID is provided
+that reads a 2d initial data file and produces an hdf5 version of the data interpolated onto a 3d
+grid.
+</p><!--l. 251--><p class="noindent" >
+</p>
+<h3 class="likesectionHead"><a 
+ id="x1-5000"></a>References</h3>
+<!--l. 251--><p class="noindent" >
+   </p><div class="thebibliography">
+   <p class="bibitem" ><span class="biblabel">
+ [1]<span class="bibsp">   </span></span><a 
+ id="Xrotns1"></a>J. A. Font, N. Stergioulas and K. D. Kokkotas. Nonlinear hydrodynamical evolution of rotating
+   relativistic stars: Numerical methods and code tests. <span 
+class="cmti-10">Mon. Not. Roy. Astron. Soc.</span>, <span 
+class="cmbx-10">313</span>, 678, 2000.
+   </p>
+                                                                                       
+                                                                                       
+   <p class="bibitem" ><span class="biblabel">
+ [2]<span class="bibsp">   </span></span><a 
+ id="Xrotns2"></a>F. Löffler, R. De Pietri, A. Feo, F. Maione and L. Franci,  Stiffness effects on the dynamics of
+   the bar-mode instability of neutron stars in full general relativity.  <span 
+class="cmti-10">Phys. Rev.</span>, <span 
+class="cmbx-10">D 91</span>, 064057, 2015
+   (arXiv:1411.1963).
+   </p>
+   <p class="bibitem" ><span class="biblabel">
+ [3]<span class="bibsp">   </span></span><a 
+ id="Xrnsid1"></a>N. Stergioulas and J. L. Friedmann.   Comparing models of rapidly rotating relativistic stars
+   constructed by two numerical methods. <span 
+class="cmti-10">ApJ.</span>, <span 
+class="cmbx-10">444</span>, 306, 1995.
+   </p>
+   <p class="bibitem" ><span class="biblabel">
+ [4]<span class="bibsp">   </span></span><a 
+ id="Xnsthesis"></a>N. Stergioulas. The structure and stability of rotating relativistic stars. PhD thesis, University of
+   Wisconsin-Milwaukee, 1996.
+   </p>
+   <p class="bibitem" ><span class="biblabel">
+ [5]<span class="bibsp">   </span></span><a 
+ id="Xnslivrev"></a>N.
+   Stergioulas.  Rotating Stars in Relativity  <span 
+class="cmti-10">Living Rev. Relativity</span>, <span 
+class="cmbx-10">1</span>, 1998.  [Article in online journal],
+   cited on 18/3/02, http://www.livingreviews.org/Articles/Volume1/1998-8stergio/index.html.
+</p>
+   </div>
+<!--l. 290--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-60005"></a>Parameters</h3>
+<!--l. 309--><p class="noindent" ></p> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /></colgroup><colgroup id="TBL-2-2g"><col 
+id="TBL-2-2" /><col 
+id="TBL-2-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:normal; text-align:left;" id="TBL-2-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">a_diff</div>                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-1-3"  
+class="td01">                                               REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-2-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">constant A in differential rotation law</span></div>                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-1"  
+class="td11">      <span 
+class="cmbx-10">Range        </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-3-3"  
+class="td01">                                         <span 
+class="cmbx-10">Default: </span>1.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-4-"><td  style="white-space:normal; text-align:left;" id="TBL-2-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0.0:</div>                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-2-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Any positive number</div>                                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-5-1"  
+class="td11">                 </td></tr></table>
+<!--l. 316--><p class="noindent" ></p> <table id="TBL-3" class="tabular" 
+ 
+><colgroup id="TBL-3-1g"><col 
+id="TBL-3-1" /></colgroup><colgroup id="TBL-3-2g"><col 
+id="TBL-3-2" /><col 
+id="TBL-3-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-1-"><td  style="white-space:normal; text-align:left;" id="TBL-3-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">accuracy</div>             </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-1-3"  
+class="td01">                                               REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-3-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">rnsid accuracy in convergence </span></div>                                                                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-3-1"  
+class="td11">      <span 
+class="cmbx-10">Range        </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-3-3"  
+class="td01">                                       <span 
+class="cmbx-10">Default: </span>1.0e-7  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-4-"><td  style="white-space:normal; text-align:left;" id="TBL-3-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:</div>                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-3-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Any positive number</div>                                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-5-1"  
+class="td11">                 </td></tr></table>
+<!--l. 323--><p class="noindent" ></p> <table id="TBL-4" class="tabular" 
+ 
+><colgroup id="TBL-4-1g"><col 
+id="TBL-4-1" /></colgroup><colgroup id="TBL-4-2g"><col 
+id="TBL-4-2" /><col 
+id="TBL-4-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-1-"><td  style="white-space:normal; text-align:left;" id="TBL-4-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">axes_ratio</div>           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-1-3"  
+class="td01">                                               REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-4-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">rnsid axes ratio</span></div>                                                                                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-3-1"  
+class="td11">      <span 
+class="cmbx-10">Range        </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-3-3"  
+class="td01">                                           <span 
+class="cmbx-10">Default: </span>1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-4-"><td  style="white-space:normal; text-align:left;" id="TBL-4-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:</div>                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Any positive number</div>                                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-5-1"  
+class="td11">                 </td></tr></table>
+<!--l. 330--><p class="noindent" ></p> <table id="TBL-5" class="tabular" 
+ 
+><colgroup id="TBL-5-1g"><col 
+id="TBL-5-1" /></colgroup><colgroup id="TBL-5-2g"><col 
+id="TBL-5-2" /><col 
+id="TBL-5-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-1-"><td  style="white-space:normal; text-align:left;" id="TBL-5-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">cf</div>                      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-1-3"  
+class="td01">                                               REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-5-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Convergence factor</span></div>                                                                                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-3-1"  
+class="td11">      <span 
+class="cmbx-10">Range        </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-3-3"  
+class="td01">                                         <span 
+class="cmbx-10">Default: </span>1.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-4-"><td  style="white-space:normal; text-align:left;" id="TBL-5-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:</div>                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-5-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Any positive number</div>                                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-5-1"  
+class="td11">                 </td></tr></table>
+<!--l. 337--><p class="noindent" ></p> <table id="TBL-6" class="tabular" 
+ 
+><colgroup id="TBL-6-1g"><col 
+id="TBL-6-1" /></colgroup><colgroup id="TBL-6-2g"><col 
+id="TBL-6-2" /><col 
+id="TBL-6-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-1-"><td  style="white-space:normal; text-align:left;" id="TBL-6-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">eos_file</div>               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-1-3"  
+class="td01">                                             STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-6-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Equation of state table</span></div>                                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-3-1"  
+class="td11">      <span 
+class="cmbx-10">Range        </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-3-3"  
+class="td01">                                      <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-4-"><td  style="white-space:normal; text-align:left;" id="TBL-6-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.*</div>                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-6-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">EOS table file</div>                                                                                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-5-1"  
+class="td11">                 </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 344--><p class="noindent" ></p> <table id="TBL-7" class="tabular" 
+ 
+><colgroup id="TBL-7-1g"><col 
+id="TBL-7-1" /></colgroup><colgroup id="TBL-7-2g"><col 
+id="TBL-7-2" /><col 
+id="TBL-7-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-1-"><td  style="white-space:normal; text-align:left;" id="TBL-7-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">eos_type</div>             </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-1-3"  
+class="td01">                                          KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-7-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Specify type of equation of state</span></div>                                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-3-1"  
+class="td11">      <span 
+class="cmbx-10">Range        </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-3-3"  
+class="td01">                                        <span 
+class="cmbx-10">Default: </span>poly  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-4-"><td  style="white-space:normal; text-align:left;" id="TBL-7-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">poly</div>                    </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-7-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Polytropic EOS</div>                                                                                      
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-5-"><td  style="white-space:normal; text-align:left;" id="TBL-7-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tab</div>                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-7-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Tabulated EOS</div>                                                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-6-1"  
+class="td11">                 </td></tr></table>
+<!--l. 351--><p class="noindent" ></p> <table id="TBL-8" class="tabular" 
+ 
+><colgroup id="TBL-8-1g"><col 
+id="TBL-8-1" /></colgroup><colgroup id="TBL-8-2g"><col 
+id="TBL-8-2" /><col 
+id="TBL-8-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-1-"><td  style="white-space:normal; text-align:left;" id="TBL-8-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">model2d_file</div>        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-1-3"  
+class="td01">                                             STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-8-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Name of 2D model file</span></div>                                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-3-1"  
+class="td11">      <span 
+class="cmbx-10">Range        </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>model2D.dat  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-4-"><td  style="white-space:normal; text-align:left;" id="TBL-8-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.*</div>                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-8-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Default 2D model file</div>                                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-5-1"  
+class="td11">                 </td></tr></table>
+<!--l. 358--><p class="noindent" ></p> <table id="TBL-9" class="tabular" 
+ 
+><colgroup id="TBL-9-1g"><col 
+id="TBL-9-1" /></colgroup><colgroup id="TBL-9-2g"><col 
+id="TBL-9-2" /><col 
+id="TBL-9-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-1-"><td  style="white-space:normal; text-align:left;" id="TBL-9-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">recover_2dmodel</div>  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-1-3"  
+class="td01">                                          KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-9-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Recover 2D model?</span></div>                                                                                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-3-1"  
+class="td11">      <span 
+class="cmbx-10">Range        </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-3-3"  
+class="td01">                                          <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-4-"><td  style="white-space:normal; text-align:left;" id="TBL-9-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">yes</div>                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-9-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">recover 2D model</div>                                                                                    
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-5-"><td  style="white-space:normal; text-align:left;" id="TBL-9-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">no</div>                      </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-9-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">don’t recover 2D model</div>                                                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-6-1"  
+class="td11">                 </td></tr></table>
+<!--l. 365--><p class="noindent" ></p> <table id="TBL-10" class="tabular" 
+ 
+><colgroup id="TBL-10-1g"><col 
+id="TBL-10-1" /></colgroup><colgroup id="TBL-10-2g"><col 
+id="TBL-10-2" /><col 
+id="TBL-10-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-1-"><td  style="white-space:normal; text-align:left;" id="TBL-10-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">rho_central</div>         </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-1-3"  
+class="td01">                                               REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-10-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Central Density for Star</span></div>                                                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-3-1"  
+class="td11">      <span 
+class="cmbx-10">Range        </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-3-3"  
+class="td01">                                      <span 
+class="cmbx-10">Default: </span>1.24e-3  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-4-"><td  style="white-space:normal; text-align:left;" id="TBL-10-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">:</div>                        </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-10-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                                                                    
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-5-1"  
+class="td11">                 </td></tr></table>
+<!--l. 372--><p class="noindent" ></p> <table id="TBL-11" class="tabular" 
+ 
+><colgroup id="TBL-11-1g"><col 
+id="TBL-11-1" /></colgroup><colgroup id="TBL-11-2g"><col 
+id="TBL-11-2" /><col 
+id="TBL-11-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-1-"><td  style="white-space:normal; text-align:left;" id="TBL-11-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">rns_atmo_tolerance</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-1-3"  
+class="td01">                                               REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-11-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">A point is set to atmosphere if rho </span><span 
+class="cmmi-10">&#x003C; </span><span 
+class="cmti-10">(1+RNS</span><span 
+class="cmti-10">_atmo</span><span 
+class="cmti-10">_tolerance)*RNS</span><span 
+class="cmti-10">_rho</span><span 
+class="cmti-10">_min</span></div>              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-3-1"  
+class="td11">      <span 
+class="cmbx-10">Range        </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-3-3"  
+class="td01">                                      <span 
+class="cmbx-10">Default: </span>0.00001  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-4-"><td  style="white-space:normal; text-align:left;" id="TBL-11-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0.0:</div>                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-11-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Zero or larger. A useful value could be 0.0001</div>                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-5-1"  
+class="td11">                 </td></tr></table>
+<!--l. 379--><p class="noindent" ></p> <table id="TBL-12" class="tabular" 
+ 
+><colgroup id="TBL-12-1g"><col 
+id="TBL-12-1" /></colgroup><colgroup id="TBL-12-2g"><col 
+id="TBL-12-2" /><col 
+id="TBL-12-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-1-"><td  style="white-space:normal; text-align:left;" id="TBL-12-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">rns_gamma</div>         </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-1-3"  
+class="td01">                                               REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-12-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">If we’re using a different EoS at run time, this is the RNS Gamma</span></div>                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-3-1"  
+class="td11">      <span 
+class="cmbx-10">Range        </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-3-3"  
+class="td01">                                           <span 
+class="cmbx-10">Default: </span>2  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-4-"><td  style="white-space:normal; text-align:left;" id="TBL-12-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-12-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Will be ignored if negative</div>                                                                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-5-1"  
+class="td11">                 </td></tr></table>
+<!--l. 386--><p class="noindent" ></p> <table id="TBL-13" class="tabular" 
+ 
+><colgroup id="TBL-13-1g"><col 
+id="TBL-13-1" /></colgroup><colgroup id="TBL-13-2g"><col 
+id="TBL-13-2" /><col 
+id="TBL-13-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-1-"><td  style="white-space:normal; text-align:left;" id="TBL-13-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">rns_k</div>                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-1-3"  
+class="td01">                                               REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-13-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">If we’re using a different EoS at run time, this is the RNS K</span></div>                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-3-1"  
+class="td11">      <span 
+class="cmbx-10">Range        </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-3-3"  
+class="td01">                                         <span 
+class="cmbx-10">Default: </span>100  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-4-"><td  style="white-space:normal; text-align:left;" id="TBL-13-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-13-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Will be ignored if negative</div>                                                                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-5-1"  
+class="td11">                 </td></tr></table>
+<!--l. 393--><p class="noindent" ></p> <table id="TBL-14" class="tabular" 
+ 
+><colgroup id="TBL-14-1g"><col 
+id="TBL-14-1" /></colgroup><colgroup id="TBL-14-2g"><col 
+id="TBL-14-2" /><col 
+id="TBL-14-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-1-"><td  style="white-space:normal; text-align:left;" id="TBL-14-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">rns_lmax</div>            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-1-3"  
+class="td01">                                                 INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-14-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">max. term in Legendre poly.</span></div>                                                                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-3-1"  
+class="td11">      <span 
+class="cmbx-10">Range        </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-3-3"  
+class="td01">                                          <span 
+class="cmbx-10">Default: </span>10  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-4-"><td  style="white-space:normal; text-align:left;" id="TBL-14-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1:</div>                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-14-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Any positive, non zero number</div>                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-5-1"  
+class="td11">                 </td></tr></table>
+<!--l. 400--><p class="noindent" ></p> <table id="TBL-15" class="tabular" 
+ 
+><colgroup id="TBL-15-1g"><col 
+id="TBL-15-1" /></colgroup><colgroup id="TBL-15-2g"><col 
+id="TBL-15-2" /><col 
+id="TBL-15-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-1-"><td  style="white-space:normal; text-align:left;" id="TBL-15-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">rns_rho_min</div>        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-15-1-3"  
+class="td01">                                               REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-15-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">A minimum rho below which evolution is turned off (atmosphere).</span></div>                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-3-1"  
+class="td11">      <span 
+class="cmbx-10">Range        </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-15-3-3"  
+class="td01">                                      <span 
+class="cmbx-10">Default: </span>1.0e-14  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-4-"><td  style="white-space:normal; text-align:left;" id="TBL-15-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0.0:</div>                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-15-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Atmosphere detection for RNSID</div>                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-5-1"  
+class="td11">                 </td></tr></table>
+<!--l. 407--><p class="noindent" ></p> <table id="TBL-16" class="tabular" 
+ 
+><colgroup id="TBL-16-1g"><col 
+id="TBL-16-1" /></colgroup><colgroup id="TBL-16-2g"><col 
+id="TBL-16-2" /><col 
+id="TBL-16-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-1-"><td  style="white-space:normal; text-align:left;" id="TBL-16-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">rotation_type</div>      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-16-1-3"  
+class="td01">                                          KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-16-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Specify type of rotation law</span></div>                                                                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-3-1"  
+class="td11">      <span 
+class="cmbx-10">Range        </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-16-3-3"  
+class="td01">                                     <span 
+class="cmbx-10">Default: </span>uniform  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-4-"><td  style="white-space:normal; text-align:left;" id="TBL-16-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">uniform</div>               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-16-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">uniform rotation</div>                                                                                     
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-5-"><td  style="white-space:normal; text-align:left;" id="TBL-16-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">diff</div>                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-16-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">KEH differential rotation law</div>                                                                    
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-6-1"  
+class="td11">                 </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 414--><p class="noindent" ></p> <table id="TBL-17" class="tabular" 
+ 
+><colgroup id="TBL-17-1g"><col 
+id="TBL-17-1" /></colgroup><colgroup id="TBL-17-2g"><col 
+id="TBL-17-2" /><col 
+id="TBL-17-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-1-"><td  style="white-space:normal; text-align:left;" id="TBL-17-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">save_2dmodel</div>      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-1-3"  
+class="td01">                                          KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-17-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Save 2D model?</span></div>                                                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-3-1"  
+class="td11">      <span 
+class="cmbx-10">Range        </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-3-3"  
+class="td01">                                          <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-4-"><td  style="white-space:normal; text-align:left;" id="TBL-17-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">yes</div>                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-17-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">save 2D model</div>                                                                                        
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-5-"><td  style="white-space:normal; text-align:left;" id="TBL-17-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">no</div>                      </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-17-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">don’t save 2D model</div>                                                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-6-1"  
+class="td11">                 </td></tr></table>
+<!--l. 421--><p class="noindent" ></p> <table id="TBL-18" class="tabular" 
+ 
+><colgroup id="TBL-18-1g"><col 
+id="TBL-18-1" /></colgroup><colgroup id="TBL-18-2g"><col 
+id="TBL-18-2" /><col 
+id="TBL-18-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-1-"><td  style="white-space:normal; text-align:left;" id="TBL-18-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">zero_shift</div>            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-18-1-3"  
+class="td01">                                          KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-18-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Set shift to zero?</span></div>                                                                                         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-3-1"  
+class="td11">      <span 
+class="cmbx-10">Range        </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-18-3-3"  
+class="td01">                                          <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-4-"><td  style="white-space:normal; text-align:left;" id="TBL-18-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">yes</div>                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-18-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">set shift to zero</div>                                                                                      
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-5-"><td  style="white-space:normal; text-align:left;" id="TBL-18-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">no</div>                      </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-18-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">don’t set shift to zero</div>                                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-6-1"  
+class="td11">                 </td></tr></table>
+<!--l. 428--><p class="noindent" ></p> <table id="TBL-19" class="tabular" 
+ 
+><colgroup id="TBL-19-1g"><col 
+id="TBL-19-1" /></colgroup><colgroup id="TBL-19-2g"><col 
+id="TBL-19-2" /><col 
+id="TBL-19-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-1-"><td  style="white-space:normal; text-align:left;" id="TBL-19-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">initial_hydro</div>        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from HYDROBASE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-1-3"  
+class="td01">                         KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-2-"><td colspan="3" style="white-space:nowrap; text-align:left;" id="TBL-19-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:nowrap; text-align:left;"><span 
+class="cmbx-10">Extends ranges:</span></div>                                                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-3-"><td  style="white-space:normal; text-align:left;" id="TBL-19-3-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">hydro_rnsid</div>          </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-19-3-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Construnct stationary initial data with rnsid</div>                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-4-1"  
+class="td11">                 </td></tr></table>
+<!--l. 435--><p class="noindent" ></p> <table id="TBL-20" class="tabular" 
+ 
+><colgroup id="TBL-20-1g"><col 
+id="TBL-20-1" /></colgroup><colgroup id="TBL-20-2g"><col 
+id="TBL-20-2" /><col 
+id="TBL-20-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-1-"><td  style="white-space:normal; text-align:left;" id="TBL-20-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">timelevels</div>           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from HYDROBASE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-20-1-3"  
+class="td01">INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-2-1"  
+class="td11">                 </td></tr></table>
+<!--l. 442--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">6   </span> <a 
+ id="x1-70006"></a>Interfaces</h3>
+<!--l. 447--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-8000"></a>General</h4>
+<!--l. 449--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 451--><p class="noindent" >hydro_rnsid
+</p><!--l. 454--><p class="noindent" ><span 
+class="cmbx-10">Inherits</span>:
+</p><!--l. 456--><p class="noindent" >admbase
+</p><!--l. 458--><p class="noindent" >hydrobase
+</p><!--l. 463--><p class="noindent" ><span 
+class="cmbx-10">Uses header</span>:
+</p><!--l. 465--><p class="noindent" >FishEye.h
+</p><!--l. 467--><p class="noindent" >Boundary.h
+</p><!--l. 469--><p class="noindent" >Symmetry.h
+</p><!--l. 472--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">7   </span> <a 
+ id="x1-90007"></a>Schedule</h3>
+<!--l. 478--><p class="noindent" >This section lists all the variables which are assigned storage by thorn EinsteinInitialData/Hydro_RNSID.
+                                                                                       
+                                                                                       
+Storage can either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 481--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-10000"></a>Storage</h4>
+<!--l. 483--><p class="noindent" > 
+</p><!--l. 485--><p class="noindent" ></p> <table id="TBL-21" class="tabular" 
+ 
+><colgroup id="TBL-21-1g"><col 
+id="TBL-21-1" /><col 
+id="TBL-21-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-21-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-21-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-1-2"  
+class="td11"> <span 
+class="cmbx-10">Conditional:                                                                           </span></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-21-2-1"  
+class="td
+11">     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-2-2"  
+class="td11"> ADMBase::metric[2] ADMBase::curv[2] ADMBase::lapse[2] ADMBase::shift[2]  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-21-3-1"  
+class="td11">     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-3-2"  
+class="td11">                                                                                                         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-21-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 492--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-11000"></a>Scheduled Functions</h4>
+<!--l. 495--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_PARAMCHECK </span>(conditional)
+</p><!--l. 497--><p class="noindent" >      hydro_rnsid_checkparameters
+</p><!--l. 499--><p class="noindent" >     <span 
+class="cmti-10">check parameters</span>
+</p><!--l. 502--><p class="noindent" > 
+</p><!--l. 504--><p class="noindent" ></p> <table id="TBL-22" class="tabular" 
+ 
+><colgroup id="TBL-22-1g"><col 
+id="TBL-22-1" /><col 
+id="TBL-22-2" /><col 
+id="TBL-22-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-22-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 512--><p class="noindent" ><span 
+class="cmbx-10">HydroBase</span><span 
+class="cmbx-10">_Initial </span>(conditional)
+</p><!--l. 514--><p class="noindent" >      hydro_rnsid_init
+</p><!--l. 516--><p class="noindent" >     <span 
+class="cmti-10">create rotating neutron star initial data</span>
+</p><!--l. 519--><p class="noindent" > 
+</p><!--l. 521--><p class="noindent" ></p> <table id="TBL-23" class="tabular" 
+ 
+><colgroup id="TBL-23-1g"><col 
+id="TBL-23-1" /><col 
+id="TBL-23-2" /><col 
+id="TBL-23-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-23-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-1-3"  
+class="td11"> c                      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-2-2"  
+class="td11"> Sync:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-2-3"  
+class="td11"> admbase::metric  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-3-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-3-3"  
+class="td11"> admbase::curv     </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-4-1"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-4-2"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-4-3"  
+class="td11"> admbase::lapse</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-5-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-5-3"  
+class="td11"> admbase::shift    </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-6-1"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-6-2"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-6-3"  
+class="td11"> hydrobase::rho</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-7-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-7-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-7-3"  
+class="td11"> hydrobase::press  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-8-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-8-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-8-3"  
+class="td11"> hydrobase::eps    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-9-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-9-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-9-3"  
+class="td11"> hydrobase::vel     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-10-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-10-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-10-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-10-3"  
+class="td11"> function            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-11-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-11-1"  
+class="td11">    </td></tr></table>
+ 
+</body></html> 
+
+                                                                                       
+
+
