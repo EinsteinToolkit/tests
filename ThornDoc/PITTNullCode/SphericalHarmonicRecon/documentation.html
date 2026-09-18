@@ -1,0 +1,774 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>SphericalHarmonicRecon</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">SphericalHarmonicRecon</h2>
+ <div class="author" ><span 
+class="cmr-12">Yosef Zlochower </span><span 
+class="cmmi-12">&#x003C;</span><span 
+class="cmr-12">yosef@astro.rit.edu</span><span 
+class="cmmi-12">&#x003E;</span></div>
+<br />
+<div class="date" ><span 
+class="cmr-12">June 18 2009</span></div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 102--><p class="noindent" ><span 
+class="cmr-9">This thorn is used to reconstruct the metric data saved by SphericalHarmonicDecomp. It also provides</span>
+     <span 
+class="cmr-9">aliased functions that are used by NullSHRExtract to construct the boundary data for CCE.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Introduction</h3>
+<!--l. 113--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a>Using and Filtering Cauchy data from SphericalHarmonicDecomp</h3>
+<!--l. 114--><p class="noindent" >The thorn SphericalHarmonicDecomp uses a least-squares fit of the metric data in some spherical shell to a set
+                                                                                       
+                                                                                       
+of spectral functions (Chebyshev in R and Ylm in angle). These data are dumped into files with names
+metric_obs_0_Decomp.h5, metric_obs_1_Decomp.h5, etc., where the 0,1,etc. refer to the spherical shell (several
+are allowed).
+</p><!--l. 120--><p class="noindent" >This thorn takes the data in one of these files and passes it to NullSHRExtract, which uses them to construct
+the null boundary data. Several utilities are provided in order to view and modify these data files. These include
+a program to filter the data via an FFT and calculate a smooth time derivative, which may be important in
+order to obtain accurate waveforms.
+</p><!--l. 127--><p class="noindent" >These utilities require the HDF5 and FFTW3 libraries and are compiled using the gamke CONFIGNAME-utils
+mechanism.
+</p><!--l. 130--><p class="noindent" >To filter the Cauchy data:
+</p><!--l. 132--><p class="noindent" >In general a simulation will be run over multiple jobs, each one producing an individual metric_decomp.h5 file.
+You will need to combine these files using hdf5_merge.
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-1">
+For example
+  hdf5\_merge Run1/metric_obs\_0\_Decomp.h5 \
+             Run2/metric\_obs\_0\_Decomp.h5 \
+             metric\_obs\_0\_Decomp.h5
+</pre>
+<!--l. 141--><p class="nopar" >
+</p><!--l. 143--><p class="noindent" >Once the files are merged, you will need to find the last timestep using the ”findlast” command
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-2">
+./findlast  metric\_obs\_0\_Decomp.h5
+   8086: 4.010913e+02
+</pre>
+<!--l. 149--><p class="nopar" >
+</p><!--l. 151--><p class="noindent" >Here 8086 is the last timestep, which corresponds to a time of 401.0913.
+</p><!--l. 153--><p class="noindent" >Next it is a good idea to examine the data in one of the higher modes you will use. In this case we will examine
+the n=1, l=4,m=4 mode of gxx (the 0 below corresponds to gxx, see the source)
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-3">
+./ascii\_output 8086 1 4 4 0 metric\_obs\_0\_Decomp.h5  &#x003E; test\_out
+</pre>
+<!--l. 159--><p class="nopar" >
+</p><!--l. 161--><p class="noindent" >We will use this data to ensure that only high-frequency junk is filtered. In this case it was found that the true
+signal frequency is smaller than 0.5 (omega). To be safe, we’ll set the maximum allowed frequency to
+2.
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-4">
+./fftwfilter 8086 2 1 metric\_obs\_0\_Decomp.h5
+</pre>
+<!--l. 168--><p class="nopar" >
+</p><!--l. 170--><p class="noindent" >Here the ”2” corresponds to the maximum frequency, while the ”1” corresponds to the damping length.
+Note that the maximum frequency is in units of 2*pi/(physical time), while the damping length is
+units of integer frequency. Choosing a large damping length can lead to suppression of the true
+signal.
+</p><!--l. 176--><p class="noindent" >The output file is metric_obs_0_Decomp_ft.h5, which contains the filtered metric data and the time derivatives
+of these data (which the original file did not contain). The filtered data can now be used in a Characteristic
+evolution.
+</p><!--l. 181--><p class="noindent" >In order to use the Cauchy extraction data in a subsequent Characteristic evolution, you need to know the
+timestep in the Cauchy data and the region in radius that the data cover. The program ”readmeta” will give you
+this region.
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-5">
+./readmeta metric\_obs\_0\_Decomp\_ft.h5
+Run Parameters
+... nn = 7
+... na = 49
+... Rin = 1.800000e+01
+... Rout = 2.200000e+01
+</pre>
+<!--l. 193--><p class="nopar" >
+</p><!--l. 195--><p class="noindent" >Here we see that the data covers the interval 18¡r¡22. In this case, we would choose an extraction radius of 20
+and set the following parameters in the parfile
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-6">
+ #Extraction radius---------------
+ SphericalHarmonicRecon::r\_extract=20.0
+ NullSHRExtract::cr = 20.0
+ NullGrid::null\_rwt = 20.0
+
+ SphericalHarmonicRecon::time\_derivative\_in\_file = &#x0022;yes&#x0022;
+ SphericalHarmonicRecon::metric\_data\_filename = &#x0022;metric\_obs\_0\_Decomp\_ft.h5&#x0022;
+</pre>
+<!--l. 207--><p class="nopar" >
+</p><!--l. 209--><p class="noindent" >Choosing a timestep for the characteristic evolution that is an integer multiple of the Cauchy dump times will
+remove time interpolation errors and can lead to smoother signals. To find these dump time, use the ”printtime”
+command. The syntax is ”printtime iteration file”
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-7">
+./printtime 1 metric\_obs\_0\_Decomp\_ft.h5
+1: 4.960317e-02
+</pre>
+<!--l. 217--><p class="nopar" >
+</p><!--l. 219--><p class="noindent" >In this case the dump times are separated by 0.04960317.
+</p><!--l. 221--><p class="noindent" >For complete example parfiles for both the initial Cauchy evolution, and subsequent null evolution, see
+SphericalHarmonicDecomp/par/ and SphericalHarmonicRecon/par/
+</p><!--l. 225--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.1   </span> <a 
+ id="x1-30002.1"></a>Parameters</h4>
+                                                                                       
+                                                                                       
+<pre class="verbatim" id="verbatim-8">
+SphericalHarmonicRecon::order order used in time interpolation /
+         differentiation. Options are 2 or 4.
+
+SphericalHarmonicRecon::r_extract the radius of the worldtube. This
+        must be consistent with the setup of the null grid
+
+SphericalHarmonicRecon::metric_data_filename filename for the cauchy
+            metric data
+
+SphericalHarmonicRecon::time_derivative_in_file flag that indicates if
+        the  time derivative of the metric is in the cauchy file. The
+        time derivative may be generated via the fftwfilter program mentioned
+        above.
+
+# the following parameters should only be used if the
+# hdf5 was corrupted and extraction parameters
+# are not recoverable. Of course, we should actually
+# fix the extraction code so that this does not happen
+BOOLEAN override_extraction_parameters &#x0022;never set this&#x0022;
+{
+} no
+
+CCTK_INT override_spin &#x0022;spin: never set this&#x0022;
+{
+ *:* :: &#x0022;anything, but you probably want 0&#x0022;
+} 0
+
+CCTK_INT override_nn &#x0022;number of Chabyshev coefficients: never use this&#x0022;
+{
+  1:* :: &#x0022;positive: must actualy match the extraction run&#x0022;
+} 1
+
+CCTK_INT override_na &#x0022;number of angular coefficients: never use this&#x0022;
+{
+  1:* :: &#x0022;positive: must actualy match the extraction run&#x0022;
+} 1
+
+CCTK_REAL override_Rin &#x0022;inner radius of extraction zone: ...&#x0022;
+{
+  (0:* :: &#x0022;positive&#x0022;
+} 1
+
+CCTK_REAL override_Rout &#x0022;outer radius of extraction zone: ...&#x0022;
+{
+  (0:* :: &#x0022;positive&#x0022;
+} 1
+</pre>
+                                                                                       
+                                                                                       
+<!--l. 274--><p class="nopar" >
+</p><!--l. 276--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-40003"></a>Physical System</h3>
+<!--l. 278--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-50004"></a>Numerical Implementation</h3>
+<!--l. 280--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-60005"></a>Using This Thorn</h3>
+<!--l. 282--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">5.1   </span> <a 
+ id="x1-70005.1"></a>Obtaining This Thorn</h4>
+<!--l. 284--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">5.2   </span> <a 
+ id="x1-80005.2"></a>Basic Usage</h4>
+<!--l. 286--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">5.3   </span> <a 
+ id="x1-90005.3"></a>Special Behaviour</h4>
+                                                                                       
+                                                                                       
+<!--l. 288--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">5.4   </span> <a 
+ id="x1-100005.4"></a>Interaction With Other Thorns</h4>
+<!--l. 290--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">5.5   </span> <a 
+ id="x1-110005.5"></a>Examples</h4>
+<!--l. 292--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">5.6   </span> <a 
+ id="x1-120005.6"></a>Support and Feedback</h4>
+<!--l. 294--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">6   </span> <a 
+ id="x1-130006"></a>History</h3>
+<!--l. 296--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">6.1   </span> <a 
+ id="x1-140006.1"></a>Thorn Source Code</h4>
+<!--l. 298--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">6.2   </span> <a 
+ id="x1-150006.2"></a>Thorn Documentation</h4>
+<!--l. 300--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">6.3   </span> <a 
+ id="x1-160006.3"></a>Acknowledgements</h4>
+                                                                                       
+                                                                                       
+<!--l. 303--><p class="noindent" >
+</p>
+<h3 class="likesectionHead"><a 
+ id="x1-17000"></a>References</h3>
+<!--l. 303--><p class="noindent" >
+</p><!--l. 312--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">7   </span> <a 
+ id="x1-180007"></a>Parameters</h3>
+<!--l. 331--><p class="noindent" ></p> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /></colgroup><colgroup id="TBL-2-2g"><col 
+id="TBL-2-2" /><col 
+id="TBL-2-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:normal; text-align:left;" id="TBL-2-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">metric_data_filename</div>            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-1-3"  
+class="td01">                                   STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-2-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">filename for the cauchy metric data</span></div>                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-3-3"  
+class="td01">                  <span 
+class="cmbx-10">Default: </span>metric_Decomp.h5  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-4-"><td  style="white-space:normal; text-align:left;" id="TBL-2-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.*</div>                                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-2-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">the Cauchy metric data</div>                                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-5-1"  
+class="td11">                           </td></tr></table>
+<!--l. 338--><p class="noindent" ></p> <table id="TBL-3" class="tabular" 
+ 
+><colgroup id="TBL-3-1g"><col 
+id="TBL-3-1" /></colgroup><colgroup id="TBL-3-2g"><col 
+id="TBL-3-2" /><col 
+id="TBL-3-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-1-"><td  style="white-space:normal; text-align:left;" id="TBL-3-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">order</div>                                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-1-3"  
+class="td01">                                       INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-3-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">order used in time interpolation / differentiation</span></div>                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>4  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-4-"><td  style="white-space:normal; text-align:left;" id="TBL-3-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">2</div>                                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-3-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">two or four</div>                                                                             
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-5-"><td  style="white-space:normal; text-align:left;" id="TBL-3-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">4</div>                                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-3-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">two or four</div>                                                                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-6-1"  
+class="td11">                           </td></tr></table>
+<!--l. 345--><p class="noindent" ></p> <table id="TBL-4" class="tabular" 
+ 
+><colgroup id="TBL-4-1g"><col 
+id="TBL-4-1" /></colgroup><colgroup id="TBL-4-2g"><col 
+id="TBL-4-2" /><col 
+id="TBL-4-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-1-"><td  style="white-space:normal; text-align:left;" id="TBL-4-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">override_extraction_parameters</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-1-3"  
+class="td01">                            BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-4-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">never set this</span></div>                                                                                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-3-1"  
+class="td11">                           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-3-3"  
+class="td01">                           <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-4-1"  
+class="td11">                           </td></tr></table>
+<!--l. 352--><p class="noindent" ></p> <table id="TBL-5" class="tabular" 
+ 
+><colgroup id="TBL-5-1g"><col 
+id="TBL-5-1" /></colgroup><colgroup id="TBL-5-2g"><col 
+id="TBL-5-2" /><col 
+id="TBL-5-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-1-"><td  style="white-space:normal; text-align:left;" id="TBL-5-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">override_na</div>                         </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-1-3"  
+class="td01">                                       INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-5-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">number of angular coefficition: never use this</span></div>                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-4-"><td  style="white-space:normal; text-align:left;" id="TBL-5-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1:*</div>                                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-5-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">positive: must actualy match the extraction run</div>                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-5-1"  
+class="td11">                           </td></tr></table>
+<!--l. 359--><p class="noindent" ></p> <table id="TBL-6" class="tabular" 
+ 
+><colgroup id="TBL-6-1g"><col 
+id="TBL-6-1" /></colgroup><colgroup id="TBL-6-2g"><col 
+id="TBL-6-2" /><col 
+id="TBL-6-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-1-"><td  style="white-space:normal; text-align:left;" id="TBL-6-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">override_nn</div>                         </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-1-3"  
+class="td01">                                       INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-6-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">number of Chabyshev coefficition: never use this</span></div>                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-4-"><td  style="white-space:normal; text-align:left;" id="TBL-6-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1:*</div>                                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-6-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">positive: must actualy match the extraction run</div>                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-5-1"  
+class="td11">                           </td></tr></table>
+<!--l. 366--><p class="noindent" ></p> <table id="TBL-7" class="tabular" 
+ 
+><colgroup id="TBL-7-1g"><col 
+id="TBL-7-1" /></colgroup><colgroup id="TBL-7-2g"><col 
+id="TBL-7-2" /><col 
+id="TBL-7-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-1-"><td  style="white-space:normal; text-align:left;" id="TBL-7-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">override_rin</div>                        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-1-3"  
+class="td01">                                     REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-7-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">inner radius of extraction zone: ...</span></div>                                                                    
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-4-"><td  style="white-space:normal; text-align:left;" id="TBL-7-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">(0:*</div>                                    </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-7-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">positive</div>                                                                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-5-1"  
+class="td11">                           </td></tr></table>
+<!--l. 373--><p class="noindent" ></p> <table id="TBL-8" class="tabular" 
+ 
+><colgroup id="TBL-8-1g"><col 
+id="TBL-8-1" /></colgroup><colgroup id="TBL-8-2g"><col 
+id="TBL-8-2" /><col 
+id="TBL-8-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-1-"><td  style="white-space:normal; text-align:left;" id="TBL-8-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">override_rout</div>                      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-1-3"  
+class="td01">                                     REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-8-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">outer radius of extraction zone: ...</span></div>                                                                    
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-4-"><td  style="white-space:normal; text-align:left;" id="TBL-8-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">(0:*</div>                                    </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-8-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">positive</div>                                                                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-5-1"  
+class="td11">                           </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 380--><p class="noindent" ></p> <table id="TBL-9" class="tabular" 
+ 
+><colgroup id="TBL-9-1g"><col 
+id="TBL-9-1" /></colgroup><colgroup id="TBL-9-2g"><col 
+id="TBL-9-2" /><col 
+id="TBL-9-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-1-"><td  style="white-space:normal; text-align:left;" id="TBL-9-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">override_spin</div>                       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-1-3"  
+class="td01">                                       INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-9-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">spin: never set this</span></div>                                                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-3-3"  
+class="td01">                            <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-4-"><td  style="white-space:normal; text-align:left;" id="TBL-9-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-9-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">anything, but you probably want 0</div>                                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-5-1"  
+class="td11">                           </td></tr></table>
+<!--l. 387--><p class="noindent" ></p> <table id="TBL-10" class="tabular" 
+ 
+><colgroup id="TBL-10-1g"><col 
+id="TBL-10-1" /></colgroup><colgroup id="TBL-10-2g"><col 
+id="TBL-10-2" /><col 
+id="TBL-10-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-1-"><td  style="white-space:normal; text-align:left;" id="TBL-10-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">r_extract</div>                            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-1-3"  
+class="td01">                                     REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-10-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">the radius of the worldtube</span></div>                                                                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-3-1"  
+class="td11">           <span 
+class="cmbx-10">Range              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-3-3"  
+class="td01">                              <span 
+class="cmbx-10">Default: </span>50.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-4-"><td  style="white-space:normal; text-align:left;" id="TBL-10-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">(0:*</div>                                    </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-10-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">positive</div>                                                                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-5-1"  
+class="td11">                           </td></tr></table>
+<!--l. 394--><p class="noindent" ></p> <table id="TBL-11" class="tabular" 
+ 
+><colgroup id="TBL-11-1g"><col 
+id="TBL-11-1" /></colgroup><colgroup id="TBL-11-2g"><col 
+id="TBL-11-2" /><col 
+id="TBL-11-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-1-"><td  style="white-space:normal; text-align:left;" id="TBL-11-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">time_derivative_in_file</div>          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-1-3"  
+class="td01">                            BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-11-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">is the time derivative of the metric in the cauchy file</span></div>                                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-3-1"  
+class="td11">                           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-3-3"  
+class="td01">                           <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-4-1"  
+class="td11">                           </td></tr></table>
+<!--l. 403--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">8   </span> <a 
+ id="x1-190008"></a>Interfaces</h3>
+<!--l. 408--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-20000"></a>General</h4>
+<!--l. 410--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 412--><p class="noindent" >sphericalharmonicrecon
+</p><!--l. 417--><p class="noindent" ><span 
+class="cmbx-10">Provides</span>:
+</p><!--l. 421--><p class="noindent" >GetCurrentExtractionCoefs to
+</p><!--l. 423--><p class="noindent" >GetExtractionParameters to
+</p><!--l. 426--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">9   </span> <a 
+ id="x1-210009"></a>Schedule</h3>
+<!--l. 432--><p class="noindent" >This section lists all the variables which are assigned storage by thorn PITTNullCode/SphericalHarmonicRecon.
+Storage can either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 435--><p class="noindent" >
+</p>
+                                                                                       
+                                                                                       
+<h4 class="likesubsectionHead"><a 
+ id="x1-22000"></a>Storage</h4>
+<!--l. 435--><p class="noindent" >NONE
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-23000"></a>Scheduled Functions</h4>
+<!--l. 439--><p class="noindent" ><span 
+class="cmbx-10">SphericalHarmonicReconRead</span>
+</p><!--l. 441--><p class="noindent" >      metricreconstruction
+</p><!--l. 443--><p class="noindent" >     <span 
+class="cmti-10">group for use by external thorns to use the metric</span>
+</p><!--l. 446--><p class="noindent" > 
+</p><!--l. 448--><p class="noindent" ></p> <table id="TBL-12" class="tabular" 
+ 
+><colgroup id="TBL-12-1g"><col 
+id="TBL-12-1" /><col 
+id="TBL-12-2" /><col 
+id="TBL-12-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-12-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-1-2"  
+class="td11"> After:   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-1-3"  
+class="td11"> sphericalharmonicrecon_readdata  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-2-2"  
+class="td11"> Before:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-2-3"  
+class="td11"> sphericalharmonicrecon_poststep  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-3-2"  
+class="td11"> Type:   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-3-3"  
+class="td11"> group                                      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 457--><p class="noindent" ><span 
+class="cmbx-10">SphericalHarmonicReconRead</span>
+</p><!--l. 459--><p class="noindent" >      sphericalharmonicrecon_readdata
+</p><!--l. 461--><p class="noindent" >     <span 
+class="cmti-10">read the world tube data and set the data flag to read</span>
+</p><!--l. 464--><p class="noindent" > 
+</p><!--l. 466--><p class="noindent" ></p> <table id="TBL-13" class="tabular" 
+ 
+><colgroup id="TBL-13-1g"><col 
+id="TBL-13-1" /><col 
+id="TBL-13-2" /><col 
+id="TBL-13-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-13-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 474--><p class="noindent" ><span 
+class="cmbx-10">SphericalHarmonicReconRead</span>
+</p><!--l. 476--><p class="noindent" >      sphericalharmonicrecon_poststep
+</p><!--l. 478--><p class="noindent" >     <span 
+class="cmti-10">set data flag to unread</span>
+</p><!--l. 481--><p class="noindent" > 
+</p><!--l. 483--><p class="noindent" ></p> <table id="TBL-14" class="tabular" 
+ 
+><colgroup id="TBL-14-1g"><col 
+id="TBL-14-1" /><col 
+id="TBL-14-2" /><col 
+id="TBL-14-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-14-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-1-3"  
+class="td11"> sphericalharmonicrecon_readdata  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-2-3"  
+class="td11"> c                                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-3-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-3-3"  
+class="td11"> global                                      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-4-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-4-3"  
+class="td11"> function                                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-5-1"  
+class="td11">    </td></tr></table>
+<!--l. 493--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_WRAGH</span>
+</p><!--l. 495--><p class="noindent" >      sphericalharmonicrecon_startup
+</p><!--l. 497--><p class="noindent" >     <span 
+class="cmti-10">startup</span>
+</p><!--l. 500--><p class="noindent" > 
+</p><!--l. 502--><p class="noindent" ></p> <table id="TBL-15" class="tabular" 
+ 
+><colgroup id="TBL-15-1g"><col 
+id="TBL-15-1" /><col 
+id="TBL-15-2" /><col 
+id="TBL-15-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-15-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-2-3"  
+class="td11"> global     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-3-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-4-1"  
+class="td11">    </td></tr></table>
+ 
+</body></html> 
+
+                                                                                       
+
+

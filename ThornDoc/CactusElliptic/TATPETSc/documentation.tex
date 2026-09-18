@@ -1,0 +1,427 @@
+% $Header$
+
+\documentclass[12pt]{article}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+\title{Solving Nonlinear Elliptic Equations:\\ Calling PETSc from
+  Cactus}
+
+\author{Erik Schnetter $<$schnetter@uni-tuebingen.de$>$}
+
+\date{August 28, 2001}
+
+\maketitle
+
+\begin{abstract}
+  The Cactus thorn \texttt{TATPETSc} provides a simple interface to
+  the SNES interface of PETSc.  SNES (``Simple Nonlinear Elliptic
+  Solver'') is a set of efficient parallel solvers for sparse
+  matrices, i.e.\ for discretised problems with small stencils.  The
+  main task of \texttt{TATPETSc} is in handling the mismatch in the
+  different parallelisation models.
+\end{abstract}
+
+\tableofcontents
+
+\section{Introduction}
+
+PETSc (``The Portable, Extensible Toolkit for Scientific
+Computation'') \cite{TAT:TATPETSc:petsc} is a library that, among
+other things, solves nonlinear elliptic equations.  It is highly
+configurable, and using it is a nontrivial exercise.  It is therefore
+convenient to create wrappers for this library that handle the more
+common cases.  Although this introduces a layer that is a black box to
+the PETSc novice, it at the same time enables this PETSc novice to use
+this library, which would otherwise not be possible.
+
+At the moment there exist three wrapper routines.  Two of them handle
+initialisation and shutting down the library at programme startup and
+shutdown time.  The third solves a nonlinear elliptic equation.
+
+\section{Nonlinear Elliptic Equations}
+
+Nonlinear elliptic equations can be written in the form
+$$
+F(x) = 0
+$$
+where $x$ is an $n$-dimensional vector, and $F$ is function with an
+$n$-dimensional vector as result.  The vector $x$ is the unknown to
+solve for.  The function $F$ has to be given together with initial
+data $x_0$ for the unknown $x$.
+
+In the case of discretised field equations, the vector $x$ contains
+all grid points.  The function $F$ then includes the boundary
+conditions.
+
+Consider as an example the Laplace equation $\Delta \phi = 0$ in three
+dimensions on a grid with $10^3$ points.  In that case, the unknown
+$x$ is $\phi$, with the dimension $n=1000$.  The function $F$ is given
+by $F(x) = \Delta x$.  Remember that, once a problem is discretised,
+derivative operators are algebraic expressions.  That means that
+calculating $\Delta x$ does not involve taking analytic (``real'')
+derivatives, but can rather be written as linear function (matrix
+multiplication).
+
+\section{Solving a Nonlinear Elliptic Equation}
+
+The wrapper routine that solves a nonlinear elliptic equation is
+
+\texttt{
+\begin{tabbing}
+void \=TATPETSc\_solve (\\
+\>const cGH *cctkGH,\\
+\>const int *var,\\
+\>const int *val,\\
+\>int nvars,\\
+\>int options\_table,\\
+\>void (*fun) (cGH *cctkGH, int options\_table, void *userdata),\\
+\>void (*bnd) (cGH *cctkGH, int options\_table, void *userdata),\\
+\>void *data);
+\end{tabbing}
+}
+
+There is currently no Fortran wrapper for this routine.
+
+This routine takes the following arguments:
+\begin{description}
+   \item[\texttt{cctkGH}] a pointer to the Cactus grid hierarchy
+
+   \item[\texttt{var}] the list of indices of the grid variables $x$
+   to solve for
+
+   \item[\texttt{val}] the list of indices of the grid variables that
+   contain the function value $F(x)$
+
+   \item[\texttt{nvars}] the number of variables to solve for, which
+   is the same as the number of function values
+
+   \item[\texttt{options\_table}] a table with additional options (see
+   below)
+
+   \item[\texttt{fun}] the routine that calculates the function values
+   from the variables
+
+   \item[\texttt{bnd}] the routine that applies the boundary
+   conditions to the variables
+
+   \item[\texttt{data}] data that are passed through unchanged to the
+   callback routines
+\end{description}
+
+The options table can have the following elements:
+\begin{description}
+   \item[\texttt{CCTK\_INT periodic[dim]}] $dim$ flags indicating
+   whether the grid is periodic in the corresponding direction.
+   ($dim$ is the number of dimensions of the grid variables.)  The
+   default values are 0.
+
+   \item[\texttt{CCTK\_INT solvebnds[2*dim]}] $2\cdot dim$ flags
+   indicating whether the grid points on the corresponding outer
+   boundaries should be solved for (usually not).  The default values
+   are 0.
+
+   \item[\texttt{CCTK\_INT stencil\_width}] the maximum stencil size
+   used while calculating the function values from the variables
+   (should be as small as possible).  The default value is 1.
+
+   \item[\texttt{CCTK\_FN\_POINTER jacobian}] The real type of
+   \texttt{jacobian} must be \texttt{void (*jacobian)(cGH *cctkGH,
+   void *data)}.  This is either a routine that calculates the
+   Jacobian directly, or 0 (zero).  The default is 0.
+
+   \item[\texttt{CCTK\_FN\_POINTER get\_coloring}] The real type of
+   \texttt{get\_coloring} must be \texttt{void (*get\_coloring)(DA da,
+   ISColoring *iscoloring, void *userdata)}.  This is either a routine
+   that calculates the colouring for calculating the Jacobian, or 0
+   (zero).  You need to pass a nonzero value only if you have very
+   special boundary conditions.  The default is 0.
+\end{description}
+
+A few remarks:
+\begin{itemize}
+
+   \item In order to be able to call this routine directly, it is
+   necessary to inherit from TATPETSc in the thorn where this routine
+   is called.
+  
+   \item Increasing \texttt{stencil\_width} from 1 to 2 increases the
+   run time by about a factor of 5.  In general you want to be able to
+   set \texttt{stencil\_width} to 1.  Note that calculating $F$ does
+   normally not require upwind derivatives with their larger size.
+   \texttt{stencil\_width} does not have to be equal to the number of
+   ghost zones.
+  
+   \item One sure way to speed up solving nonlinear elliptic equations
+   is to provide an explicit function that calculates the Jacobian.
+   While such a function is in principle straightforward to write, it
+   is very (very!) tedious to do so.  If you pass 0 for this function,
+   the Jacobian is evaluated numerically.  This is about one order of
+   magnitude slower, but is also a lot less work.
+\end{itemize}
+
+\section{Initial data}
+
+A linear elliptic equation does not need initial data.  However, a
+nonlinear elliptic equation does.  It may have several solutions, and
+the initial data select between these solutions.  The initial data
+$x_0$ have to be put into the variables $x$ before the solver is
+called.  The function values $F(x)$ can remain undefined.
+
+\section{Boundary Conditions}
+
+There are two functions that you have to apply boundary conditions to.
+You need to apply boundary conditions to the right hand side, i.e.\
+$F$, and to the solution, i.e.\ $x$.
+
+The routine \texttt{bnd} has to apply boundary conditions to $x$ at
+exactly those boundaries where \texttt{solvebnds} is false.  (The
+boundaries where \texttt{solvebnds} is true have already been
+determined by the solver.)  This includes imposing the symmetry
+boundary conditions.  Not applying a boundary condition on the outer
+boundaries is equivalent to a Dirichlet boundary condition, with the
+boundary values given in the initial data $x_0$.
+
+After calculating $F$, you need to apply the necessary boundary
+conditions to $F$ as well.  You have to do this in the routine
+\texttt{fun} that calculates $F$.
+
+\section{The Solution, Or Not}
+
+When the solver returns, the result is available in $x$.  $F(x)$
+contains the corresponding function value, which should be close to
+zero.
+
+It is possible that the solver doesn't converge.  In this case, $F$
+will not be close to zero.
+
+It is possible (by the way of programming error) to make certain grid
+points in $F$ independent of $x$, or to ignore certain grid points in
+$x$ while calculating $F$.  This leads to a singular matrix when the
+nonlinear solver calls a linear solver as a substep.  Such a system is
+ill-posed and cannot be solved.
+
+\section{Excision}
+
+An excision boundary leads to a certain number of grid points that
+should not be solved for.  In order to avoid a singular matrix, it is
+still necessary to impose a condition on these grid points.  Assuming
+that you want a Dirichlet-like condition for these grid points, I
+suggest
+$$
+F(x) = x - x_0
+$$
+where $x_0$ are the initial data that you have to save someplace.
+Note that you have to impose this (or a different) condition not only
+onto the boundary points, but onto all excised points, i.e.\ all
+points that are not solved for.
+
+(The above condition satisfies $F(x)=0$ for $x=x_0$, which will be the
+solution for these grid points.  Setting $F(x)=0$ does \emph{not} work
+because it leads to a singular matrix, as outlined above.)
+
+\section{Common PETSc options}
+
+Options Database Keys (from the PETSc documentation)
+
+\begin{description}
+
+\item[\texttt{-snes\_type} \textit{type}]
+	ls, tr, umls, umtr, test 
+
+\item[\texttt{-snes\_stol}]
+	convergence tolerance in terms of the norm of the change in
+	the solution between steps
+
+\item[\texttt{-snes\_atol} \textit{atol}]
+	absolute tolerance of residual norm
+
+\item[\texttt{-snes\_rtol} \textit{rtol}]
+	relative decrease in tolerance norm from initial
+
+\item[\texttt{-snes\_max\_it} \textit{max\_it}] 
+	maximum number of iterations
+
+\item[\texttt{-snes\_max\_funcs} \textit{max\_funcs}]
+	maximum number of function evaluations 
+
+\item[\texttt{-snes\_trtol} \textit{trtol}]
+	trust region tolerance 
+
+\item[\texttt{-snes\_no\_convergence\_test}]
+	skip convergence test in nonlinear or minimization solver;
+	hence iterations will continue until \textit{max\_it} or some
+	other criterion is reached.  Saves expense of convergence test
+
+\item[\texttt{-snes\_monitor}] 
+	prints residual norm at each iteration 
+
+\item[\texttt{-snes\_vecmonitor}]
+	plots solution at each iteration 
+
+\item[\texttt{-snes\_vecmonitor\_update}]
+	plots update to solution at each iteration 
+
+\item[\texttt{-snes\_xmonitor}]
+	plots residual norm at each iteration 
+
+\item[\texttt{-snes\_fd}]
+	use finite differences to compute Jacobian; very slow, only
+	for testing
+
+\item[\texttt{-snes\_mf\_ksp\_monitor}]
+	if using matrix-free multiply then print $h$ at each KSP
+	iteration
+
+\end{description}
+
+\section{Installing PETSc}
+
+Before you can use TATPETSc, you have to install PETSc.  PETSc comes
+with extensive documentation for that.
+
+In order to be able to use PETSc with Cactus, you have to give certain
+options when you configure your Cactus applications.  To do so, create
+an options file containing the following options.
+
+\begin{description}
+   \item{SYS\_INC\_DIRS} /usr/include/petsc
+
+   \item{LIBDIRS} /usr/X11R6/lib
+
+   \item{LIBS} crypt petscfortran petscts petscsnes petscsles petscdm
+   petscmat petscvec petsc lapack blas mpe mpich X11 g2c z
+\end{description}
+
+Replace /usr/include/petsc with the corresponding directory on your
+machine.
+
+If you have other packages that need other options, then you have to
+combine these options manually.  Even if the other options would
+normally be selected automatically, selecting the PETSc options
+manually will override the other options.
+
+Do not forget to activate MPI.  PETSc needs MPI to run.
+
+\begin{thebibliography}{99}
+   \bibitem{TAT:TATPETSc:petsc} PETSc:
+   \verb+http://www-fp.mcs.anl.gov/petsc/+
+\end{thebibliography}
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{veryverbose}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{options} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Command line options for PETSc}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{no restriction} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{verbose} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Produce log output while running}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{veryverbose} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Produce much log output while running}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+tatpetsc
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+tatelliptic
+\vspace{2mm}
+
+\vspace{5mm}
+
+\noindent {\bf Uses header}: 
+
+TATelliptic.h
+\vspace{2mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn CactusElliptic/TATPETSc.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}NONE
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_STARTUP} 
+
+\hspace{5mm} tatpetsc\_initialize 
+
+\hspace{5mm}{\it initialise petsc } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & driver\_startup \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_SHUTDOWN} 
+
+\hspace{5mm} tatpetsc\_finalize 
+
+\hspace{5mm}{\it finalise petsc } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

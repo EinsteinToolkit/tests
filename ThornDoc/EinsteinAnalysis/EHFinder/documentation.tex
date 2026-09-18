@@ -1,0 +1,3416 @@
+% *======================================================================*
+%  Cactus Thorn template for ThornGuide documentation
+%  Author: Ian Kelley
+%  Date: Sun Jun 02, 2002
+%  $Header$
+%
+%  Thorn documentation in the latex file doc/documentation.tex 
+%  will be included in ThornGuides built with the Cactus make system.
+%  The scripts employed by the make system automatically include 
+%  pages about variables, parameters and scheduling parsed from the 
+%  relevent thorn CCL files.
+%  
+%  This template contains guidelines which help to assure that your     
+%  documentation will be correctly added to ThornGuides. More 
+%  information is available in the Cactus UsersGuide.
+%                                                    
+%  Guidelines:
+%   - Do not change anything before the line
+%       % BEGIN CACTUS THORNGUIDE",
+%     except for filling in the title, author, date etc. fields.
+%        - Each of these fields should only be on ONE line.
+%        - Author names should be sparated with a \\ or a comma
+%   - You can define your own macros are OK, but they must appear after
+%     the BEGIN CACTUS THORNGUIDE line, and do not redefine standard 
+%     latex commands.
+%   - To avoid name clashes with other thorns, 'labels', 'citations', 
+%     'references', and 'image' names should conform to the following 
+%     convention:          
+%       ARRANGEMENT_THORN_LABEL
+%     For example, an image wave.eps in the arrangement CactusWave and 
+%     thorn WaveToyC should be renamed to CactusWave_WaveToyC_wave.eps
+%   - Graphics should only be included using the graphix package. 
+%     More specifically, with the "includegraphics" command. Do
+%     not specify any graphic file extensions in your .tex file. This 
+%     will allow us (later) to create a PDF version of the ThornGuide
+%     via pdflatex. |
+%   - References should be included with the latex "bibitem" command. 
+%   - use \begin{abstract}...\end{abstract} instead of \abstract{...}
+%   - For the benefit of our Perl scripts, and for future extensions, 
+%     please use simple latex.     
+%
+% *======================================================================* 
+% 
+% Example of including a graphic image:
+%    \begin{figure}[ht]
+% 	\begin{center}
+%    	   \includegraphics[width=6cm]{/home/runner/work/tests/tests/arrangements/EinsteinAnalysis/EHFinder/doc/MyArrangement_MyThorn_MyFigure}
+% 	\end{center}
+% 	\caption{Illustration of this and that}
+% 	\label{MyArrangement_MyThorn_MyLabel}
+%    \end{figure}
+%
+% Example of using a label:
+%   \label{MyArrangement_MyThorn_MyLabel}
+%
+% Example of a citation:
+%    \cite{MyArrangement_MyThorn_Author99}
+%
+% Example of including a reference
+%   \bibitem{MyArrangement_MyThorn_Author99}
+%   {J. Author, {\em The Title of the Book, Journal, or periodical}, 1 (1999), 
+%   1--16. {\tt http://www.nowhere.com/}}
+%
+% *======================================================================* 
+
+% If you are using CVS use this line to give version information
+% $Header$
+
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a 
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+\author{Original code and documentation by Peter Diener}
+
+% The title of the document (not necessarily the name of the Thorn)
+\title{Thorn Guide for the {\tt EHFinder} Thorn}
+
+% the date your document was last changed, if your document is in CVS, 
+% please use:
+%    \date{$ $Date$ $}
+\date{$ $Date$ $}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+% Add all definitions used in this documentation here 
+%   \def\mydef etc
+
+% force a line break in a itemize/description/enumerate environment
+\def\forcelinebreak{\mbox{}\\[-\baselineskip]}
+
+\def\defn#1{{\bf #1}}
+
+\def\eg{e.g.\hbox{}}
+\def\ie{i.e.\hbox{}}
+\def\etal{{\it et~al.\/\hbox{}}}
+\def\nb{n.b.\hbox{}}
+\def\Nb{N.b.\hbox{}}
+
+% math stuff
+\def\diag{\text{diag}}
+\def\Gaussian{{\sf G}}
+\def\half{{\textstyle \frac{1}{2}}}
+\def\sech{\text{sech}}
+
+% Add an abstract for this thorn's documentation
+\begin{abstract}
+This thorn locates the Event Horizon (EH) in an analytic or numerical spacetime
+by evolving a null surface backwards in time. The null surface is described at
+each time step as the 0-level iso-surface of a 3D scalar function $f$. This
+level set description of the surface allows, trivially, changes of the topology
+of the surface so it is possible to follow the merger of two (or more) black
+holes into a final black hole.
+
+\end{abstract}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Introduction}
+This thorn attempts to locate the Event Horizon (EH) in an analytic or
+numerical spacetime by evolving a null surface backwards in time. This
+method depends on the fact that, except in cases where the coordinates are
+adapted to outgoing null geodesics, an outgoing null surface started close
+to the EH, when evolved forward in time, is diverging exponentially from the
+EH. Reversing the time evolution then means that an outgoing null surface
+will converge exponentially to the EH. The level set function, $f$, is
+evolved according to
+\begin{eqnarray}
+\partial_{t}f & = & \frac{-g^{ti}\partial_{i}f+\sqrt{(g^{ti}\partial_{i}f)^{2}-
+g^{tt}g^{ij}\partial_{i}f\partial_{j}f}}{g^{tt}} \nonumber \\
+ & = & \beta^{i}\partial_{i}f-
+                \sqrt{\alpha^{2}\gamma^{ij}\partial_{i}f\partial_{j}f},
+\label{AEIThorns_EHFinder_evolve}
+\end{eqnarray}
+where in the second equation the lapse, shift and 3-metric has been substituted
+for the 4-metric. For more details on the theory and implementation
+see~\cite{AEIThorns_EHFinder_Diener02}.
+
+This thorn uses a level set description of the null surface, \ie the surface
+is the 0-level isosurface of a 3D scalar function, $f$, that is negative
+inside and positive outside the surface. With this choice of surface
+description one level-set function can describe multiple surfaces at the
+same time, simply by having several, disconnected regions with negative
+values. The biggest advantage, however, is that any change of topology of
+the surface is handled naturally and simply by the level-set function
+changing sign. Therefore this {\tt EHFinder} can follow the EH during the
+merger of two (or more) black holes into one black hole.
+
+To find the EH in a numerical spacetime several points have to be taken into
+consideration. Since the null surface has to be evolved backwards in time, the
+{\tt EHFinder} has to be seen as a pre-processing analysis thorn. Therefore it
+is necessary to evolve the initial data forward in time while outputting
+enough 3D data, that the full 4-metric can be recovered at each timestep.
+The 3D data is then read back in, in reverse order, while the level-set
+function is evolved backwards in time. The thorn can evolve more than one
+level set function at a time using different initial guesses for the surfaces
+(NOTE: this is a quite recent feature and has not yet been tested extensively).
+More details about the actual use of the thorn in
+ section~\ref{AEIThorns_EHFinder_UseThorn}
+
+\section{Re-initialization}
+\label{AEIThorns_EHFinder_re_init}
+The evolution equation for $f$, 
+equation~(\ref{AEIThorns_EHFinder_evolve}), causes steepening of
+the gradient of $f$, which is undesireble numerically. For that reason, $f$
+is periodically re-initialized to a distance function. That is, the values of
+$f$ are changed so that the the value of $f$ in a grid point is equal to the
+(signed) distance from the grid point to the surface $f=0$. This is done by
+evolving $f$ according to the following evolution equation (in the parameter
+$\lambda$)
+\begin{equation}
+\frac{df}{d\lambda} = -\frac{f}{\sqrt{f^{2}+1}}\left (|\nabla f|-1\right )
+\label{AEIThorns_EHFinder_reinit}
+\end{equation}
+until a steady state is achieved. This method is called the {\tt pde}-method
+since it is basically evolving a pde. Sometimes the $f=0$ surface can be
+moved slightly during the re-initialization procedure. This happens when
+the surface develops a narrow neck just before a topology change. For
+that reason, there is an option to detect when this is about to happen and
+undo the re-initialization.
+
+There used to be another method doing the re-initialization, but it proved
+inferior to the {\tt pde}-method and was removed. Other methods may be
+implemented in the future.
+
+\section{The initial shape of the surface}
+\label{AEIThorns_EHFinder_initial}
+Currently three different choices for the initial shape of the surface are
+implemented. The simplest choice is a sphere in which case $f$ is set
+according to
+\begin{equation}
+f = \sqrt{(x-x_{0})^2+(y-y_{0})^2+(z-z_{0})^2} - r_{0},
+\label{AEIThorns_EHFinder_sphere}
+\end{equation}
+where $r_{0}$ is the radius of the sphere and $x_{0}$, $y_{0}$ and $z_{0}$
+are the coordinates of the center of the sphere. The second choice is a rotated
+and translated ellipsoid. The basic equation is here
+\begin{equation}
+f = \sqrt{\frac{x^{2}}{a^{2}}+\frac{y^{2}}{b^{2}}+\frac{z^{2}}{c^{2}}} - 1
+\label{AEIThorns_EHFinder_ellipsoid}
+\end{equation}
+This ellipsoid is first rotated an angle $\alpha$ around the $z$-axis, then
+rotated an angle $\beta$ around the $y$-axis, then rotated an angle $\gamma$
+around the $x$-axis and finally the rotated ellipsoid is translated to have
+its ``center'' at the point $(x_{0},y_{0},z_{0})$. The final possible shape
+of the initial surface is an ovaloid of Cassini. This was implented initially
+to test changing the topology in flat space. it is most likely not useful for
+numerical data. In this case $f$ is set according to
+\begin{equation}
+f = (x^{2}+y^{2}+z^{2})^{2} + a^{4} - 2 a^{2} (x^{2}-y^{2}-z^{2})-b^{4}.
+\label{AEIThorns_EHFinder_cassini}
+\end{equation}
+There are no translation or rotations implemented for the ovaloid of Cassini.
+
+Different initial shapes can be used for the different level set functions
+used in the same run.
+\section{Excision}
+\label{AEIThorns_EHFinder_excise}
+
+Even though the level set function, $f$, in principle can be defined
+everywhere it is often advantageous to only evolve it in a certain region
+around the surface $f=0$. Since $f$ is re-initialized regularly to become
+a distance function, $f$ itself can be used as a measure of the distance
+from a certain grid point to the surface $f=0$. The parameter
+{\tt ehfinder::shell\_width} specifies the size of the active region
+around $f=0$. However the interior and exterior excisions are handled
+differently. The interior excision is most simple, since here all grid points
+with $f<-{\mbox{\tt ehfinder::shell\_width}}$ are marked as inactive. This
+should work in all cases when the excised region is everywhere concave, since
+then all points on the boundary of the excised region will have enough
+neighbouring active points to be able to calculate second order accurate one
+sided derivatives. If the interior excised region happens to have a convex
+region, this might fail. To avoid a similiar problem at the outer excised
+boundary, this boundary is shaped as a rectangular box. The box is chosen
+so that all points with $f<{\mbox{\tt ehfinder::shell\_width}}$ are in the
+active region. This is illustrated in
+Figure~\ref{AEIThorns_EHFinder_excisefig}, for the case
+\begin{figure}[ht]
+  \begin{center}
+    \includegraphics[width=8cm]{/home/runner/work/tests/tests/arrangements/EinsteinAnalysis/EHFinder/doc/excision}
+  \end{center}
+  \caption{Illustration of the excision regions used internally by
+           {\tt EHFinder}. The hashed regions are excised.}
+  \label{AEIThorns_EHFinder_excisefig}
+\end{figure}
+{\tt ehfinder::shell\_width = 4}, where the excised regions are hashed.
+
+Changes to the excision regions are only done after re-initialization,
+since it is only at this time that $f$ is a distance function. The excision
+regions can move across the grid, tracking the surface $f=0$.
+
+Also if the numerical run was done with excision using {\tt SpaceMask},
+the {\tt EHFinder} excision region is guaranteed to completely cover the 
+numerical excision region. The {\tt EHFinder} currently only supports the
+old style excision mask but the support of the new style excision mask
+should be trivial and fast to implement.
+\section{Upwinding}
+\label{AEIThorns_EHFinder_upwind}
+All finite differences used in the evolution of the null surface are second
+order one sided differences. For that reason a {\tt ghost\_size} larger or
+equal to 2 should always be used. It is possible to choose between three
+different upwinding schemes. This is done by setting the parameter
+{\tt ehfinder::upwind\_type} to either {\tt intrinsic}, {\tt shift} or
+{\tt characteristic}.
+
+The {\tt intrinsic} scheme, looks at the values of $f$ itself, to determine
+the direction of the stencil. This is basically in order to be able to handle
+situations like the one illustrated in 1D in
+Figure~\ref{AEIThorns_EHFinder_upwindfig}.
+\begin{figure}[ht]
+  \begin{center}
+    \includegraphics[width=8cm]{/home/runner/work/tests/tests/arrangements/EinsteinAnalysis/EHFinder/doc/upwind}
+  \end{center}
+  \caption{An illustration of how to choose the upwinding stencil when $f$
+           is not differntiable everywhere}
+  \label{AEIThorns_EHFinder_upwindfig}
+\end{figure}
+If the stencil for calculating derivatives in the point labeled 1 is taken
+to consist of the points 1, 2 and 3', the non differentiablility of $f$ may
+cause problems. The algorithm detects this and instead uses the points 1, 2, 3
+as the stencil. This ensures that a non differentiable feature can be
+maintained in the evolution.
+
+However this scheme only works in a few simple cases. For more general cases
+it is important to use characteristic information in order to ensure that
+the numerical stencil contains the domain of dependence. Therefore the
+{\tt characteristic} scheme was introduced. Fortunately, by using the
+information contained in the level set functions the characteristic of
+the level set function can be calculated using
+\begin{equation}
+\frac{dx^{i}}{dt}=-\beta^{i}+\frac{\alpha^{2}\gamma^{ij}\partial_{j}f}
+{\sqrt{\alpha^{2}\gamma^{kl}\partial_{k}f\partial_{l}f}}. 
+\label{eq:char}
+\end{equation}
+The method estimates the characteristic direction using centered finite
+differences in equation~(\ref{eq:char}) and then recalculates the one
+sided finite differences in the appropriate direction.
+
+It might happen that the upwinding direction based on the characteristic
+direction results in the stencil to consist of the points 1, 2, 3' in 
+Figure~\ref{AEIThorns_EHFinder_upwindfig}. However, if the 
+re-initialization is done often enough, this turns out not to cause
+any problems.
+
+The {\tt shift} scheme was implemented as an improvement to the {\tt intrinsic}
+scheme but it turned out that the {\tt characteristic} scheme was superior.
+Therefore {\tt shift} upwinding should not be used. It might be completely
+removed in future revisions.
+
+For the re-initialization the default is to use the {\tt intrinsic} 
+second order scheme (the re-initialization doesn't depend on where the
+surface is moving), so {\tt characteristic} upwinding is not applicable.
+It is possible to use a first order {\tt intrinsic} scheme, but this is, in my
+experience, not accurate enough. A centered differencing scheme is also
+available, but is only there for testing purposes and should never be used.
+These alternative schemes will probably be removed in the future.
+
+\section{The most important parameters}
+Here the most important parameters are described.
+\begin{itemize}
+\item {\tt ehfinder::mode} \\  
+  The mode can either be set to {\tt normal} (normal event horizon finder
+  mode), {\tt analysis} (compare a previously calculated level set function to
+  a small number of analytic spacetimes) and {\tt generator} (only evolve
+  the generators while keeping the level set function fixed). The
+  default is {\tt normal} and should normally not be changed. The other modes
+  are only useful for debugging and testing purposes.
+\item{\tt ehfinder::eh\_number\_level\_sets} \\
+  An integer parameter specifying how many individual level set functions to
+  evolve at a time. Currently it has to be between 1 and 10.
+\item {\tt ehfinder::eh\_metric\_type} \\
+  The metric type can either be set to {\tt numerical} or {\tt analytic}. If
+  it is set to {\tt numerical} the {\tt EHFinder} will attempt to read in the
+  metric from files in the directory specified by the {\tt io::recover\_dir}
+  parameter. At present all the timesteps has to be saved in the same file.
+  Note that if the numerical data was produced with
+  {\tt admbase::metric\_type = "static conformal"} this parameter has to be
+  specified again. In this case the {\tt EHFinder} will attempt to also read
+  in the conformal factor from a file.
+  If metric type is set to {\tt analytic} another thorn needs to set up the
+  metric. It is possible to only set the metric on the initial slice, but it
+  is also possible to have a thorn (like thorn {\tt Exact}) set the metric at
+  {\tt CCTK\_PRESTEP} if the analytic metric is time dependent.
+  The default is {\tt numerical}.
+\item {\tt ehfinder::eh\_lapse\_type} \\
+  The same for the lapse.
+\item {\tt ehfinder::eh\_shift\_type} \\
+  The same for the shift.
+\item {\tt initial\_f[i]} \\
+  A vector parameter specifying the initial shape of the null surface for
+  the individual level set functions. The initial shape can currently be
+  chosen from {\tt sphere}, {\tt ellipsoid} and {\tt cassini} as described in
+  section~\ref{AEIThorns_EHFinder_initial}. The default is {\tt sphere}.
+\item {\tt initial\_rad[i]} \\
+  A vector parameter specifying the radius of the initial sphere ($r_{0}$ in
+  equation~\ref{AEIThorns_EHFinder_sphere}). The deafault is 1.
+\item {\tt translate\_x[i]} \\
+  A vector parameter specifying how much to translate the initial surface in
+  the $x$-direction ($x_{0}$ in equation~\ref{AEIThorns_EHFinder_sphere}).
+  Also used for the initial ellipsoid. The default is 0.
+\item {\tt translate\_y[i]} \\
+  A vector parameter specifying how much to translate the initial surface in
+  the $y$-direction ($y_{0}$ in equation~\ref{AEIThorns_EHFinder_sphere}).
+  Also used for the initial ellipsoid. The default is 0.
+\item {\tt translate\_z[i]} \\
+  A vector parameter specifying how much to translate the initial surface in
+  the $z$-direction ($z_{0}$ in equation~\ref{AEIThorns_EHFinder_sphere}).
+  Also used for the initial ellipsoid. The default is 0.
+\item {\tt initial\_a[i]} \\
+  A vector parameter specifying $a$ in
+  equation~\ref{AEIThorns_EHFinder_ellipsoid}. The default is 1.
+\item {\tt initial\_b[i]} \\
+  A vector parameter specifying $b$ in
+  equation~\ref{AEIThorns_EHFinder_ellipsoid}. The default is 1.
+\item {\tt initial\_c[i]} \\
+  A vector parameter specifying $c$ in
+  equation~\ref{AEIThorns_EHFinder_ellipsoid}. The default is 1.
+\item {\tt rotation\_alpha[i]} \\
+  A vector parameter specifying the rotation angle $\alpha$ for the ellipsoid
+  around the $z$-axis. The default is 0.
+\item {\tt rotation\_beta[i]} \\
+  A vector parameter specifying the rotation angle $\beta$ for the ellipsoid
+  around the $y$-axis. The default is 0.
+\item {\tt rotation\_gamma[i]} \\
+  A vector parameter specifying the rotation angle $\gamma$ for the ellipsoid
+  around the $x$-axis. The default is 0.
+\item {\tt shell\_width} \\
+  The width of the active evolution region. Grid points more than
+  {\tt shell\_width} gridspacings away from the $f=0$ surface are marked
+  as inactive and are not evolved as described in
+  section~\ref{AEIThorns_EHFinder_excise}. The default is $7$
+  gridspacings.
+\item {\tt use\_inner\_excision} \\
+  A boolean parameter specifying whether the interior excision should be
+  used or not.
+\item {\tt use\_outer\_excision} \\
+  A boolean parameter specifying whether the exterior excision should be
+  used or not.
+\item {\tt upwind\_type} \\
+  The type of upwinding to be used (either {\tt intrinsic}, {\tt shift} or 
+  {\tt characteristic}). See the detailed description of the upwinding types
+  in section~\ref{AEIThorns_EHFinder_upwind}. The default is 
+  {\tt characteristic}.
+\item {\tt surface\_direction} \\
+  The code can track both outgoing and ingoing null surfaces. Choose the 
+  direction by using {\tt outward} or {\tt inward}. The default is
+  {\tt outward}. Note that the code only works as an event horizon finder
+  when evolving outward going null surfaces backwards in time.
+\item {\tt re\_init\_undo} \\
+  Should the re-initialization be undone just before pinch-off or not as
+  described in section~\ref{AEIThorns_EHFinder_re_init}. The
+  default is {\tt "no"}.
+\item {\tt re\_init\_int\_method} \\
+  Choose the integration method in the {\tt pde}-re-initialization method.
+  Choose either a simple Euler ({\tt euler}) integration scheme or a second
+  order Runge-Kutta ({\tt rk2}) scheme. Since a pde is evolved to steady state,
+  it seems that the Euler scheme works just fine and is faster than the
+  Runge-Kutta scheme. The default is {\tt euler}.
+\item {\tt re\_init\_max\_iter} \\
+  The maximum number of iterations in the {\tt pde}-re-initialization scheme,
+  before giving up. Unless you are working at high resolution the default
+  should be enough. The default is 800.
+\item {\tt pde\_differences} \\
+  Choose the type of finite differencing used in the {\tt pde}
+  re-initialization. Don't ever use anything else than second order
+  upwinding ({\tt upwind2}). The other choices ({\tt centered} and {\tt upwind})
+  are there only for testing purposes and might be removed.
+\item {\tt re\_initialize\_every} \\
+  How often to re-initialize using the {\tt pde} re-initialization. This
+  depends on the problem. For some problems it is necessary to do it more
+  often than for other problems. You'll have to experiment to figure out
+  what works best. The default is 10.
+\item {\tt last\_iteration\_number} \\
+  The last iteration number of the numerical
+  simulation that produced the metric data. Active when {\tt eh\_metric\_type}
+  is equal to {\tt numerical}.
+\item {\tt saved\_iteration\_every} \\
+  How often was the numerical data saved?
+  This and the above parameter is used in the code to figure out which
+  data set iteration number to read in from file \\
+  ({\tt last\_iteration\_number-saved\_iteration\_every*cctk\_iteration}).
+\item {\tt ntheta} \\
+  How many points in the $\theta$-direction should be used for integrations
+  over the surface.
+\item {\tt nphi} \\
+  How many points in the $\phi$-direction should be used for integrations
+  over the surface.
+\item {\tt maximum\_surface\_number} \\
+  The maximal number of surfaces expected at any given time during the whole
+  evolution.
+\item {\tt surface\_interpolator} \\
+  Which interpolator to use for the location of points on the surface. It
+  should be the name of a valid interpolator provided by one of the available
+  interpolators. The interpolator should be able to return both the
+  interpolated value and derivatives. At present this is provided by
+  {\tt AEILocalInterp}. The default is {\tt Hermite polynomial interpolation}.
+\item {\tt surface\_interpolation\_order} \\
+  The interpolation order used for finding points on the surface. Higher
+  orders require larger number of ghost zones for parallel runs. The default
+  value is 2 (consistent with a ghostsize of 2).
+\item {\tt area\_interpolator} \\
+  Which interpolator should be used to interpolate metric information onto the
+  surface once the surface points have been found. The default is
+  {\tt Lagrange polynomial interpolation}.
+\item {\tt area\_interpolation\_order} \\
+  The interpolation order used for calculating the area of the surface.
+  The default value is 3 (consistent with a ghostsize of 2).
+\end{itemize}
+{\tt EHFinder} also extends the following parameter from {\tt admbase} in order
+to be able to read in initial data.
+\begin{itemize}
+\item {\tt admbase::initial\_data} is extended with {\tt "read from file"}.
+\item {\tt admbase::initial\_lapse} is extended with {\tt "read from file"}.
+\item {\tt admbase::initial\_shift} is extended with {\tt "read from file"}.
+\end{itemize}
+\section{How to use {\tt EHFinder} with numerical data}
+\label{AEIThorns_EHFinder_UseThorn}
+In this section I will try to describe in little more detail how {\tt EHFinder}
+can be used to find the EH in a numerical spacetime.
+
+\subsection{Outputting numerical data}
+The first thing to make sure, is that enough data is output during the
+numerical run, to be able to reconstruct the full 4-metric. The
+required output therefore consists of the {\tt ADMBase::metric},
+{\tt ADMBase::lapse} and {\tt ADMBase::shift}. However if the evolution was
+done with zero shift and/or lapse equal to one, it is not necessary to output
+these grid functions, as long as storage is turned on and they are set to the
+correct value initially when {\tt EHFinder} is run. If the evolution was done
+with a conformal factor then {\tt StaticConformal::psi} has to be output as
+well, since it is necessary in order to reconstruct the 4-metric. However it
+is only necessary to output this once since it is constant during the evolution.
+It is not necessary to output the derivatives of the conformal factor. If
+excision was used in the numerical run then it is also necessary to output 
+{\tt SpaceMask::emask}\footnote{When more thorns have been converted to use
+{\tt SpaceMask::space\_mask} this option will also be supported.}, since
+{\tt EHFinder} has to make sure that its internal mask covers the space mask.
+
+At present it is necessary to output all timesteps into the same file (use
+{\tt IO::out\_timesteps\_per\_file = -1}, which is the default). In principle
+both {\tt FLEXIO} and {\tt HDF5} output should be supported, but only
+HDF5 output has been tested. Since {\tt EHFinder} can be run on a lot less
+processors compared to the spacetime evolution, it is often advantageous to
+either do unchuncked output or to recombine the output files, since it is then
+possible to read the data onto a smaller number of processors (use
+{\tt IO::out\_unchunked = "yes"} to write unchunked data). If the numerical
+run is larger than the EH containing region (hopefully that is the case;
+otherwise the boundaries are definitely to close in), it is possible to
+use hyperslabbing to just output the EH containing region (see for example
+{\tt CactusPUGHIO/IOHDF5} for details on this). If hyperslabbing is used it
+is definitely necessary to do the output unchunked or recombine afterwards.
+An example parameter file can be seen in the {\tt par/Misner\_2.2\_80\_3D.par}.
+
+In principle {\tt EHFinder} should also work for downsampled (in both space
+and time) data, but no experiments have been done so far to estimate the loss
+of accuracy (I have always used the full resolution and done output at
+every timestep).
+
+If hyperslabbing and/or downsampling is used, it is the users responsibility
+(by specifying the right parameters in the parameter file) to ensure that
+{\tt EHFinder} is run with the correct grid spacing and time step.
+
+\subsection{Tips for parameter choices}
+
+{\tt EHFinder} is still under development and testing and can as yet {\em not}
+be used as a black box. But still I can give some guidelines and advice on
+how to proceed.
+
+The first concern is to setup the initial guess for the surface. Ideally one
+would like to use at least two different initial surfaces. One surface 
+completely inside the EH and one surface completely outside the EH. In
+practice it is often a good idea to use more than two different initial
+surfaces, since then the initial surfaces closest to the EH can be identified.
+Using the feature of evolving multiple level set functions at a time, this
+can be done while reading in the numerical data only once. The easiest way
+to get an initial surface inside the EH, is to set up the initial guess to
+be completely inside the
+apparent horizon (AH). To get an initial guess that is outside of the EH
+is not as easy. One way is to choose a surface, that starts to contract
+everywhere when evolved according to
+equation~(\ref{AEIThorns_EHFinder_evolve}). However this is not a
+guarantee, since the EH can be expanding in the numerical coordinates.
+This of course means that it is necessary to do it by trial and error.
+Set up some initial guess evolve it for a little while, look at 3D output
+to determine if the surface is contracting everywhere and change the
+initial surface if necessary.
+
+Then comes the question of how often to do the re-initialization and how
+much to excise. These parameters depend on the numerical data. In principle,
+since the re-initialization can move the surface, one wants to do it as
+rarely as possible. On the other hand, re-initialization is necessary
+in order to keep the evolution nicely controlled (by avoiding large gradients),
+so a compromise has to be found. This might require some experimentation.
+Because movements of the surface during re-initialization, usually only
+occurs close to moments of topology change, it might be necessary to evolve
+all the way beyond the change of topology and look at 3D output to see if
+any problems occured. If significant movement of the surface during
+re-initialization near the change of topology is observed, then try again
+with re-initialization undo activated. How often to do the re-initialization
+also depends on the width of the active region. If the active region around
+the surface is narrow, it might be necessary to re-initialize more often,
+since in this case the boundaries of the active region is closer to the
+surface. At the boundaries the stencil direction is dictated by the geometry
+and not $f$ itself or the characteristics, which might cause instabilities
+if it is not re-initialized. Good values guesses for
+{\tt ehfinder::reinitialize\_every\_pde} seems to in the range 5--10 at
+low or medium resolutions but can usually be increased for higher
+resolutions. For {\tt ehfinder::shell\_width} I normally use at least 7.
+
+{\tt EHFinder} does not yet work fully with the fixed mesh refinement driver
+{\tt Carpet}, but this is under development. Currently the evolution of the
+level set function and the re-initialization works, but only with no inner
+and outer excision. The analysis routines to find areas of the surfaces does
+not work with {\tt Carpet}. Reading in metric data has not been tested with
+{\tt Carpet}.
+
+This documentation will be updated, as input comes in from users.
+
+Happy event horizon finding.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{thebibliography}{9}
+
+\bibitem{AEIThorns_EHFinder_Diener02}
+   {Diener P., 2003, 2003, Classical and Quantum Gravity, 20, 4901--4917,
+    A New General Purpose Event Horizon Finder for 3D Numerical Spacetimes,
+    gr-qc/0305039}
+% ,
+%   1--16. {\tt http://www.nowhere.com/}}
+\end{thebibliography}
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{ehfinder\_max\_evolved\_array\_size}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{area\_calculation\_method} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How should the areas be calculated}} \\
+\hline{\bf Range} & &  {\bf Default:} standard \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering standard} & \multicolumn{2}{p{\paraWidth}|}{Using a angular coordinate system on the surface} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering isosurface} & \multicolumn{2}{p{\paraWidth}|}{Using an isosurface triangulation} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{area\_interpolation\_order} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em What order should be used for the area interpoation}} \\
+\hline{\bf Range} & &  {\bf Default:} 3 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{A valid positive interpolation order} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{area\_interpolator} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em What interpolator should be used for the area}} \\
+\hline{\bf Range} & &  {\bf Default:} Lagrange polynomial interpolation \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .+} & \multicolumn{2}{p{\paraWidth}|}{A valid interpolator name} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{cas\_a} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial a coefficient of ovaloid of cassini}} \\
+\hline{\bf Range} & &  {\bf Default:} 2.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{Any number (negative and positive are equivalent)} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{cas\_b} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial b coefficient of ovaloid of cassini}} \\
+\hline{\bf Range} & &  {\bf Default:} 2.05 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{Any number (negative and positive are equivalent)} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{center\_x} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em The x-coordinate of the center}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Anything} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{center\_y} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em The y-coordinate of the center}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Anything} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{center\_z} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em The z-coordinate of the center}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Anything} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{cheat} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Should we cheat and evolve using the last data set for a while?}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{cheat\_iterations} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em For how many iterations should we cheat}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{If you really want to cheat this should be positive} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{eh\_lapse\_type} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Do we use numerical or analytic metric information}} \\
+\hline{\bf Range} & &  {\bf Default:} numerical \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering numerical} & \multicolumn{2}{p{\paraWidth}|}{Read in metric from numerical data} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering analytic} & \multicolumn{2}{p{\paraWidth}|}{Use external analytic metric} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{eh\_metric\_type} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Do we use numerical or analytic metric information}} \\
+\hline{\bf Range} & &  {\bf Default:} numerical \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering numerical} & \multicolumn{2}{p{\paraWidth}|}{Read in metric from numerical data} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering analytic} & \multicolumn{2}{p{\paraWidth}|}{Use external analytic metric} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{eh\_number\_level\_sets} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How many level set functions should we evolve}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:10} & \multicolumn{2}{p{\paraWidth}|}{Between 1 and 10} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{eh\_shift\_type} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Do we use numerical or analytic metric information}} \\
+\hline{\bf Range} & &  {\bf Default:} numerical \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering numerical} & \multicolumn{2}{p{\paraWidth}|}{Read in metric from numerical data} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering analytic} & \multicolumn{2}{p{\paraWidth}|}{Use external analytic metric} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{evolve\_generators} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Should the generators be evolved}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{file\_type} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Are the timesteps in separate files or in one file?}} \\
+\hline{\bf Range} & &  {\bf Default:} one\_file \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering one\_file} & \multicolumn{2}{p{\paraWidth}|}{All timesteps are in the same file} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering sep\_time\_files} & \multicolumn{2}{p{\paraWidth}|}{Timesteps are in separete files} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{generator\_distribution} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em What initial distribution should be used}} \\
+\hline{\bf Range} & &  {\bf Default:} line \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering line} & \multicolumn{2}{p{\paraWidth}|}{Put the generators on a line in the xz-plane} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 2D array} & \multicolumn{2}{p{\paraWidth}|}{Put the generators on a surface with spherical topology} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{generator\_interpolation\_order} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em What order should be used for the generator interpoation}} \\
+\hline{\bf Range} & &  {\bf Default:} 3 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{A valid positive interpolation order} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{generator\_interpolator} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em What interpolator should be used for the generators}} \\
+\hline{\bf Range} & &  {\bf Default:} Lagrange polynomial interpolation \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .+} & \multicolumn{2}{p{\paraWidth}|}{A valid interpolator name} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{generator\_tracking\_method} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em What method should be used for tracking the generators}} \\
+\hline{\bf Range} & &  {\bf Default:} interpolate\_before \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering interpolate\_before} & \multicolumn{2}{p{\paraWidth}|}{Interpolate first, then calculate} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering interpolate\_after} & \multicolumn{2}{p{\paraWidth}|}{Calculate first, then interpolate} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{initial\_a} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial a coefficient of ellipsoid}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:} & \multicolumn{2}{p{\paraWidth}|}{Positive please} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{initial\_b} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial b coefficient of ellipsoid}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:} & \multicolumn{2}{p{\paraWidth}|}{Positive please} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{initial\_c} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial c coefficient of ellipsoid}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:} & \multicolumn{2}{p{\paraWidth}|}{Positive please} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{initial\_f} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial surface choice}} \\
+\hline{\bf Range} & &  {\bf Default:} sphere \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering sphere} & \multicolumn{2}{p{\paraWidth}|}{spherical surface} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering ellipsoid} & \multicolumn{2}{p{\paraWidth}|}{ellipsoidal surface} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering cassini} & \multicolumn{2}{p{\paraWidth}|}{ovaloid of cassini} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{initial\_rad} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initial radius of surface}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:} & \multicolumn{2}{p{\paraWidth}|}{Positive please} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{last\_iteration\_number} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em The starting iteration number for the EH\_Finder (last iteration number of the simulation)}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:} & \multicolumn{2}{p{\paraWidth}|}{Positive please} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{maximum\_surface\_number} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em The maximum number of surfaces expected in the data}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{Positive please} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{mode} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Mode of operation}} \\
+\hline{\bf Range} & &  {\bf Default:} normal \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering normal} & \multicolumn{2}{p{\paraWidth}|}{Find event horizons} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering analysis} & \multicolumn{2}{p{\paraWidth}|}{Provide storage for f without evolving} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering generator} & \multicolumn{2}{p{\paraWidth}|}{Provide storage for f and initialize without evolving} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{n\_array\_ghosts} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Number of ghost points in the surface grid array}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:} & \multicolumn{2}{p{\paraWidth}|}{Positive please} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{nphi} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Number of points in the phi direction when finding points on the surface}} \\
+\hline{\bf Range} & &  {\bf Default:} 51 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*:2} & \multicolumn{2}{p{\paraWidth}|}{Positive and odd please} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{ntheta} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Number of points in the theta direction when finding points on the surface}} \\
+\hline{\bf Range} & &  {\bf Default:} 51 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*:2} & \multicolumn{2}{p{\paraWidth}|}{Positive and odd please} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{number\_of\_generators} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How many generators should be evolved}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{Postive please} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{number\_of\_generators\_phi} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How many generators in the phi direction}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{Positive please} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{number\_of\_generators\_theta} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How many generators in the theta direction}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{Positive please} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{pde\_differences} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Type of finite diffencing used in pde re-initialization}} \\
+\hline{\bf Range} & &  {\bf Default:} upwind2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering centered} & \multicolumn{2}{p{\paraWidth}|}{Use 2nd order centered differences except at the boundaries} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering upwind} & \multicolumn{2}{p{\paraWidth}|}{Use 1st order upwinded differences everywhere} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering upwind2} & \multicolumn{2}{p{\paraWidth}|}{Use 2nd order upwinded differences everywhere} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{re\_init\_int\_method} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Integration method used in re-initialization}} \\
+\hline{\bf Range} & &  {\bf Default:} euler \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering euler} & \multicolumn{2}{p{\paraWidth}|}{Standard euler scheme} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering rk2} & \multicolumn{2}{p{\paraWidth}|}{Second order Runge-Kutta scheme} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{re\_init\_max\_iter} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em maximum number of iterations in the re-initialization}} \\
+\hline{\bf Range} & &  {\bf Default:} 800 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:} & \multicolumn{2}{p{\paraWidth}|}{Positive please} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{re\_init\_undo} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Should re-initialization be undone at pinch-off}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{re\_init\_verbose} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Should re-initialization be verbose?}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{re\_initialize\_every} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How often to re-initialize the level set function}} \\
+\hline{\bf Range} & &  {\bf Default:} 10 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:} & \multicolumn{2}{p{\paraWidth}|}{If 0 don't re-initialize} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{read\_conformal\_factor\_once} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Should the conformal factor only be read once}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rotation\_alpha} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Rotation angle around z-axis of ellipsoid}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Everything is possible} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rotation\_beta} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Rotation angle around y-axis of ellipsoid}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Everything is possible} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rotation\_gamma} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Rotation angle around x-axis of ellipsoid}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Everything is possible} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{saved\_iteration\_every} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How often was the numerical data saved}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:} & \multicolumn{2}{p{\paraWidth}|}{Positive please} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{shell\_width} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Width of the evolution region in units of the grid spacing}} \\
+\hline{\bf Range} & &  {\bf Default:} 7.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:} & \multicolumn{2}{p{\paraWidth}|}{Positive please} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{surface\_direction} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Should we track outward or inward moving surfaces}} \\
+\hline{\bf Range} & &  {\bf Default:} outward \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering outward} & \multicolumn{2}{p{\paraWidth}|}{Track outward moving surfaces. Use for event horizon finding.} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering inward} & \multicolumn{2}{p{\paraWidth}|}{Track inward moving surfaces.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{surface\_interpolation\_order} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em What order should be used for the surface interpoation}} \\
+\hline{\bf Range} & &  {\bf Default:} 2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{A valid positive interpolation order} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{surface\_interpolator} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em What interpolator should be used to locate the surface}} \\
+\hline{\bf Range} & &  {\bf Default:} Hermite polynomial interpolation \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .+} & \multicolumn{2}{p{\paraWidth}|}{A valid interpolator name} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{translate\_x} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Translation in x-direction}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Everything is possible} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{translate\_y} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Translation in y-direction}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Everything is possible} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{translate\_z} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Translation in z-direction}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Everything is possible} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{upwind\_type} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Type of upwinding used in evolving the ehfinder equations}} \\
+\hline{\bf Range} & &  {\bf Default:} characteristic \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering intrinsic} & \multicolumn{2}{p{\paraWidth}|}{Use the values of f itself to determine upwind direction} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering shift} & \multicolumn{2}{p{\paraWidth}|}{Use the shift to determine upwind direction} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering characteristic} & \multicolumn{2}{p{\paraWidth}|}{Use characteristic information} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{use\_inner\_excision} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Should inner excision be used?}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{use\_outer\_excision} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Should outer excision be used?}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{use\_user\_center} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Should the user prescribed center be used}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{ehfinder\_max\_evolved\_array\_size} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em The maximum size of evolved grid arrays used by EHFinder}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{The size of the generator grid arrays} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{ehfinder\_maxnumevolvedvars} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em The maximum number of evolved variables used by EHFinder}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:10} & \multicolumn{2}{p{\paraWidth}|}{Only evolve the level set functions} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{ehfinder\_num\_arrayevolved\_vars} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em The maximum number of evolved grid arrays used by EHFinder}} \\
+\hline{\bf Range} & &  {\bf Default:} 3 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:30} & \multicolumn{2}{p{\paraWidth}|}{Should be exactly zero or a multiple of three} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{use\_mask} & {\bf Scope:} shared from SPACEMASK & BOOLEAN \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+ehfinder
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+grid
+
+admbase
+
+coordgauge
+
+staticconformal
+
+spacemask
+
+boundary
+\vspace{2mm}
+\subsection*{Grid Variables}
+\vspace{5mm}\subsubsection{PRIVATE GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+f & f & compact & 0 \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & timelevels & 3 \\ 
+ &  & vararray\_size & eh\_number\_level\_sets \\ 
+ &  & variable type & REAL \\ 
+\hline 
+sf & sf & compact & 0 \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="Scalar" Prolongation="None" \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & eh\_number\_level\_sets \\ 
+ &  & variable type & REAL \\ 
+\hline 
+dfx & dfx & compact & 0 \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & Prolongation="None" \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & eh\_number\_level\_sets \\ 
+ &  & variable type & REAL \\ 
+\hline 
+dfy & dfy & compact & 0 \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & Prolongation="None" \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & eh\_number\_level\_sets \\ 
+ &  & variable type & REAL \\ 
+\hline 
+dfz & dfz & compact & 0 \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & Prolongation="None" \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & eh\_number\_level\_sets \\ 
+ &  & variable type & REAL \\ 
+\hline 
+dfsq & dfsq & compact & 0 \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="Scalar" Prolongation="None" \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & eh\_number\_level\_sets \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~ \\ 
+\hline 
+ftmp & ftmp & compact & 0 \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="Scalar" Prolongation="None" \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & eh\_number\_level\_sets \\ 
+ &  & variable type & REAL \\ 
+\hline 
+sftmp & sftmp & compact & 0 \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="Scalar" Prolongation="None" \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & eh\_number\_level\_sets \\ 
+ &  & variable type & REAL \\ 
+\hline 
+fbak & fbak & compact & 0 \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="Scalar" Prolongation="None" \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & eh\_number\_level\_sets \\ 
+ &  & variable type & REAL \\ 
+\hline 
+g3inv &  & compact & 0 \\ 
+ & g3xx & description & The inverse of the 3-metric \\ 
+ & g3xy & dimensions & 3 \\ 
+ & g3xz & distribution & DEFAULT \\ 
+ & g3yy & group type & GF \\ 
+ & g3yz & tags & tensortypealias="Scalar" Prolongation="None" \\ 
+ & g3zz & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+eh\_mask & eh\_mask & compact & 0 \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="Scalar" Prolongation="None" \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & eh\_number\_level\_sets \\ 
+ &  & variable type & INT \\ 
+\hline 
+tm\_mask & tm\_mask & compact & 0 \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="Scalar" Prolongation="None" \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & eh\_number\_level\_sets \\ 
+ &  & variable type & INT \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~ \\ 
+\hline 
+eh\_mask\_bak & eh\_mask\_bak & compact & 0 \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="Scalar" Prolongation="None" \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & eh\_number\_level\_sets \\ 
+ &  & variable type & INT \\ 
+\hline 
+re\_init\_control & re\_init\_control & compact & 0 \\ 
+ &  & dimensions & 0 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & INT \\ 
+\hline 
+niter\_reinit & niter\_reinit & compact & 0 \\ 
+ &  & dimensions & 0 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & INT \\ 
+\hline 
+surface\_index &  & compact & 0 \\ 
+ & sc & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="Scalar" Prolongation="None" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+find\_surface\_status & find\_surface\_status & compact & 0 \\ 
+ &  & dimensions & 0 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & INT \\ 
+\hline 
+levelset\_integers &  & compact & 0 \\ 
+ & levelset\_counter & description & Integer variables used to loop over the level sets \\ 
+ & more\_levelsets & dimensions & 0 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & INT \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~ \\ 
+\hline 
+surface\_integers &  & compact & 0 \\ 
+ & surface\_counter & description & Integer variables used in surface integration \\ 
+ & points\_counter & dimensions & 0 \\ 
+ & more\_surfaces & distribution & CONSTANT \\ 
+ & more\_points & group type & SCALAR \\ 
+ & integrate\_counter & timelevels & 1 \\ 
+ &  & variable type & INT \\ 
+\hline 
+surface\_reals &  & compact & 0 \\ 
+ & sym\_factor & description & Real variables used in surface integration \\ 
+ & theta\_sym\_factor & dimensions & 0 \\ 
+ & phi\_sym\_factor & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+surface\_arrays &  & compact & 0 \\ 
+ & ctheta & description & Grid arrays for points on the surface \\ 
+ & cphi & dimensions & 2 \\ 
+ & rsurf & distribution & DEFAULT \\ 
+ & sintheta & ghostsize & N\_ARRAY\_GHOSTS \\ 
+& ~ & ghostsize & N\_ARRAY\_GHOSTS \\ 
+ & costheta & group type & ARRAY \\ 
+ & sinphi & size & NTHETA \\ 
+& ~ & size & NPHI \\ 
+ & cosphi & timelevels & 1 \\ 
+ & drdtheta & variable type & REAL \\ 
+\hline 
+surface\_tmp\_arrays &  & compact & 0 \\ 
+ & drsurf & description & Temporary grid arrays for finding points on the surface \\ 
+ & interp\_x & dimensions & 2 \\ 
+ & interp\_y & distribution & DEFAULT \\ 
+ & interp\_z & ghostsize & N\_ARRAY\_GHOSTS \\ 
+& ~ & ghostsize & N\_ARRAY\_GHOSTS \\ 
+ & f\_interp & group type & ARRAY \\ 
+ & dfdx\_interp & size & NTHETA \\ 
+& ~ & size & NPHI \\ 
+ & dfdy\_interp & timelevels & 1 \\ 
+ & dfdz\_interp & variable type & REAL \\ 
+\hline 
+center\_arrays &  & compact & 0 \\ 
+ & center & description & The cartesian location of the center for the spherical coordinate system \\ 
+ &  & dimensions & 1 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & 3 \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+surface\_int\_array &  & compact & 0 \\ 
+ & n\_since\_last\_reduction & description & Temporary integer grid array for finding points on the surface \\ 
+ &  & dimensions & 2 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & ghostsize & N\_ARRAY\_GHOSTS \\ 
+& ~ & ghostsize & N\_ARRAY\_GHOSTS \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & NTHETA \\ 
+& ~ & size & NPHI \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & INT \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~ \\ 
+\hline 
+interp\_metric\_arrays &  & compact & 0 \\ 
+ & gxxi & description & Arrays for holding the interpolated metric and conformal factor \\ 
+ & gxyi & dimensions & 2 \\ 
+ & gxzi & distribution & DEFAULT \\ 
+ & gyyi & ghostsize & N\_ARRAY\_GHOSTS \\ 
+& ~ & ghostsize & N\_ARRAY\_GHOSTS \\ 
+ & gyzi & group type & ARRAY \\ 
+ & gzzi & size & NTHETA \\ 
+& ~ & size & NPHI \\ 
+ & psii & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+integrate\_tmp\_array &  & compact & 0 \\ 
+ & int\_tmp & description & Temporary array that is used in the integration of various quantities \\ 
+ &  & dimensions & 2 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & ghostsize & N\_ARRAY\_GHOSTS \\ 
+& ~ & ghostsize & N\_ARRAY\_GHOSTS \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & NTHETA \\ 
+& ~ & size & NPHI \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+eh\_area & eh\_area & compact & 0 \\ 
+ &  & dimensions & 1 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & ghostsize & 0 \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & MAXIMUM\_SURFACE\_NUMBER \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & eh\_number\_level\_sets \\ 
+ &  & variable type & REAL \\ 
+\hline 
+eh\_area2 & eh\_area2 & compact & 0 \\ 
+ &  & dimensions & 1 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & ghostsize & 0 \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & MAXIMUM\_SURFACE\_NUMBER \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & eh\_number\_level\_sets \\ 
+ &  & variable type & REAL \\ 
+\hline 
+eh\_centroid\_x & eh\_centroid\_x & compact & 0 \\ 
+ &  & dimensions & 1 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & ghostsize & 0 \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & MAXIMUM\_SURFACE\_NUMBER \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & eh\_number\_level\_sets \\ 
+ &  & variable type & REAL \\ 
+\hline 
+eh\_centroid\_y & eh\_centroid\_y & compact & 0 \\ 
+ &  & dimensions & 1 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & ghostsize & 0 \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & MAXIMUM\_SURFACE\_NUMBER \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & eh\_number\_level\_sets \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~ \\ 
+\hline 
+eh\_centroid\_z & eh\_centroid\_z & compact & 0 \\ 
+ &  & dimensions & 1 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & ghostsize & 0 \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & MAXIMUM\_SURFACE\_NUMBER \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & eh\_number\_level\_sets \\ 
+ &  & variable type & REAL \\ 
+\hline 
+eh\_centroid2\_x & eh\_centroid2\_x & compact & 0 \\ 
+ &  & dimensions & 1 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & ghostsize & 0 \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & MAXIMUM\_SURFACE\_NUMBER \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & eh\_number\_level\_sets \\ 
+ &  & variable type & REAL \\ 
+\hline 
+eh\_centroid2\_y & eh\_centroid2\_y & compact & 0 \\ 
+ &  & dimensions & 1 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & ghostsize & 0 \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & MAXIMUM\_SURFACE\_NUMBER \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & eh\_number\_level\_sets \\ 
+ &  & variable type & REAL \\ 
+\hline 
+eh\_centroid2\_z & eh\_centroid2\_z & compact & 0 \\ 
+ &  & dimensions & 1 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & ghostsize & 0 \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & MAXIMUM\_SURFACE\_NUMBER \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & eh\_number\_level\_sets \\ 
+ &  & variable type & REAL \\ 
+\hline 
+eh\_circ\_eq & eh\_circ\_eq & compact & 0 \\ 
+ &  & dimensions & 1 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & ghostsize & 0 \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & MAXIMUM\_SURFACE\_NUMBER \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & eh\_number\_level\_sets \\ 
+ &  & variable type & REAL \\ 
+\hline 
+eh\_circ\_pol & eh\_circ\_pol & compact & 0 \\ 
+ &  & dimensions & 1 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & ghostsize & 0 \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & MAXIMUM\_SURFACE\_NUMBER \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & eh\_number\_level\_sets \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~ \\ 
+\hline 
+eh\_circ\_eq2 & eh\_circ\_eq2 & compact & 0 \\ 
+ &  & dimensions & 1 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & ghostsize & 0 \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & MAXIMUM\_SURFACE\_NUMBER \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & eh\_number\_level\_sets \\ 
+ &  & variable type & REAL \\ 
+\hline 
+eh\_circ\_pol2 & eh\_circ\_pol2 & compact & 0 \\ 
+ &  & dimensions & 1 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & ghostsize & 0 \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & MAXIMUM\_SURFACE\_NUMBER \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & eh\_number\_level\_sets \\ 
+ &  & variable type & REAL \\ 
+\hline 
+xg & xg & compact & 0 \\ 
+ &  & dimensions & 1 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & ghostsize & 0 \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & NUMBER\_OF\_GENERATORS \\ 
+ &  & timelevels & 3 \\ 
+ &  & vararray\_size & eh\_number\_level\_sets \\ 
+ &  & variable type & REAL \\ 
+\hline 
+yg & yg & compact & 0 \\ 
+ &  & dimensions & 1 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & ghostsize & 0 \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & NUMBER\_OF\_GENERATORS \\ 
+ &  & timelevels & 3 \\ 
+ &  & vararray\_size & eh\_number\_level\_sets \\ 
+ &  & variable type & REAL \\ 
+\hline 
+zg & zg & compact & 0 \\ 
+ &  & dimensions & 1 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & ghostsize & 0 \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & NUMBER\_OF\_GENERATORS \\ 
+ &  & timelevels & 3 \\ 
+ &  & vararray\_size & eh\_number\_level\_sets \\ 
+ &  & variable type & REAL \\ 
+\hline 
+dxg & dxg & compact & 0 \\ 
+ &  & dimensions & 1 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & ghostsize & 0 \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & NUMBER\_OF\_GENERATORS \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & eh\_number\_level\_sets \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~ \\ 
+\hline 
+dyg & dyg & compact & 0 \\ 
+ &  & dimensions & 1 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & ghostsize & 0 \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & NUMBER\_OF\_GENERATORS \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & eh\_number\_level\_sets \\ 
+ &  & variable type & REAL \\ 
+\hline 
+dzg & dzg & compact & 0 \\ 
+ &  & dimensions & 1 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & ghostsize & 0 \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & NUMBER\_OF\_GENERATORS \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & eh\_number\_level\_sets \\ 
+ &  & variable type & REAL \\ 
+\hline 
+generator\_arrays &  & compact & 0 \\ 
+ & alpg & description & Arrays to hold the interpolated metric \\ 
+& ~ & description &  gauge and level set data \\ 
+ & betaxg & dimensions & 1 \\ 
+ & betayg & distribution & DEFAULT \\ 
+ & betazg & ghostsize & 0 \\ 
+ & gxxg & group type & ARRAY \\ 
+ & gxyg & size & NUMBER\_OF\_GENERATORS \\ 
+ & gxzg & timelevels & 1 \\ 
+ & gyyg & variable type & REAL \\ 
+\hline 
+generator\_gf &  & compact & 0 \\ 
+ & xgf & description & Temporary grid function used in calculating the right hand side of the generator evolution equation \\ 
+ & ygf & dimensions & 3 \\ 
+ & zgf & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & Prolongation="None" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+xg2 & xg2 & compact & 0 \\ 
+ &  & dimensions & 2 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & ghostsize & 0 \\ 
+& ~ & ghostsize & 0 \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & NUMBER\_OF\_GENERATORS\_THETA \\ 
+& ~ & size & NUMBER\_OF\_GENERATORS\_PHI \\ 
+ &  & timelevels & 3 \\ 
+ &  & vararray\_size & eh\_number\_level\_sets \\ 
+ &  & variable type & REAL \\ 
+\hline 
+yg2 & yg2 & compact & 0 \\ 
+ &  & dimensions & 2 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & ghostsize & 0 \\ 
+& ~ & ghostsize & 0 \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & NUMBER\_OF\_GENERATORS\_THETA \\ 
+& ~ & size & NUMBER\_OF\_GENERATORS\_PHI \\ 
+ &  & timelevels & 3 \\ 
+ &  & vararray\_size & eh\_number\_level\_sets \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~ \\ 
+\hline 
+zg2 & zg2 & compact & 0 \\ 
+ &  & dimensions & 2 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & ghostsize & 0 \\ 
+& ~ & ghostsize & 0 \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & NUMBER\_OF\_GENERATORS\_THETA \\ 
+& ~ & size & NUMBER\_OF\_GENERATORS\_PHI \\ 
+ &  & timelevels & 3 \\ 
+ &  & vararray\_size & eh\_number\_level\_sets \\ 
+ &  & variable type & REAL \\ 
+\hline 
+dxg2 & dxg2 & compact & 0 \\ 
+ &  & dimensions & 2 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & ghostsize & 0 \\ 
+& ~ & ghostsize & 0 \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & NUMBER\_OF\_GENERATORS\_THETA \\ 
+& ~ & size & NUMBER\_OF\_GENERATORS\_PHI \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & eh\_number\_level\_sets \\ 
+ &  & variable type & REAL \\ 
+\hline 
+dyg2 & dyg2 & compact & 0 \\ 
+ &  & dimensions & 2 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & ghostsize & 0 \\ 
+& ~ & ghostsize & 0 \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & NUMBER\_OF\_GENERATORS\_THETA \\ 
+& ~ & size & NUMBER\_OF\_GENERATORS\_PHI \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & eh\_number\_level\_sets \\ 
+ &  & variable type & REAL \\ 
+\hline 
+dzg2 & dzg2 & compact & 0 \\ 
+ &  & dimensions & 2 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & ghostsize & 0 \\ 
+& ~ & ghostsize & 0 \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & NUMBER\_OF\_GENERATORS\_THETA \\ 
+& ~ & size & NUMBER\_OF\_GENERATORS\_PHI \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & eh\_number\_level\_sets \\ 
+ &  & variable type & REAL \\ 
+\hline 
+generator\_arrays2 &  & compact & 0 \\ 
+ & alpg2 & description & Arrays to hold the interpolated metric \\ 
+& ~ & description &  gauge and level set data \\ 
+ & betaxg2 & dimensions & 2 \\ 
+ & betayg2 & distribution & DEFAULT \\ 
+ & betazg2 & ghostsize & 0 \\ 
+& ~ & ghostsize & 0 \\ 
+ & gxxg2 & group type & ARRAY \\ 
+ & gxyg2 & size & NUMBER\_OF\_GENERATORS\_THETA \\ 
+& ~ & size & NUMBER\_OF\_GENERATORS\_PHI \\ 
+ & gxzg2 & timelevels & 1 \\ 
+ & gyyg2 & variable type & REAL \\ 
+\hline 
+generator\_gf2 &  & compact & 0 \\ 
+ & xgf2 & description & Temporary grid function used in calculating the right hand side of the generator evolution equation \\ 
+ & ygf2 & dimensions & 3 \\ 
+ & zgf2 & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & Prolongation="None" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+
+\noindent {\bf Uses header}: 
+
+Boundary.h
+
+carpet.h
+\vspace{2mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn EinsteinAnalysis/EHFinder.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+~& {\bf Conditional:} \\ 
+~ &  f[1]\\ 
+~ &  f[2]\\ 
+~ &  levelset\_integers\\ 
+~ &  center\_arrays\\ 
+~ &  xg[2] yg[2] zg[2]\\ 
+~ &  dxg dyg dzg\\ 
+~ &  xg2[2] yg2[2] zg2[2]\\ 
+~ &  dxg2 dyg2 dzg2\\ 
+~ &  sf\\ 
+~ &  ftmp\\ 
+~ &  sftmp\\ 
+~ &  eh\_mask\\ 
+~ &  surface\_arrays\\ 
+~ &  eh\_area2 eh\_centroid2\_x eh\_centroid2\_y eh\_centroid2\_z\\ 
+~ &  eh\_circ\_eq2 eh\_circ\_pol2\\ 
+~ &  find\_surface\_status\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PARAMCHECK}   (conditional) 
+
+\hspace{5mm} ehfinder\_paramcheck 
+
+\hspace{5mm}{\it check parameters } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_INITIAL}   (conditional) 
+
+\hspace{5mm} ehfinder\_read\_metric 
+
+\hspace{5mm}{\it read in metric from file } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POST\_RECOVER\_VARIABLES}   (conditional) 
+
+\hspace{5mm} ehfinder\_initweights 
+
+\hspace{5mm}{\it setup weights for simpson integration } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_ANALYSIS}   (conditional) 
+
+\hspace{5mm} ehfinder\_level\_sets 
+
+\hspace{5mm}{\it loop over the level set functions } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Triggers:  & eh\_area \\ 
+~& ~ &eh\_centroid\_x\\ 
+~& ~ &eh\_centroid\_y\\ 
+~& ~ &eh\_centroid\_z\\ 
+~& ~ &eh\_circ\_eq\\ 
+~& ~ &eh\_circ\_pol\\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_Level\_Sets}   (conditional) 
+
+\hspace{5mm} ehfinder\_levelsetloopinit 
+
+\hspace{5mm}{\it initialize the loop counter over the level set functions } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Triggers:  & eh\_area \\ 
+~& ~ &eh\_centroid\_x\\ 
+~& ~ &eh\_centroid\_y\\ 
+~& ~ &eh\_centroid\_z\\ 
+~& ~ &eh\_circ\_eq\\ 
+~& ~ &eh\_circ\_pol\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_Level\_Sets}   (conditional) 
+
+\hspace{5mm} ehfinder\_surfaces 
+
+\hspace{5mm}{\it count the number of surfaces and integrate over them } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Storage:  & surface\_integers \\ 
+~& ~ &surface\_reals\\ 
+~& ~ &surface\_index\\ 
+~ & Triggers:  & eh\_area \\ 
+~& ~ &eh\_centroid\_x\\ 
+~& ~ &eh\_centroid\_y\\ 
+~& ~ &eh\_centroid\_z\\ 
+~& ~ &eh\_circ\_eq\\ 
+~& ~ &eh\_circ\_pol\\ 
+~ & Type:  & group \\ 
+~ & While:  & ehfinder::more\_levelsets \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_Surfaces}   (conditional) 
+
+\hspace{5mm} ehfinder\_countsurfacesinit 
+
+\hspace{5mm}{\it initialize while loop control } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Triggers:  & eh\_area \\ 
+~& ~ &eh\_centroid\_x\\ 
+~& ~ &eh\_centroid\_y\\ 
+~& ~ &eh\_centroid\_z\\ 
+~& ~ &eh\_circ\_eq\\ 
+~& ~ &eh\_circ\_pol\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_Surfaces}   (conditional) 
+
+\hspace{5mm} ehfinder\_countmarksurfaces 
+
+\hspace{5mm}{\it counting and mark surfaces } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ehfinder\_countsurfacesinit \\ 
+~ & Triggers:  & eh\_area \\ 
+~& ~ &eh\_centroid\_x\\ 
+~& ~ &eh\_centroid\_y\\ 
+~& ~ &eh\_centroid\_z\\ 
+~& ~ &eh\_circ\_eq\\ 
+~& ~ &eh\_circ\_pol\\ 
+~ & Type:  & group \\ 
+~ & While:  & ehfinder::more\_surfaces \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_CountMarkSurfaces}   (conditional) 
+
+\hspace{5mm} ehfinder\_countsurfaces 
+
+\hspace{5mm}{\it check if there are more surfaces } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Sync:  & surface\_index \\ 
+~ & Triggers:  & eh\_area \\ 
+~& ~ &eh\_centroid\_x\\ 
+~& ~ &eh\_centroid\_y\\ 
+~& ~ &eh\_centroid\_z\\ 
+~& ~ &eh\_circ\_eq\\ 
+~& ~ &eh\_circ\_pol\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_CountMarkSurfaces}   (conditional) 
+
+\hspace{5mm} ehfinder\_markpoints 
+
+\hspace{5mm}{\it marking surfaces } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ehfinder\_countsurfaces \\ 
+~ & Triggers:  & eh\_area \\ 
+~& ~ &eh\_centroid\_x\\ 
+~& ~ &eh\_centroid\_y\\ 
+~& ~ &eh\_centroid\_z\\ 
+~& ~ &eh\_circ\_eq\\ 
+~& ~ &eh\_circ\_pol\\ 
+~ & Type:  & group \\ 
+~ & While:  & ehfinder::more\_points \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_MarkPoints}   (conditional) 
+
+\hspace{5mm} ehfinder\_marksurfaces 
+
+\hspace{5mm}{\it mark points inside the current surface } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Sync:  & surface\_index \\ 
+~ & Triggers:  & eh\_area \\ 
+~& ~ &eh\_centroid\_x\\ 
+~& ~ &eh\_centroid\_y\\ 
+~& ~ &eh\_centroid\_z\\ 
+~& ~ &eh\_circ\_eq\\ 
+~& ~ &eh\_circ\_pol\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_MarkPoints}   (conditional) 
+
+\hspace{5mm} ehfinder\_applysymsc 
+
+\hspace{5mm}{\it select the surface counter grid function for boundary conditions } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ehfinder\_marksurfaces \\ 
+~ & Language:  & fortran \\ 
+~ & Triggers:  & eh\_area \\ 
+~& ~ &eh\_centroid\_x\\ 
+~& ~ &eh\_centroid\_y\\ 
+~& ~ &eh\_centroid\_z\\ 
+~& ~ &eh\_circ\_eq\\ 
+~& ~ &eh\_circ\_pol\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_INITIAL}   (conditional) 
+
+\hspace{5mm} ehfinder\_read\_lapse 
+
+\hspace{5mm}{\it read in lapse from file } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_MarkPoints}   (conditional) 
+
+\hspace{5mm} applybcs 
+
+\hspace{5mm}{\it apply boundary conditions (symmetries) } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ehfinder\_applysymsc \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_Surfaces}   (conditional) 
+
+\hspace{5mm} ehfinder\_infosurfaces 
+
+\hspace{5mm}{\it output info about found surfaces } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ehfinder\_countmarksurfaces \\ 
+~ & Language:  & fortran \\ 
+~ & Triggers:  & eh\_area \\ 
+~& ~ &eh\_centroid\_x\\ 
+~& ~ &eh\_centroid\_y\\ 
+~& ~ &eh\_centroid\_z\\ 
+~& ~ &eh\_circ\_eq\\ 
+~& ~ &eh\_circ\_pol\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_Surfaces}   (conditional) 
+
+\hspace{5mm} ehfinder\_integration 
+
+\hspace{5mm}{\it find and integrate over surfaces } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ehfinder\_infosurfaces \\ 
+~ & Triggers:  & eh\_area \\ 
+~& ~ &eh\_centroid\_x\\ 
+~& ~ &eh\_centroid\_y\\ 
+~& ~ &eh\_centroid\_z\\ 
+~& ~ &eh\_circ\_eq\\ 
+~& ~ &eh\_circ\_pol\\ 
+~ & Type:  & group \\ 
+~ & While:  & ehfinder::integrate\_counter \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_Integration}   (conditional) 
+
+\hspace{5mm} ehfinder\_findsurface 
+
+\hspace{5mm}{\it find surface } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Storage:  & surface\_tmp\_arrays \\ 
+~& ~ &surface\_int\_array\\ 
+~ & Sync:  & surface\_arrays \\ 
+~ & Triggers:  & eh\_area \\ 
+~& ~ &eh\_centroid\_x\\ 
+~& ~ &eh\_centroid\_y\\ 
+~& ~ &eh\_centroid\_z\\ 
+~& ~ &eh\_circ\_eq\\ 
+~& ~ &eh\_circ\_pol\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_Integration}   (conditional) 
+
+\hspace{5mm} ehfinder\_findsurfaceelement 
+
+\hspace{5mm}{\it find surface area element } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ehfinder\_findsurface \\ 
+~ & Language:  & fortran \\ 
+~ & Storage:  & surface\_tmp\_arrays \\ 
+~& ~ &interp\_metric\_arrays\\ 
+~ & Triggers:  & eh\_area \\ 
+~& ~ &eh\_centroid\_x\\ 
+~& ~ &eh\_centroid\_y\\ 
+~& ~ &eh\_centroid\_z\\ 
+~& ~ &eh\_circ\_eq\\ 
+~& ~ &eh\_circ\_pol\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_Integration}   (conditional) 
+
+\hspace{5mm} ehfinder\_integratearea 
+
+\hspace{5mm}{\it calculate area integrals } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ehfinder\_findsurfaceelement \\ 
+~ & Language:  & fortran \\ 
+~ & Storage:  & integrate\_tmp\_array \\ 
+~ & Triggers:  & eh\_area \\ 
+~& ~ &eh\_centroid\_x\\ 
+~& ~ &eh\_centroid\_y\\ 
+~& ~ &eh\_centroid\_z\\ 
+~& ~ &eh\_circ\_eq\\ 
+~& ~ &eh\_circ\_pol\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_Integration}   (conditional) 
+
+\hspace{5mm} ehfinder\_integratecentroid 
+
+\hspace{5mm}{\it calculate centroid integrals } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ehfinder\_integratearea \\ 
+~ & Language:  & fortran \\ 
+~ & Storage:  & surface\_tmp\_arrays \\ 
+~& ~ &integrate\_tmp\_array\\ 
+~ & Triggers:  & eh\_centroid\_x \\ 
+~& ~ &eh\_centroid\_y\\ 
+~& ~ &eh\_centroid\_z\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_Integration}   (conditional) 
+
+\hspace{5mm} ehfinder\_integratecircumference 
+
+\hspace{5mm}{\it calculate circumferences } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ehfinder\_integratearea \\ 
+~ & Language:  & fortran \\ 
+~ & Storage:  & surface\_tmp\_arrays \\ 
+~& ~ &integrate\_tmp\_array\\ 
+~ & Triggers:  & eh\_circ\_eq \\ 
+~& ~ &eh\_circ\_pol\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_Surfaces}   (conditional) 
+
+\hspace{5mm} ehfinder\_updatecounter 
+
+\hspace{5mm}{\it update the loop variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Triggers:  & eh\_area \\ 
+~& ~ &eh\_centroid\_x\\ 
+~& ~ &eh\_centroid\_y\\ 
+~& ~ &eh\_centroid\_z\\ 
+~& ~ &eh\_circ\_eq\\ 
+~& ~ &eh\_circ\_pol\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_ANALYSIS}   (conditional) 
+
+\hspace{5mm} ehfinder\_copyarea 
+
+\hspace{5mm}{\it copy areas to output variable } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ehfinder\_level\_sets \\ 
+~ & Language:  & fortran \\ 
+~ & Storage:  & eh\_area \\ 
+~ & Triggers:  & eh\_area \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_INITIAL}   (conditional) 
+
+\hspace{5mm} ehfinder\_read\_shift 
+
+\hspace{5mm}{\it read in shift from file } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_ANALYSIS}   (conditional) 
+
+\hspace{5mm} ehfinder\_copycentroid 
+
+\hspace{5mm}{\it copy centroids to output variable } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ehfinder\_level\_sets \\ 
+~ & Language:  & fortran \\ 
+~ & Storage:  & eh\_centroid\_x \\ 
+~& ~ &eh\_centroid\_y\\ 
+~& ~ &eh\_centroid\_z\\ 
+~ & Triggers:  & eh\_centroid\_x \\ 
+~& ~ &eh\_centroid\_y\\ 
+~& ~ &eh\_centroid\_z\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_ANALYSIS}   (conditional) 
+
+\hspace{5mm} ehfinder\_copycircumference 
+
+\hspace{5mm}{\it copy circumferences to output variable } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ehfinder\_level\_sets \\ 
+~ & Language:  & fortran \\ 
+~ & Storage:  & eh\_circ\_eq \\ 
+~& ~ &eh\_circ\_pol\\ 
+~ & Triggers:  & eh\_circ\_eq \\ 
+~& ~ &eh\_circ\_pol\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_ANALYSIS}   (conditional) 
+
+\hspace{5mm} ehfinder\_isosurfacearea 
+
+\hspace{5mm}{\it find isosurfaces and calculate the area } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Triggers:  & eh\_area \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_IsoSurfaceArea}   (conditional) 
+
+\hspace{5mm} ehfinder\_isosurface 
+
+\hspace{5mm}{\it find isosurfaces } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Storage:  & eh\_area \\ 
+~ & Triggers:  & eh\_area \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PRESTEP}   (conditional) 
+
+\hspace{5mm} ehfinder\_read\_metric 
+
+\hspace{5mm}{\it read in metric from file } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PRESTEP}   (conditional) 
+
+\hspace{5mm} ehfinder\_read\_lapse 
+
+\hspace{5mm}{\it read in lapse from file } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PRESTEP}   (conditional) 
+
+\hspace{5mm} ehfinder\_read\_shift 
+
+\hspace{5mm}{\it read in shift from file } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PRESTEP}   (conditional) 
+
+\hspace{5mm} ehfinder\_read\_conformal 
+
+\hspace{5mm}{\it read in conformal factor from file } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PRESTEP}   (conditional) 
+
+\hspace{5mm} ehfinder\_read\_mask 
+
+\hspace{5mm}{\it read in excision mask from file } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Register}   (conditional) 
+
+\hspace{5mm} ehfinder\_molregister 
+
+\hspace{5mm}{\it register evolution variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_INITIAL}   (conditional) 
+
+\hspace{5mm} ehfinder\_read\_conformal 
+
+\hspace{5mm}{\it read in conformal factor from file } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_BASEGRID}   (conditional) 
+
+\hspace{5mm} ehfinder\_setsym 
+
+\hspace{5mm}{\it register the symmetries for the level set function } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Storage:  & sftmp \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTINITIAL}   (conditional) 
+
+\hspace{5mm} ehfinder\_maskinit 
+
+\hspace{5mm}{\it setup the initial mask } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ehfinder\_init \\ 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_CalcRHS}   (conditional) 
+
+\hspace{5mm} ehfinder\_sources 
+
+\hspace{5mm}{\it calculate the source terms } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Storage:  & dfx \\ 
+~& ~ &dfy\\ 
+~& ~ &dfz\\ 
+~& ~ &g3inv\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_CalcRHS}   (conditional) 
+
+\hspace{5mm} ehfinder\_generator\_sources 
+
+\hspace{5mm}{\it calculate the source terms for the generator evolution } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Storage:  & generator\_arrays \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_CalcRHS}   (conditional) 
+
+\hspace{5mm} ehfinder\_generator\_sources\_2d 
+
+\hspace{5mm}{\it calculate the source terms for the 2d generator evolution } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Storage:  & generator\_arrays2 \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_CalcRHS}   (conditional) 
+
+\hspace{5mm} ehfinder\_generator\_sources2 
+
+\hspace{5mm}{\it calculate the source terms2 for the generator evolution } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ehfinder\_sources \\ 
+~ & Language:  & fortran \\ 
+~ & Storage:  & generator\_arrays \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_PostStep}   (conditional) 
+
+\hspace{5mm} ehfinder\_poststep 
+
+\hspace{5mm}{\it schedule group for symmetry boundaries and syncing } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_PostStep}   (conditional) 
+
+\hspace{5mm} ehfinder\_applysymf 
+
+\hspace{5mm}{\it select f for boundary conditions } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Sync:  & f \\ 
+~& ~ &sftmp\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_PostStep}   (conditional) 
+
+\hspace{5mm} applybcs 
+
+\hspace{5mm}{\it apply boundary conditions (symmetries) } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ehfinder\_applysymf \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTSTEP}   (conditional) 
+
+\hspace{5mm} ehfinder\_reinitialize 
+
+\hspace{5mm}{\it re-initialize the level set function } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Storage:  & fbak \\ 
+~& ~ &eh\_mask\_bak\\ 
+~& ~ &re\_init\_control\\ 
+~& ~ &niter\_reinit\\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_INITIAL}   (conditional) 
+
+\hspace{5mm} ehfinder\_read\_mask 
+
+\hspace{5mm}{\it read in excision mask from file } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & maskone \\ 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf }   (conditional) 
+
+\hspace{5mm} ehfinder\_prereinitialize 
+
+\hspace{5mm}{\it routines for re-initialization control } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_PreReInitialize}   (conditional) 
+
+\hspace{5mm} ehfinder\_reinitializecontrol 
+
+\hspace{5mm}{\it initializes the re-initialization control } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_PreReInitialize}   (conditional) 
+
+\hspace{5mm} ehfinder\_reinitializeinitialize 
+
+\hspace{5mm}{\it initializes variables for reinitialization } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ehfinder\_reinitializecontrol \\ 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf }   (conditional) 
+
+\hspace{5mm} euler\_reinitializeevolve 
+
+\hspace{5mm}{\it schedule group for euler re-initialization evolution } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf Euler\_ReInitializeEvolve}   (conditional) 
+
+\hspace{5mm} ehfinder\_reinitializeeuler 
+
+\hspace{5mm}{\it euler scheme } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Storage:  & dfx \\ 
+~& ~ &dfy\\ 
+~& ~ &dfz\\ 
+~& ~ &dfsq\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf Euler\_ReInitializeEvolve}   (conditional) 
+
+\hspace{5mm} ehfinder\_applysymfsftmp 
+
+\hspace{5mm}{\it select f for boundary conditions } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ehfinder\_reinitializeeuler \\ 
+~ & Language:  & fortran \\ 
+~ & Sync:  & f \\ 
+~& ~ &sftmp\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf Euler\_ReInitializeEvolve}   (conditional) 
+
+\hspace{5mm} applybcs 
+
+\hspace{5mm}{\it apply boundary conditions (symmetries) } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ehfinder\_applysymf \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf }   (conditional) 
+
+\hspace{5mm} euler\_poststep 
+
+\hspace{5mm}{\it schedule group for euler re-initialization post step } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf Euler\_PostStep}   (conditional) 
+
+\hspace{5mm} ehfinder\_reinitializepoststep 
+
+\hspace{5mm}{\it check if the re-initialization is done } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_ReInitialize}   (conditional) 
+
+\hspace{5mm} ehfinder\_prereinitialize 
+
+\hspace{5mm}{\it pugh version of the pre-re-initialization routines } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_INITIAL}   (conditional) 
+
+\hspace{5mm} ehfinder\_init 
+
+\hspace{5mm}{\it setup local variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Sync:  & f \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_ReInitialize}   (conditional) 
+
+\hspace{5mm} euler\_reinitialize 
+
+\hspace{5mm}{\it schedule group for euler re-initialization } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ehfinder\_prereinitializepugh \\ 
+~ & Type:  & group \\ 
+~ & While:  & ehfinder::re\_init\_control \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf Euler\_ReInitialize}   (conditional) 
+
+\hspace{5mm} euler\_reinitializeevolve 
+
+\hspace{5mm}{\it schedule group for euler re-initialization evolution with pugh } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf Euler\_ReInitialize}   (conditional) 
+
+\hspace{5mm} euler\_poststep 
+
+\hspace{5mm}{\it schedule group for euler re-initialization post step } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & euler\_reinitializeevolve \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_ReInitialize}   (conditional) 
+
+\hspace{5mm} ehfinder\_reinitialize\_check 
+
+\hspace{5mm}{\it check to see if re-initialization has to be undone } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & euler\_reinitialize \\ 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_ReInitialize}   (conditional) 
+
+\hspace{5mm} ehfinder\_prereinitialize\_carpet 
+
+\hspace{5mm}{\it carpet version of the pre-reinitialization routines } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & level \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_ReInitialize}   (conditional) 
+
+\hspace{5mm} ehfinder\_reinitialize\_wrapper 
+
+\hspace{5mm}{\it wrapper routine for euler re-initialization for carpet } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ehfinder\_prereinitialize\_carpet \\ 
+~ & Language:  & c \\ 
+~ & Options:  & level \\ 
+~ & Type:  & function \\ 
+~ & While:  & ehfinder::re\_init\_control \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_ReInitialize}   (conditional) 
+
+\hspace{5mm} rk2\_reinitialize 
+
+\hspace{5mm}{\it schedule group for rk2 re-initialization } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ehfinder\_reinitializecontrol \\ 
+~ & Type:  & group \\ 
+~ & While:  & ehfinder::re\_init\_control \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf RK2\_ReInitialize}   (conditional) 
+
+\hspace{5mm} ehfinder\_reinitializerk2\_1 
+
+\hspace{5mm}{\it rk2 scheme step 1 } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Storage:  & dfx \\ 
+~& ~ &dfy\\ 
+~& ~ &dfz\\ 
+~& ~ &dfsq\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf RK2\_ReInitialize}   (conditional) 
+
+\hspace{5mm} ehfinder\_applysymf 
+
+\hspace{5mm}{\it select f for boundary conditions } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ehfinder\_reinitializerk2\_1 \\ 
+~ & Language:  & fortran \\ 
+~ & Sync:  & f \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf RK2\_ReInitialize}   (conditional) 
+
+\hspace{5mm} applybcs 
+
+\hspace{5mm}{\it apply boundary conditions (symmetries) } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & sym\_rk2\_1 \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_INITIAL}   (conditional) 
+
+\hspace{5mm} ehfinder\_init\_f 
+
+\hspace{5mm}{\it setup the initial surface } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Sync:  & f \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf RK2\_ReInitialize}   (conditional) 
+
+\hspace{5mm} ehfinder\_reinitializerk2\_2 
+
+\hspace{5mm}{\it rk2 scheme step 2 } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & sym\_rk2\_1 \\ 
+~ & Language:  & fortran \\ 
+~ & Storage:  & dfx \\ 
+~& ~ &dfy\\ 
+~& ~ &dfz\\ 
+~& ~ &dfsq\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf RK2\_ReInitialize}   (conditional) 
+
+\hspace{5mm} ehfinder\_applysymf 
+
+\hspace{5mm}{\it select f for boundary conditions } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ehfinder\_reinitializerk2\_2 \\ 
+~ & Language:  & fortran \\ 
+~ & Sync:  & f \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf RK2\_ReInitialize}   (conditional) 
+
+\hspace{5mm} applybcs 
+
+\hspace{5mm}{\it apply boundary conditions (symmetries) } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & sym\_rk2\_2 \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTSTEP} 
+
+\hspace{5mm} ehfinder\_setmask 
+
+\hspace{5mm}{\it set the mask } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ehfinder\_reinitialize \\ 
+~ & Storage:  & tm\_mask \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_SetMask} 
+
+\hspace{5mm} ehfinder\_setmask1 
+
+\hspace{5mm}{\it start modifying the mask } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Sync:  & f \\ 
+~& ~ &eh\_mask\\ 
+~& ~ &tm\_mask\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_SetMask} 
+
+\hspace{5mm} ehfinder\_applysymall 
+
+\hspace{5mm}{\it select both f and eh\_mask for boundary conditions } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ehfinder\_setmask1 \\ 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_SetMask} 
+
+\hspace{5mm} applybcs 
+
+\hspace{5mm}{\it apply boundary conditions (symmetries) } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ehfinder\_applysymall \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_SetMask} 
+
+\hspace{5mm} ehfinder\_setmask2 
+
+\hspace{5mm}{\it find excision boundaries } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ehfinderall\_applybcs \\ 
+~ & Language:  & fortran \\ 
+~ & Sync:  & eh\_mask \\ 
+~& ~ &tm\_mask\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_SetMask} 
+
+\hspace{5mm} ehfinder\_applysymmask 
+
+\hspace{5mm}{\it select eh\_mask for boundary conditions } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ehfinder\_setmask2 \\ 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_SetMask} 
+
+\hspace{5mm} applybcs 
+
+\hspace{5mm}{\it apply boundary conditions (symmetries) } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & asm1 \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_INITIAL}   (conditional) 
+
+\hspace{5mm} ehfinder\_initweights 
+
+\hspace{5mm}{\it setup weights for simpson integration } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_SetMask} 
+
+\hspace{5mm} ehfinder\_setmask3 
+
+\hspace{5mm}{\it check to see if the mask needs to be modified } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ehfinder\_asm1 \\ 
+~ & Language:  & fortran \\ 
+~ & Sync:  & eh\_mask \\ 
+~& ~ &tm\_mask\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_SetMask} 
+
+\hspace{5mm} ehfinder\_applysymmask 
+
+\hspace{5mm}{\it select eh\_mask for boundary conditions } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ehfinder\_setmask3 \\ 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_SetMask} 
+
+\hspace{5mm} applybcs 
+
+\hspace{5mm}{\it apply boundary conditions (symmetries) } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & asm2 \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_SetMask} 
+
+\hspace{5mm} ehfinder\_setmask2 
+
+\hspace{5mm}{\it find excision boundaries } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & asm2 \\ 
+~ & Language:  & fortran \\ 
+~ & Sync:  & eh\_mask \\ 
+~& ~ &tm\_mask\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_SetMask} 
+
+\hspace{5mm} ehfinder\_applysymmask 
+
+\hspace{5mm}{\it select eh\_mask for boundary conditions } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & sm2 \\ 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf EHFinder\_SetMask} 
+
+\hspace{5mm} applybcs 
+
+\hspace{5mm}{\it apply boundary conditions (symmetries) } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & asm3 \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POST\_RECOVER\_VARIABLES}   (conditional) 
+
+\hspace{5mm} ehfinder\_init 
+
+\hspace{5mm}{\it setup local variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Sync:  & f \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\subsection*{Aliased Functions}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Alias Name:} ~~~~~~~ & {\bf Function Name:} \\ 
+ApplyBCs & EHFinderMask3\_ApplyBCs \\ 
+EHFinder\_ApplySymF & Sym\_RK2\_2 \\ 
+EHFinder\_ApplySymMask & ASM3 \\ 
+EHFinder\_PreReInitialize & EHFinder\_PreReInitializePugh \\ 
+EHFinder\_SetMask2 & SM2 \\ 
+Euler\_PostStep & Euler\_PostStepPUGH \\ 
+Euler\_ReInitializeEvolve & Euler\_ReInitializeEvolvePUGH \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

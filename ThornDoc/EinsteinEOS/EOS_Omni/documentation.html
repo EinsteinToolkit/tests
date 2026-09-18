@@ -1,0 +1,1937 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>EOS_mni</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">EOS_Omni</h2>
+     <div class="author" ><span 
+class="cmr-12">Christian D. Ott </span><span 
+class="cmmi-12">&#x003C;</span><span 
+class="cmr-12">cott@tapir.caltech.edu</span><span 
+class="cmmi-12">&#x003E;</span><span 
+class="cmr-12">,</span>
+<br /> <span 
+class="cmr-12">Erik Schnetter </span><span 
+class="cmmi-12">&#x003C;</span><span 
+class="cmr-12">eschnetter@perimeterinstitute.ca</span><span 
+class="cmmi-12">&#x003E;</span></div>
+<br />
+<div class="date" ><span 
+class="cmr-12">February 24, 2013</span></div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 112--><p class="noindent" ><span 
+class="cmr-9">This thorn provides a unified EOS (Equation Of State) interface and implements multiple analytic</span>
+     <span 
+class="cmr-9">EOS, and also provides table reader and interpolation routines for finite-temperature microphysical</span>
+     <span 
+class="cmr-9">EOS available from </span><a 
+href="http://www.stellarcollapse.org" class="url" ><span 
+class="cmtt-9">http://www.stellarcollapse.org</span></a><span 
+class="cmr-9">. In addition cold and barotropic tabulated</span>
+     <span 
+class="cmr-9">EOS are provided for use in initial data thorns. Currently, the implemented analytic EOS are the</span>
+     <span 
+class="cmr-9">polytropic EOS, the gamma-law EOS, and a hybrid EOS consisting of a n-piece piecewise-polytrope</span>
+     <span 
+class="cmr-9">with a thermal, gamma-law component.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Introduction</h3>
+<!--l. 127--><p class="noindent" >Equations of State (EOS) are crucial for hydrodynamics and hydro codes (as well as other codes
+needing/providing microphysics) are closely coupled to EOS and call EOS routines many times for each grid
+point during the calculation of a time update.
+</p><!--l. 132--><p class="noindent" ><span 
+class="cmtt-10">EOS</span><span 
+class="cmtt-10">_Omni </span>is presently coded for cold and hot EOS, including those based on microphysical models. It does
+                                                                                       
+                                                                                       
+currently assume nuclear statistical equilibrium (NSE) with rest-mass density \(\rho \), specific internal energy \(\epsilon \) (or
+temperature \(T\)), and electron fraction \(Y_e\) being the independent variables. <span 
+class="cmtt-10">EOS</span><span 
+class="cmtt-10">_Omni </span>can be called on arrays or on
+single grid points.
+</p><!--l. 141--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a>Units</h3>
+<!--l. 143--><p class="noindent" >This thorn uses <span 
+class="cmti-10">solar </span>units where \(c = G = M_{\odot } = 1\). Temperatures are measured in MeV.
+</p><!--l. 146--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-30003"></a>Using This Thorn</h3>
+<!--l. 148--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">3.1   </span> <a 
+ id="x1-40003.1"></a>Basic Usage</h4>
+<!--l. 150--><p class="noindent" ><span 
+class="cmtt-10">EOS</span><span 
+class="cmtt-10">_Omni </span>works via the aliased-function interface, and EOS functions to be used must be declared in
+<span 
+class="cmtt-10">interface.ccl</span>. Here is an example <span 
+class="cmtt-10">interface.ccl </span>entry:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-1">
+void FUNCTION EOS_Omni_press(CCTK_INT IN eoskey,         \
+                             CCTK_INT IN havetemp,       \
+                             CCTK_REAL IN rf_precision,  \
+                             CCTK_INT IN npoints,        \
+                             CCTK_REAL IN ARRAY rho,     \
+                             CCTK_REAL INOUT ARRAY eps,  \
+                             CCTK_REAL INOUT ARRAY temp, \
+                             CCTK_REAL IN ARRAY ye,      \
+                             CCTK_REAL OUT ARRAY press   \
+                             CCTK_INT OUT ARRAY keyerr,  \
+                             CCTK_INT OUT anyerr)
+</pre>
+<!--l. 165--><p class="nopar" >
+</p><!--l. 167--><p class="noindent" >Here, </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 169--><p class="noindent" ><span 
+class="cmtt-10">eoskey </span>is the type of EOS to be used in this call.
+     </p></li>
+     <li class="itemize">
+     <!--l. 170--><p class="noindent" ><span 
+class="cmtt-10">havetemp </span>determines whether the EOS is to be called as a function of \((\rho ,\epsilon ,Y_e)\) (<span 
+class="cmtt-10">havetemp = 0</span>), or as
+     a function of \((\rho ,T,Y_e)\) (<span 
+class="cmtt-10">havetemp = 1</span>). <span 
+class="cmtt-10">havetemp = 0 </span>is the method of choice for analytic EOS during
+     evolution, but at the initial data stage one may need to set <span 
+class="cmtt-10">havetemp = 1 </span>(with \(T=0\)) to obtain initial
+     values for \(\epsilon \). In the case of a finite-temperature EOS (that usually is a function of \((\rho ,T,Y_e)\)), a call with
+     <span 
+class="cmtt-10">havetemp = 0 </span>will first lead to the solution of \(T(\rho ,\epsilon ,Y_e\)) via a Newton-Raphson-type iteration (using the
+     supplied value of \(T\) as the starting point) and will then calculate the requested dependent variable
+     as a function of \(X=X(\rho ,T,Y_e)\). Both \(X\) and the updated \(T\) are returned.
+     </p></li>
+     <li class="itemize">
+     <!--l. 184--><p class="noindent" ><span 
+class="cmtt-10">npoints </span>tells the EOS how many data points are passed in,
+     </p></li>
+     <li class="itemize">
+     <!--l. 186--><p class="noindent" ><span 
+class="cmtt-10">rho,eps,temp,ye,press </span>are obvious,
+     </p></li>
+     <li class="itemize">
+     <!--l. 187--><p class="noindent" ><span 
+class="cmtt-10">rf</span><span 
+class="cmtt-10">_precision </span>is a real number telling the root finding algorithm (for finding \(T(\rho ,\epsilon ,Y_e)\)) at what relative
+     error to terminate the iteration. \(10^{-10}\) is a good value.
+                                                                                       
+                                                                                       
+     </p></li>
+     <li class="itemize">
+     <!--l. 190--><p class="noindent" ><span 
+class="cmtt-10">keyerr </span>is an array (with \(n\) entries for \(n\) data points) containing error codes (relevant only for tabulated
+     microphysical EOS),
+     </p></li>
+     <li class="itemize">
+     <!--l. 193--><p class="noindent" ><span 
+class="cmtt-10">anyerr </span>is an integer \(&gt;0\) in case any error occured.</p></li></ul>
+<!--l. 197--><p class="noindent" >The <span 
+class="cmtt-10">eoskey </span>is obtained by calling <span 
+class="cmtt-10">EOS</span><span 
+class="cmtt-10">_Omni</span><span 
+class="cmtt-10">_GetHandle </span>with the name of desired EOS. The currently available
+EOS are:
+     </p><dl class="description"><dt class="description">
+<span 
+class="cmbx-10">2D</span><span 
+class="cmbx-10">_Polytrope</span> </dt><dd 
+class="description">
+     <!--l. 200--><p class="noindent" >Polytropic EOS,
+     </p></dd><dt class="description">
+<span 
+class="cmbx-10">Ideal</span><span 
+class="cmbx-10">_Fluid</span> </dt><dd 
+class="description">
+     <!--l. 201--><p class="noindent" >Gamma-Law EOS,
+     </p></dd><dt class="description">
+<span 
+class="cmbx-10">Hybrid</span> </dt><dd 
+class="description">
+     <!--l. 202--><p class="noindent" >Hybrid EOS (N Polys, 1 Gamma-Law), used for stellar core collapse simulations,
+     </p></dd><dt class="description">
+<span 
+class="cmbx-10">nuc</span><span 
+class="cmbx-10">_eos</span> </dt><dd 
+class="description">
+     <!--l. 203--><p class="noindent" >Finite-temperature microphysical EOSm
+     </p></dd><dt class="description">
+<span 
+class="cmbx-10">cold</span><span 
+class="cmbx-10">_tabulated</span> </dt><dd 
+class="description">
+     <!--l. 204--><p class="noindent" >Cold tabulated EOS with Gamma-Lawm
+     </p></dd><dt class="description">
+<span 
+class="cmbx-10">barotropic</span><span 
+class="cmbx-10">_tabulated</span> </dt><dd 
+class="description">
+     <!--l. 205--><p class="noindent" >Tabulated barotropic EOS.</p></dd></dl>
+<!--l. 208--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">3.2   </span> <a 
+ id="x1-50003.2"></a>Parameter Settings</h4>
+<!--l. 210--><p class="noindent" >Many hydro codes require a fallback EOS in case something goes wrong. This is also true for the Einstein
+Toolkit GR hydro code <span 
+class="cmtt-10">EinsteinEvolve/GRHydro</span>. If you want to use <span 
+class="cmtt-10">EOS</span><span 
+class="cmtt-10">_Omni </span>with <span 
+class="cmtt-10">GRHydro</span>, you must set
+parameters for the EOS of your choice and, <span 
+class="cmti-10">in addition</span>, the following parameters must be set to sensible
+values:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-2">
+eos_omni::poly_gamma
+eos_omni::poly_gamma_initial
+eos_omni::poly_k
+</pre>
+<!--l. 220--><p class="nopar" >
+</p><!--l. 222--><p class="noindent" >The only non-obvious parameter here is <span 
+class="cmtt-10">poly</span><span 
+class="cmtt-10">_gamma</span><span 
+class="cmtt-10">_initial</span>. In most simulations it should not be
+set. In simulations that are run with a different adiabatic index than what was used to set up the
+initial data, <span 
+class="cmtt-10">poly</span><span 
+class="cmtt-10">_gamma </span>should be the evolution value, and <span 
+class="cmtt-10">poly</span><span 
+class="cmtt-10">_gamma</span><span 
+class="cmtt-10">_initial </span>should be the
+initial data value. <span 
+class="cmtt-10">EOS</span><span 
+class="cmtt-10">_Omni </span>then rescales <span 
+class="cmtt-10">poly</span><span 
+class="cmtt-10">_k </span>such that the <span 
+class="cmti-10">cgs </span>value of <span 
+class="cmtt-10">poly</span><span 
+class="cmtt-10">_k </span>is the same for
+initial data and evolution. Since the units of <span 
+class="cmtt-10">poly</span><span 
+class="cmtt-10">_k </span>(\([K] = \frac {\rm N}{\rm m^2} \left (\frac {\rm m^3}{\rm kg}\right )^{\Gamma }\)) depend on <span 
+class="cmtt-10">poly</span><span 
+class="cmtt-10">_gamma </span>this is not fully
+trivial.
+</p><!--l. 233--><p class="noindent" >Check <span 
+class="cmtt-10">param.ccl </span>for parameters for the other EOS.
+</p><!--l. 235--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-60004"></a>Equations of State Details</h3>
+<!--l. 237--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">4.1   </span> <a 
+ id="x1-70004.1"></a>Polytropic</h4>
+<!--l. 239--><p class="noindent" >The <span 
+class="cmtt-10">poly </span>EOS is a <span 
+class="cmti-10">polytropic </span>equation of state, which does not allow for changes in entropy: </p><div class="eqnarray">\begin {eqnarray}  p &amp; = &amp; K \rho ^\gamma  \end {eqnarray}</div>
+<!--l. 244--><p class="noindent" >where \(p\) is the pressure, \(\rho \) the density, \(K\) the polytropic constant set via <span 
+class="cmtt-10">poly</span><span 
+class="cmtt-10">_k</span>, and \(\gamma \) is the adiabatic index set via
+<span 
+class="cmtt-10">poly</span><span 
+class="cmtt-10">_gamma</span>.
+</p><!--l. 248--><p class="noindent" >If the internal energy \(\epsilon \) is to be “calculated from the temperature” (<span 
+class="cmtt-10">havetemp = 1</span>), then this is done using the
+relation </p><div class="eqnarray">\begin {eqnarray}  \epsilon &amp; = &amp; \frac {K}{\gamma -1} \rho ^{\gamma -1} \label {eq:polyeps}  \end {eqnarray}</div>
+<!--l. 255--><p class="noindent" >(which actually ignores the temperature).
+</p><!--l. 257--><p class="noindent" >Note: This polytropic EOS is also used as fall-back when other EOS fail.
+                                                                                       
+                                                                                       
+</p><!--l. 260--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">4.2   </span> <a 
+ id="x1-80004.2"></a>Gamma-Law</h4>
+<!--l. 262--><p class="noindent" >The <span 
+class="cmtt-10">gl </span>EOS is a <span 
+class="cmti-10">gamma-law </span>equation of state, corresponding to an ideal gas: </p><div class="eqnarray">\begin {eqnarray}  p &amp; = &amp; (\gamma -1) \rho \epsilon  \end {eqnarray}</div>
+<!--l. 267--><p class="noindent" >where \(p\) is the pressure, \(\rho \) the density, \(\epsilon \) the internal energy, and \(\gamma \) is the adiabatic index set via <span 
+class="cmtt-10">gl</span><span 
+class="cmtt-10">_gamma</span>.
+</p><!--l. 271--><p class="noindent" >At the initial data stage, it may be necessary to set up initial values for \(\epsilon \). For this, the <span 
+class="cmtt-10">gl </span>EOS implements
+equation (<span 
+class="cmbx-10">??</span>) just like the <span 
+class="cmtt-10">poly </span>EOS and the parameters <span 
+class="cmtt-10">poly</span><span 
+class="cmtt-10">_gamma</span><span 
+class="cmtt-10">_ini </span>and <span 
+class="cmtt-10">gl</span><span 
+class="cmtt-10">_k </span>must be set for
+this.
+</p><!--l. 299--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">4.3   </span> <a 
+ id="x1-90004.3"></a>Hybrid</h4>
+<!--l. 301--><p class="noindent" >The hybrid EOS was introduced by <span class="cite">[<a 
+href="#Xjanka:93">1</a>]</span> for use in simplified simulations of stellar collapse to mimic (1) the
+stiffening of the nuclear EOS at nuclear density and (2) to include thermal pressure in the postbounce phase. It
+consists of <span 
+class="cmtt-10">n</span><span 
+class="cmtt-10">_pieces</span> polytropes (cold) characterized by (\(K_0, K_1, \ldots , K_{n\_pieces - 1}\), \(\gamma _0, \gamma _1, \ldots , \gamma _{n\_pieces-1}\)) and a thermal \(\gamma -\)law component described by \(\gamma _{\mathrm {th}}\).
+Polytrope \(i\) is used below the dividing density <span 
+class="cmtt-10">hybrid</span><span 
+class="cmtt-10">_rho[i]</span> and is smoothly matched to polytrope \(i+1\) at the
+dividing density. Because of this \(K_{i+1}\) for \(i &gt; 0\) is completely determined by requiring continuity of \(P_{\text {cold}}(\rho )\) across
+<span 
+class="cmtt-10">hybrid</span><span 
+class="cmtt-10">_rho[i]</span>, \(K_0\), and \(\gamma _0, \gamma _1, \ldots , \gamma _{i+1}\). </p><div class="eqnarray">\begin {eqnarray}  P_{\text {cold}} &amp;=&amp; K_i \rho ^{\gamma _i} \qquad \mbox {for $\rho &lt; \code {hybrid\_rho[i]}$}\\ \epsilon _{\text {cold}} &amp;=&amp; K_i/(\gamma _i - 1) \rho ^{\gamma _i - 1} + \epsilon _i, \label {eq:hybrid_eoscold}  \end {eqnarray}</div>
+<!--l. 323--><p class="noindent" >where \(\epsilon _i\) is determined by requiring continuity of \(\epsilon _{\text {cold}}\). The full functional form of the EOS \(P=P(\rho ,\epsilon )\) includes a thermal
+component, which takes into account shock heating: </p><div class="eqnarray">\begin {eqnarray}  P_{th} &amp;=&amp; (\gamma _{th} - 1) \, \rho \, (\epsilon - \epsilon _{\text {cold}}), \label {eq:hybrid_eosthermal} \\ P &amp;=&amp; P_{\text {cold}} + P_{th} \label {eq:hybrid_eos}  \end {eqnarray}</div>
+<!--l. 335--><p class="noindent" >The <span 
+class="cmtt-10">EOS</span><span 
+class="cmtt-10">_Omni </span>parameters for the hybrid EOS are the following:
+</p>
+<div class="tabular"> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /><col 
+id="TBL-2-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-1"  
+class="td11"> <span 
+class="cmtt-10">n</span><span 
+class="cmtt-10">_pieces</span>        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-2"  
+class="td11"> number of piecewise polytropic pieces,  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-2-2-1"  
+class="td11"> <span 
+class="cmtt-10">hybrid</span><span 
+class="cmtt-10">_gamma</span>    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-2-2"  
+class="td11"> \(\gamma _i\), \(0 \le i &lt; \code {n\_pieces}\),                                                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-1"  
+class="td11"> <span 
+class="cmtt-10">hybrid</span><span 
+class="cmtt-10">_gamma</span><span 
+class="cmtt-10">_th</span> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-2"  
+class="td11"> \(\gamma _{th}\),                                                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-2-4-1"  
+class="td11"> <span 
+class="cmtt-10">hybrid</span><span 
+class="cmtt-10">_k0</span>       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-4-2"  
+class="td11"> \(K_0\),                                                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-5-"><td  style="white-space:nowrap; text-align:left;" id="TBL-2-5-1"  
+class="td11"> <span 
+class="cmtt-10">hybrid</span><span 
+class="cmtt-10">_rho</span>      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-5-2"  
+class="td11"> dividing densities, \(0 \le i &lt; \code {n\_pieces} - 1\).                           </td>
+</tr></table>                                                                                       </div>
+<!--l. 346--><p class="noindent" >For example for a simple 2-piece piecewise polytropic EOS mimicking a nuclear equation of state:
+</p>
+<div class="tabular"> <table id="TBL-3" class="tabular" 
+ 
+><colgroup id="TBL-3-1g"><col 
+id="TBL-3-1" /><col 
+id="TBL-3-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-3-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-1"  
+class="td11"> <span 
+class="cmtt-10">hybrid</span><span 
+class="cmtt-10">_gamma[0] </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-2"  
+class="td11"> \(\gamma _0 = 1.325\) is an appropriate choice.                          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-3-2-1"  
+class="td11"> <span 
+class="cmtt-10">hybrid</span><span 
+class="cmtt-10">_gamma[1]  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-2-2"  
+class="td11"> \(\gamma _1 = 2.5\) is an appropriate choice.                          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-3-3-1"  
+class="td11"> <span 
+class="cmtt-10">hybrid</span><span 
+class="cmtt-10">_gamma</span><span 
+class="cmtt-10">_th  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-3-2"  
+class="td11"> \(\gamma _{th}\), perhaps \(1.5\).                                             </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-3-4-1"  
+class="td11"> <span 
+class="cmtt-10">hybrid</span><span 
+class="cmtt-10">_k0        </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-4-2"  
+class="td11"> \(K_0\), \(0.4640517\) in solar units for relativistic degenerate e\(^{-}\).  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-5-"><td  style="white-space:nowrap; text-align:left;" id="TBL-3-5-1"  
+class="td11"> <span 
+class="cmtt-10">hybrid</span><span 
+class="cmtt-10">_rho[0]    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-5-2"  
+class="td11"> nuclear density, standard is \(3.238607\times 10^{-4}\) in solar units.   </td>
+</tr></table>                                                                                       </div>
+<!--l. 360--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">4.4   </span> <a 
+ id="x1-100004.4"></a>Finite-Temperature Nuclear EOS</h4>
+                                                                                       
+                                                                                       
+<!--l. 362--><p class="noindent" >Complex microphysical finite-temperature equations of state come usually in tabulated form. <span 
+class="cmtt-10">EOS</span><span 
+class="cmtt-10">_Omni </span>comes
+with routines provided as part of the <span 
+class="cmtt-10">nuc</span><span 
+class="cmtt-10">_eos </span>package described in <span class="cite">[<a 
+href="#Xoconnor:10">2</a>]</span> and available at <br 
+class="newline" /><span 
+class="cmtt-10">http://www.stellarcollapse.org</span>. A variety of EOS tables for application in high-density astrophysical
+situations (i.e. in stellar collapse or in compact star mergers) are also available from there in HDF5
+format.
+</p><!--l. 371--><p class="noindent" >The parameters controlling the finite-temperature nuclear EOS are the following:
+</p>
+<div class="tabular"> <table id="TBL-4" class="tabular" 
+ 
+><colgroup id="TBL-4-1g"><col 
+id="TBL-4-1" /><col 
+id="TBL-4-2" /><col 
+id="TBL-4-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-4-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-1"  
+class="td11"> <span 
+class="cmtt-10">nuceos</span><span 
+class="cmtt-10">_read</span><span 
+class="cmtt-10">_table </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-2"  
+class="td11"> BOOLEAN  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-3"  
+class="td11"> Set to <span 
+class="cmtt-10">yes </span>to read table.                                </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-4-2-1"  
+class="td11"> <span 
+class="cmtt-10">do</span><span 
+class="cmtt-10">_energy</span><span 
+class="cmtt-10">_shift    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-2-2"  
+class="td11"> BOOLEAN  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-2-3"  
+class="td11"> Set to <span 
+class="cmtt-10">yes </span>to subtract the energy shift              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-2"  
+class="td11">            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-3"  
+class="td11"> stored in the table to get correctly normalized \(\epsilon \).  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-4-4-1"  
+class="td11"> <span 
+class="cmtt-10">nuceos</span><span 
+class="cmtt-10">_table</span><span 
+class="cmtt-10">_name  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-4-2"  
+class="td11"> STRING     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-4-3"  
+class="td11"> Path/Name of the table file.                           </td>
+</tr></table>                                                                                       </div>
+<!--l. 381--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">4.5   </span> <a 
+ id="x1-110004.5"></a>Cold Tabulated Nuclear EOS with Gamma Law</h4>
+<!--l. 383--><p class="noindent" >Many equations of state for neutron stars are generated under the assumption of zero temperature. This is
+perfectly appropriate for cold old neutron stars. In simulations of binary mergers, however, shocks will drive the
+temperature up, adding a thermal pressure component, which can be accounted for approximately with a
+Gamma-Law: \(P_{\mathrm {th}} = (\Gamma _{\mathrm {th}} - 1)\rho \epsilon _{\mathrm {th}}\) .
+</p><!--l. 390--><p class="noindent" ><span 
+class="cmtt-10">EOS</span><span 
+class="cmtt-10">_Omni </span>implements such an equation of state. It reads in an ASCII EOS table (see subdirector <span 
+class="cmtt-10">tables </span>for an
+example table for the SLy EOS <span class="cite">[<a 
+href="#Xdouchin:01">3</a>, <a 
+href="#Xhaensel:04">4</a>]</span>, which was generated according to the prescription in <span class="cite">[<a 
+href="#Xshibata:05">5</a>, <a 
+href="#Xcorvino:10">6</a>]</span>). All EOS
+parameters are read from the ASCII file, which has the following format:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-3">
+EoSType = Tabulated
+Nrho = 600    NYe = 1     NT = 1
+RhoMin = 1e-09  RhoMax = 0.01
+HeatCapacityE = 1
+GammaTh = 2
+Kappa = 1
+RhoSpacing = Log
+    1.57940636422747e-03    1.38773826035349e+00    2.62139412738900e-02
+[...]
+    2.81804006881059e+00    6.89967555695907e-01    8.30537612378975e-01
+</pre>
+<!--l. 408--><p class="nopar" >
+</p><!--l. 410--><p class="noindent" >The header completely determines the range in baryon rest mass density (in \(c=G=M_\odot =1\) units), gives the number of zones
+(currently only <span 
+class="cmtt-10">NYe = 1</span>, <span 
+class="cmtt-10">NT = 1</span>, <span 
+class="cmtt-10">HeatCapacityE = 1</span>, and <span 
+class="cmtt-10">RhoSpacing = Log </span>are supported).
+<span 
+class="cmtt-10">GammaTh </span>is the \(\Gamma _{\mathrm {th}}\) of the thermal gamma law. The tabulated columns are \(\epsilon \), \(\Gamma \), \(c_s\) (the speed of sound
+of the cold component of the EOS). The pressure is obtained via \(P= \kappa \rho ^\Gamma \), where \(\kappa \) is the <span 
+class="cmtt-10">Kappa </span>scaling
+parameter.
+</p><!--l. 419--><p class="noindent" >Generally, \(P = P(\rho ,\epsilon )\) in this EOS, but note that \(\epsilon _{\mathrm {th}} = \epsilon - \epsilon _{\mathrm {cold}}\). <span 
+class="cmtt-10">EOS</span><span 
+class="cmtt-10">_Omni </span>uses linear interpolation to first find \(P(\rho )\) and \(\epsilon _{\mathrm {cold}}(\rho )\) and then computes
+the thermal component analytically.
+</p>
+<div class="tabular"> <table id="TBL-5" class="tabular" 
+ 
+><colgroup id="TBL-5-1g"><col 
+id="TBL-5-1" /><col 
+id="TBL-5-2" /><col 
+id="TBL-5-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-5-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-1"  
+class="td11"> <span 
+class="cmtt-10">coldeos</span><span 
+class="cmtt-10">_read</span><span 
+class="cmtt-10">_table            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-2"  
+class="td11"> BOOLEAN  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-3"  
+class="td11"> Set to <span 
+class="cmtt-10">yes </span>to read table.                                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-5-2-1"  
+class="td11"> <span 
+class="cmtt-10">coldeos</span><span 
+class="cmtt-10">_use</span><span 
+class="cmtt-10">_thermal</span><span 
+class="cmtt-10">_gamma</span><span 
+class="cmtt-10">_law </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-2-2"  
+class="td11"> BOOLEAN  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-2-3"  
+class="td11"> Set to <span 
+class="cmtt-10">yes </span>to use the thermal gamma law (default).  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-5-3-1"  
+class="td11"> <span 
+class="cmtt-10">coldeos</span><span 
+class="cmtt-10">_table</span><span 
+class="cmtt-10">_name            </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-3-2"  
+class="td11"> STRING     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-3-3"  
+class="td11"> Path/Name of the table file.                                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-5-4-1"  
+class="td11">                               </td>
+</tr></table>                                                                                               </div>
+<!--l. 434--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-120005"></a>Converting Old Parameter Files</h3>
+<!--l. 436--><p class="noindent" >If you have a parameter file that uses the previous EOS interface in Cactus, you will have to convert it so that it
+runs with <span 
+class="cmtt-10">EOS</span><span 
+class="cmtt-10">_Omni</span>. The following describes a set of simple rules for this conversion.
+</p><!--l. 441--><p class="noindent" >
+     </p><ol  class="enumerate1" >
+<li 
+  class="enumerate" id="x1-12002x1">
+     <!--l. 442--><p class="noindent" >Add <span 
+class="cmtt-10">EOS</span><span 
+class="cmtt-10">_Omni </span>to the thorn list. You can then remove all other <span 
+class="cmtt-10">EOS</span><span 
+class="cmtt-10">_* </span>thorns from the thorn list
+     (or you can leave them in; they are unused).
+                                                                                       
+                                                                                       
+     </p></li>
+<li 
+  class="enumerate" id="x1-12004x2">
+     <!--l. 445--><p class="noindent" >Activate <span 
+class="cmtt-10">EOS</span><span 
+class="cmtt-10">_Omni </span>in the parameter file: Add <span 
+class="cmtt-10">EOS</span><span 
+class="cmtt-10">_Omni </span>to your active thorns, and do not activate
+     any other <span 
+class="cmtt-10">EOS</span><span 
+class="cmtt-10">_* </span>thorns.
+     </p></li>
+<li 
+  class="enumerate" id="x1-12006x3">
+     <!--l. 448--><p class="noindent" >Translate all EOS parameters according to table <a 
+href="#x1-120091">1<!--tex4ht:ref: tab:paramconv --></a>.
+     </p></li>
+<li 
+  class="enumerate" id="x1-12008x4">
+     <!--l. 450--><p class="noindent" >All thorns using this EOS interface will have a parameter that determines which EOS to use,
+     typically via a string/keyword parameter specifying an EOS name. Convert these names using table
+     <a 
+href="#x1-120102">2<!--tex4ht:ref: tab:eosnames --></a>.</p></li></ol>
+<div class="table">
+                                                                                       
+                                                                                       
+<!--l. 456--><p class="noindent" ><a 
+ id="x1-120091"></a></p><hr class="float" /><div class="float" 
+>
+                                                                                       
+                                                                                       
+<div class="tabular"> <table id="TBL-6" class="tabular" 
+ 
+><colgroup id="TBL-6-1g"><col 
+id="TBL-6-1" /><col 
+id="TBL-6-2" /></colgroup><colgroup id="TBL-6-3g"><col 
+id="TBL-6-3" /><col 
+id="TBL-6-4" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-6-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-1"  
+class="td11"> Old Parameter                                    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-2"  
+class="td11"> Old Value  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-3"  
+class="td11"> New Parameter                    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-4"  
+class="td11"> New Value  </td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-6-2-1"  
+class="td11"> EOS_Polytrope::eos_gamma </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-2-2"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-2-3"  
+class="td11"> EOS_Omni::poly_gamma </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-2-4"  
+class="td11"></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-1"  
+class="td11"> EOS_Polytrope::eos_k                           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-2"  
+class="td11">           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-3"  
+class="td11"> EOS_Omni::poly_k               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-4"  
+class="td11">           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-6-4-1"  
+class="td11"> EOS_Polytrope::use_cgs                        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-4-2"  
+class="td11"> yes           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-4-3"  
+class="td11"> —                                     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-4-4"  
+class="td11">           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-5-"><td  style="white-space:nowrap; text-align:left;" id="TBL-6-5-1"  
+class="td11"> EOS_Polytrope::use_cgs                        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-5-2"  
+class="td11"> no            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-5-3"  
+class="td11"> unsupported                        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-5-4"  
+class="td11">           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-6-"><td  style="white-space:nowrap; text-align:left;" id="TBL-6-6-1"  
+class="td11"> EOS_Polytrope::gamma_ini                    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-6-2"  
+class="td11">           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-6-3"  
+class="td11"> EOS_Omni::poly_gamma_ini  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-6-4"  
+class="td11">           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-7-"><td  style="white-space:nowrap; text-align:left;" id="TBL-6-7-1"  
+class="td11"> EOS_Ideal_Fluid::eos_ideal_fluid_gamma  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-7-2"  
+class="td11">           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-7-3"  
+class="td11"> EOS_Omni::gl_gamma          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-7-4"  
+class="td11">           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-8-"><td  style="white-space:nowrap; text-align:left;" id="TBL-6-8-1"  
+class="td11"> <span 
+class="cmbx-10">TODO: complete this table             </span></td></tr></table>                                                       </div>
+<br /> <div class="caption" 
+><span class="id">Table 1: </span><span  
+class="content">Parameter conversion table</span></div><!--tex4ht:label?: x1-120091 -->
+                                                                                       
+                                                                                       
+</div><hr class="endfloat" />
+</div>
+<div class="table">
+                                                                                       
+                                                                                       
+<!--l. 484--><p class="noindent" ><a 
+ id="x1-120102"></a></p><hr class="float" /><div class="float" 
+>
+                                                                                       
+                                                                                       
+<div class="tabular"> <table id="TBL-7" class="tabular" 
+ 
+><colgroup id="TBL-7-1g"><col 
+id="TBL-7-1" /><col 
+id="TBL-7-2" /><col 
+id="TBL-7-3" /><col 
+id="TBL-7-4" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-7-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-1"  
+class="td11"> EOS   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-2"  
+class="td11"> Description                     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-3"  
+class="td11"> Old Name  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-4"  
+class="td11"> New Name      </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-7-2-1"  
+class="td11"> poly     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-2-2"  
+class="td11"> polytropic                       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-2-3"  
+class="td11"> ???           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-2-4"  
+class="td11"> 2D_Polytrope  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-7-3-1"  
+class="td11"> gl        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-3-2"  
+class="td11"> gamma-law                     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-3-3"  
+class="td11"> ???           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-3-4"  
+class="td11"> Ideal_Fluid     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-7-4-1"  
+class="td11"> hybrid  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-4-2"  
+class="td11"> hybrid                           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-4-3"  
+class="td11"> ???           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-4-4"  
+class="td11"> Hybrid           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-5-"><td  style="white-space:nowrap; text-align:left;" id="TBL-7-5-1"  
+class="td11"> nuc      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-5-2"  
+class="td11"> finite-temperature nuclear  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-5-3"  
+class="td11"> ???           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-5-4"  
+class="td11"> nuc_eos          </td></tr></table>                      </div>
+<br /> <div class="caption" 
+><span class="id">Table 2: </span><span  
+class="content">EOS name conversion table</span></div><!--tex4ht:label?: x1-120102 -->
+                                                                                       
+                                                                                       
+</div><hr class="endfloat" />
+</div>
+<h3 class="likesectionHead"><a 
+ id="x1-13000"></a>References</h3>
+<!--l. 498--><p class="noindent" >
+   </p><div class="thebibliography">
+   <p class="bibitem" ><span class="biblabel">
+ [1]<span class="bibsp">   </span></span><a 
+ id="Xjanka:93"></a>Janka, H.-T., Zwerger, T., &#x0026; Moenchmeyer, R. 1993, Astron. Astrophys., 268, 360
+   </p>
+   <p class="bibitem" ><span class="biblabel">
+ [2]<span class="bibsp">   </span></span><a 
+ id="Xoconnor:10"></a>O’Connor, E., &#x0026; Ott, C. D. 2010, Class. Quantum Grav., 27, 114103
+   </p>
+   <p class="bibitem" ><span class="biblabel">
+ [3]<span class="bibsp">   </span></span><a 
+ id="Xdouchin:01"></a>Douchin, F., &#x0026; Haensel, P. 2001, Astron. Astrophys., 380, 151
+   </p>
+   <p class="bibitem" ><span class="biblabel">
+ [4]<span class="bibsp">   </span></span><a 
+ id="Xhaensel:04"></a>Haensel, P., &#x0026; Potekhin, A. Y. 2004, Astron. Astrophys., 428, 191
+   </p>
+   <p class="bibitem" ><span class="biblabel">
+ [5]<span class="bibsp">   </span></span><a 
+ id="Xshibata:05"></a>Shibata, M., Taniguchi, K., &#x0026; Ury<span class="bar-css">u</span>, K. 2005, Phys. Rev. D, 71, 084021
+   </p>
+   <p class="bibitem" ><span class="biblabel">
+ [6]<span class="bibsp">   </span></span><a 
+ id="Xcorvino:10"></a>Corvino, G., Rezzolla, L., Bernuzzi, S., De Pietri, R., &#x0026; Giacomazzo, B. 2010, Class. Quantum
+   Grav., 27, 114104
+</p>
+   </div>
+<!--l. 531--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">6   </span> <a 
+ id="x1-140006"></a>Parameters</h3>
+<!--l. 550--><p class="noindent" ></p> <table id="TBL-8" class="tabular" 
+ 
+><colgroup id="TBL-8-1g"><col 
+id="TBL-8-1" /></colgroup><colgroup id="TBL-8-2g"><col 
+id="TBL-8-2" /><col 
+id="TBL-8-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-1-"><td  style="white-space:normal; text-align:left;" id="TBL-8-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">barotropiceos_gammath</div>                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-1-3"  
+class="td01">                              REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-8-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">thermal gamma for barotropic EOS</span></div>                                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-3-3"  
+class="td01">                        <span 
+class="cmbx-10">Default: </span>2.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-4-"><td  style="white-space:normal; text-align:left;" id="TBL-8-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1.0:*</div>                                          </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-8-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">something</div>                                                                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-5-1"  
+class="td11">                                </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 557--><p class="noindent" ></p> <table id="TBL-9" class="tabular" 
+ 
+><colgroup id="TBL-9-1g"><col 
+id="TBL-9-1" /></colgroup><colgroup id="TBL-9-2g"><col 
+id="TBL-9-2" /><col 
+id="TBL-9-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-1-"><td  style="white-space:normal; text-align:left;" id="TBL-9-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">barotropiceos_read_table</div>               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-1-3"  
+class="td01">                     BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-9-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Read in barotropic EOS table?</span></div>                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-3-1"  
+class="td11">                                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-3-3"  
+class="td01">                    <span 
+class="cmbx-10">Default: </span>No  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-4-1"  
+class="td11">                                </td></tr></table>
+<!--l. 564--><p class="noindent" ></p> <table id="TBL-10" class="tabular" 
+ 
+><colgroup id="TBL-10-1g"><col 
+id="TBL-10-1" /></colgroup><colgroup id="TBL-10-2g"><col 
+id="TBL-10-2" /><col 
+id="TBL-10-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-1-"><td  style="white-space:normal; text-align:left;" id="TBL-10-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">barotropiceos_table_name</div>             </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-1-3"  
+class="td01">                            STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-10-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">table name for barotropic EOS (ASCII)</span></div>                                                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-3-3"  
+class="td01">                    <span 
+class="cmbx-10">Default: </span>blah.asc  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-4-"><td  style="white-space:normal; text-align:left;" id="TBL-10-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.+</div>                                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-10-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Can be anything</div>                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-5-1"  
+class="td11">                                </td></tr></table>
+<!--l. 571--><p class="noindent" ></p> <table id="TBL-11" class="tabular" 
+ 
+><colgroup id="TBL-11-1g"><col 
+id="TBL-11-1" /></colgroup><colgroup id="TBL-11-2g"><col 
+id="TBL-11-2" /><col 
+id="TBL-11-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-1-"><td  style="white-space:normal; text-align:left;" id="TBL-11-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">barotropiceos_use_thermal_gamma_law</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-1-2"  
+class="td10"><span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-1-3"  
+class="td01">                     BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-11-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">use an additional thermal gamma?</span></div>                                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-3-1"  
+class="td11">                                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-3-3"  
+class="td01">                   <span 
+class="cmbx-10">Default: </span>Yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-4-1"  
+class="td11">                                </td></tr></table>
+<!--l. 578--><p class="noindent" ></p> <table id="TBL-12" class="tabular" 
+ 
+><colgroup id="TBL-12-1g"><col 
+id="TBL-12-1" /></colgroup><colgroup id="TBL-12-2g"><col 
+id="TBL-12-2" /><col 
+id="TBL-12-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-1-"><td  style="white-space:normal; text-align:left;" id="TBL-12-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">coldeos_read_table</div>                       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-1-3"  
+class="td01">                     BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-12-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Read in cold EOS table?</span></div>                                                                         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-3-1"  
+class="td11">                                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-3-3"  
+class="td01">                    <span 
+class="cmbx-10">Default: </span>No  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-4-1"  
+class="td11">                                </td></tr></table>
+<!--l. 585--><p class="noindent" ></p> <table id="TBL-13" class="tabular" 
+ 
+><colgroup id="TBL-13-1g"><col 
+id="TBL-13-1" /></colgroup><colgroup id="TBL-13-2g"><col 
+id="TBL-13-2" /><col 
+id="TBL-13-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-1-"><td  style="white-space:normal; text-align:left;" id="TBL-13-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">coldeos_table_name</div>                      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-1-3"  
+class="td01">                            STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-13-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">table name for cold EOS (ASCII)</span></div>                                                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-3-3"  
+class="td01">                    <span 
+class="cmbx-10">Default: </span>blah.asc  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-4-"><td  style="white-space:normal; text-align:left;" id="TBL-13-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.+</div>                                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-13-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Can be anything</div>                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-5-1"  
+class="td11">                                </td></tr></table>
+<!--l. 592--><p class="noindent" ></p> <table id="TBL-14" class="tabular" 
+ 
+><colgroup id="TBL-14-1g"><col 
+id="TBL-14-1" /></colgroup><colgroup id="TBL-14-2g"><col 
+id="TBL-14-2" /><col 
+id="TBL-14-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-1-"><td  style="white-space:normal; text-align:left;" id="TBL-14-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">coldeos_use_thermal_gamma_law</div>    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-1-3"  
+class="td01">                     BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-14-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">use an additional thermal gamma?</span></div>                                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-3-1"  
+class="td11">                                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-3-3"  
+class="td01">                   <span 
+class="cmbx-10">Default: </span>Yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-4-1"  
+class="td11">                                </td></tr></table>
+<!--l. 599--><p class="noindent" ></p> <table id="TBL-15" class="tabular" 
+ 
+><colgroup id="TBL-15-1g"><col 
+id="TBL-15-1" /></colgroup><colgroup id="TBL-15-2g"><col 
+id="TBL-15-2" /><col 
+id="TBL-15-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-1-"><td  style="white-space:normal; text-align:left;" id="TBL-15-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">do_energy_shift</div>                           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-15-1-3"  
+class="td01">                     BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-15-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">shift energies around?</span></div>                                                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-3-1"  
+class="td11">                                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-15-3-3"  
+class="td01">                   <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-4-1"  
+class="td11">                                </td></tr></table>
+<!--l. 606--><p class="noindent" ></p> <table id="TBL-16" class="tabular" 
+ 
+><colgroup id="TBL-16-1g"><col 
+id="TBL-16-1" /></colgroup><colgroup id="TBL-16-2g"><col 
+id="TBL-16-2" /><col 
+id="TBL-16-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-1-"><td  style="white-space:normal; text-align:left;" id="TBL-16-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">dump_nuceos_table</div>                      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-16-1-3"  
+class="td01">                     BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-16-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Dump table in ASCII at beginning</span></div>                                                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-3-1"  
+class="td11">                                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-16-3-3"  
+class="td01">                    <span 
+class="cmbx-10">Default: </span>No  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-4-1"  
+class="td11">                                </td></tr></table>
+<!--l. 613--><p class="noindent" ></p> <table id="TBL-17" class="tabular" 
+ 
+><colgroup id="TBL-17-1g"><col 
+id="TBL-17-1" /></colgroup><colgroup id="TBL-17-2g"><col 
+id="TBL-17-2" /><col 
+id="TBL-17-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-1-"><td  style="white-space:normal; text-align:left;" id="TBL-17-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">dump_nuceos_table_name</div>             </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-1-3"  
+class="td01">                            STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-17-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">nuceos dump table name (ASCII)</span></div>                                                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-3-3"  
+class="td01">                    <span 
+class="cmbx-10">Default: </span>blah.asc  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-4-"><td  style="white-space:normal; text-align:left;" id="TBL-17-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.+</div>                                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-17-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Can be anything</div>                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-5-1"  
+class="td11">                                </td></tr></table>
+<!--l. 620--><p class="noindent" ></p> <table id="TBL-18" class="tabular" 
+ 
+><colgroup id="TBL-18-1g"><col 
+id="TBL-18-1" /></colgroup><colgroup id="TBL-18-2g"><col 
+id="TBL-18-2" /><col 
+id="TBL-18-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-1-"><td  style="white-space:normal; text-align:left;" id="TBL-18-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">gl_gamma</div>                                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-18-1-3"  
+class="td01">                              REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-18-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Adiabatic Index for gamma-law EOS</span></div>                                                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-18-3-3"  
+class="td01">                        <span 
+class="cmbx-10">Default: </span>2.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-4-"><td  style="white-space:normal; text-align:left;" id="TBL-18-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">(0:*</div>                                           </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-18-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">any positive number</div>                                                         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-5-1"  
+class="td11">                                </td></tr></table>
+<!--l. 627--><p class="noindent" ></p> <table id="TBL-19" class="tabular" 
+ 
+><colgroup id="TBL-19-1g"><col 
+id="TBL-19-1" /></colgroup><colgroup id="TBL-19-2g"><col 
+id="TBL-19-2" /><col 
+id="TBL-19-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-1-"><td  style="white-space:normal; text-align:left;" id="TBL-19-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">gl_k</div>                                          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-1-3"  
+class="td01">                              REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-19-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Polytropic constant in c=G=Msun=1 for gamma-law EOS</span></div>                                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-3-3"  
+class="td01">                       <span 
+class="cmbx-10">Default: </span>100.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-4-"><td  style="white-space:normal; text-align:left;" id="TBL-19-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">(0:*</div>                                           </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-19-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">any positive number</div>                                                         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-5-1"  
+class="td11">                                </td></tr></table>
+<!--l. 634--><p class="noindent" ></p> <table id="TBL-20" class="tabular" 
+ 
+><colgroup id="TBL-20-1g"><col 
+id="TBL-20-1" /></colgroup><colgroup id="TBL-20-2g"><col 
+id="TBL-20-2" /><col 
+id="TBL-20-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-1-"><td  style="white-space:normal; text-align:left;" id="TBL-20-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">hybrid_gamma</div>                            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-20-1-3"  
+class="td01">                              REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-20-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Adiabatic index of each piece</span></div>                                                                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-20-3-3"  
+class="td01">                        <span 
+class="cmbx-10">Default: </span>0.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-4-"><td  style="white-space:normal; text-align:left;" id="TBL-20-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-20-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">unset</div>                                                                             
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-5-"><td  style="white-space:normal; text-align:left;" id="TBL-20-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">(0:*</div>                                           </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-20-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Any positive</div>                                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-6-1"  
+class="td11">                                </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 641--><p class="noindent" ></p> <table id="TBL-21" class="tabular" 
+ 
+><colgroup id="TBL-21-1g"><col 
+id="TBL-21-1" /></colgroup><colgroup id="TBL-21-2g"><col 
+id="TBL-21-2" /><col 
+id="TBL-21-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-1-"><td  style="white-space:normal; text-align:left;" id="TBL-21-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">hybrid_gamma1</div>                           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-21-1-3"  
+class="td01">                              REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-21-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">subnuclear adiabatic Index for hybrid EOS</span></div>                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-21-3-3"  
+class="td01">                       <span 
+class="cmbx-10">Default: </span>1.325  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-4-"><td  style="white-space:normal; text-align:left;" id="TBL-21-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">(0:*</div>                                           </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-21-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Any positive</div>                                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-5-1"  
+class="td11">                                </td></tr></table>
+<!--l. 648--><p class="noindent" ></p> <table id="TBL-22" class="tabular" 
+ 
+><colgroup id="TBL-22-1g"><col 
+id="TBL-22-1" /></colgroup><colgroup id="TBL-22-2g"><col 
+id="TBL-22-2" /><col 
+id="TBL-22-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-1-"><td  style="white-space:normal; text-align:left;" id="TBL-22-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">hybrid_gamma2</div>                           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-22-1-3"  
+class="td01">                              REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-22-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">subnuclear adiabatic Index for hybrid EOS</span></div>                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-22-3-3"  
+class="td01">                        <span 
+class="cmbx-10">Default: </span>2.5  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-4-"><td  style="white-space:normal; text-align:left;" id="TBL-22-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">(0:*</div>                                           </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-22-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Any positive</div>                                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-5-1"  
+class="td11">                                </td></tr></table>
+<!--l. 655--><p class="noindent" ></p> <table id="TBL-23" class="tabular" 
+ 
+><colgroup id="TBL-23-1g"><col 
+id="TBL-23-1" /></colgroup><colgroup id="TBL-23-2g"><col 
+id="TBL-23-2" /><col 
+id="TBL-23-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-1-"><td  style="white-space:normal; text-align:left;" id="TBL-23-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">hybrid_gamma_th</div>                        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-1-3"  
+class="td01">                              REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-23-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Thermal gamma for hybrid EOS</span></div>                                                                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-3-3"  
+class="td01">                        <span 
+class="cmbx-10">Default: </span>1.5  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-4-"><td  style="white-space:normal; text-align:left;" id="TBL-23-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">(0:*</div>                                           </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-23-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">any positive number</div>                                                         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-5-1"  
+class="td11">                                </td></tr></table>
+<!--l. 662--><p class="noindent" ></p> <table id="TBL-24" class="tabular" 
+ 
+><colgroup id="TBL-24-1g"><col 
+id="TBL-24-1" /></colgroup><colgroup id="TBL-24-2g"><col 
+id="TBL-24-2" /><col 
+id="TBL-24-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-1-"><td  style="white-space:normal; text-align:left;" id="TBL-24-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">hybrid_k0</div>                                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-24-1-3"  
+class="td01">                              REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-24-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">K coefficent of the first piece</span></div>                                                                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-24-3-3"  
+class="td01">                        <span 
+class="cmbx-10">Default: </span>0.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-4-"><td  style="white-space:normal; text-align:left;" id="TBL-24-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-24-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">unset</div>                                                                             
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-5-"><td  style="white-space:normal; text-align:left;" id="TBL-24-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">(0:*</div>                                           </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-24-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Any positive</div>                                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-6-1"  
+class="td11">                                </td></tr></table>
+<!--l. 669--><p class="noindent" ></p> <table id="TBL-25" class="tabular" 
+ 
+><colgroup id="TBL-25-1g"><col 
+id="TBL-25-1" /></colgroup><colgroup id="TBL-25-2g"><col 
+id="TBL-25-2" /><col 
+id="TBL-25-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-1-"><td  style="white-space:normal; text-align:left;" id="TBL-25-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">hybrid_k1</div>                                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-25-1-3"  
+class="td01">                              REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-25-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Polytropic constant in c=G=Msun=1 for hybrid EOS</span></div>                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-25-3-3"  
+class="td01">                   <span 
+class="cmbx-10">Default: </span>0.4640517  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-4-"><td  style="white-space:normal; text-align:left;" id="TBL-25-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">(0:*</div>                                           </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-25-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Any positive</div>                                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-5-1"  
+class="td11">                                </td></tr></table>
+<!--l. 676--><p class="noindent" ></p> <table id="TBL-26" class="tabular" 
+ 
+><colgroup id="TBL-26-1g"><col 
+id="TBL-26-1" /></colgroup><colgroup id="TBL-26-2g"><col 
+id="TBL-26-2" /><col 
+id="TBL-26-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-1-"><td  style="white-space:normal; text-align:left;" id="TBL-26-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">hybrid_rho</div>                                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-1-3"  
+class="td01">                              REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-26-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Density values at separation points</span></div>                                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-26-3-3"  
+class="td01">                        <span 
+class="cmbx-10">Default: </span>0.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-4-"><td  style="white-space:normal; text-align:left;" id="TBL-26-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-26-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">unset</div>                                                                             
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-5-"><td  style="white-space:normal; text-align:left;" id="TBL-26-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">(0:*</div>                                           </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-26-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Any positive</div>                                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-6-1"  
+class="td11">                                </td></tr></table>
+<!--l. 683--><p class="noindent" ></p> <table id="TBL-27" class="tabular" 
+ 
+><colgroup id="TBL-27-1g"><col 
+id="TBL-27-1" /></colgroup><colgroup id="TBL-27-2g"><col 
+id="TBL-27-2" /><col 
+id="TBL-27-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-1-"><td  style="white-space:normal; text-align:left;" id="TBL-27-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">hybrid_rho_nuc</div>                           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-27-1-3"  
+class="td01">                              REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-27-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Density at which to switch between gammas; c=G=Msun=1</span></div>                                    
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-27-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-27-3-3"  
+class="td01">                 <span 
+class="cmbx-10">Default: </span>3.238607e-4  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-4-"><td  style="white-space:normal; text-align:left;" id="TBL-27-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">(0:*</div>                                           </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-27-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Any positive</div>                                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-27-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-27-5-1"  
+class="td11">                                </td></tr></table>
+<!--l. 690--><p class="noindent" ></p> <table id="TBL-28" class="tabular" 
+ 
+><colgroup id="TBL-28-1g"><col 
+id="TBL-28-1" /></colgroup><colgroup id="TBL-28-2g"><col 
+id="TBL-28-2" /><col 
+id="TBL-28-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-1-"><td  style="white-space:normal; text-align:left;" id="TBL-28-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">n_pieces</div>                                     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-28-1-3"  
+class="td01">                                INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-28-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Number of polytropic pieces</span></div>                                                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-28-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-28-3-3"  
+class="td01">                          <span 
+class="cmbx-10">Default: </span>2  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-4-"><td  style="white-space:normal; text-align:left;" id="TBL-28-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1:10</div>                                           </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-28-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Max 10 pieces</div>                                                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-28-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-28-5-1"  
+class="td11">                                </td></tr></table>
+<!--l. 697--><p class="noindent" ></p> <table id="TBL-29" class="tabular" 
+ 
+><colgroup id="TBL-29-1g"><col 
+id="TBL-29-1" /></colgroup><colgroup id="TBL-29-2g"><col 
+id="TBL-29-2" /><col 
+id="TBL-29-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-1-"><td  style="white-space:normal; text-align:left;" id="TBL-29-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">nuceos_read_table</div>                        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-29-1-3"  
+class="td01">                     BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-29-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Read in EOS table?</span></div>                                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-29-3-1"  
+class="td11">                                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-29-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-29-3-3"  
+class="td01">                    <span 
+class="cmbx-10">Default: </span>No  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-29-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-29-4-1"  
+class="td11">                                </td></tr></table>
+<!--l. 704--><p class="noindent" ></p> <table id="TBL-30" class="tabular" 
+ 
+><colgroup id="TBL-30-1g"><col 
+id="TBL-30-1" /></colgroup><colgroup id="TBL-30-2g"><col 
+id="TBL-30-2" /><col 
+id="TBL-30-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-1-"><td  style="white-space:normal; text-align:left;" id="TBL-30-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">nuceos_table_name</div>                      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-30-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-30-1-3"  
+class="td01">                            STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-30-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">nuceos table name (hdf5)</span></div>                                                                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-30-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-30-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-30-3-3"  
+class="td01">                     <span 
+class="cmbx-10">Default: </span>blah.h5  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-4-"><td  style="white-space:normal; text-align:left;" id="TBL-30-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.+</div>                                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-30-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Can be anything</div>                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-30-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-30-5-1"  
+class="td11">                                </td></tr></table>
+<!--l. 711--><p class="noindent" ></p> <table id="TBL-31" class="tabular" 
+ 
+><colgroup id="TBL-31-1g"><col 
+id="TBL-31-1" /></colgroup><colgroup id="TBL-31-2g"><col 
+id="TBL-31-2" /><col 
+id="TBL-31-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-1-"><td  style="white-space:normal; text-align:left;" id="TBL-31-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">poly_gamma</div>                               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-31-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-31-1-3"  
+class="td01">                              REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-31-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Adiabatic Index for poly EOS</span></div>                                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-31-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-31-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-31-3-3"  
+class="td01">                        <span 
+class="cmbx-10">Default: </span>2.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-4-"><td  style="white-space:normal; text-align:left;" id="TBL-31-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">(0:*</div>                                           </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-31-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">any positive number</div>                                                         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-31-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-31-5-1"  
+class="td11">                                </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 718--><p class="noindent" ></p> <table id="TBL-32" class="tabular" 
+ 
+><colgroup id="TBL-32-1g"><col 
+id="TBL-32-1" /></colgroup><colgroup id="TBL-32-2g"><col 
+id="TBL-32-2" /><col 
+id="TBL-32-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-1-"><td  style="white-space:normal; text-align:left;" id="TBL-32-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">poly_gamma_initial</div>                      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-32-1-3"  
+class="td01">                              REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-32-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Initial Adiabatic Index for poly and hybrid EOS</span></div>                                                    
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-32-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-32-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-32-3-3"  
+class="td01">                         <span 
+class="cmbx-10">Default: </span>-1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-4-"><td  style="white-space:normal; text-align:left;" id="TBL-32-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1</div>
+                                                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-32-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">”use  poly_gamma/hybrid_ga  mma,  ie  no  change  in  gamma
+  during ID”</div>                                                                     
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-5-"><td  style="white-space:normal; text-align:left;" id="TBL-32-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">(0:*</div>
+                                                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-32-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">assume   that   ID   used   this   adiabiatic   index,   change   K
+  accordingly</div>                                                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-32-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-32-6-1"  
+class="td11">                                </td></tr></table>
+<!--l. 726--><p class="noindent" ></p> <table id="TBL-33" class="tabular" 
+ 
+><colgroup id="TBL-33-1g"><col 
+id="TBL-33-1" /></colgroup><colgroup id="TBL-33-2g"><col 
+id="TBL-33-2" /><col 
+id="TBL-33-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-1-"><td  style="white-space:normal; text-align:left;" id="TBL-33-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">poly_k</div>                                       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-33-1-3"  
+class="td01">                              REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-33-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Polytropic constant in c=G=Msun=1</span></div>                                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-33-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-33-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-33-3-3"  
+class="td01">                       <span 
+class="cmbx-10">Default: </span>100.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-4-"><td  style="white-space:normal; text-align:left;" id="TBL-33-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">:</div>                                                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-33-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-33-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-33-5-1"  
+class="td11">                                </td></tr></table>
+<!--l. 733--><p class="noindent" ></p> <table id="TBL-34" class="tabular" 
+ 
+><colgroup id="TBL-34-1g"><col 
+id="TBL-34-1" /></colgroup><colgroup id="TBL-34-2g"><col 
+id="TBL-34-2" /><col 
+id="TBL-34-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-1-"><td  style="white-space:normal; text-align:left;" id="TBL-34-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">read_table_on_single_process</div>         </td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-34-1-3"  
+class="td01">                     BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-34-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">read table on one process only and bcast data</span></div>                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-34-3-1"  
+class="td11">                                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-34-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-34-3-3"  
+class="td01">                    <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-34-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-34-4-1"  
+class="td11">                                </td></tr></table>
+<!--l. 740--><p class="noindent" ></p> <table id="TBL-35" class="tabular" 
+ 
+><colgroup id="TBL-35-1g"><col 
+id="TBL-35-1" /></colgroup><colgroup id="TBL-35-2g"><col 
+id="TBL-35-2" /><col 
+id="TBL-35-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-1-"><td  style="white-space:normal; text-align:left;" id="TBL-35-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">reader_process</div>                            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-35-1-3"  
+class="td01">                                INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-35-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">read table on this process and bcast data</span></div>                                                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-3-1"  
+class="td11">             <span 
+class="cmbx-10">Range                  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-35-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-35-3-3"  
+class="td01">                      <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-4-"><td  style="white-space:normal; text-align:left;" id="TBL-35-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-35-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">read on process N</div>                                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-35-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-35-5-1"  
+class="td11">                                </td></tr></table>
+<!--l. 747--><p class="noindent" ></p> <table id="TBL-36" class="tabular" 
+ 
+><colgroup id="TBL-36-1g"><col 
+id="TBL-36-1" /></colgroup><colgroup id="TBL-36-2g"><col 
+id="TBL-36-2" /><col 
+id="TBL-36-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-1-"><td  style="white-space:normal; text-align:left;" id="TBL-36-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">out_dir</div>                                      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-36-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from IO</td><td  style="white-space:nowrap; text-align:right;" id="TBL-36-1-3"  
+class="td01">STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-36-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-36-2-1"  
+class="td11">                                </td></tr></table>
+<!--l. 754--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">7   </span> <a 
+ id="x1-150007"></a>Interfaces</h3>
+<!--l. 759--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-16000"></a>General</h4>
+<!--l. 761--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 763--><p class="noindent" >eos_omni
+</p><!--l. 768--><p class="noindent" ><span 
+class="cmbx-10">Provides</span>:
+</p><!--l. 772--><p class="noindent" >EOS_Omni_GetHandle to
+</p><!--l. 774--><p class="noindent" >EOS_Omni_press to
+</p><!--l. 776--><p class="noindent" >EOS_Omni_press_cs2 to
+</p><!--l. 778--><p class="noindent" >EOS_Omni_pressOMP to
+</p><!--l. 780--><p class="noindent" >EOS_Omni_DPressByDEps to
+</p><!--l. 782--><p class="noindent" >EOS_Omni_DPressByDRho to
+</p><!--l. 784--><p class="noindent" >EOS_Omni_dpderho_dpdrhoe to
+</p><!--l. 786--><p class="noindent" >EOS_Omni_cs2 to
+</p><!--l. 788--><p class="noindent" >EOS_Omni_EpsFromPress to
+</p><!--l. 790--><p class="noindent" >EOS_Omni_RhoFromPressEpsTempEnt to
+                                                                                       
+                                                                                       
+</p><!--l. 792--><p class="noindent" >EOS_Omni_PressEpsTempYe_from_Rho to
+</p><!--l. 794--><p class="noindent" >EOS_Omni_short to
+</p><!--l. 796--><p class="noindent" >EOS_Omni_full to
+</p><!--l. 798--><p class="noindent" >EOS_Omni_DEpsByDRho_DEpsByDPress to
+</p><!--l. 800--><p class="noindent" >EOS_Omni_press_f_hrho_v2_rhoW to
+</p><!--l. 802--><p class="noindent" >EOS_Omni_dpdhrho_f_hrho_v2_rhoW to
+</p><!--l. 804--><p class="noindent" >EOS_Omni_dpdv2_f_hrho_v2_rhoW to
+</p><!--l. 807--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">8   </span> <a 
+ id="x1-170008"></a>Schedule</h3>
+<!--l. 813--><p class="noindent" >This section lists all the variables which are assigned storage by thorn EinsteinEOS/EOS_Omni. Storage can
+either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 816--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-18000"></a>Storage</h4>
+<!--l. 816--><p class="noindent" >NONE
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-19000"></a>Scheduled Functions</h4>
+<!--l. 820--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_STARTUP</span>
+</p><!--l. 822--><p class="noindent" >      eos_omni_startup
+</p><!--l. 824--><p class="noindent" >     <span 
+class="cmti-10">set up conversion factors and other fun stuff</span>
+</p><!--l. 827--><p class="noindent" > 
+</p><!--l. 829--><p class="noindent" ></p> <table id="TBL-37" class="tabular" 
+ 
+><colgroup id="TBL-37-1g"><col 
+id="TBL-37-1" /><col 
+id="TBL-37-2" /><col 
+id="TBL-37-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-37-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-1-3"  
+class="td11"> fortran   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-2-3"  
+class="td11"> global     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-37-3-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-37-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-37-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 838--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_BASEGRID </span>(conditional)
+</p><!--l. 840--><p class="noindent" >      nuc_eos_readtable_cactus_wrapper
+</p><!--l. 842--><p class="noindent" >     <span 
+class="cmti-10">read eos hdf5 table</span>
+</p><!--l. 845--><p class="noindent" > 
+</p><!--l. 847--><p class="noindent" ></p> <table id="TBL-38" class="tabular" 
+ 
+><colgroup id="TBL-38-1g"><col 
+id="TBL-38-1" /><col 
+id="TBL-38-2" /><col 
+id="TBL-38-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-38-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-38-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-38-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-38-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-38-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-38-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-38-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-38-2-3"  
+class="td11"> global     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-38-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-38-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-38-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-38-3-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-38-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-38-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 856--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_BASEGRID </span>(conditional)
+</p><!--l. 858--><p class="noindent" >      eos_omni_get_energy_shift
+</p><!--l. 860--><p class="noindent" >     <span 
+class="cmti-10">setup energy</span><span 
+class="cmti-10">_shift in eos</span><span 
+class="cmti-10">_omni</span><span 
+class="cmti-10">_module</span>
+</p><!--l. 863--><p class="noindent" > 
+                                                                                       
+                                                                                       
+</p><!--l. 865--><p class="noindent" ></p> <table id="TBL-39" class="tabular" 
+ 
+><colgroup id="TBL-39-1g"><col 
+id="TBL-39-1" /><col 
+id="TBL-39-2" /><col 
+id="TBL-39-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-39-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-1-3"  
+class="td11"> nuc_eos_readtable_cactus_wrapper  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-2-3"  
+class="td11"> fortran                                       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-3-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-3-3"  
+class="td11"> global                                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-4-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-39-4-3"  
+class="td11"> function                                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-39-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-39-5-1"  
+class="td11">    </td></tr></table>
+<!--l. 875--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_BASEGRID </span>(conditional)
+</p><!--l. 877--><p class="noindent" >      eos_omni_dumptable
+</p><!--l. 879--><p class="noindent" >     <span 
+class="cmti-10">dump eos hdf5 table in ascii</span>
+</p><!--l. 882--><p class="noindent" > 
+</p><!--l. 884--><p class="noindent" ></p> <table id="TBL-40" class="tabular" 
+ 
+><colgroup id="TBL-40-1g"><col 
+id="TBL-40-1" /><col 
+id="TBL-40-2" /><col 
+id="TBL-40-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-40-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-40-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-40-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-40-1-3"  
+class="td11"> nuc_eos_readtable_cactus_wrapper  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-40-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-40-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-40-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-40-2-3"  
+class="td11"> c                                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-40-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-40-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-40-3-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-40-3-3"  
+class="td11"> global                                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-40-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-40-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-40-4-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-40-4-3"  
+class="td11"> function                                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-40-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-40-5-1"  
+class="td11">    </td></tr></table>
+<!--l. 894--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_BASEGRID </span>(conditional)
+</p><!--l. 896--><p class="noindent" >      eos_omni_readcoldtable
+</p><!--l. 898--><p class="noindent" >     <span 
+class="cmti-10">read cold eos ascii table</span>
+</p><!--l. 901--><p class="noindent" > 
+</p><!--l. 903--><p class="noindent" ></p> <table id="TBL-41" class="tabular" 
+ 
+><colgroup id="TBL-41-1g"><col 
+id="TBL-41-1" /><col 
+id="TBL-41-2" /><col 
+id="TBL-41-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-41-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-41-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-1-3"  
+class="td11"> fortran   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-41-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-41-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-2-3"  
+class="td11"> global     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-41-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-41-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-41-3-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-41-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-41-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 912--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_BASEGRID </span>(conditional)
+</p><!--l. 914--><p class="noindent" >      eos_omni_barotropicreadtable
+</p><!--l. 916--><p class="noindent" >     <span 
+class="cmti-10">read barotropic eos ascii table</span>
+</p><!--l. 919--><p class="noindent" > 
+</p><!--l. 921--><p class="noindent" ></p> <table id="TBL-42" class="tabular" 
+ 
+><colgroup id="TBL-42-1g"><col 
+id="TBL-42-1" /><col 
+id="TBL-42-2" /><col 
+id="TBL-42-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-42-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-42-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-42-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-42-1-3"  
+class="td11"> fortran   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-42-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-42-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-42-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-42-2-3"  
+class="td11"> global     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-42-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-42-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-42-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-42-3-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-42-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-42-4-1"  
+class="td11">    </td></tr></table>
+ 
+</body></html> 
+
+                                                                                       
+
+

@@ -1,0 +1,516 @@
+% *======================================================================*
+%  Cactus Thorn template for ThornGuide documentation
+%  Author: Ian Kelley
+%  Date: Sun Jun 02, 2002
+%  $Header$                                                             
+%
+%  Thorn documentation in the latex file doc/documentation.tex 
+%  will be included in ThornGuides built with the Cactus make system.
+%  The scripts employed by the make system automatically include 
+%  pages about variables, parameters and scheduling parsed from the 
+%  relevant thorn CCL files.
+%  
+%  This template contains guidelines which help to assure that your     
+%  documentation will be correctly added to ThornGuides. More 
+%  information is available in the Cactus UsersGuide.
+%                                                    
+%  Guidelines:
+%   - Do not change anything before the line
+%       % START CACTUS THORNGUIDE",
+%     except for filling in the title, author, date, etc. fields.
+%        - Each of these fields should only be on ONE line.
+%        - Author names should be separated with a \\ or a comma.
+%   - You can define your own macros, but they must appear after
+%     the START CACTUS THORNGUIDE line, and must not redefine standard 
+%     latex commands.
+%   - To avoid name clashes with other thorns, 'labels', 'citations', 
+%     'references', and 'image' names should conform to the following 
+%     convention:          
+%       ARRANGEMENT_THORN_LABEL
+%     For example, an image wave.eps in the arrangement CactusWave and 
+%     thorn WaveToyC should be renamed to CactusWave_WaveToyC_wave.eps
+%   - Graphics should only be included using the graphicx package. 
+%     More specifically, with the "\includegraphics" command.  Do
+%     not specify any graphic file extensions in your .tex file. This 
+%     will allow us to create a PDF version of the ThornGuide
+%     via pdflatex.
+%   - References should be included with the latex "\bibitem" command. 
+%   - Use \begin{abstract}...\end{abstract} instead of \abstract{...}
+%   - Do not use \appendix, instead include any appendices you need as 
+%     standard sections. 
+%   - For the benefit of our Perl scripts, and for future extensions, 
+%     please use simple latex.     
+%
+% *======================================================================* 
+% 
+% Example of including a graphic image:
+%    \begin{figure}[ht]
+% 	\begin{center}
+%    	   \includegraphics[width=6cm]{/home/runner/work/tests/tests/arrangements/CactusNumerical/Dissipation/doc/MyArrangement_MyThorn_MyFigure}
+% 	\end{center}
+% 	\caption{Illustration of this and that}
+% 	\label{MyArrangement_MyThorn_MyLabel}
+%    \end{figure}
+%
+% Example of using a label:
+%   \label{MyArrangement_MyThorn_MyLabel}
+%
+% Example of a citation:
+%    \cite{MyArrangement_MyThorn_Author99}
+%
+% Example of including a reference
+%   \bibitem{MyArrangement_MyThorn_Author99}
+%   {J. Author, {\em The Title of the Book, Journal, or periodical}, 1 (1999), 
+%   1--16. {\tt http://www.nowhere.com/}}
+%
+% *======================================================================* 
+
+% If you are using CVS use this line to give version information
+% $Header$
+
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a 
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+% The author of the documentation
+\author{Erik Schnetter \textless schnetter@aei.mpg.de\textgreater, Bernard Kelly \textless bernard.j.kelly@nasa.gov\textgreater}
+
+% The title of the document (not necessarily the name of the Thorn)
+\title{Dissipation}
+
+% the date your document was last changed, if your document is in CVS, 
+% please use:
+\date{$ $Date$ $}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+% Add all definitions used in this documentation here 
+%   \def\mydef etc
+
+% Add an abstract for this thorn's documentation
+\begin{abstract}
+Add $n$th-order Kreiss-Oliger dissipation to the right hand side of
+evolution equations.  This thorn is intended for time evolutions that
+use MoL.
+\end{abstract}
+
+% The following sections are suggestive only.
+% Remove them or add your own.
+
+\section{Physical System}
+For a description of Kreiss-Oliger artificial dissipation, see \cite{kreiss-oliger}.
+
+The additional dissipation terms appear as follows, for a general grid function $U$. Here, the
+tensor character of the field is irrelevant: each component of, say, $\tilde{\gamma}_{ij}$ is
+treated as an independent field for dissipation purposes.
+%
+\begin{eqnarray*}
+\partial_t U &=& \partial_t U + (-1)^{(p+3)/2} \epsilon \frac{1}{2^{p+1}} \left( h_x^{p} \frac{\partial^{(p+1)}}{\partial x^{(p+1)}} + h_y^{p} \frac{\partial^{(p+1)}}{\partial y^{(p+1)}} +
+h_z^{p} \frac{\partial^{(p+1)}}{\partial z^{(p+1)}}\right) U, \\
+             &=& \partial_t U + (-1)^{(p+3)/2} \epsilon \frac{h^{p}}{2^{p+1}} \left( \frac{\partial^{(p+1)}}{\partial x^{(p+1)}} + \frac{\partial^{(p+1)}}{\partial y^{(p+1)}} +
+\frac{\partial^{(p+1)}}{\partial z^{(p+1)}}\right) U,
+\end{eqnarray*}
+%
+where $h_x$, $h_y$, and $h_z$ are the local grid spacings in each Cartesian direction, and the
+second equality holds in the usual situation where the three are equal: $h_x = h_y = h_z = h$.
+
+\section{Implementation in Cactus}
+
+The \texttt{Dissipation} thorn's dissipation rate is controlled by a small number of parameters:
+%
+\begin{itemize}
+  \item \texttt{order} is the order $p$ of the dissipation, implying the use of the $(p+1)$-st spatial derivatives;
+  \item \texttt{epsdiss} is the overall dissipation strength $\epsilon$.
+\end{itemize}
+
+Currently available values of \texttt{order} are $p \in \{1, 3, 5, 7, 9\}$. To apply dissipation at
+order $p$ requires that we have at least $(p+1)/2$ ghostzones --- $\{1, 2, 3, 4, 5\}$, respectively.
+
+The list of fields to be dissipated is specified in the parameter \texttt{vars}. The thorn does
+not allow for individually tuned dissipation strengths for different fields. However, the
+dissipation strength $\epsilon$ can be varied according to refinement level, using the parameter
+array \texttt{epsdis\_for\_level}, which overrides \texttt{epsdiss} if set.
+
+The thorn also allows for enhanced dissipation within the apparent horizons, triggered by the
+boolean parameter \texttt{extra\_dissipation\_in\_horizons}, and near the outer boundary,
+triggered by the boolean parameter \texttt{extra\_dissipation\_at\_outerbound}. Both of these
+default to ``no''.
+
+\subsection{Acknowledgements}
+I thank Scott Hawley who wrote a very similar thorn
+\texttt{HawleyThorns/Dissipation} for evolutions that do not use MoL;
+this thorn here is modelled after his.
+
+\begin{thebibliography}{9}
+\bibitem{kreiss-oliger}
+H. Kreiss and J. Oliger, \emph{Methods for the Approximate Solution of
+Time Dependent Problems}, vol.\ 10 of Global Atmospheric Research
+Programme (GARP): GARP Publication Series (GARP Publication, 1973)
+\end{thebibliography}
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{extra\_dissipation\_at\_outerbound}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{ah\_max\_epsdis} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em maximal epsdis}} \\
+\hline{\bf Range} & &  {\bf Default:} -1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{{\textless}0 for 'off', {\textgreater}=0 for maximal epsdis in horizon} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{ah\_radius\_offset} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Offset to the distance from the AH.}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{negative values shift inwards, positive outwards} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{ah\_slope} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Slope inside AH}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Slope from the outside value to the inside value in AHs} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{epsdis} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Dissipation strength}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{0 for no dissipation.  Unstable for epsdis{\textless}0 and epsdis{\textgreater}1/3} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{epsdis\_for\_level} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Alternate epsdis for a specific refinement level}} \\
+\hline{\bf Range} & &  {\bf Default:} -1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{Negative indicates use default} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{extra\_dissipation\_at\_outerbound} & {\bf Scope:} restricted & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em increase dissipation at outer boundary}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{extra\_dissipation\_in\_horizons} & {\bf Scope:} restricted & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em extra dissipation in horizons}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{horizon\_number} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em horizon number for extra dissipation in horizons -- AHFinderDirect number}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1} & \multicolumn{2}{p{\paraWidth}|}{do not use a horizon} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{horizon number (from AHFinderDirect); starts from 1} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{ob\_slope} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em slope at outer boundary}} \\
+\hline{\bf Range} & &  {\bf Default:} 5 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{increase dissipation} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{order} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Dissipation order}} \\
+\hline{\bf Range} & &  {\bf Default:} 3 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1} & \multicolumn{2}{p{\paraWidth}|}{first order accurate dissipation (using a second derivative)} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 3} & \multicolumn{2}{p{\paraWidth}|}{third order accurate dissipation (using a fourth derivative)} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 5} & \multicolumn{2}{p{\paraWidth}|}{fifth order accurate dissipation (using a sixth derivative)} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 7} & \multicolumn{2}{p{\paraWidth}|}{seventh order accurate dissipation (using an eighth derivative)} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 9} & \multicolumn{2}{p{\paraWidth}|}{ninth order accurate dissipation (using a tenth derivative)} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{outer\_bound\_npoints} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em number of points in which dissipation should be increased}} \\
+\hline{\bf Range} & &  {\bf Default:} 3 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{positive number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{outer\_boundary\_max\_epsdis} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em maximal epsdis}} \\
+\hline{\bf Range} & &  {\bf Default:} -1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{{\textless}0 for 'off', {\textgreater}=0 for maximal epsdis at the outer boundary} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{respect\_emask} & {\bf Scope:} restricted & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em respect excision mask}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{surface\_number} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em horizon number for extra dissipation in horizons -- SphericalSurface number}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1} & \multicolumn{2}{p{\paraWidth}|}{do not use a spherical surface} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{surface number (from SphericalSurface); starts from 0} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{update\_ah\_every} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em how often to update the AH information for dissipation}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{positive iteration number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{use\_dissipation\_near\_excision} & {\bf Scope:} restricted & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Apply excision near the excision boundary (does not work for high orders)}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{vars} & {\bf Scope:} restricted & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em List of evolved grid functions that should have dissipation added}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{must be a valid list of grid functions} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{verbose} & {\bf Scope:} restricted & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em produce log output}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{use\_mask} & {\bf Scope:} shared from SPACEMASK & BOOLEAN \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+dissipation
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+grid
+
+sphericalsurface
+
+spacemask
+\vspace{2mm}
+\subsection*{Grid Variables}
+\vspace{5mm}\subsubsection{PRIVATE GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+epsdisa\_group &  & compact & 0 \\ 
+ & epsdisA & description & dissipation array for spatially different dissipation \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & Checkpoint="no" Prolongation="none" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn CactusNumerical/Dissipation.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Always:}&  ~ \\ 
+ epsdisA\_group & ~\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PARAMCHECK} 
+
+\hspace{5mm} dissipation\_paramcheck 
+
+\hspace{5mm}{\it check dissipation parameters for consistency } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_BASEGRID} 
+
+\hspace{5mm} dissipation\_basegrid 
+
+\hspace{5mm}{\it ensure that there are enough ghost zones } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & dissipation::epsdisa(everywhere) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTSTEP} 
+
+\hspace{5mm} setup\_epsdis 
+
+\hspace{5mm}{\it setup spatially varying dissipation } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & sphericalsurface\_hasbeenset \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & grid::x \\ 
+~& ~ &grid::y\\ 
+~& ~ &grid::z\\ 
+~& ~ &spacemask::emask\\ 
+~& ~ &sphericalsurface::sf\_info\\ 
+~& ~ &sphericalsurface::sf\_origin\\ 
+~& ~ &sphericalsurface::sf\_valid\\ 
+~ & Sync:  & epsdisa\_group \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & dissipation::epsdisa(everywhere) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTREGRIDINITIAL} 
+
+\hspace{5mm} setup\_epsdis 
+
+\hspace{5mm}{\it setup spatially varying dissipation } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & grid::x \\ 
+~& ~ &grid::y\\ 
+~& ~ &grid::z\\ 
+~& ~ &spacemask::emask\\ 
+~& ~ &sphericalsurface::sf\_info\\ 
+~& ~ &sphericalsurface::sf\_origin\\ 
+~& ~ &sphericalsurface::sf\_valid\\ 
+~ & Sync:  & epsdisa\_group \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & dissipation::epsdisa(everywhere) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTREGRID} 
+
+\hspace{5mm} setup\_epsdis 
+
+\hspace{5mm}{\it setup spatially varying dissipation } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & grid::x \\ 
+~& ~ &grid::y\\ 
+~& ~ &grid::z\\ 
+~& ~ &spacemask::emask\\ 
+~& ~ &sphericalsurface::sf\_info\\ 
+~& ~ &sphericalsurface::sf\_origin\\ 
+~& ~ &sphericalsurface::sf\_valid\\ 
+~ & Sync:  & epsdisa\_group \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & dissipation::epsdisa(everywhere) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_PostRHS} 
+
+\hspace{5mm} dissipation\_add 
+
+\hspace{5mm}{\it add kreiss-oliger dissipation to the right hand sides } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & epsdisa\_group \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

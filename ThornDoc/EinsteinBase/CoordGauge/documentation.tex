@@ -1,0 +1,386 @@
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a 
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+\title{CoordGauge}
+\author{Tom Goodale}
+\date{$ $Date$ $}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{abstract}
+This thorn provides an infrastructure for dynamic gauge selection.
+However, at present (summer 2004) many thorns don't use this infrastructure.
+\end{abstract}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{The Infrastructure}
+
+The {\bf CoordGauge} implementation schedules five groups:
+
+\begin{verbatim}
+CoordGauge
+LapseSelect IN CoordGauge BEFORE PickCoordGauge
+LapseApply  IN CoordGauge AFTER  PickCoordGauge
+ShiftSelect IN CoordGauge BEFORE PickCoordGauge
+ShiftApply  IN CoordGauge AFTER  PickCoordGauge
+\end{verbatim}
+%
+and one function
+\begin{verbatim}
+PickCoordGauge IN CoordGauge
+\end{verbatim}
+%
+and has two public grid scalars
+\begin{verbatim}
+selected_lapse
+selected_shift
+\end{verbatim}
+%
+and two string parameters
+\begin{verbatim}
+lapse_list
+shift_list
+\end{verbatim}
+
+It also provides four aliased functions
+%
+\begin{verbatim}
+int CoordGauge_RegisterLapse("lapse-name")
+int CoordGauge_RegisterShift("shift-name")
+CoordGauge_Lapse("lapse-name")
+CoordGauge_Shift("shift-name")
+\end{verbatim}
+
+(If someone can think of better names, please say so 8-)
+
+Then each thorn which wants to apply a coordinate gauge condition
+registers itself, receiving a unique integer as an id, and schedules a
+selection routine and an application routine in the appropriate schedule
+groups.
+
+The selection routine decides if this gauge condition should be applied at
+this time, and calls the \verb|CoordGauge_Lapse/Shift| aliased function.
+(It should check that it is actually in the appropriate parameter as a
+minimum.)
+
+The \verb|PickCoordGauge| function traverses the list of lapses/shifts
+and selects the first one in the list which has called the
+\verb|CoordGauge_Lapse/Shift| aliased function and sets the
+appropriate grid scalar to the id of this one.
+
+The application routine checks to see if the grid scalar is set to its id,
+and if so, applies the gauge condition.
+
+Evolution thorns could schedule {\bf CoordGauge} at the appropriate point or
+points in their schedule.
+
+An advantage of this scheme over the current one is that it provides the
+selection routines with a full set of variables from which to decide
+whether they should apply a guage or not.  So it becomes very easy to
+choose to switch off maximal if the lapse has collapsed within a certain
+volume, etc.
+
+This is simpler than the previous scheme as there is no arbitrary 'bid'
+floating around.  It also allows us to keep the logic of the final
+selection in one place, thus allowing people to override this logic if
+they need to.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Current Status}
+
+As of summer 2004, many thorns don't use the above mechanism, instead
+they directly extend \\
+\verb|ADMBase::lapse_evolution_method| and/or
+\verb|ADMBase::shift_evolution_method|.  That is, the thorn implementing
+a coordinate condition thorn says in its \verb|param.ccl|:
+\begin{verbatim}
+EXTENDS KEYWORD lapse_evolution_method "Which lapse condition to use"
+{
+"super-duper" :: "my super-duper new lapse condition"
+} ""
+\end{verbatim}
+(and/or the equivalent for \verb|shift_evolution_method|).
+
+The thorn then schedules a routine in some suitable schedule bin/group
+(probably \verb|CCTK_PRESTEP| or \verb|MOL_PRESTEP|) to check
+\verb|ADMBase::lapse_evolution_method| and/or
+\verb|ADMBase::shift_evolution_method|, and if they're equal
+to the appropriate string, it does the coordinate condition.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{lapse\_evolution\_method}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{slicing\_verbose} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Print information on current slicing}} \\
+\hline{\bf Range} & &  {\bf Default:} no \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering yes} & \multicolumn{2}{p{\paraWidth}|}{print slicing info} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering no} & \multicolumn{2}{p{\paraWidth}|}{do not print slicing info} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{lapse\_list} & {\bf Scope:} restricted & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em List of allowed lapses to use}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{Any string} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{shift\_list} & {\bf Scope:} restricted & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em List of allowed shifts to use}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{Any string} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{lapse\_evolution\_method} & {\bf Scope:} shared from ADMBASE & KEYWORD \\\hline
+\multicolumn{3}{|l|}{\bf Extends ranges:}\\ 
+\hline\multicolumn{1}{|p{\maxVarWidth}|}{\centering coordgauge} & \multicolumn{2}{p{\paraWidth}|}{Use dynamic stuff from CoordGauge} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{shift\_evolution\_method} & {\bf Scope:} shared from ADMBASE & KEYWORD \\\hline
+\multicolumn{3}{|l|}{\bf Extends ranges:}\\ 
+\hline\multicolumn{1}{|p{\maxVarWidth}|}{\centering coordgauge} & \multicolumn{2}{p{\paraWidth}|}{Use dynamic stuff from CoordGauge} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+coordgauge
+\vspace{2mm}
+\subsection*{Grid Variables}
+\vspace{5mm}\subsubsection{PUBLIC GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+slicing\_flags &  & compact & 0 \\ 
+ & active\_slicing\_handle & description & Slicing and shift stuff \\ 
+ &  & dimensions & 0 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & INT \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+
+\noindent {\bf Adds header}: 
+
+
+
+Slicing.h
+\vspace{2mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn EinsteinBase/CoordGauge.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Always:}&  ~ \\ 
+ slicing\_flags & ~\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_WRAGH} 
+
+\hspace{5mm} einstein\_activateslicing 
+
+\hspace{5mm}{\it initialize slicing, setup priorities for mixed slicings } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_WRAGH} 
+
+\hspace{5mm} einstein\_setnextslicing 
+
+\hspace{5mm}{\it identify the slicing for the next iteration } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & einstein\_activateslicing \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PRESTEP} 
+
+\hspace{5mm} einstein\_setnextslicing 
+
+\hspace{5mm}{\it identify the slicing for the next iteration } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PRESTEP}   (conditional) 
+
+\hspace{5mm} coordgauge 
+
+\hspace{5mm}{\it coordinate gauge group } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CoordGauge}   (conditional) 
+
+\hspace{5mm} lapseselect 
+
+\hspace{5mm}{\it lapse selection group } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & pickcoordgauge \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CoordGauge}   (conditional) 
+
+\hspace{5mm} lapseapply 
+
+\hspace{5mm}{\it lapse application group } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & pickcoordgauge \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CoordGauge}   (conditional) 
+
+\hspace{5mm} shiftselect 
+
+\hspace{5mm}{\it shift selection group } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & pickcoordgauge \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CoordGauge}   (conditional) 
+
+\hspace{5mm} shiftapply 
+
+\hspace{5mm}{\it shift application group } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & pickcoordgauge \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

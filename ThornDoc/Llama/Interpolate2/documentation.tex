@@ -1,0 +1,413 @@
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+\author{Erik Schnetter}
+\title{Interpatch Interpolation}
+
+\date{\today}
+
+\maketitle
+
+% START CACTUS THORNGUIDE
+
+\begin{abstract}
+The Interpolate2 thorn provides interpatch interpolation.
+\end{abstract}
+
+\section{Overview}
+
+The interpolator works in several steps.
+
+In the first step, during startup, it decides which points need to be
+set via interpolation. This is usually a layer N grid points deep at
+the boundaries of the patches, excluding ghost zones, and also
+excluding the outer boundaries.
+
+After each regridding, the Coordinates thorn iterates over these grid points, converts
+their locations to global coordinates, and finds out which patch ``owns''
+each location. It then assumes that this location is sufficiently far
+in the interior of the patch that one can apply a full interpolation
+stencil there. That is, the interpolation source must be surrounded by
+sufficiently many ghost zones, outer boundary points, or additional
+overlap points that the stencil does not include any other inter-patch
+boundary points. This condition depends, among other things, on the
+grid spacings in the patches, and thus there is no generic rule. It is
+tested each time via a dummy interpolation.
+
+At this point, Interpolate2 also calculates and stores the weights for the
+interpolation stencils, because calculating them is somewhat
+expensive. If the interpolation point is on a 2D plane, 1D line, or on
+a grid point (with a small tolerance of about $10^{-12}$), then the
+interpolation dimension is reduced, so that either 2D or 1D
+interpolation is performed whenever possible, or even ``0D''
+interpolation (i.e.~copying of grid points).
+
+Finally, each time the symmetry boundary conditions are applied, these
+stencils are evaluated and the result transferred (via MPI) to the
+target process.
+
+Interpolate2 provides the same interface as Interpolate, but it uses
+the CarpetInterp2 thorn to perform the actual interpolation instead of
+CarpetInterp.  This is more efficient.
+
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{continue\_if\_selftest\_fails}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{continue\_if\_selftest\_fails} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Continue if the self test fails -- this is only for debugging}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{fill\_patch0\_radius\_max} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Interpolate to patch 0 up to this radius}} \\
+\hline{\bf Range} & &  {\bf Default:} 1e+30 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{fill\_patch0\_radius\_min} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Interpolate to patch 0 from this radius on}} \\
+\hline{\bf Range} & &  {\bf Default:} 1e+30 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{fill\_patch0\_xyradius\_max} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Interpolate to patch 0 up to this cylindrical radius in the x-y plane}} \\
+\hline{\bf Range} & &  {\bf Default:} 1e+30 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{fill\_patch0\_xyradius\_min} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Interpolate to patch 0 from this cylindrical radius in the x-y plane on}} \\
+\hline{\bf Range} & &  {\bf Default:} 1e+30 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{interpolate\_zero} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Set interpolation result to zero -- this is only for debugging}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{interpolator\_order} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Interpolation order}} \\
+\hline{\bf Range} & &  {\bf Default:} 4 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{interpolator\_order\_matter} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Interpolation order for those variables having an 'interpolator=matter' tag}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1} & \multicolumn{2}{p{\paraWidth}|}{Don't use special matter interpolator} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1} & \multicolumn{2}{p{\paraWidth}|}{1st-order Lagrange} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 2} & \multicolumn{2}{p{\paraWidth}|}{2nd order ENO} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{poison} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Poison value to detect uninitialised variables}} \\
+\hline{\bf Range} & &  {\bf Default:} -4.2e+20 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{shift\_edges} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Artificially shift coordinates of grid function edges (use this for DGFE)}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{verbose} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Produce debug output}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+interpolate
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+coordinates
+
+grid
+\vspace{2mm}
+\subsection*{Grid Variables}
+\vspace{5mm}\subsubsection{PRIVATE GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+test & test & compact & 0 \\ 
+ &  & description & Test grid function \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="Scalar" Checkpoint="no" Prolongation="none" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+\vspace{5mm}\subsubsection{PUBLIC GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+source\_patch &  & compact & 0 \\ 
+ & Sn & description & source patch number \\ 
+& ~ & description &  -1 for interior points \\ 
+ & Sn & description &  -2 for outer boundary points \\ 
+ & Sn & description &  -3 for inter-processor ghost points \\ 
+ & Sn & description &  -4 for symmetry boundary points \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & Checkpoint="no" Prolongation="none" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & INT \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+
+\noindent {\bf Uses header}: 
+
+tensortypes.h
+
+loopcontrol.h
+
+carpetinterp2.hh
+\vspace{2mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn Llama/Interpolate2.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Always:}& {\bf Conditional:} \\ 
+ source\_patch &  test\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_BASEGRID} 
+
+\hspace{5mm} interpolate2init 
+
+\hspace{5mm}{\it initialise interpolating inter-patch boundaries } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & choosepatchsystem \\ 
+~& ~ &correctcoordinates\\ 
+~& ~ &spatialcoordinates\\ 
+~& ~ &coordinates\_setglobalcoords\_group\\ 
+~ & Language:  & c \\ 
+~ & Reads:  & grid::coordinates \\ 
+~& ~ &coordinates::interpolate\_boundary\_points\\ 
+~& ~ &coordinates::jacobian\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & sn(everywhere) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_BASEGRID} 
+
+\hspace{5mm} interpolate2test 
+
+\hspace{5mm}{\it test interpolating inter-patch boundaries } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & interpolate2init \\ 
+~ & Storage:  & test \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf Interpolate2Test} 
+
+\hspace{5mm} interpolate2testinit 
+
+\hspace{5mm}{\it test: initialise test grid function } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & grid::coordinates \\ 
+~& ~ &sn(everywhere)\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & test(everywhere) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf Interpolate2Test} 
+
+\hspace{5mm} interpolate2testselectbcs 
+
+\hspace{5mm}{\it test: interpolate test grid function } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & interpolate2testinit \\ 
+~ & Language:  & c \\ 
+~ & Options:  & level \\ 
+~ & Sync:  & test \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf Interpolate2Test} 
+
+\hspace{5mm} applybcs 
+
+\hspace{5mm}{\it test: interpolate test grid function } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & interpolate2testselectbcs \\ 
+~ & Options:  & level \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf Interpolate2Test} 
+
+\hspace{5mm} interpolate2testcheck 
+
+\hspace{5mm}{\it test: check test grid function } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & interpolate2testapplybcs \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & grid::coordinates \\ 
+~& ~ &sn(everywhere)\\ 
+~& ~ &test(everywhere)\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf BoundaryConditions} 
+
+\hspace{5mm} interpolate2applybc 
+
+\hspace{5mm}{\it apply interpolating inter-patch boundaries } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & level \\ 
+~ & Reads:  & grid::coordinates \\ 
+~& ~ &coordinates::jacobian\\ 
+~& ~ &sn\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\subsection*{Aliased Functions}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Alias Name:} ~~~~~~~ & {\bf Function Name:} \\ 
+ApplyBCs & Interpolate2TestApplyBCs \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

@@ -1,0 +1,545 @@
+% *======================================================================*
+%  Cactus Thorn template for ThornGuide documentation
+%  Author: Ian Kelley
+%  Date: Sun Jun 02, 2002
+%  $Header$
+%
+%  Thorn documentation in the latex file doc/documentation.tex
+%  will be included in ThornGuides built with the Cactus make system.
+%  The scripts employed by the make system automatically include
+%  pages about variables, parameters and scheduling parsed from the
+%  relevant thorn CCL files.
+%
+%  This template contains guidelines which help to assure that your
+%  documentation will be correctly added to ThornGuides. More
+%  information is available in the Cactus UsersGuide.
+%
+%  Guidelines:
+%   - Do not change anything before the line
+%       % START CACTUS THORNGUIDE",
+%     except for filling in the title, author, date, etc. fields.
+%        - Each of these fields should only be on ONE line.
+%        - Author names should be separated with a \\ or a comma.
+%   - You can define your own macros, but they must appear after
+%     the START CACTUS THORNGUIDE line, and must not redefine standard
+%     latex commands.
+%   - To avoid name clashes with other thorns, 'labels', 'citations',
+%     'references', and 'image' names should conform to the following
+%     convention:
+%       ARRANGEMENT_THORN_LABEL
+%     For example, an image wave.eps in the arrangement CactusWave and
+%     thorn WaveToyC should be renamed to CactusWave_WaveToyC_wave.eps
+%   - Graphics should only be included using the graphicx package.
+%     More specifically, with the "\includegraphics" command.  Do
+%     not specify any graphic file extensions in your .tex file. This
+%     will allow us to create a PDF version of the ThornGuide
+%     via pdflatex.
+%   - References should be included with the latex "\bibitem" command.
+%   - Use \begin{abstract}...\end{abstract} instead of \abstract{...}
+%   - Do not use \appendix, instead include any appendices you need as
+%     standard sections.
+%   - For the benefit of our Perl scripts, and for future extensions,
+%     please use simple latex.
+%
+% *======================================================================*
+%
+% Example of including a graphic image:
+%    \begin{figure}[ht]
+% 	\begin{center}
+%    	   \includegraphics[width=6cm]{/home/runner/work/tests/tests/arrangements/CactusTest/TestMoL/doc/MyArrangement_MyThorn_MyFigure}
+% 	\end{center}
+% 	\caption{Illustration of this and that}
+% 	\label{MyArrangement_MyThorn_MyLabel}
+%    \end{figure}
+%
+% Example of using a label:
+%   \label{MyArrangement_MyThorn_MyLabel}
+%
+% Example of a citation:
+%    \cite{MyArrangement_MyThorn_Author99}
+%
+% Example of including a reference
+%   \bibitem{MyArrangement_MyThorn_Author99}
+%   {J. Author, {\em The Title of the Book, Journal, or periodical}, 1 (1999),
+%   1--16. {\tt http://www.nowhere.com/}}
+%
+% *======================================================================*
+
+% If you are using CVS use this line to give version information
+% $Header$
+
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+% The author of the documentation
+\author{Roland Haas \textless rhaas@caltech.edu\textgreater}
+
+% The title of the document (not necessarily the name of the Thorn)
+\title{TestMoL}
+
+% the date your document was last changed, if your document is in CVS,
+% please use:
+%    \date{$ $Date: 2004-01-07 12:12:39 -0800 (Wed, 07 Jan 2004) $ $}
+\date{February 12 2014}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+% Add all definitions used in this documentation here
+%   \def\mydef etc
+
+% Add an abstract for this thorn's documentation
+\begin{abstract}
+This thorn provides tests (partially correctness tests) for \texttt{MoL}.
+It integrates a known function in time choosing for each ODE method a
+polynomial in time that can be exactly integrated by the method.
+\end{abstract}
+
+% The following sections are suggestive only.
+% Remove them or add your own.
+
+\section{Introduction}
+The method of lines thorn (\texttt{MoL}) provides time integration
+facilities in Cactus. It basically is a wrapper for ODE integrators. As such
+it can be tested by comparing its results against known analytic solutions.
+
+\section{Physical System}
+For grid functions we integrate
+\begin{equation}
+\dot y = -1 + t^n
+\end{equation}
+where $n$ is chosen such that a given ODE method can integrate the polynomial
+exactly, eg. $n=3$ for the classical Runge-Kutta method. For multi-rate ODE
+methods, the slow sector integrates
+\begin{equation}
+\dot y = -1 + \frac14 t^m
+\end{equation}
+where $m$ is usually smaller than $n$, eg. $2$ for the \texttt{RK4-RK2} scheme.
+Finally grid arrays integrate
+\begin{equation}
+\dot y = -1 + \frac12 t^n
+\end{equation}
+where $n$ is the same as for (fast) grid functions.
+
+\section{Numerical Implementation}
+All numerical methods are provided by \texttt{MoL}. We construct the
+numerical solution be evaluating the RHS on the full domain, no ghost or
+boundary zones are required. We provide the numerical solution in
+\texttt{evolved\_gf}, \texttt{evolvedslow\_gf}, \texttt{evolved\_ga} for the
+grid function, slow sector grid function and grid array respectively. For each
+type we provide the analytical solution in \texttt{analytic\_gf},
+\texttt{analyticslow\_gf}, \texttt{analytic\_ga}. We provide the difference
+between the two in \texttt{diff\_gf}, \texttt{diffslow\_gf},
+\texttt{diff\_ga}.
+
+Parameter files for the tests are generated using a perl script
+\texttt{ODEs.pl} in the test directory. Its use is briefly explained in a
+comment near the top of the file.
+
+\section{Using This Thorn}
+This thorn provides no functionality other than the tests.
+
+\subsection{Obtaining This Thorn}
+This thorn is part of the \texttt{CactusTest} arrangement and can be checked
+out from the same source as Cactus.
+
+\subsection{Interaction With Other Thorns}
+This thorn requires \texttt{MoL}.
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{evolve\_grid\_function}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{evolve\_grid\_array} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em register an evolved grid array with MoL}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{evolve\_grid\_function} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em register an evolved grid function with MoL}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rhsexpression} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em expression to use for the right-hand-side of the ODE}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1} & \multicolumn{2}{p{\paraWidth}|}{unit rhs} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering t} & \multicolumn{2}{p{\paraWidth}|}{linear in time rhs} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering t**2} & \multicolumn{2}{p{\paraWidth}|}{quadratic in time rhs} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering t**3} & \multicolumn{2}{p{\paraWidth}|}{cubic in time rhs} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering t**4} & \multicolumn{2}{p{\paraWidth}|}{quartic in time rhs} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering t**5} & \multicolumn{2}{p{\paraWidth}|}{quintic in time rhs} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering t**6} & \multicolumn{2}{p{\paraWidth}|}{sixth order in time rhs} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering t**7} & \multicolumn{2}{p{\paraWidth}|}{seventh order in time rhs} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering t**8} & \multicolumn{2}{p{\paraWidth}|}{eight order in time rhs} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering t**9} & \multicolumn{2}{p{\paraWidth}|}{ninth order in time rhs} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering exp(t)} & \multicolumn{2}{p{\paraWidth}|}{exponential in time rhs} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rhsslowexpression} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em expression to use for the right-hand-side of the slow ODE}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1} & \multicolumn{2}{p{\paraWidth}|}{unit rhs} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering t} & \multicolumn{2}{p{\paraWidth}|}{linear in time rhs} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering t**2} & \multicolumn{2}{p{\paraWidth}|}{quadratic in time rhs} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering t**3} & \multicolumn{2}{p{\paraWidth}|}{cubic in time rhs} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering t**4} & \multicolumn{2}{p{\paraWidth}|}{quartic in time rhs} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering t**5} & \multicolumn{2}{p{\paraWidth}|}{quintic in time rhs} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering t**6} & \multicolumn{2}{p{\paraWidth}|}{sixth order in time rhs} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering t**7} & \multicolumn{2}{p{\paraWidth}|}{seventh order in time rhs} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering t**8} & \multicolumn{2}{p{\paraWidth}|}{eight order in time rhs} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering t**9} & \multicolumn{2}{p{\paraWidth}|}{ninth order in time rhs} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering exp(t)} & \multicolumn{2}{p{\paraWidth}|}{exponential in time rhs} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+testmol
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+methodoflines
+\vspace{2mm}
+\subsection*{Grid Variables}
+\vspace{5mm}\subsubsection{PRIVATE GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+evolved\_gf & evolved\_gf & compact & 0 \\ 
+ &  & description & an evolved grid function \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+rhs\_gf & rhs\_gf & compact & 0 \\ 
+ &  & description & the rhs for the evolved grid function \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+evolvedslow\_gf & evolvedslow\_gf & compact & 0 \\ 
+ &  & description & a slow evolved grid function \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+rhsslow\_gf & rhsslow\_gf & compact & 0 \\ 
+ &  & description & the rhs for the slow evolved grid function \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+constrained\_gf & constrained\_gf & compact & 0 \\ 
+ &  & description & a constrained grid function \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+sandr\_gf & sandr\_gf & compact & 0 \\ 
+ &  & description & a save-and-restore grid function \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~ \\ 
+\hline 
+diff\_gf & diff\_gf & compact & 0 \\ 
+ &  & description & difference to analytic solution in grid function \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+analytic\_gf & analytic\_gf & compact & 0 \\ 
+ &  & description & analytic solution in grid function \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+diffslow\_gf & diffslow\_gf & compact & 0 \\ 
+ &  & description & difference to analytic solution in grid function \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+analyticslow\_gf & analyticslow\_gf & compact & 0 \\ 
+ &  & description & analytic solution in grid function \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+evolved\_ga & evolved\_ga & compact & 0 \\ 
+ &  & description & an evolved grid array \\ 
+ &  & dimensions & 1 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & 1 \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+rhs\_ga & rhs\_ga & compact & 0 \\ 
+ &  & description & the rhs of the evolved grid array \\ 
+ &  & dimensions & 1 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & 1 \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~ \\ 
+\hline 
+constrained\_ga & constrained\_ga & compact & 0 \\ 
+ &  & description & a constrained grid array \\ 
+ &  & dimensions & 1 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & 1 \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+sandr\_ga & sandr\_ga & compact & 0 \\ 
+ &  & description & a save-and-restore grid array \\ 
+ &  & dimensions & 1 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & 1 \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+diff\_ga & diff\_ga & compact & 0 \\ 
+ &  & description & difference to analytic solution in grid function \\ 
+ &  & dimensions & 1 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & 1 \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+analytic\_ga & analytic\_ga & compact & 0 \\ 
+ &  & description & analytic solution in grid function \\ 
+ &  & dimensions & 1 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & ARRAY \\ 
+ &  & size & 1 \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn CactusTest/TestMoL.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Always:}&  ~ \\ 
+ evolved\_gf[3] evolvedslow\_gf[3] constrained\_gf[3] sandr\_gf[3] & ~\\ 
+ rhs\_gf[1] rhsslow\_gf[1] & ~\\ 
+ diff\_gf[1] analytic\_gf[1] diffslow\_gf[1] analyticslow\_gf[1] & ~\\ 
+ evolved\_ga[3] constrained\_ga[3] sandr\_ga[3] & ~\\ 
+ rhs\_ga[1] & ~\\ 
+ diff\_ga[1] analytic\_ga[1] & ~\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf MoL\_Register} 
+
+\hspace{5mm} testmol\_registervars 
+
+\hspace{5mm}{\it register evolved, rhs variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & meta \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_INITIAL} 
+
+\hspace{5mm} testmol\_initvars 
+
+\hspace{5mm}{\it provide initial data for all variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_CalcRHS} 
+
+\hspace{5mm} testmol\_rhs\_gf 
+
+\hspace{5mm}{\it compute the rhs for the evolved grid function } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_CalcRHS} 
+
+\hspace{5mm} testmol\_rhsslow\_gf 
+
+\hspace{5mm}{\it compute the rhs for the slow evolved grid function } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_CalcRHS} 
+
+\hspace{5mm} testmol\_rhs\_ga 
+
+\hspace{5mm}{\it compute the rhs for the evolved grid function } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_ANALYSIS} 
+
+\hspace{5mm} testmol\_compare\_gf 
+
+\hspace{5mm}{\it compare analytic and numerial result in grid function } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_ANALYSIS} 
+
+\hspace{5mm} testmol\_compare\_ga 
+
+\hspace{5mm}{\it compare analytic and numerial result in grid array } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

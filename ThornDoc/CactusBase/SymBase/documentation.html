@@ -1,0 +1,881 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>SymBase</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">SymBase</h2>
+ <div class="author" ><span 
+class="cmr-12">Erik Schnetter </span><span 
+class="cmmi-12">&#x003C;</span><span 
+class="cmr-12">schnetter@aei.mpg.de</span><span 
+class="cmmi-12">&#x003E;</span></div>
+<br />
+<div class="date" >\( \)<span 
+class="cmr-12">Date</span>\( \)</div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 101--><p class="noindent" ><span 
+class="cmr-9">When the computational domain has symmetries, then it is often very convenient to be able to</span>
+     <span 
+class="cmr-9">interpolate at points that are not present on the actual computational grid, but can be mapped</span>
+     <span 
+class="cmr-9">into the grid through the symmetries. Thorn SymBase provides a mechanism by which symmetry</span>
+     <span 
+class="cmr-9">conditions can register routines that handle this mapping when a global interpolator is called.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Introduction</h3>
+<!--l. 117--><p class="noindent" >Thorn SymBase contains a registry for symmetry conditions and for symmetry faces. Other thorns that
+implement symmetry boundary conditions register themselves with SymBase and reserve certain faces of the
+grid, so that no other boundary condition is applied there. Thorns that implement physical boundary conditions
+should query SymBase about the set of faces that have symmetry boundary conditions and should not apply the
+physical boundary condition there.
+</p>
+<hr class="figure" /><div class="figure" 
+>
+                                                                                       
+                                                                                       
+<a 
+ id="x1-10011"></a>
+                                                                                       
+                                                                                       
+<div class="center" 
+>
+<!--l. 126--><p class="noindent" >
+</p><!--l. 127--><p class="noindent" ><img 
+src="fig/faces.png" alt="PIC"  
+width="348" /></p></div>
+<br /> <div class="caption" 
+><span class="id">Figure 1: </span><span  
+class="content">Multiple SymBase symmetry transformations across different registered symmetry faces.
+A point \(x\) is transformed to point \(x'\) by transformation \(A\), and then to point \(x''\) by transformation \(B\). Data is only
+actually stored for point \(x''\). </span></div><!--tex4ht:label?: x1-10011 -->
+                                                                                       
+                                                                                       
+</div><hr class="endfigure" />
+<!--l. 140--><p class="noindent" >The driver has to be aware that it calls thorn SymBase’s mapping routine before it actually interpolates. The
+whole mechanism is transparent for the user.
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a>Registering Symmetry Conditions</h3>
+<!--l. 149--><p class="noindent" >Each thorn that implements a symmetry boundary condition should register itself with thorn SymBase. This has
+no consequences per se, but it reserves a <span 
+class="cmti-10">symmetry handle </span>for later reference. The API for registering and
+querying symmetry names and handles is
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-1">
+CCTK_INT FUNCTION
+    SymmetryRegister (CCTK_STRING IN sym_name)
+
+CCTK_INT FUNCTION
+    SymmetryHandleOfName (CCTK_STRING IN sym_name)
+
+CCTK_POINTER_TO_CONST FUNCTION
+    SymmetryNameOfHandle (CCTK_INT IN sym_handle)
+</pre>
+<!--l. 163--><p class="nopar" >
+</p><!--l. 165--><p class="noindent" >The routine <span 
+class="cmtt-10">SymmetryRegister </span>should be called in a routine that has been scheduled in the schedule group
+<span 
+class="cmtt-10">SymmetryRegister</span>.
+</p><!--l. 169--><p class="noindent" >
+     </p><blockquote class="quote">
+     <!--l. 170--><p class="noindent" >Note: We have the API in the specification, we have it in the interface file, in the source code,
+     and in a header file, and I duplicated it into grdoc headers. I refuse to write and describe and
+     cross-check the API a <span 
+class="cmti-10">sixth </span>time in latex. At some point, we have to start using tools for that.
+     Please read the grdoc headers or the grdoc-produced HTML files for a detailed description.</p></blockquote>
+<!--l. 180--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-30003"></a>Registering Symmetries for Faces</h3>
+<!--l. 182--><p class="noindent" >Thorn SymBase keeps two registries. The first, mentioned in the previous section, is the set of symmetry
+boundary conditions. The second, the <span 
+class="cmti-10">symmetry table</span>, prescribes to which faces of the grids which
+symmetry boundary condition is to be applied. Each entry of this table constitutes a mapping from grid
+faces to symmetry boundary conditions, described by arrays whose elements correspond to grid
+faces:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-2">
+CCTK_INT symmetry_handle[]
+CCTK_INT symmetry_zone_width[]
+</pre>
+<!--l. 193--><p class="nopar" >
+</p><!--l. 195--><p class="noindent" >The faces are numbered in the same way those of the <span 
+class="cmtt-10">cctk</span><span 
+class="cmtt-10">_bbox </span>array. Each element of <span 
+class="cmtt-10">symmetry</span><span 
+class="cmtt-10">_handle </span>is a
+symmetry handle as described in section <a 
+href="#x1-20002">2<!--tex4ht:ref: SymBase.registering_symmetry_conditions --></a>. The <span 
+class="cmti-10">symmetry zone </span>is the same as a Cactus ghost zone, just in the
+context of a symmetry boundary, so the <span 
+class="cmtt-10">symmetry</span><span 
+class="cmtt-10">_zone</span><span 
+class="cmtt-10">_width </span>will be typically be the same as the ghost zone
+width.
+</p><!--l. 204--><p class="noindent" >There is one such table for the grid hierarchy, which is valid for all grid functions. There is additionally one such
+table for each grid array group.
+</p><!--l. 208--><p class="noindent" >The API for registering symmetries for faces is
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-3">
+CCTK_INT FUNCTION
+    SymmetryRegisterGrid
+         (CCTK_POINTER IN cctkGH,
+          CCTK_INT IN sym_handle,
+          CCTK_INT IN ARRAY which_faces,
+          CCTK_INT IN ARRAY symmetry_zone_width)
+
+CCTK_INT FUNCTION
+    SymmetryRegisterGI
+        (CCTK_POINTER IN cctkGH,
+         CCTK_INT IN sym_handle,
+         CCTK_INT IN ARRAY which_faces,
+         CCTK_INT IN ARRAY symmetry_zone_width,
+         CCTK_INT IN group_index)
+
+CCTK_INT FUNCTION
+    SymmetryRegisterGN
+        (CCTK_POINTER IN cctkGH,
+         CCTK_INT IN sym_handle,
+         CCTK_INT IN ARRAY which_faces,
+         CCTK_INT IN ARRAY symmetry_zone_width,
+         CCTK_STRING IN group_name)
+</pre>
+<!--l. 233--><p class="nopar" >
+</p><!--l. 235--><p class="noindent" >The first routine registers a symmetry condition for the grid hierarchy; the other two routines register
+for grid array groups (by index or name, respectively) <span 
+class="cmtt-10">sym</span><span 
+class="cmtt-10">_handle </span>must be a symmetry handle
+obtained as described in the previous section. <span 
+class="cmtt-10">which</span><span 
+class="cmtt-10">_faces </span>and <span 
+class="cmtt-10">symmetry</span><span 
+class="cmtt-10">_zone</span><span 
+class="cmtt-10">_width </span>are arrays with
+one element per face, numbered in the same way as the <span 
+class="cmtt-10">cctk</span><span 
+class="cmtt-10">_bbox </span>array. <span 
+class="cmtt-10">which</span><span 
+class="cmtt-10">_faces </span>selects
+which faces to register, and <span 
+class="cmtt-10">symmetry</span><span 
+class="cmtt-10">_zone</span><span 
+class="cmtt-10">_width </span>sets the number of symmetry zones for these
+faces.
+</p><!--l. 246--><p class="noindent" >These routines may be called at anytime after <span 
+class="cmtt-10">SymmetryRegister</span>.
+</p><!--l. 248--><p class="noindent" >It is not possible to register multiple symmetry boundary conditions for the same face.
+</p><!--l. 253--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-40004"></a>Querying Symmetries of Faces</h3>
+<!--l. 255--><p class="noindent" >Physical boundary conditions need to know to which faces they should apply the boundary condition. They need
+                                                                                       
+                                                                                       
+to query SymBase for the set of faces that have a symmetry boundary condition, and they must not apply their
+physical boundary condition there. The API is
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-4">
+CCTK_INT FUNCTION
+    SymmetryTableHandleForGrid (CCTK_POINTER_TO_CONST IN cctkGH)
+
+CCTK_INT FUNCTION
+    SymmetryTableHandleForGI
+        (CCTK_POINTER_TO_CONST IN cctkGH,
+         CCTK_INT IN group_index)
+
+CCTK_INT FUNCTION
+    SymmetryTableHandleForGN
+        (CCTK_POINTER_TO_CONST IN cctkGH,
+         CCTK_STRING IN group_name)
+</pre>
+<!--l. 273--><p class="nopar" >
+</p><!--l. 275--><p class="noindent" >The first of these functions returns the symmetry table handle for the grid hierarchy; the second and third
+return the that for the grid array group (by index or name, respectively).
+</p><!--l. 279--><p class="noindent" >The table entry with key <span 
+class="cmtt-10">symmetry</span><span 
+class="cmtt-10">_handle </span>contains the symmetry handle for the symmetry boundary
+condition, or a negative number if the face has no symmetry boundary condition associated with
+it.
+</p><!--l. 283--><p class="noindent" >The code to find out which boundaries should have a physical boundary condition applied might look as
+follows:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-5">
+#include &#x0022;cctk.h&#x0022;
+#include &#x0022;util_Table.h&#x0022;
+
+CCTK_INT symtable;
+CCTK_INT symbnd[6];
+int face;
+int ierr;
+
+symtable = SymmetryTableHandleForGrid (cctkGH);
+if (symtable&#x003C;0)
+  CCTK_VWarn(0, __LINE__, __FILE__, &#x0022;Thorn_Name&#x0022;, &#x0022;symtable is out of bounds&#x0022;);
+
+ierr = Util_TableGetIntArray (symtable, 6, symbnd, &#x0022;symmetry_handle&#x0022;);
+if (ierr!=6)
+  CCTK_VWarn(0, __LINE__, __FILE__, &#x0022;Thorn_Name&#x0022;, &#x0022;Util_TableGetIntArray returned error&#x0022;);
+
+for (face=0; face&#x003C;6; ++face) {
+  if (cctk_bbox[face] &#x0026;&#x0026; symbnd[face]&#x003C;0) {
+    /* Apply physical boundary condition here */
+  }
+}
+</pre>
+<!--l. 308--><p class="nopar" >_______________________________________________________________________________________
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-6">
+#include &#x0022;util_Table.h&#x0022;
+
+CCTK_INT symtable
+CCTK_INT symbnd(6)
+integer face
+integer ierr
+
+symtable = SymmetryTableHandleForGrid (cctkGH)
+if (symtable&#x003C;0) call CCTK_WARN (0, &#x0022;internal error&#x0022;)
+
+call Util_TableGetIntArray (ierr, int(symtable), 6, symbnd, &#x0022;symmetry_handle&#x0022;)
+if (ierr/=6) call CCTK_WARN (0, &#x0022;internal error&#x0022;)
+
+do face=1,6
+  if (cctk_bbox(face)/=0 .and. symbnd(face)&#x003C;0) then
+    ! Apply physical boundary condition here
+  end if
+end do
+</pre>
+<!--l. 331--><p class="nopar" >
+</p><!--l. 335--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-50005"></a>Symmetry Interpolation</h3>
+<!--l. 337--><p class="noindent" >The mechanism by which the grid points are mapped into the domain works as follows:
+     </p><ol  class="enumerate1" >
+<li 
+  class="enumerate" id="x1-5002x1">
+     <!--l. 340--><p class="noindent" >The user calls <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpGridArrays </span>with a list of coordinates.
+     </p></li>
+<li 
+  class="enumerate" id="x1-5004x2">
+     <!--l. 342--><p class="noindent" >The Flesh forwards this call to the driver.
+     </p></li>
+<li 
+  class="enumerate" id="x1-5006x3">
+     <!--l. 343--><p class="noindent" >The driver calls SymBase’s aliased function, <span 
+class="cmtt-10">SymmetryInterpolate</span>, passing along all arguments.
+                                                                                       
+                                                                                       
+     </p></li>
+<li 
+  class="enumerate" id="x1-5008x4">
+     <!--l. 345--><p class="noindent" >SymBase sets a flag for each face for which a symmetry condition has been registered, and then
+     calls <span 
+class="cmtt-10">SymmetryInterpolateFaces</span>, passing along all arguments. This is the beginning of a chain of
+     recursive calls.
+     </p></li>
+<li 
+  class="enumerate" id="x1-5010x5">
+     <!--l. 349--><p class="noindent" ><span 
+class="cmtt-10">SymmetryInterpolateFaces </span>checks whether any faces are flagged.
+     </p></li>
+<li 
+  class="enumerate" id="x1-5012x6">
+     <!--l. 351--><p class="noindent" >If no faces are flagged, SymBase calls the driver’s aliased function <span 
+class="cmtt-10">DriverInterpolate</span>, which
+     performs the actual interpolation. This ends the chain of recursive calls.
+     </p></li>
+<li 
+  class="enumerate" id="x1-5014x7">
+     <!--l. 354--><p class="noindent" >If there are faces with symmetry conditions flagged, SymBase chooses one such face, and then calls
+     the “symmetry interpolation” routine of the symmetry condition registered for this face, passing
+     along all arguments.
+     </p></li>
+<li 
+  class="enumerate" id="x1-5016x8">
+     <!--l. 358--><p class="noindent" >The  “symmetry  interpolation”  routine  maps  the  coordinates  into  the  domain  by  applying  the
+     symmetry condition for this face. It then removes the flag for the corresponding face, and calls
+     <span 
+class="cmtt-10">SymmetryInterpolateFaces</span>, passing along the arguments with the changed interpolation locations.
+     </p></li>
+<li 
+  class="enumerate" id="x1-5018x9">
+     <!--l. 363--><p class="noindent" >After  the  actual  interpolation  has  happened  in  the  driver,  the  recursive  call  will  return.  The
+     “symmetry interpolation” routine then examines the tensor types of the interpolated quantities and
+     un-maps the values back onto their original locations. That is, e.g., after a reflection on the lower
+     \(x\)-boundary, \(x\)-components of vectors need their sign changed.
+     </p></li>
+<li 
+  class="enumerate" id="x1-5020x10">
+     <!--l. 369--><p class="noindent" >The chain of recursive calls unravels until the call to <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpGridArrays </span>returns.</p></li></ol>
+<hr class="figure" /><div class="figure" 
+>
+                                                                                       
+                                                                                       
+<a 
+ id="x1-50212"></a>
+                                                                                       
+                                                                                       
+<div class="center" 
+>
+<!--l. 375--><p class="noindent" >
+</p><!--l. 376--><p class="noindent" ><img 
+src="fig/recursion.png" alt="PIC"  
+width="601" /></p></div>
+<br /> <div class="caption" 
+><span class="id">Figure 2: </span><span  
+class="content">The recursive calls involved in symmetry interpolation. Values of grid functions \(a\) at global
+Cartesian coordinates \(x\) are calculated by nested calls to the symmetry interpolators, which first apply
+the symmetry transformation to the coordinates. When all the symmetries have been applied, the local
+interpolator  is  called,  producing  the  interpolation  of  grid  function  values  in  the  local  basis.  As  the
+symmetry  interpolators  return,  they  apply  the  inverse  basis  transformation  to  the  interpolated  grid
+function values. </span></div><!--tex4ht:label?: x1-50212 -->
+                                                                                       
+                                                                                       
+</div><hr class="endfigure" />
+<!--l. 391--><p class="noindent" >This mechanism has thus four players: </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 393--><p class="noindent" >The driver forwards any <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpGridArrays </span>call to SymBase <span 
+class="cmtt-10">SymmetryInterpolate </span>so that
+     the list of interpolation points can be mapped into the domain. (See section <a 
+href="#x1-70005.2">5.2<!--tex4ht:ref: SymBase.driver_interaction --></a>.)
+     </p></li>
+     <li class="itemize">
+     <!--l. 397--><p class="noindent" >Thorn SymBase controls which symmetry conditions perform this mapping on which faces.
+     </p></li>
+     <li class="itemize">
+     <!--l. 399--><p class="noindent" >Each symmetry boundary condition has to register a “symmetry interpolation” routine that first
+     maps the points into the domain, then calls SymBase <span 
+class="cmtt-10">SymmetryInterpolateFaces </span>recursively.
+     Before returning, it performs the inverse coordinate transformation on the interpolated quantities.
+     </p></li>
+     <li class="itemize">
+     <!--l. 404--><p class="noindent" >The user calls <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpGridArrays</span>. For them the rest of the mechanism is transparent.</p></li></ul>
+<h4 class="subsectionHead"><span class="titlemark">5.1   </span> <a 
+ id="x1-60005.1"></a>Interaction With Symmetry Conditions</h4>
+<!--l. 412--><p class="noindent" >The symmetry conditions have to register their “symmetry interpolation” routines by calling SymBase’s aliased
+function <span 
+class="cmtt-10">SymmetryRegisterGridInterpolator</span>. The “symmetry interpolation” routine must use C linkage and
+must have the prototype
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-7">
+CCTK_INT symmetry_interpolate
+    (CCTK_POINTER_TO_CONST IN cctkGH,
+     CCTK_INT IN N_dims,
+     CCTK_INT IN local_interp_handle,
+     CCTK_INT IN param_table_handle,
+     CCTK_INT IN coord_system_handle,
+     CCTK_INT IN N_interp_points,
+     CCTK_INT IN interp_coords_type,
+     CCTK_POINTER_TO_CONST ARRAY IN interp_coords,
+     CCTK_INT IN N_input_arrays,
+     CCTK_INT ARRAY IN input_array_indices,
+     CCTK_INT IN N_output_arrays,
+     CCTK_INT ARRAY IN output_array_types,
+     CCTK_POINTER ARRAY IN output_arrays,
+     CCTK_INT IN faces)
+</pre>
+<!--l. 433--><p class="nopar" >
+</p><!--l. 435--><p class="noindent" >These arguments are the same as those for <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpGridArrays</span>, except that here the bit field <span 
+class="cmtt-10">faces </span>is used
+to flag those faces that remain to have their symmetry boundary condition applied to the interpolation
+points.
+</p><!--l. 440--><p class="noindent" >The aliased function <span 
+class="cmtt-10">SymmetryRegisterGridInterpolator </span>has the prototype
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-8">
+CCTK_INT FUNCTION                                           \
+    SymmetryRegisterGridInterpolator                        \
+        (CCTK_POINTER IN cctkGH,                            \
+         CCTK_INT IN sym_handle,                            \
+         CCTK_INT CCTK_FPOINTER IN symmetry_interpolate     \
+             (CCTK_POINTER_TO_CONST IN cctkGH,              \
+              CCTK_INT IN N_dims,                           \
+              CCTK_INT IN local_interp_handle,              \
+              CCTK_INT IN param_table_handle,               \
+              CCTK_INT IN coord_system_handle,              \
+              CCTK_INT IN N_interp_points,                  \
+              CCTK_INT IN interp_coords_type,               \
+              CCTK_POINTER_TO_CONST ARRAY IN interp_coords, \
+              CCTK_INT IN N_input_arrays,                   \
+              CCTK_INT ARRAY IN input_array_indices,        \
+              CCTK_INT IN N_output_arrays,                  \
+              CCTK_INT ARRAY IN output_array_types,         \
+              CCTK_POINTER ARRAY IN output_arrays,          \
+              CCTK_INT IN faces))
+</pre>
+<!--l. 463--><p class="nopar" >
+</p><!--l. 465--><p class="noindent" >which takes a function pointer to the aforementioned “symmetry interpolation” routine, while <span 
+class="cmtt-10">sym</span><span 
+class="cmtt-10">_handle</span>
+specifies which symmetry condition this routine is for. This handle must have been obtained from
+<span 
+class="cmtt-10">SymmetryRegister</span>.
+</p><!--l. 470--><p class="noindent" >
+     </p><blockquote class="quote">
+     <!--l. 471--><p class="noindent" >The routine <span 
+class="cmtt-10">SymmetryRegisterGridInterpolator </span>must be called <span 
+class="cmti-10">after </span>the symmetry faces
+     have been selected by the call to <span 
+class="cmtt-10">SymmetryRegisterGrid</span>.</p></blockquote>
+<!--l. 476--><p class="noindent" >For convenience, the macro <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_ALL</span><span 
+class="cmtt-10">_FACES </span>is provided. It may be used to initialize the <span 
+class="cmtt-10">faces </span>bit field in cases
+where the interpolation is to occur on all grid faces.
+</p><!--l. 480--><p class="noindent" >After it has removed from the <span 
+class="cmtt-10">faces </span>variable the faces whose symmetry condition it has applied, the symmetry
+interpolator routine must call the SymBase function <span 
+class="cmtt-10">SymmetryInterpolateFaces</span>, which has the
+prototype
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-9">
+CCTK_INT FUNCTION                                           \
+    SymmetryInterpolateFaces                                \
+        (CCTK_POINTER_TO_CONST IN cctkGH,                   \
+         CCTK_INT IN N_dims,                                \
+         CCTK_INT IN local_interp_handle,                   \
+         CCTK_INT IN param_table_handle,                    \
+         CCTK_INT IN coord_system_handle,                   \
+         CCTK_INT IN N_interp_points,                       \
+         CCTK_INT IN interp_coords_type,                    \
+         CCTK_POINTER_TO_CONST ARRAY IN interp_coords,      \
+         CCTK_INT IN N_input_arrays,                        \
+         CCTK_INT ARRAY IN input_array_indices,             \
+         CCTK_INT IN N_output_arrays,                       \
+         CCTK_INT ARRAY IN output_array_types,              \
+         CCTK_POINTER ARRAY IN output_arrays,               \
+         CCTK_INT IN faces)
+</pre>
+<!--l. 502--><p class="nopar" >
+</p><!--l. 506--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">5.2   </span> <a 
+ id="x1-70005.2"></a>Driver Interaction</h4>
+<!--l. 509--><p class="noindent" >The driver has to call SymBase’s aliased function <span 
+class="cmtt-10">SymmetryInterpolate</span>, and has to provide an aliased function
+<span 
+class="cmtt-10">DriverInterpolate</span>. Both functions have prototypes similar to <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpGridArrays</span>:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-10">
+CCTK_INT FUNCTION
+    SymmetryInterpolate
+        (CCTK_POINTER_TO_CONST IN cctkGH,
+         CCTK_INT IN N_dims,
+         CCTK_INT IN local_interp_handle,
+         CCTK_INT IN param_table_handle,
+         CCTK_INT IN coord_system_handle,
+         CCTK_INT IN N_interp_points,
+         CCTK_INT IN interp_coords_type,
+         CCTK_POINTER_TO_CONST ARRAY IN interp_coords,
+         CCTK_INT IN N_input_arrays,
+         CCTK_INT ARRAY IN input_array_indices,
+         CCTK_INT IN N_output_arrays,
+         CCTK_INT ARRAY IN output_array_types,
+         CCTK_POINTER ARRAY IN output_arrays)
+</pre>
+<!--l. 530--><p class="nopar" >
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-11">
+CCTK_INT FUNCTION
+    DriverInterpolate
+        (CCTK_POINTER_TO_CONST IN cctkGH,
+         CCTK_INT IN N_dims,
+         CCTK_INT IN local_interp_handle,
+         CCTK_INT IN param_table_handle,
+         CCTK_INT IN coord_system_handle,
+         CCTK_INT IN N_interp_points,
+         CCTK_INT IN interp_coords_type,
+         CCTK_POINTER_TO_CONST ARRAY IN interp_coords,
+         CCTK_INT IN N_input_arrays,
+         CCTK_INT ARRAY IN input_array_indices,
+         CCTK_INT IN N_output_arrays,
+         CCTK_INT ARRAY IN output_array_types,
+         CCTK_POINTER ARRAY IN output_arrays)
+</pre>
+<!--l. 548--><p class="nopar" >
+</p><!--l. 551--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">6   </span> <a 
+ id="x1-80006"></a>Tensor Types</h3>
+<!--l. 553--><p class="noindent" >Cactus supports declaring the <span 
+class="cmti-10">tensor type </span>of grid function groups. These tensor types define how the grid
+functions, which are supposed to be tensor components, transform under various transformations, such as
+reflections and rotations.
+</p><!--l. 558--><p class="noindent" >The tensor types are not declared directly; instead, a <span 
+class="cmti-10">tensor type alias </span>is declared. The following tensor type
+aliases are currently known and supported:
+     </p><dl class="description"><dt class="description">
+<span 
+class="cmtt-10">scalar</span><span 
+class="cmbx-10">:</span> </dt><dd 
+class="description">
+     <!--l. 562--><p class="noindent" >a scalar \(\rho \)
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">u</span><span 
+class="cmbx-10">:</span> </dt><dd 
+class="description">
+     <!--l. 563--><p class="noindent" >a vector \(\beta ^i\)
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">d</span><span 
+class="cmbx-10">:</span> </dt><dd 
+class="description">
+     <!--l. 564--><p class="noindent" >a covector \(s_i\)
+                                                                                       
+                                                                                       
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">dd</span><span 
+class="cmtt-10">_sym</span><span 
+class="cmbx-10">:</span> </dt><dd 
+class="description">
+     <!--l. 565--><p class="noindent" >a symmetric rank two tensor \(\gamma _{ij}\)</p></dd></dl>
+<!--l. 567--><p class="noindent" >(More tensor type aliases are likely to be defined in the future.)
+</p><!--l. 569--><p class="noindent" >In addition to the tensor type, one can also declare the <span 
+class="cmti-10">tensor parity</span>, <span 
+class="cmti-10">tensor weight</span>, and a <span 
+class="cmti-10">tensor metric</span>. The
+tensor parity (an integer) specifies the behaviour under reflections. Scalars and polar vectors have a parity \(+1\),
+pseudo scalars and axial vectors have a parity \(-1\). The tensor weight (a real number) specifies the behaviour under
+transformations that change the volume element. The tensor metric (a string) specifies what metric has to be
+used to raise or lower indices for that quantity.
+</p><!--l. 578--><p class="noindent" >Last but not least, a <span 
+class="cmti-10">tensor special </span>can be defined for quantities that do not transform as tensor. The currently
+supported tensor specials are
+     </p><dl class="description"><dt class="description">
+<span 
+class="cmtt-10">Gamma</span><span 
+class="cmbx-10">:</span> </dt><dd 
+class="description">
+     <!--l. 582--><p class="noindent" >for the transformation behaviour of the \(\Gamma ^i\) variables of the BSSN formalism; it is \(\Gamma ^i := - \gamma ^{jk} \Gamma ^i_{jk}\) with \(\Gamma ^i_{jk} := \frac {1}{2} \gamma ^{il} \left ( \partial _k \gamma _{lj} + \partial _j \gamma _{lk} - \partial _l \gamma _{jk} \right )\)
+     </p></dd><dt class="description">
+<span 
+class="cmtt-10">log</span><span 
+class="cmbx-10">:</span> </dt><dd 
+class="description">
+     <!--l. 588--><p class="noindent" >for the transformation behaviour of the variable \(\phi \) of the BSSN formalism; it is \(\phi := \log \psi \) with \(\psi ^{12} := \det \gamma _{ij}\).</p></dd></dl>
+<!--l. 594--><p class="noindent" >By default, the basis with respect to which the tensor components are given is supposed to be the (local)
+coordinate system given by the grid, i.e., the coordinate directions are the “natural” directions of the grid. It is
+possible to specify a different basis by declaring a <span 
+class="cmti-10">tensor basis</span>, which is the name of a grid function group
+containing the coordinate system.
+</p><!--l. 601--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">6.1   </span> <a 
+ id="x1-90006.1"></a>Example Tensor Type Declarations</h4>
+<!--l. 603--><p class="noindent" >From CactusWave/WaveToy:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-12">
+CCTK_REAL scalarevolve TYPE=gf TAGS=’tensortypealias=&#x0022;scalar&#x0022;’
+</pre>
+<!--l. 606--><p class="nopar" >
+</p><!--l. 608--><p class="noindent" >From CactusEinstein/ADMBase:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-13">
+CCTK_REAL metric TYPE=gf TAGS=’tensortypealias=&#x0022;dd_sym&#x0022; tensormetric=&#x0022;ADMBase::metric&#x0022;’
+CCTK_REAL curv TYPE=gf TAGS=’tensortypealias=&#x0022;dd_sym&#x0022; tensormetric=&#x0022;ADMBase::metric&#x0022;’
+CCTK_REAL lapse TYPE=gf TAGS=’tensortypealias=&#x0022;scalar&#x0022; tensormetric=&#x0022;ADMBase::metric&#x0022;’
+CCTK_REAL shift TYPE=gf TAGS=’tensortypealias=&#x0022;U&#x0022; tensormetric=&#x0022;ADMBase::metric&#x0022;’
+</pre>
+<!--l. 614--><p class="nopar" >
+</p><!--l. 616--><p class="noindent" >From AEIThorns/BSSN_MoL:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-14">
+CCTK_REAL ADM_BSSN_B TYPE=gf \
+    TAGS=’tensortypealias=&#x0022;u&#x0022; tensormetric=&#x0022;ADMBase::metric&#x0022;’
+CCTK_REAL ADM_BSSN_dtlapse TYPE=gf \
+    TAGS=’tensortypealias=&#x0022;scalar&#x0022; tensormetric=&#x0022;ADMBase::metric&#x0022;’
+CCTK_REAL ADM_BSSN_phi TYPE=gf \
+    TAGS=’tensortypealias=&#x0022;scalar&#x0022; tensormetric=&#x0022;BSSN_MoL::ADM_BSSN_metric&#x0022; \
+          tensorweight=0.16666666666666667 tensorspecial=&#x0022;log&#x0022;’
+CCTK_REAL ADM_BSSN_metric TYPE=gf \
+    TAGS=’tensortypealias=&#x0022;dd_sym&#x0022; tensormetric=&#x0022;BSSN_MoL::ADM_BSSN_metric&#x0022; \
+          tensorweight=-0.66666666666666667’
+CCTK_REAL ADM_BSSN_K TYPE=gf \
+    TAGS=’tensortypealias=&#x0022;scalar&#x0022; tensormetric=&#x0022;BSSN_MoL::ADM_BSSN_metric&#x0022;’
+CCTK_REAL ADM_BSSN_curv TYPE=gf \
+    TAGS=’tensortypealias=&#x0022;dd_sym&#x0022; tensormetric=&#x0022;BSSN_MoL::ADM_BSSN_metric&#x0022; \
+          tensorweight=-0.66666666666666667’
+CCTK_REAL ADM_BSSN_gamma TYPE=gf \
+    TAGS=’tensortypealias=&#x0022;u&#x0022; tensormetric=&#x0022;BSSN_MoL::ADM_BSSN_metric&#x0022; \
+          tensorweight=0.66666666666666667 tensorspecial=&#x0022;Gamma&#x0022;’
+</pre>
+<!--l. 636--><p class="nopar" >
+</p><!--l. 643--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">7   </span> <a 
+ id="x1-100007"></a>Parameters</h3>
+<!--l. 662--><p class="noindent" ></p> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /></colgroup><colgroup id="TBL-2-2g"><col 
+id="TBL-2-2" /><col 
+id="TBL-2-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:normal; text-align:left;" id="TBL-2-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">verbose</div>  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-1-3"  
+class="td01">                                              BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-2-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Output symmetry boundary face descriptions after registration</span></div>                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-1"  
+class="td11">         </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-3-3"  
+class="td01">                                            <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-4-1"  
+class="td11">         </td></tr></table>
+<!--l. 671--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">8   </span> <a 
+ id="x1-110008"></a>Interfaces</h3>
+<!--l. 676--><p class="noindent" >
+</p>
+                                                                                       
+                                                                                       
+<h4 class="likesubsectionHead"><a 
+ id="x1-12000"></a>General</h4>
+<!--l. 678--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 680--><p class="noindent" >symbase
+</p><!--l. 685--><p class="noindent" ><span 
+class="cmbx-10">Provides</span>:
+</p><!--l. 689--><p class="noindent" >SymmetryRegister to
+</p><!--l. 691--><p class="noindent" >SymmetryHandleOfName to
+</p><!--l. 693--><p class="noindent" >SymmetryNameOfHandle to
+</p><!--l. 695--><p class="noindent" >SymmetryRegisterGrid to
+</p><!--l. 697--><p class="noindent" >SymmetryRegisterGI to
+</p><!--l. 699--><p class="noindent" >SymmetryRegisterGN to
+</p><!--l. 701--><p class="noindent" >SymmetryRegisterGridInterpolator to
+</p><!--l. 703--><p class="noindent" >SymmetryTableHandleForGrid to
+</p><!--l. 705--><p class="noindent" >SymmetryTableHandleForGI to
+</p><!--l. 707--><p class="noindent" >SymmetryTableHandleForGN to
+</p><!--l. 709--><p class="noindent" >GetSymmetryBoundaries to
+</p><!--l. 711--><p class="noindent" >SymmetryInterpolate to
+</p><!--l. 713--><p class="noindent" >SymmetryInterpolateFaces to
+</p><!--l. 716--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">9   </span> <a 
+ id="x1-130009"></a>Schedule</h3>
+<!--l. 722--><p class="noindent" >This section lists all the variables which are assigned storage by thorn CactusBase/SymBase. Storage can
+either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 725--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-14000"></a>Storage</h4>
+<!--l. 725--><p class="noindent" >NONE
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-15000"></a>Scheduled Functions</h4>
+<!--l. 729--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_STARTUP</span>
+</p><!--l. 731--><p class="noindent" >      symbase_startup
+</p><!--l. 733--><p class="noindent" >     <span 
+class="cmti-10">register gh extension for symbase</span>
+</p><!--l. 736--><p class="noindent" > 
+</p><!--l. 738--><p class="noindent" ></p> <table id="TBL-3" class="tabular" 
+ 
+><colgroup id="TBL-3-1g"><col 
+id="TBL-3-1" /><col 
+id="TBL-3-2" /><col 
+id="TBL-3-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-3-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 746--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_WRAGH</span>
+                                                                                       
+                                                                                       
+</p><!--l. 748--><p class="noindent" >      symbase_wrapper
+</p><!--l. 750--><p class="noindent" >     <span 
+class="cmti-10">wrapper group for symbase</span>
+</p><!--l. 753--><p class="noindent" > 
+</p><!--l. 755--><p class="noindent" ></p> <table id="TBL-4" class="tabular" 
+ 
+><colgroup id="TBL-4-1g"><col 
+id="TBL-4-1" /><col 
+id="TBL-4-2" /><col 
+id="TBL-4-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-4-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-2"  
+class="td11"> Type:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-3"  
+class="td11"> group  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-2-1"  
+class="td11">    </td></tr></table>
+<!--l. 762--><p class="noindent" ><span 
+class="cmbx-10">SymBase</span><span 
+class="cmbx-10">_Wrapper</span>
+</p><!--l. 764--><p class="noindent" >      symmetryregister
+</p><!--l. 766--><p class="noindent" >     <span 
+class="cmti-10">register your symmetries here</span>
+</p><!--l. 769--><p class="noindent" > 
+</p><!--l. 771--><p class="noindent" ></p> <table id="TBL-5" class="tabular" 
+ 
+><colgroup id="TBL-5-1g"><col 
+id="TBL-5-1" /><col 
+id="TBL-5-2" /><col 
+id="TBL-5-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-5-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-2"  
+class="td11"> Type:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-3"  
+class="td11"> group  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-2-1"  
+class="td11">    </td></tr></table>
+<!--l. 778--><p class="noindent" ><span 
+class="cmbx-10">SymBase</span><span 
+class="cmbx-10">_Wrapper</span>
+</p><!--l. 780--><p class="noindent" >      symbase_statistics
+</p><!--l. 782--><p class="noindent" >     <span 
+class="cmti-10">print symmetry boundary face descriptions</span>
+</p><!--l. 785--><p class="noindent" > 
+</p><!--l. 787--><p class="noindent" ></p> <table id="TBL-6" class="tabular" 
+ 
+><colgroup id="TBL-6-1g"><col 
+id="TBL-6-1" /><col 
+id="TBL-6-2" /><col 
+id="TBL-6-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-6-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-3"  
+class="td11"> symmetryregister  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-2-3"  
+class="td11"> c                       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-3"  
+class="td11"> function              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 796--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_BASEGRID</span>
+</p><!--l. 798--><p class="noindent" >      symbase_check
+</p><!--l. 800--><p class="noindent" >     <span 
+class="cmti-10">check whether the driver set up the grid consistently</span>
+</p><!--l. 803--><p class="noindent" > 
+</p><!--l. 805--><p class="noindent" ></p> <table id="TBL-7" class="tabular" 
+ 
+><colgroup id="TBL-7-1g"><col 
+id="TBL-7-1" /><col 
+id="TBL-7-2" /><col 
+id="TBL-7-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-7-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-3-1"  
+class="td11">    </td></tr></table>
+ 
+</body></html> 
+
+                                                                                       
+
+
