@@ -1,0 +1,722 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>PUGHSlab</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">PUGHSlab</h2>
+                   <div class="author" ><span 
+class="cmr-12">Gabrielle Allen, Tom Goodale, Thomas Radke,</span>
+<br /> <span 
+class="cmr-12">with many comments and suggestions from Erik Schnetter and Jonathan Thornburg</span></div>
+<br />
+<div class="date" ><span 
+class="cmr-12">October 2001</span></div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 23--><p class="noindent" ><span 
+class="cmr-9">Thorn PUGHSlab implements the generic hyperslab data extraction API for CCTK arrays.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Introduction</h3>
+<!--l. 28--><p class="noindent" >Many I/O thorns output data from distributed CCTK array variables. If – in a multiprocessor run – output is
+done by only one processor, it needs to collect the data from the others. This ties the I/O thorn to
+the driver since it has to know about domain-decomposed data layout, interprocessor ghostzones,
+etc.
+</p><!--l. 34--><p class="noindent" >A clean way of separating the I/O code from the driver is to use a thorn which provides a generic interface to
+get/put the distributed data on/from the I/O processor for writing/reading. This interface can also provide more
+features such as downsampling, datatype conversions, or hyperslab selections. A hyperslab is defined
+in this context a subset of a global CCTK array, with its own dimension, origin, direction, and
+                                                                                       
+                                                                                       
+extents.<br 
+class="newline" />
+</p><!--l. 41--><p class="noindent" >Another possible use of hyperslabs is the implementation of certain boundary conditions (e.g. reflection). By
+having the boundary condition code calling generic hyperslab get/put calls, it can be written without special
+knowledge about driver specifics.<br 
+class="newline" />
+</p><!--l. 46--><p class="noindent" >This thorn documentation describes the complete generic hyperslab API. All routines use CCTK data types in
+their argument lists and as return codes exclusively. This allows actual implementations of this API to be
+realized as CCTK function aliases. Different hyperslab thorns can then implementing the API using the same
+function names, and other thorns using the API can be independent of the actual hyperslab thorns which are
+compiled in.<br 
+class="newline" />
+</p><!--l. 53--><p class="noindent" >The current version of thorn <span 
+class="cmtt-10">PUGHSlab </span>implements only parts of the CCTK hyperslab API. Please refer to
+section <a 
+href="#x1-50003">3<!--tex4ht:ref: implementation --></a> for implementation details.
+</p><!--l. 59--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a>CCTK Hyperslab API Specification</h3>
+<!--l. 62--><p class="noindent" >In general, a hyperslab get/put operation is done in a three-level scheme:
+</p><!--l. 64--><p class="noindent" >
+     </p><ol  class="enumerate1" >
+<li 
+  class="enumerate" id="x1-2002x1">
+     <!--l. 65--><p class="noindent" >In a first step, a hyperslab mapping is defined by calling one of the following routines:<br 
+class="newline" /><span 
+class="cmtt-10">   Hyperslab</span><span 
+class="cmtt-10">_LocalMappingByIndex()</span><br 
+class="newline" /><span 
+class="cmtt-10">   Hyperslab</span><span 
+class="cmtt-10">_LocalMappingByPhys()</span><br 
+class="newline" /><span 
+class="cmtt-10">   Hyperslab</span><span 
+class="cmtt-10">_GlobalMappingByIndex()</span><br 
+class="newline" /><span 
+class="cmtt-10">   Hyperslab</span><span 
+class="cmtt-10">_GlobalMappingByPhys()</span><br 
+class="newline" /> There exists two complement sets of routines: one for the definition of local hyperslabs (which
+     apply to a processor’s local patch of a distributed grid variable only), and one for global hyperslabs
+     (which spawn the entire grid).
+     </p><!--l. 78--><p class="noindent" >A mapping can be defined by either physical coordinates or by grid index points.
+     </p><!--l. 80--><p class="noindent" >All hyperslab mapping routines return an integer handle which refers to an internally allocated
+     data structure describing the defined hyperslab.
+     </p></li>
+<li 
+  class="enumerate" id="x1-2004x2">
+     <!--l. 83--><p class="noindent" >With  such  a  mapping,  hyperslabs  can  then  be  extracted/distributed  by  one  or  more  calls  to
+     <span 
+class="cmtt-10">   Hyperslab</span><span 
+class="cmtt-10">_Get()</span><br 
+class="newline" /><span 
+class="cmtt-10">   Hyperslab</span><span 
+class="cmtt-10">_GetList()</span><br 
+class="newline" /><span 
+class="cmtt-10">   Hyperslab</span><span 
+class="cmtt-10">_Put()</span><br 
+class="newline" /><span 
+class="cmtt-10">   Hyperslab</span><span 
+class="cmtt-10">_PutList()</span><br 
+class="newline" /> There are routines for getting/putting a hyperslab from/to a single grid variable or from/to a list
+     of variables.
+     </p></li>
+<li 
+  class="enumerate" id="x1-2006x3">
+     <!--l. 94--><p class="noindent" >Once all hyperslabs are done, the hyperslab mapping should be freed by a call to<br 
+class="newline" /><span 
+class="cmtt-10">   Hyperslab</span><span 
+class="cmtt-10">_FreeMapping()</span>.</p></li></ol>
+<!--l. 99--><p class="noindent" >If the <span 
+class="cmtt-10">Hyperslab</span><span 
+class="cmtt-10">_Get*()/Hyperslab</span><span 
+class="cmtt-10">_Put*() </span>get passed a mapping for a global hyperslab, a global,
+synchronuous operation will be performed (i.e., it must be called in sync by every processor). All input
+arguments must be consistent between processors.
+</p><!--l. 105--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.1   </span> <a 
+ id="x1-30002.1"></a>Defining a hyperslab mapping</h4>
+<!--l. 107--><p class="noindent" >An \(M\)-dimensional hyperslab subspace mapped into an \(N\)-dimensional space can be specified either by coordinates
+on the physical grid or by index points on the underlying computational grid.
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-1">
+CCTK_INT Hyperslab_GlobalMappingByIndex (
+           CCTK_POINTER_TO_CONST GH,
+           CCTK_INT              vindex,
+           CCTK_INT              hdim,
+           const CCTK_INT       *direction         /* vdim*hdim */,
+           const CCTK_INT       *origin            /* vdim */,
+           const CCTK_INT       *extent            /* hdim */,
+           const CCTK_INT       *downsample        /* hdim */,
+           CCTK_INT              table_handle,
+           CCTK_FPOINTER         conversion_fn,
+           CCTK_INT             *hsize             /* hdim */);
+
+CCTK_INT Hyperslab_GlobalMappingByPhys (
+           CCTK_POINTER_TO_CONST GH,
+           CCTK_INT              vindex,
+           CCTK_INT              hdim,
+           CCTK_STRING           coord_system_name,
+           const CCTK_INT       *direction         /* vdim*hdim */,
+           const CCTK_REAL      *origin            /* vdim */,
+           const CCTK_REAL      *extent            /* hdim */,
+           const CCTK_INT       *downsample        /* hdim */,
+           CCTK_INT              table_handle,
+           CCTK_FPOINTER         conversion_fn,
+           CCTK_INT             *hsize             /* hdim */);
+
+
+CCTK_INT Hyperslab_LocalMappingByIndex (
+           CCTK_POINTER_TO_CONST GH,
+           CCTK_INT              vindex,
+           CCTK_INT              hdim,
+           const CCTK_INT       *direction         /* vdim*hdim */,
+           const CCTK_INT       *origin            /* vdim */,
+           const CCTK_INT       *extent            /* hdim */,
+           const CCTK_INT       *downsample        /* hdim */,
+           CCTK_INT              table_handle,
+           CCTK_FPOINTER         conversion_fn,
+           CCTK_INT             *hsize_local,      /* hdim */
+           CCTK_INT             *hsize_global,     /* hdim */
+           CCTK_INT             *hoffset_global    /* hdim */);
+
+CTK_INT Hyperslab_LocalMappingByPhys (
+           CCTK_POINTER_TO_CONST GH,
+           CCTK_INT              vindex,
+           CCTK_INT              hdim,
+           CCTK_STRING           coord_system_name,
+                                                                                       
+                                                                                       
+           const CCTK_INT       *direction         /* vdim*hdim */,
+           const CCTK_REAL      *origin            /* vdim */,
+           const CCTK_REAL      *extent            /* hdim */,
+           const CCTK_INT       *downsample        /* hdim */,
+           CCTK_INT              table_handle,
+           CCTK_FPOINTER         conversion_fn,
+           CCTK_INT             *hsize_local,      /* hdim */
+           CCTK_INT             *hsize_global,     /* hdim */
+           CCTK_INT             *hoffset_global    /* hdim */);
+</pre>
+<!--l. 166--><p class="nopar" >
+</p><!--l. 168--><p class="noindent" ><span 
+class="cmbx-10">Function arguments:</span> </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 170--><p class="noindent" ><span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_POINTER</span><span 
+class="cmtt-10">_TO</span><span 
+class="cmtt-10">_CONST GH</span><br 
+class="newline" />The reference to the CCTK grid hierarchy.
+     </p><!--l. 173--><p class="noindent" >In a C implementation, this should be a pointer of type <span 
+class="cmtt-10">const cGH *</span>.
+     </p></li>
+     <li class="itemize">
+     <!--l. 175--><p class="noindent" ><span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_INT vindex</span><br 
+class="newline" />In  order  to  compute  a  hyperslab  mapping,  a  CCTK  grid  variable  must  be  given  by  this
+     argument which will be used as a template in the following hyperslab get/put operation to denote
+     the input arrays’ domain decomposition (dimensionality and distribution over processors). The
+     domain decomposition of all input CCTK variables given by the <span 
+class="cmtt-10">vindex, vindices </span>arguments in
+     subsequent calls to <span 
+class="cmtt-10">Hyperslab</span><span 
+class="cmtt-10">_GetXXX()/Hyperslab</span><span 
+class="cmtt-10">_PutXXX() </span>must match the one of the template
+     variable <span 
+class="cmtt-10">vindex</span>.
+     </p></li>
+     <li class="itemize">
+     <!--l. 185--><p class="noindent" ><span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_INT hdim</span><br 
+class="newline" />The dimension of the hyperslab to get/put (\(0 &lt; {\tt hdim} &lt;= {\tt vdim}\)).
+     </p></li>
+     <li class="itemize">
+     <!--l. 188--><p class="noindent" ><span 
+class="cmtt-10">const CCTK</span><span 
+class="cmtt-10">_INT *direction</span><br 
+class="newline" /><span 
+class="cmtt-10">const CCTK</span><span 
+class="cmtt-10">_INT *origin</span><br 
+class="newline" /><span 
+class="cmtt-10">const CCTK</span><span 
+class="cmtt-10">_INT *extent</span><br 
+class="newline" /><span 
+class="cmtt-10">const CCTK</span><span 
+class="cmtt-10">_INT *downsample</span><br 
+class="newline" /><span 
+class="cmtt-10">--------------------------</span><br 
+class="newline" /><span 
+class="cmtt-10">const CCTK</span><span 
+class="cmtt-10">_CHAR *coord</span><span 
+class="cmtt-10">_system</span><span 
+class="cmtt-10">_name</span><br 
+class="newline" /><span 
+class="cmtt-10">const CCTK</span><span 
+class="cmtt-10">_INT *direction</span><br 
+class="newline" /><span 
+class="cmtt-10">const CCTK</span><span 
+class="cmtt-10">_REAL *origin</span><br 
+class="newline" /><span 
+class="cmtt-10">const CCTK</span><span 
+class="cmtt-10">_REAL *extent</span><br 
+class="newline" /><span 
+class="cmtt-10">const CCTK</span><span 
+class="cmtt-10">_INT *downsample</span><br 
+class="newline" />Arguments describing the actual mapping of the hyperslab to get/put.
+     </p><!--l. 200--><p class="noindent" >The hyperslab location is identified by its origin (lower left corner), the direction vectors starting
+     from the origin and spanning the hyperslab in the \(N\)-dimensional space, and its extents (size of the
+     hyperslab in each direction).
+                                                                                       
+                                                                                       
+     </p><!--l. 205--><p class="noindent" >There are <span 
+class="cmtt-10">hdim </span>direction vectors (one for each hyperslab axis) with <span 
+class="cmtt-10">vdim </span>elements. The direction
+     vectors are given in grid index points and must be linearly independent. The <span 
+class="cmtt-10">direction </span>argument
+     must be passed as an array <span 
+class="cmtt-10">direction[vdim</span><span 
+class="cmtt-10">_index + hdim</span><span 
+class="cmtt-10">_index*vdim] </span>(<span 
+class="cmtt-10">vdim </span>is the fastest
+     changing dimension).
+     </p><!--l. 211--><p class="noindent" >The origin and extent can be given in either physical coordinates or grid points – for the first case
+     a coordinate system needs to be given to do the mapping onto the underlying grid. For the second
+     case, integer extents can be given as negative values meaning that the hyperslab mapping should
+     be defined with the maximum possible extents (ie. the size of the underlying grid).
+     </p><!--l. 218--><p class="noindent" >The  downsampling  parameter  denotes  the  downsampling  factors  for  the  hyperslab  to  be
+     extracted/distributed. They are given in terms of grid points in each hyperslab direction. The
+     downsampling parameter is optional – if NULL is passed here, no downsampling will be applied.
+     </p></li>
+     <li class="itemize">
+     <!--l. 223--><p class="noindent" ><span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_INT table</span><span 
+class="cmtt-10">_handle</span><br 
+class="newline" />A key/value table can be passed in via its handle to provide additional information to the hyperslab
+     get/put routines about the hyperslab mapping. For example, there could be a tolerance parameter
+     for hyperslabs which are not rectangular to the underlying grid. For grid points which offset from
+     the direction vectors, the tolerance would then specify a (plus/minus) offset for the directions saying
+     which points should still be included in the hyperslab space.
+     </p><!--l. 232--><p class="noindent" >Another example could be whether to do interpolation between grid points or not.
+     </p><!--l. 235--><p class="noindent" >Passing a table handle is optional, an invalid (negative) table handle denotes no additional table
+     information.
+     </p></li>
+     <li class="itemize">
+     <!--l. 238--><p class="noindent" ><span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_FPOINTER conversion</span><span 
+class="cmtt-10">_fn</span><br 
+class="newline" />Reference to a user-defined datatype conversion function.
+     </p><!--l. 241--><p class="noindent" >Users can request a type conversion between input and output data during a hyperslab get/put
+     operation. A hyperslab API implementation may provide a set of predefined data type conversion
+     routines for this purpose. In addition to this feature, users can also provide their own data type
+     conversion function and pass a reference to it in the conversion_fn argument.
+     </p><!--l. 247--><p class="noindent" >For a C implementation, such a user-supplied conversion function should be declared according to the
+     following typedef:
+                                                                                       
+                                                                                       
+</p>
+     <pre class="verbatim" id="verbatim-2">
+     typedef CCTK_INT (*t_hslabConversionFn) (CCTK_INT nelems,
+                                              CCTK_INT src_stride,
+                                              CCTK_INT dst_stride,
+                                              CCTK_INT src_type,
+                                              CCTK_INT dst_type,
+                                              CCTK_POINTER_TO_CONST src,
+                                              CCTK_POINTER dst);
+</pre>
+     <!--l. 257--><p class="nopar" >
+     </p><!--l. 259--><p class="noindent" >A data type conversion function gets passed the number of elements to convert (<span 
+class="cmtt-10">nelems</span>), the strides
+     between adjacent elements in the source and destination arrays (<span 
+class="cmtt-10">src</span><span 
+class="cmtt-10">_stride, dst</span><span 
+class="cmtt-10">_stride</span>), the source
+     and destination CCTK datatypes (<span 
+class="cmtt-10">src</span><span 
+class="cmtt-10">_type, dst</span><span 
+class="cmtt-10">_type</span>), a pointer to the data to convert (<span 
+class="cmtt-10">src</span>), and a
+     pointer to the conversion target buffer (<span 
+class="cmtt-10">dst</span>). The routine should return the number of elements converted
+     (<span 
+class="cmtt-10">nelems</span>) for success.
+     </p><!--l. 268--><p class="noindent" >If a user-supplied function is given (<span 
+class="cmtt-10">conversion</span><span 
+class="cmtt-10">_fn </span>is not NULL), subsequent hyperslab get/put calls will
+     use for data type conversions. Otherwise the hyperslab get/put calls should fall back to using an
+     appropriate predefined data conversion function (if any exists).
+     </p></li>
+     <li class="itemize">
+     <!--l. 273--><p class="noindent" ><span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_INT *hsize</span><br 
+class="newline" /><span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_INT *hsize</span><span 
+class="cmtt-10">_local</span><br 
+class="newline" />Reference to a size array with <span 
+class="cmtt-10">hdim </span>elements to be set by the <span 
+class="cmtt-10">Hyperslab</span><span 
+class="cmtt-10">_XXXMappingByXXX()</span>
+     routines.
+     </p><!--l. 278--><p class="noindent" >The resulting size of the hyperslab to be extracted is set according to the hyperslab extents and
+     downsampling parameters chosen. With this information, one can compute the overall size of the
+     hyperslab, allocate memory for it and pass it as a user-provided hyperslab data buffer into subsequent calls
+     to <span 
+class="cmtt-10">Hyperslab</span><span 
+class="cmtt-10">_GetXXX()</span>.
+     </p></li>
+     <li class="itemize">
+     <!--l. 284--><p class="noindent" ><span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_INT *hsize</span><span 
+class="cmtt-10">_global</span><br 
+class="newline" />Reference to a size array with <span 
+class="cmtt-10">hdim </span>elements to be set by the <span 
+class="cmtt-10">Hyperslab</span><span 
+class="cmtt-10">_LocalMappingBy*()</span>
+     routine.
+     </p><!--l. 288--><p class="noindent" >This array holds the sizes of the corresponding global hyperslab. It is set according to the local hyperslab
+     extents and downsampling parameters chosen and locates the local hyperslab in the global
+     grid.
+     </p><!--l. 292--><p class="noindent" >A value of NULL can be passed for <span 
+class="cmtt-10">hsize</span><span 
+class="cmtt-10">_global </span>if no information about the global hyperslab size is
+     needed.
+     </p></li>
+     <li class="itemize">
+     <!--l. 295--><p class="noindent" ><span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_INT *hoffset</span><span 
+class="cmtt-10">_global</span><br 
+class="newline" />Reference to an offset array with <span 
+class="cmtt-10">hdim </span>elements to be set by the <span 
+class="cmtt-10">Hyperslab</span><span 
+class="cmtt-10">_LocalMappingBy*()</span>
+     routine.
+                                                                                       
+                                                                                       
+     </p><!--l. 299--><p class="noindent" >This array holds the offsets of the local hyperslab into the corresponding global hyperslab. It is set
+     according to the local hyperslab extents and downsampling parameters chosen and locates the local
+     hyperslab in the global grid.
+     </p><!--l. 304--><p class="noindent" >A value of NULL can be passed for <span 
+class="cmtt-10">hoffset</span><span 
+class="cmtt-10">_global </span>if no information about a hyperslab offsets is
+     needed.</p></li></ul>
+<!--l. 308--><p class="noindent" ><span 
+class="cmbx-10">Return codes (according to the Cactus Coding Conventions):</span> </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 310--><p class="noindent" >0 for success
+     </p></li>
+     <li class="itemize">
+     <!--l. 311--><p class="noindent" >negative  for  some  error  condition  (to  be  defined  by  an  actual  implementation  of  the
+     <span 
+class="cmtt-10">Hyperslab</span><span 
+class="cmtt-10">_*MappingBy*() </span>routines)</p></li></ul>
+<!--l. 316--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.2   </span> <a 
+ id="x1-40002.2"></a>Extracting/distributing a hyperslab</h4>
+<!--l. 318--><p class="noindent" >Each set of hyperslab get/put routines has two functions: one which operates on a single hyperslab, and another
+which gets/puts hyperslabs for a list of variables. Depending on the actual hyperslab implementation it might be
+more efficient to operate on a list of grid variables using <span 
+class="cmtt-10">Hyperslab</span><span 
+class="cmtt-10">_GetList()/Hyperslab</span><span 
+class="cmtt-10">_PutList()</span>
+rather than doing sequential calls to <span 
+class="cmtt-10">Hyperslab</span><span 
+class="cmtt-10">_Get()/Hyperslab</span><span 
+class="cmtt-10">_Put() </span>with individual grid
+variables.
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-3">
+CCTK_INT Hyperslab_Get (CCTK_POINTER_TO_CONST GH,
+                        CCTK_INT       mapping_handle,
+                        CCTK_INT       proc,
+                        const CCTK_INT vindex,
+                        const CCTK_INT timelevel,
+                        const CCTK_INT hdatatype,
+                        void          *hdata);
+
+CCTK_INT Hyperslab_GetList (CCTK_POINTER_TO_CONST GH,
+                            CCTK_INT        mapping_handle,
+                            CCTK_INT        num_arrays,
+                            const CCTK_INT *procs      /* num_arrays */,
+                            const CCTK_INT *vindices   /* num_arrays */,
+                            const CCTK_INT *timelevels /* num_arrays */,
+                            const CCTK_INT *hdatatypes /* num_arrays */,
+                            void *const    *hdata      /* num_arrays */,
+                            CCTK_INT       *retvals    /* num_arrays */);
+
+CCTK_INT Hyperslab_Put (CCTK_POINTER_TO_CONST GH,
+                        CCTK_INT              mapping_handle,
+                        CCTK_INT              proc,
+                        CCTK_INT              vindex,
+                        CCTK_INT              timelevel,
+                        CCTK_INT              hdatatype,
+                        CCTK_POINTER_TO_CONST hdata);
+
+CCTK_INT Hyperslab_PutList (CCTK_POINTER_TO_CONST       GH,
+                            CCTK_INT                    mapping_handle,
+                            CCTK_INT                    num_arrays,
+                            const CCTK_INT             *procs      /* num_arrays */,
+                            const CCTK_INT             *vindices   /* num_arrays */,
+                            const CCTK_INT             *timelevels /* num_arrays */,
+                            const CCTK_INT             *hdatatypes /* num_arrays */,
+                            const CCTK_POINTER_TO_CONST hdata      /* num_arrays */,
+                            CCTK_INT                   *retvals    /* num_arrays */);
+</pre>
+<!--l. 362--><p class="nopar" >
+</p><!--l. 364--><p class="noindent" ><span 
+class="cmbx-10">Function arguments:</span> </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 366--><p class="noindent" ><span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_POINTER</span><span 
+class="cmtt-10">_TO</span><span 
+class="cmtt-10">_CONST GH</span><br 
+class="newline" />The reference to the CCTK grid hierarchy.
+                                                                                       
+                                                                                       
+     </p><!--l. 369--><p class="noindent" >In a C implementation, this should be a pointer of type <span 
+class="cmtt-10">const cGH *</span>.
+     </p></li>
+     <li class="itemize">
+     <!--l. 371--><p class="noindent" ><span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_INT mapping</span><span 
+class="cmtt-10">_handle</span><br 
+class="newline" />The handle for the hyperslab mapping as returned by a previous call to one of the hyperslab mapping
+     routines.
+     </p></li>
+     <li class="itemize">
+     <!--l. 375--><p class="noindent" ><span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_INT num</span><span 
+class="cmtt-10">_arrays</span><br 
+class="newline" />The total number of input arrays to get/put a hyperslab from/to.
+     </p><!--l. 378--><p class="noindent" >This must be a positive integer and match the number of array elements in the arguments following.
+     </p></li>
+     <li class="itemize">
+     <!--l. 381--><p class="noindent" ><span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_INT proc</span><br 
+class="newline" /><span 
+class="cmtt-10">const CCTK</span><span 
+class="cmtt-10">_INT *procs</span><br 
+class="newline" />The (list of) processor(s) which will receive/provide the hyperslab data.
+     </p><!--l. 385--><p class="noindent" >For <span 
+class="cmtt-10">Hyperslab</span><span 
+class="cmtt-10">_GetXXX()</span>, there may be either exactly one processor providing the hyperslab data
+     (in this case, its processor ID must be given in <span 
+class="cmtt-10">proc</span>), or all all processors will get the extracted
+     hyperslab data (an invalid (i.e., negative) processor ID should be given as <span 
+class="cmtt-10">proc</span>, or <span 
+class="cmtt-10">procs </span>is passed
+     as a NULL pointer). For <span 
+class="cmtt-10">Hyperslab</span><span 
+class="cmtt-10">_PutXXX()</span>, there may only be one processor providing the
+     hyperslab data to be distributed to all others.
+     </p></li>
+     <li class="itemize">
+     <!--l. 393--><p class="noindent" ><span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_INT vindex</span><br 
+class="newline" /><span 
+class="cmtt-10">const CCTK</span><span 
+class="cmtt-10">_INT *vindices</span><br 
+class="newline" />The (list of) CCTK variable(s) to get/put a hyperslab from/to.
+     </p><!--l. 397--><p class="noindent" >The grid variables are given by their CCTK indices; their domain decomposition must match the
+     template variable as given in a previous hyperslab mapping routine call.
+     </p></li>
+     <li class="itemize">
+     <!--l. 401--><p class="noindent" ><span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_INT timelevel</span><br 
+class="newline" /><span 
+class="cmtt-10">const CCTK</span><span 
+class="cmtt-10">_INT *timelevels</span><br 
+class="newline" />The (list of) timelevel(s) for the grid variable(s) to get/put a hyperslab from/to.
+     </p><!--l. 405--><p class="noindent" >Each  element  in  the  <span 
+class="cmtt-10">timelevels </span>array  matches  its  entry  in  the  <span 
+class="cmtt-10">vindices </span>array  argument.  If
+     <span 
+class="cmtt-10">timelevels </span>is passed as a NULL pointer then all timelevels for the list operation will default to 0
+     (denoting the current timelevel).
+     </p></li>
+     <li class="itemize">
+     <!--l. 410--><p class="noindent" ><span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_INT hdatatype</span><br 
+class="newline" /><span 
+class="cmtt-10">const CCTK</span><span 
+class="cmtt-10">_INT *hdatatypes</span><br 
+class="newline" />The (list of) CCTK data type(s) of the hyperslab data.
+     </p><!--l. 414--><p class="noindent" >The hyperslab data to be extracted/distributed may be given in a data type which is different to
+     its corresponding grid variable. For this case, the requested hyperslab data type must be specified
+     explicitely. The hyperslab routines will then do the neccessary data type conversions either by using
+     a user-supplied data type conversion function (as specified in the <span 
+class="cmtt-10">conversion</span><span 
+class="cmtt-10">_fn </span>argument to the
+                                                                                       
+                                                                                       
+     hyperslab mapping routines), or by choosing a built-in predefined data type conversion function.
+     convert the input array datatypes to some output array datatype.
+     </p><!--l. 423--><p class="noindent" >A negative value for <span 
+class="cmtt-10">hdatatype </span>or type or passing a NULL pointer for the <span 
+class="cmtt-10">hdatatypes </span>argument
+     indicates that both the grid variable and its corresponding hyperslab have the same CCTK data
+     type so that no type conversion is necessary.
+     </p></li>
+     <li class="itemize">
+     <!--l. 428--><p class="noindent" ><span 
+class="cmtt-10">(const) void *hdata</span><br 
+class="newline" /><span 
+class="cmtt-10">(const) void *const *hdata</span><br 
+class="newline" />The (list of) user-supplied buffer(s) to store the extracted hyperslabs for each input variable (for a
+     get operation) or to read the hyperslab data from (for a put operation).
+     </p><!--l. 434--><p class="noindent" >This argument is only evaluated on processors which are part of the hyperslab mapping.
+     </p></li>
+     <li class="itemize">
+     <!--l. 437--><p class="noindent" ><span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_INT *retvals</span><br 
+class="newline" />User-provided   array   to   store   the   status   of   each   individual   get/put   operation   in   a
+     <span 
+class="cmtt-10">Hyperslab</span><span 
+class="cmtt-10">_XXXList() </span>call.
+     </p><!--l. 441--><p class="noindent" >Each element in the <span 
+class="cmtt-10">retvals </span>array will contain the status of the corresponding hyperslab operation
+     on grid variable <span 
+class="cmti-10">i</span>. If <span 
+class="cmtt-10">retvals </span>is passed as a NULL pointer then no status codes for individual
+     hyperslab operations will be passed back to the caller.</p></li></ul>
+<!--l. 447--><p class="noindent" ><span 
+class="cmbx-10">Return Codes for these routines (according to the Cactus Code conventions:</span> </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 449--><p class="noindent" >0 for success
+     </p></li>
+     <li class="itemize">
+     <!--l. 450--><p class="noindent" >negative  for  some  error  condition  (to  be  defined  by  an  actual  implementation  of  the
+     <span 
+class="cmtt-10">Hyperslab</span><span 
+class="cmtt-10">_GetXXX()/Hyperslab</span><span 
+class="cmtt-10">_PutXXX() </span>routines)</p></li></ul>
+<!--l. 456--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-50003"></a>Implementation Details</h3>
+<!--l. 459--><p class="noindent" >The current version of thorn <span 
+class="cmtt-10">PUGHSlab </span>implements only parts of the CCTK hyperslab API as described in
+section <a 
+href="#x1-20002">2<!--tex4ht:ref: specification --></a>:
+     </p><ol  class="enumerate1" >
+<li 
+  class="enumerate" id="x1-5002x1">
+                                                                                       
+                                                                                       
+     <!--l. 462--><p class="noindent" >the definition of local/global hyperslabs based on grid indicices<br 
+class="newline" />Currently,  the  only  additional  hyperslab  mapping  information  which  can  be  passed  through  a
+     key/value table is a <span 
+class="cmtt-10">CCKT</span><span 
+class="cmtt-10">_INT </span>option with the key <span 
+class="cmtt-10">with</span><span 
+class="cmtt-10">_ghostzones</span>. If the value of this key is
+     non-zero <span 
+class="cmtt-10">PUGHSlab </span>will not strip outer boundary ghostzones for periodic boundary conditions as
+     implemented by <span 
+class="cmtt-10">PUGH</span>.
+     </p><!--l. 469--><p class="noindent" ><span 
+class="cmtt-10">PUGHSlab </span>provides a set of predefined built-in functions for the following classes of data type conversions:
+     </p>
+         <ul class="itemize1">
+         <li class="itemize">
+         <!--l. 472--><p class="noindent" >any <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_INT </span>data type into any other <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_INT</span>
+         </p></li>
+         <li class="itemize">
+         <!--l. 473--><p class="noindent" >any <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_REAL </span>data type into any other <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_REAL</span>
+         </p></li>
+         <li class="itemize">
+         <!--l. 474--><p class="noindent" >any <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_COMPLEX </span>data type into any other <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_COMPLEX</span></p></li></ul>
+     </li>
+<li 
+  class="enumerate" id="x1-5004x2">
+     <!--l. 477--><p class="noindent" >local/global hyperslab extractions<br 
+class="newline" />Global hyperslab get requests will strip off all processor-boundary ghostzones from the returned hyperslab
+     data.
+     </p><!--l. 481--><p class="noindent" >Local hyperslabs will always include processor-boundary ghostzones. The <span 
+class="cmtt-10">hsize</span><span 
+class="cmtt-10">_local, hoffset</span><span 
+class="cmtt-10">_local</span>
+     information returned by the hyperslab mapping routines should be used to locate the locate hyperslab
+     within the global grid (e.g. during a recombination of several local hyperslabs into a single global
+     one).</p></li></ol>
+<!--l. 493--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-60004"></a>Parameters</h3>
+<!--l. 499--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-70005"></a>Interfaces</h3>
+<!--l. 504--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-8000"></a>General</h4>
+                                                                                       
+                                                                                       
+<!--l. 506--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 508--><p class="noindent" >hyperslab
+</p><!--l. 513--><p class="noindent" ><span 
+class="cmbx-10">Adds header</span>:
+</p><!--l. 517--><p class="noindent" >PUGHSlab.h to Hyperslab.h
+</p><!--l. 520--><p class="noindent" ><span 
+class="cmbx-10">Provides</span>:
+</p><!--l. 524--><p class="noindent" >Hyperslab_Get to
+</p><!--l. 526--><p class="noindent" >Hyperslab_GetList to
+</p><!--l. 528--><p class="noindent" >Hyperslab_GlobalMappingByIndex to
+</p><!--l. 530--><p class="noindent" >Hyperslab_LocalMappingByIndex to
+</p><!--l. 532--><p class="noindent" >Hyperslab_FreeMapping to
+</p><!--l. 535--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">6   </span> <a 
+ id="x1-90006"></a>Schedule</h3>
+<!--l. 541--><p class="noindent" >This section lists all the variables which are assigned storage by thorn CactusPUGH/PUGHSlab. Storage can
+either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 544--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-10000"></a>Storage</h4>
+<!--l. 544--><p class="noindent" >NONE
+</p>
+ 
+</body></html> 
+
+                                                                                       
+
+

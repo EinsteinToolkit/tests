@@ -1,0 +1,368 @@
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a 
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+\title{IDLinearWaves}
+\author{Gabrielle Allen, Tom Goodale, Gerd Lanfermann, Joan Masso, \\ Mark Miller, Malcolm Tobias, Paul Walker}
+\date{$ $Date$ $}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+\begin{abstract}
+Provides gravitational wave solutions to the linearized Einstein equations
+\end{abstract}
+
+\section{Purpose}
+
+There are two different linearized initial data sets provided, plane waves 
+and Teukolsky waves.
+
+\section{Plane Waves}
+
+A full description of plane waves can be found in the PhD Thesis of 
+Malcolm Tobias, {\it The Numerical Evolution of Gravitational Waves}, 
+which can be found at {\tt http://wugrav.wustl.edu/Papers/Thesis97/Thesis97.html}.
+
+Plane waves travelling in arbitrary directions can be specified.  For
+these plane waves the TT gauge is assumed (the metric perturbations
+are transverse to the direction of propagation, and the metric is
+traceless). In the case of waves travelling along the $z-$direction
+this would give the {\it plus} solution
+$$
+h_{xx}=-h_{yy}=f(t\pm z), h_{xy}=h_{xz}=h_{yz}=h_{zz} = 0
+$$
+and the {\it cross} solution
+$$
+h_{xy}=h_{yx}=f(t\pm z), h_{yz}=h_{xx}=h_{yy}=h_{zz}=0
+$$
+This thorn implements the {\tt plus} solution, with the waveform
+$f(t\pm z)$ having the form of a Gaussian modulated sine function. 
+Now working with a general direction of propagation $k$ we have the
+plane wave solution:
+$$
+f(t,x,y,z) = A_{in} e^{-(k_i^p x^i + \omega_p(t-r_a) )^2} \cos(k_ix^i+\omega t)
+     + A_{out} e^{-(k_i^p x^i -\omega_p(t-r_a))^2} \cos(k_i x^i - \omega t)
+$$
+and
+\begin{eqnarray*}
+g_{xx}&=& 1 + f[\cos^2\phi - \cos^\theta\sin^2\phi]
+\\
+g_{xy}&=& - f \sin^2 \theta \sin \phi \cos \phi
+\\
+g_{xz} &=& f \sin\theta \cos\theta \sin\phi
+\\
+g_{yy} &=& 1+f [\sin^2\phi - cos^2\theta \cos^2\phi]
+\\
+g_{yz} &=& f \sin\theta \cos\theta \cos\phi
+\\
+g_{zz} &=& 1-f\sin^2\theta
+\end{eqnarray*}
+The extrinsic curvature is then calculated from 
+\begin{equation}
+K_{ij} = - \frac{1}{2\alpha} \dot{g}_{ij}
+\end{equation}
+
+\section{Teukolsky waves}
+Teukolsky waves are quadrupole wave solutions to the linearized
+Einstein equations.  For a full description, see: PRD 26:745 (1982).
+
+
+\section{Comments}
+The extrinsic curvature is initialized assuming the initial lapse is one.
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{standing\_planewaves}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{amplitude} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Amplitude of the wave: both for teuk and plane}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.001 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:} & \multicolumn{2}{p{\paraWidth}|}{positive amplitude} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{mvalue} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em m value for teukwaves waves: integer from -2 to 2}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -2:2} & \multicolumn{2}{p{\paraWidth}|}{implemented : m = -2..2} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{packet} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Packet for teukwaves: eppley,evans,square}} \\
+\hline{\bf Range} & &  {\bf Default:} eppley \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering eppley} & \multicolumn{2}{p{\paraWidth}|}{Eppley type} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering evans} & \multicolumn{2}{p{\paraWidth}|}{Evans type} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering square} & \multicolumn{2}{p{\paraWidth}|}{Square type} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{parity} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Parity for teukwaves: even or odd}} \\
+\hline{\bf Range} & &  {\bf Default:} even \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering even} & \multicolumn{2}{p{\paraWidth}|}{even parity} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering odd} & \multicolumn{2}{p{\paraWidth}|}{odd parity} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{teuk\_no\_vee} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initialize Teuk. waves with V=0?}} \\
+\hline{\bf Range} & &  {\bf Default:} no \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering no} & \multicolumn{2}{p{\paraWidth}|}{Bona Masso setting} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering yes} & \multicolumn{2}{p{\paraWidth}|}{Bona Masso setting} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{wavecenter} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em linears waves thingie}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{wavelength} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em linearwaves wave length}} \\
+\hline{\bf Range} & &  {\bf Default:} 2.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:} & \multicolumn{2}{p{\paraWidth}|}{positive wavelength} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{wavephi} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Phi angle for planewaves}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{wavepulse} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em planewaves thingy for the gaussian pulse}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:} & \multicolumn{2}{p{\paraWidth}|}{positive pulse} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{wavesgoing} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em in and outgoing waves...}} \\
+\hline{\bf Range} & &  {\bf Default:} both \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering in} & \multicolumn{2}{p{\paraWidth}|}{Ingoing wave} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering out} & \multicolumn{2}{p{\paraWidth}|}{Outgoing wave} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering both} & \multicolumn{2}{p{\paraWidth}|}{In and outgoing wave} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{wavetheta} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Theta angle for planewaves}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{conformal\_storage} & {\bf Scope:} shared from STATICCONFORMAL & KEYWORD \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+idlinearwaves
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+admbase
+
+staticconformal
+
+grid
+\vspace{2mm}
+
+\vspace{5mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn EinsteinInitialData/IDLinearWaves.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}NONE
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PARAMCHECK}   (conditional) 
+
+\hspace{5mm} idlinearwaves\_paramchecker 
+
+\hspace{5mm}{\it check that the metric\_type is recognised } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf ADMBase\_InitialData}   (conditional) 
+
+\hspace{5mm} idlinearwaves\_planewaves 
+
+\hspace{5mm}{\it construct linear planewave initial data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PARAMCHECK}   (conditional) 
+
+\hspace{5mm} idlinearwaves\_paramchecker 
+
+\hspace{5mm}{\it check that the metric\_type is recognised } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf ADMBase\_InitialData}   (conditional) 
+
+\hspace{5mm} idlinearwaves\_standwaves 
+
+\hspace{5mm}{\it construct linear planewave initial data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PARAMCHECK}   (conditional) 
+
+\hspace{5mm} idlinearwaves\_paramchecker 
+
+\hspace{5mm}{\it check that the metric\_type is recognised } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf ADMBase\_InitialData}   (conditional) 
+
+\hspace{5mm} idlinearwaves\_teukwaves 
+
+\hspace{5mm}{\it construct linear teukolsky wave initial data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & admbase::metric(everywhere) \\ 
+~& ~ &admbase::curv(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PARAMCHECK}   (conditional) 
+
+\hspace{5mm} idlinearwaves\_paramchecker 
+
+\hspace{5mm}{\it check that the metric\_type is recognised } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf ADMBase\_InitialData}   (conditional) 
+
+\hspace{5mm} idlinearwaves\_sineplanewaves 
+
+\hspace{5mm}{\it construct linear plane wave initial data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

@@ -1,0 +1,1269 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>NaNChecker</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">NaNChecker</h2>
+ <div class="author" ><span 
+class="cmr-12">Thomas Radke</span></div>
+<br />
+<div class="date" >\( \)<span 
+class="cmr-12">Date</span>\( \)</div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 21--><p class="noindent" ><span 
+class="cmr-9">Thorn NaNChecker reports NaN values found in CCTK grid variables.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Purpose</h3>
+<!--l. 29--><p class="noindent" >The NaNChecker thorn can be used to analyze Cactus grid variables (that is grid functions, arrays or scalars) of
+real or complex data type for NaN (Not-a-Number) and (on availability of <span 
+class="cmtt-10">finite(3)</span>) infinite values. Grid
+variables can be periodically checked, or a call can be inserted into a thorn to check at a specific
+point.
+</p><!--l. 35--><p class="noindent" >This thorn is a utility thorn, designed to be used for debugging and testing code for uninitialised variables, or for
+variables which become corrupted during a simulation, for example following a division by zero or illegal memory
+usage.
+</p><!--l. 40--><p class="noindent" >On many architectures, uninitialised variables will be given the value zero, and simulations using such variables
+will seemingly run perfectly well. However, not only is it dubious programming practise to assume such
+                                                                                       
+                                                                                       
+behaviour, but also moving to a new machine may well cause pathalogical problems (for example, with Alpha
+processors used in Compaq or Cray machines). It is thus recommended to test codes periodically with the
+NaNChecker, and to fix any problems as soon as they are seen.
+</p><!--l. 48--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a>Periodic Testing</h3>
+<!--l. 50--><p class="noindent" >Periodic testing of variables can easily be achieved by adding NaNChecker to the <span 
+class="cmtt-10">ActiveThorns </span>parameter, and
+setting the parameters
+</p><!--l. 53--><p class="noindent" ><span 
+class="cmtt-10">NaNChecker::check</span><span 
+class="cmtt-10">_every, NaNChecker::check</span><span 
+class="cmtt-10">_after, </span>and <span 
+class="cmtt-10">NaNChecker::check</span><span 
+class="cmtt-10">_vars</span>
+</p><!--l. 56--><p class="noindent" >to the required values. (For most testing purposes these can be set to <span 
+class="cmtt-10">1, 0, </span>and ”all” respectively).
+</p><!--l. 61--><p class="noindent" >The NaNChecker then registers a routine at <span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_ANALYSIS </span>which checks at every
+<span 
+class="cmtt-10">NanChecker::check</span><span 
+class="cmtt-10">_every </span>iteration – starting at iteration number <span 
+class="cmtt-10">NaNChecker::check</span><span 
+class="cmtt-10">_after</span>
+– all the variables listed in <span 
+class="cmtt-10">NaNChecker::check</span><span 
+class="cmtt-10">_vars </span>for NaN or infinite values (depending on
+<span 
+class="cmtt-10">NaNChecker::check</span><span 
+class="cmtt-10">_for</span>) and — if such a value is found — performs an action as specified in
+<span 
+class="cmtt-10">NaNChecker::action</span><span 
+class="cmtt-10">_if</span><span 
+class="cmtt-10">_found</span>.<br 
+class="newline" />
+</p><!--l. 68--><p class="noindent" >Currently these actions can be to </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 70--><p class="noindent" ><span 
+class="cmtt-10">just</span><span 
+class="cmtt-10">_warn </span>(the default)
+     </p><!--l. 72--><p class="noindent" >just print a level 1 warning message telling you where NaNs/Infs were found and how many (for
+     grid array variables).<br 
+class="newline" />If the keyword parameter <span 
+class="cmtt-10">verbose </span>is set to <span 
+class="cmtt-10">&#x0022;all&#x0022; </span>then for each grid array it will also print the grid
+     indices (in Fortran notation) and the physical coordinates for all NaN/Inf elements found. You can
+     limit the number of such warnings by setting the <span 
+class="cmtt-10">NanChecker::report</span><span 
+class="cmtt-10">_max </span>parameter.
+     </p></li>
+     <li class="itemize">
+     <!--l. 80--><p class="noindent" ><span 
+class="cmtt-10">terminate</span>
+     </p><!--l. 82--><p class="noindent" >also set the CCTK termination flag so that Cactus will stop the evolution loop and gracefully
+     terminate at the next time possible (giving you the choice of outputting the data from the last
+     evolution timestep),
+     </p></li>
+     <li class="itemize">
+     <!--l. 86--><p class="noindent" ><span 
+class="cmtt-10">abort</span>
+     </p><!--l. 88--><p class="noindent" >print the warning message(s) and immediately terminate Cactus after checking all variables from
+     <span 
+class="cmtt-10">NaNChecker::check</span><span 
+class="cmtt-10">_vars </span>by a call to <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_Abort()</span></p></li></ul>
+                                                                                       
+                                                                                       
+<!--l. 92--><p class="noindent" >By default, the current timelevel of the variables given in <span 
+class="cmtt-10">NaNChecker::check</span><span 
+class="cmtt-10">_vars </span>will be checked. This can be
+overwritten by an optional string <span 
+class="cmtt-10">[timelevel=&#x003C;timelevel&#x003E;] </span>appended to the variable/group name. For
+example, to apply the NaNChecker to timelevel 0 of the variable grid::x, timelevel 1 of <span 
+class="cmtt-10">grid::y </span>and timelevel 2
+of <span 
+class="cmtt-10">grid::z </span>you would use the parameter
+</p><!--l. 99--><p class="noindent" ><span 
+class="cmtt-10">NaNChecker::check</span><span 
+class="cmtt-10">_vars = &#x0022;grid::x grid::y[timelevel=1] grid::z[timelevel=2]&#x0022;</span>
+</p><!--l. 103--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-30003"></a>Tracking and Visualizing NaNs Positions</h3>
+<!--l. 105--><p class="noindent" >The NaNChecker thorn can also mark the positions (in grid index points) of all the NaNs found for a given list
+of CCTK grid functions in a mask array and save this array to an HDF5 file.
+</p><!--l. 109--><p class="noindent" >The mask array is declared as a grid function <span 
+class="cmtt-10">NaNChecker::NaNmask </span>with data type INTEGER. Each bit \(i\) in
+an integer element is used to flag a NaN value found in grid function \(i\) at the corresponding grid
+position (the counting for \(i\) starts at 0 and is incremented for each grid function as it appears in
+<span 
+class="cmtt-10">NaNChecker::check</span><span 
+class="cmtt-10">_vars</span>). Thus the NaN locations of up to 32 individual grid functions can be coded in the
+NaNmask array.
+</p><!--l. 117--><p class="noindent" >In order to activate the NaNmask output you need to set the parameter <span 
+class="cmtt-10">NaNChecker::out</span><span 
+class="cmtt-10">_NaNmask </span>to <span 
+class="cmtt-10">&#x0022;yes&#x0022;</span>
+(which is already the default) and have the IOHDF5 thorn activated.
+</p><!--l. 121--><p class="noindent" >The NaN locations can be visualized with OpenDX. An example DX network <span 
+class="cmtt-10">VisualizeNaNs.net </span>and a sample
+NaNmask HDF5 output file <span 
+class="cmtt-10">NaNmask.h5 </span>are available via anonymous CVS from the NumRel CVS
+server:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-1">
+  # this is for (t)csh; use export CVSROOT for bash
+  setenv CVSROOT :pserver:cvs_anon@cvs.aei.mpg.de:/numrelcvs
+
+  # CVS pserver password is ’anon’
+  cvs login
+  cvs checkout AEIPhysics/Visualization/OpenDX/Networks/Miscellaneous
+</pre>
+<!--l. 131--><p class="nopar" >
+</p><!--l. 134--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-40004"></a>NaNChecker API</h3>
+<!--l. 136--><p class="noindent" >Thorn NaNChecker also provides a function API which can be used by other code to invoke the NaNChecker
+routines to test for NaN/Inf values or to set NaN values for a list of variables:
+</p><!--l. 141--><p class="noindent" ><span 
+class="cmbx-10">C API</span>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-2">
+  int NaNChecker_CheckVarsForNaN (const cGH *cctkGH,
+                                  int report_max,
+                                  const char *vars,
+                                  const char *check_for,
+                                  const char *action_if_found);
+
+  int NaNChecker_SetVarsToNaN (const cGH *cctkGH,
+                               const char *vars);
+</pre>
+<!--l. 152--><p class="nopar" >
+</p><!--l. 155--><p class="noindent" ><span 
+class="cmbx-10">Fortran API</span>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-3">
+  call NaNChecker_CheckVarsForNaN (ierror, cctkGH, report_max,
+                                   vars, check_for, action_if_found)
+
+                                   integer ierror
+                                   CCTK_POINTER cctkGH
+                                   integer report_max
+                                   character*(*) vars
+                                   character*(*) check_for
+                                   character*(*) action_if_found
+
+  call NaNChecker_SetVarsToNaN (ierror, cctkGH, vars)
+
+                                integer ierror
+                                CCTK_POINTER cctkGH
+                                character*(*) vars
+</pre>
+<!--l. 174--><p class="nopar" >
+</p><!--l. 176--><p class="noindent" >The <span 
+class="cmtt-10">report</span><span 
+class="cmtt-10">_max, check</span><span 
+class="cmtt-10">_vars, check</span><span 
+class="cmtt-10">_for </span>and <span 
+class="cmtt-10">action</span><span 
+class="cmtt-10">_if</span><span 
+class="cmtt-10">_found </span>arguments have the same semantics as their
+parameter counterparts.<br 
+class="newline" />If <span 
+class="cmtt-10">action</span><span 
+class="cmtt-10">_if</span><span 
+class="cmtt-10">_found </span>is given as a NULL pointer (C API) or as an empty string (Fortran API) the routine will be
+quiet and just return the number of NaN values found.<br 
+class="newline" />
+</p><!--l. 182--><p class="noindent" >The C function <span 
+class="cmtt-10">NaNChecker</span><span 
+class="cmtt-10">_CheckVarsForNaN() </span>returns the total number of NaN/Inf values found,
+<span 
+class="cmtt-10">NaNChecker</span><span 
+class="cmtt-10">_SetToNaN() </span>returns the total number of variables set to NaN; this return value is stored in the
+<span 
+class="cmtt-10">ierror </span>argument for the corresponding fortran wrapper routines.
+</p><!--l. 192--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-50005"></a>Parameters</h3>
+<!--l. 211--><p class="noindent" ></p> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /></colgroup><colgroup id="TBL-2-2g"><col 
+id="TBL-2-2" /><col 
+id="TBL-2-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:normal; text-align:left;" id="TBL-2-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">action_if_found</div>          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-1-3"  
+class="td01">                                      KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-2-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">What to do if a NaN was found</span></div>                                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-1"  
+class="td11">       <span 
+class="cmbx-10">Range          </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-3-3"  
+class="td01">                                <span 
+class="cmbx-10">Default: </span>just warn  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-4-"><td  style="white-space:normal; text-align:left;" id="TBL-2-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">just warn</div>                   </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-2-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Just print a level 1 warning</div>                                                                 
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-5-"><td  style="white-space:normal; text-align:left;" id="TBL-2-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">terminate</div>                  </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-2-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Warn and terminate Cactus gracefully as soon as possible</div>                         
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-6-"><td  style="white-space:normal; text-align:left;" id="TBL-2-6-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">abort</div>                        </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-2-6-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Warn and abort Cactus immediately</div>                                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-7-1"  
+class="td11">                     </td></tr></table>
+<!--l. 218--><p class="noindent" ></p> <table id="TBL-3" class="tabular" 
+ 
+><colgroup id="TBL-3-1g"><col 
+id="TBL-3-1" /></colgroup><colgroup id="TBL-3-2g"><col 
+id="TBL-3-2" /><col 
+id="TBL-3-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-1-"><td  style="white-space:normal; text-align:left;" id="TBL-3-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">check_after</div>               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-1-3"  
+class="td01">                                             INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-3-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Start checking for NaNs after so many iterations</span></div>                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-3-1"  
+class="td11">       <span 
+class="cmbx-10">Range          </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-3-3"  
+class="td01">                                   <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-4-"><td  style="white-space:normal; text-align:left;" id="TBL-3-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                           </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-3-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Any valid iteration number</div>                                                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-5-1"  
+class="td11">                     </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 225--><p class="noindent" ></p> <table id="TBL-4" class="tabular" 
+ 
+><colgroup id="TBL-4-1g"><col 
+id="TBL-4-1" /></colgroup><colgroup id="TBL-4-2g"><col 
+id="TBL-4-2" /><col 
+id="TBL-4-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-1-"><td  style="white-space:normal; text-align:left;" id="TBL-4-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">check_every</div>               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-1-3"  
+class="td01">                                             INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-4-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">How often to check for NaNs</span></div>                                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-3-1"  
+class="td11">       <span 
+class="cmbx-10">Range          </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-3-3"  
+class="td01">                                   <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-4-"><td  style="white-space:normal; text-align:left;" id="TBL-4-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                    </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Never (default)</div>                                                                                 
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-5-"><td  style="white-space:normal; text-align:left;" id="TBL-4-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1:*</div>                           </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Every so many iterations</div>                                                                    
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-6-1"  
+class="td11">                     </td></tr></table>
+<!--l. 232--><p class="noindent" ></p> <table id="TBL-5" class="tabular" 
+ 
+><colgroup id="TBL-5-1g"><col 
+id="TBL-5-1" /></colgroup><colgroup id="TBL-5-2g"><col 
+id="TBL-5-2" /><col 
+id="TBL-5-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-1-"><td  style="white-space:normal; text-align:left;" id="TBL-5-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">check_for</div>                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-1-3"  
+class="td01">                                      KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-5-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Check for NaNs and/or infinite numbers (only evaluated if finite(3) is available)</span></div>            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-3-1"  
+class="td11">       <span 
+class="cmbx-10">Range          </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-3-3"  
+class="td01">                                    <span 
+class="cmbx-10">Default: </span>both  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-4-"><td  style="white-space:normal; text-align:left;" id="TBL-5-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">NaN</div>                         </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-5-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Check only for NaNs</div>                                                                          
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-5-"><td  style="white-space:normal; text-align:left;" id="TBL-5-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Inf</div>                           </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-5-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Check only for infinite numbers</div>                                                            
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-6-"><td  style="white-space:normal; text-align:left;" id="TBL-5-6-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">both</div>                         </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-5-6-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Check for both NaNs and infinite numbers</div>                                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-7-1"  
+class="td11">                     </td></tr></table>
+<!--l. 239--><p class="noindent" ></p> <table id="TBL-6" class="tabular" 
+ 
+><colgroup id="TBL-6-1g"><col 
+id="TBL-6-1" /></colgroup><colgroup id="TBL-6-2g"><col 
+id="TBL-6-2" /><col 
+id="TBL-6-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-1-"><td  style="white-space:normal; text-align:left;" id="TBL-6-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">check_vars</div>                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-1-3"  
+class="td01">                                         STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-6-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Groups and/or variables to check for NaNs</span></div>                                                         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-3-1"  
+class="td11">       <span 
+class="cmbx-10">Range          </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-3-3"  
+class="td01">                                   <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-4-"><td  style="white-space:normal; text-align:left;" id="TBL-6-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.*</div>                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-6-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">List of full group and/or variable names, or ’all’ for everything</div>                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-5-1"  
+class="td11">                     </td></tr></table>
+<!--l. 246--><p class="noindent" ></p> <table id="TBL-7" class="tabular" 
+ 
+><colgroup id="TBL-7-1g"><col 
+id="TBL-7-1" /></colgroup><colgroup id="TBL-7-2g"><col 
+id="TBL-7-2" /><col 
+id="TBL-7-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-1-"><td  style="white-space:normal; text-align:left;" id="TBL-7-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">ignore_restricted_points</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-1-3"  
+class="td01">                                  BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-7-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">do not check grid points whose values will be restricted away</span></div>                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-3-1"  
+class="td11">                     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-4-1"  
+class="td11">                     </td></tr></table>
+<!--l. 253--><p class="noindent" ></p> <table id="TBL-8" class="tabular" 
+ 
+><colgroup id="TBL-8-1g"><col 
+id="TBL-8-1" /></colgroup><colgroup id="TBL-8-2g"><col 
+id="TBL-8-2" /><col 
+id="TBL-8-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-1-"><td  style="white-space:normal; text-align:left;" id="TBL-8-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">out_nanmask</div>             </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-1-3"  
+class="td01">                                  BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-8-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Dump the NaN grid function mask into an HDF5 file</span></div>                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-3-1"  
+class="td11">                     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-4-1"  
+class="td11">                     </td></tr></table>
+<!--l. 260--><p class="noindent" ></p> <table id="TBL-9" class="tabular" 
+ 
+><colgroup id="TBL-9-1g"><col 
+id="TBL-9-1" /></colgroup><colgroup id="TBL-9-2g"><col 
+id="TBL-9-2" /><col 
+id="TBL-9-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-1-"><td  style="white-space:normal; text-align:left;" id="TBL-9-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">report_max</div>               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-1-3"  
+class="td01">                                             INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-9-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">How many NaNs to report for a single variable</span></div>                                                    
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-3-1"  
+class="td11">       <span 
+class="cmbx-10">Range          </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-3-3"  
+class="td01">                                      <span 
+class="cmbx-10">Default: </span>-1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-4-"><td  style="white-space:normal; text-align:left;" id="TBL-9-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1</div>                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-9-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Report all (default)</div>                                                                           
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-5-"><td  style="white-space:normal; text-align:left;" id="TBL-9-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:*</div>                           </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-9-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Do not report more than report_max number of NaNs</div>                             
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-6-1"  
+class="td11">                     </td></tr></table>
+<!--l. 267--><p class="noindent" ></p> <table id="TBL-10" class="tabular" 
+ 
+><colgroup id="TBL-10-1g"><col 
+id="TBL-10-1" /></colgroup><colgroup id="TBL-10-2g"><col 
+id="TBL-10-2" /><col 
+id="TBL-10-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-1-"><td  style="white-space:normal; text-align:left;" id="TBL-10-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">restriction_mask</div>        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-1-3"  
+class="td01">                                         STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-10-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">grid function to use to decide which points are restricted away, points where the</span>
+  <span 
+class="cmti-10">mask is zero are ignored</span></div>                                                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-3-1"  
+class="td11">       <span 
+class="cmbx-10">Range          </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-3-3"  
+class="td01">                      <span 
+class="cmbx-10">Default: </span>CarpetReduce::weight  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-4-"><td  style="white-space:normal; text-align:left;" id="TBL-10-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">see [1] below</div>               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-10-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Carpet’s reduction mask</div>                                                                     
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-5-"><td  style="white-space:normal; text-align:left;" id="TBL-10-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">see [1] below</div>               </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-10-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">takes prolongation stencil into account</div>                                                  
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-6-"><td  style="white-space:normal; text-align:left;" id="TBL-10-6-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.*[:][:].*</div>                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-10-6-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">any grid function with points masked out set to zero</div>                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-7-1"  
+class="td11">                     </td></tr></table>
+<!--l. 274--><p class="noindent" ><span 
+class="cmbx-10">[1]</span>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-4">
+CarpetReduce[:][:]weight
+</pre>
+<!--l. 274--><p class="nopar" ><span 
+class="cmbx-10">[1]</span>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-5">
+CarpetEvolutionMask[:][:]evolution\_mask
+</pre>
+<!--l. 274--><p class="nopar" ></p> <table id="TBL-11" class="tabular" 
+ 
+><colgroup id="TBL-11-1g"><col 
+id="TBL-11-1" /></colgroup><colgroup id="TBL-11-2g"><col 
+id="TBL-11-2" /><col 
+id="TBL-11-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-1-"><td  style="white-space:normal; text-align:left;" id="TBL-11-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">setup_test</div>                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-1-3"  
+class="td01">                                  BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-11-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">set up grid function with NaNs</span></div>                                                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-3-1"  
+class="td11">                     </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-4-1"  
+class="td11">                     </td></tr></table>
+<!--l. 281--><p class="noindent" ></p> <table id="TBL-12" class="tabular" 
+ 
+><colgroup id="TBL-12-1g"><col 
+id="TBL-12-1" /></colgroup><colgroup id="TBL-12-2g"><col 
+id="TBL-12-2" /><col 
+id="TBL-12-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-1-"><td  style="white-space:normal; text-align:left;" id="TBL-12-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">verbose</div>                    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-1-3"  
+class="td01">                                      KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-12-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">How much information to give</span></div>                                                                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-3-1"  
+class="td11">       <span 
+class="cmbx-10">Range          </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>standard  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-4-"><td  style="white-space:normal; text-align:left;" id="TBL-12-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">all</div>                            </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-12-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">All information</div>                                                                                 
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-5-"><td  style="white-space:normal; text-align:left;" id="TBL-12-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">standard</div>                    </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-12-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Standard information</div>                                                                         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-6-1"  
+class="td11">                     </td></tr></table>
+<!--l. 290--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">6   </span> <a 
+ id="x1-60006"></a>Interfaces</h3>
+<!--l. 295--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-7000"></a>General</h4>
+<!--l. 297--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 299--><p class="noindent" >nanchecker
+</p><!--l. 302--><p class="noindent" ><span 
+class="cmbx-10">Inherits</span>:
+</p><!--l. 304--><p class="noindent" >reduce
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-8000"></a>Grid Variables</h4>
+<!--l. 307--><p class="noindent" >
+</p>
+<h5 class="subsubsectionHead"><span class="titlemark">6.0.1   </span> <a 
+ id="x1-90006.0.1"></a>PRIVATE GROUPS</h5>
+                                                                                       
+                                                                                       
+<!--l. 311--><p class="noindent" ></p> <table id="TBL-13" class="tabular" 
+ 
+><colgroup id="TBL-13-1g"><col 
+id="TBL-13-1" /></colgroup><colgroup id="TBL-13-2g"><col 
+id="TBL-13-2" /></colgroup><colgroup id="TBL-13-3g"><col 
+id="TBL-13-3" /><col 
+id="TBL-13-4" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-1-1"  
+class="td11">   <span 
+class="cmbx-10">Group Names </span>   </td><td  style="white-space:nowrap; text-align:center;" id="TBL-13-1-2"  
+class="td10">   <span 
+class="cmbx-10">Variable Names </span> </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-1-3"  
+class="td01">    <span 
+class="cmbx-10">Details </span>   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-1-4"  
+class="td11">                                                                      </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-2-1"  
+class="td11">      nanmask          </td><td  style="white-space:nowrap; text-align:center;" id="TBL-13-2-2"  
+class="td10">      NaNmask        </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-2-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-2-4"  
+class="td11"> 0                                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-3-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-13-3-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-3-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-3-4"  
+class="td11"> Grid function mask for NaN locations                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-4-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-13-4-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-4-3"  
+class="td01">   dimensions  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-4-4"  
+class="td11"> 3                                                                    </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-5-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:center;" id="TBL-13-5-2"  
+class="td10"> </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-5-3"  
+class="td01"> distribution </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-5-4"  
+class="td11"> DEFAULT </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-6-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-13-6-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-6-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-6-4"  
+class="td11"> GF                                                                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-7-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-13-7-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-7-3"  
+class="td01">         tags  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-7-4"  
+class="td11"> Prolongation=”None” checkpoint=”no”                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-8-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-13-8-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-8-3"  
+class="td01">    timelevels  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-8-4"  
+class="td11"> 1                                                                    </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-9-1"  
+class="td11">
+                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-13-9-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-9-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-9-4"  
+class="td11"> INT                                                                </td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-10-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-10-1"  
+class="td11">
+      nansfound         </td><td  style="white-space:nowrap; text-align:center;" id="TBL-13-10-2"  
+class="td10">     NaNsFound       </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-10-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-10-4"  
+class="td11"> 0                                                                    </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-11-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-11-1"  
+class="td11">
+                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-13-11-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-11-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-11-4"  
+class="td11"> Scalar variable counting the number of NaNs found  </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-12-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-12-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:center;" id="TBL-13-12-2"  
+class="td10"> </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-12-3"  
+class="td01"> dimensions </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-12-4"  
+class="td11"> 0 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-13-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-13-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-13-13-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-13-3"  
+class="td01">  distribution  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-13-4"  
+class="td11"> CONSTANT                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-14-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-14-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-13-14-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-14-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-14-4"  
+class="td11"> SCALAR                                                         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-15-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-15-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-13-15-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-15-3"  
+class="td01">         tags  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-15-4"  
+class="td11"> checkpoint=”no”                                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-16-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-16-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-13-16-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-16-3"  
+class="td01">    timelevels  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-16-4"  
+class="td11"> 1                                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-17-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-17-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-13-17-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-17-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-17-4"  
+class="td11"> INT                                                                </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-18-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-18-1"  
+class="td11">       testgf            </td><td  style="white-space:nowrap; text-align:center;" id="TBL-13-18-2"  
+class="td10">       TestGF          </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-18-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-18-4"  
+class="td11"> 0                                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-19-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-19-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-13-19-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-19-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-19-4"  
+class="td11"> Grid function to hold NaNs for testsuite                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-20-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-20-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-13-20-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-20-3"  
+class="td01">   dimensions  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-20-4"  
+class="td11"> 3                                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-21-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-21-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-13-21-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-21-3"  
+class="td01">  distribution  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-21-4"  
+class="td11"> DEFAULT                                                       </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-22-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-22-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-13-22-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-22-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-22-4"  
+class="td11"> GF                                                                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-23-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-23-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-13-23-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-23-3"  
+class="td01">         tags  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-23-4"  
+class="td11"> Prolongation=”None” checkpoint=”no”                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-24-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-24-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-13-24-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-24-3"  
+class="td01">    timelevels  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-24-4"  
+class="td11"> 1                                                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-25-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-25-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-13-25-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-25-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-25-4"  
+class="td11"> REAL                                                             </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-26-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-26-1"  
+class="td11">                    </td></tr></table>
+<!--l. 347--><p class="noindent" ><span 
+class="cmbx-10">Adds header</span>:
+</p><!--l. 351--><p class="noindent" >NaNCheck.h to NaNChecker.h
+</p><!--l. 354--><p class="noindent" ><span 
+class="cmbx-10">Provides</span>:
+</p><!--l. 358--><p class="noindent" >CheckVarsForNaN to
+</p><!--l. 360--><p class="noindent" >SetVarsToNaN to
+</p><!--l. 363--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">7   </span> <a 
+ id="x1-100007"></a>Schedule</h3>
+<!--l. 369--><p class="noindent" >This section lists all the variables which are assigned storage by thorn CactusUtils/NaNChecker. Storage can
+either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 372--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-11000"></a>Storage</h4>
+<!--l. 374--><p class="noindent" > 
+</p><!--l. 376--><p class="noindent" ></p> <table id="TBL-14" class="tabular" 
+ 
+><colgroup id="TBL-14-1g"><col 
+id="TBL-14-1" /><col 
+id="TBL-14-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-14-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-14-1-1"  
+class="td11"> <span 
+class="cmbx-10">Always:                </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-1-2"  
+class="td11"> <span 
+class="cmbx-10">Conditional:  </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-14-2-1"  
+class="td11"> NaNmask NaNsFound  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-2-2"  
+class="td11"> TestGF          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-14-3-1"  
+class="td11">                               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-3-2"  
+class="td11">                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-14-4-1"  
+class="td11">                     </td></tr></table>
+<!--l. 384--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-12000"></a>Scheduled Functions</h4>
+                                                                                       
+                                                                                       
+<!--l. 387--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_BASEGRID</span>
+</p><!--l. 389--><p class="noindent" >      nanchecker_resetcounter
+</p><!--l. 391--><p class="noindent" >     <span 
+class="cmti-10">reset the nanchecker::nansfound counter</span>
+</p><!--l. 394--><p class="noindent" > 
+</p><!--l. 396--><p class="noindent" ></p> <table id="TBL-15" class="tabular" 
+ 
+><colgroup id="TBL-15-1g"><col 
+id="TBL-15-1" /><col 
+id="TBL-15-2" /><col 
+id="TBL-15-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-15-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-1-3"  
+class="td11"> c                                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-2-3"  
+class="td11"> global                                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-3-3"  
+class="td11"> function                                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-4-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-4-3"  
+class="td11"> nanchecker::nansfound(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-5-1"  
+class="td11">    </td></tr></table>
+<!--l. 406--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_PRESTEP</span>
+</p><!--l. 408--><p class="noindent" >      nanchecker_resetcounter
+</p><!--l. 410--><p class="noindent" >     <span 
+class="cmti-10">reset the nanchecker::nansfound counter</span>
+</p><!--l. 413--><p class="noindent" > 
+</p><!--l. 415--><p class="noindent" ></p> <table id="TBL-16" class="tabular" 
+ 
+><colgroup id="TBL-16-1g"><col 
+id="TBL-16-1" /><col 
+id="TBL-16-2" /><col 
+id="TBL-16-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-16-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-1-3"  
+class="td11"> c                                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-2-3"  
+class="td11"> global                                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-3-3"  
+class="td11"> function                                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-4-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-4-3"  
+class="td11"> nanchecker::nansfound(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-5-1"  
+class="td11">    </td></tr></table>
+<!--l. 425--><p class="noindent" ><span 
+class="cmbx-10">NaNChecker</span><span 
+class="cmbx-10">_NaNCheck</span>
+</p><!--l. 427--><p class="noindent" >      nanchecker_nancheck_prepare
+</p><!--l. 429--><p class="noindent" >     <span 
+class="cmti-10">prepare data structures to check for nans</span>
+</p><!--l. 432--><p class="noindent" > 
+</p><!--l. 434--><p class="noindent" ></p> <table id="TBL-17" class="tabular" 
+ 
+><colgroup id="TBL-17-1g"><col 
+id="TBL-17-1" /><col 
+id="TBL-17-2" /><col 
+id="TBL-17-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-17-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-1-3"  
+class="td11"> c                                             </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-2-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-2-3"  
+class="td11"> level                                         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-3-3"  
+class="td11"> function                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-4-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-4-3"  
+class="td11"> nanchecker::nanmask(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-5-1"  
+class="td11">    </td></tr></table>
+<!--l. 444--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_POSTSTEP</span>
+</p><!--l. 446--><p class="noindent" >      nanchecker_nancheck
+</p><!--l. 448--><p class="noindent" >     <span 
+class="cmti-10">check for nans and count them in nanchecker::nansfound</span>
+</p><!--l. 451--><p class="noindent" > 
+</p><!--l. 453--><p class="noindent" ></p> <table id="TBL-18" class="tabular" 
+ 
+><colgroup id="TBL-18-1g"><col 
+id="TBL-18-1" /><col 
+id="TBL-18-2" /><col 
+id="TBL-18-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-18-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-1-2"  
+class="td11"> Type:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-1-3"  
+class="td11"> group  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-2-1"  
+class="td11">    </td></tr></table>
+<!--l. 460--><p class="noindent" ><span 
+class="cmbx-10">NaNChecker</span><span 
+class="cmbx-10">_NaNCheck</span>
+</p><!--l. 462--><p class="noindent" >      nanchecker_nancheck_check
+</p><!--l. 464--><p class="noindent" >     <span 
+class="cmti-10">check for nans</span>
+</p><!--l. 467--><p class="noindent" > 
+</p><!--l. 469--><p class="noindent" ></p> <table id="TBL-19" class="tabular" 
+ 
+><colgroup id="TBL-19-1g"><col 
+id="TBL-19-1" /><col 
+id="TBL-19-2" /><col 
+id="TBL-19-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-19-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-1-3"  
+class="td11"> nanchecker_nancheck_prepare  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-2-3"  
+class="td11"> c                                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-3-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-3-3"  
+class="td11"> local                                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-4-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-4-3"  
+class="td11"> function                              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-5-1"  
+class="td11">    </td></tr></table>
+<!--l. 479--><p class="noindent" ><span 
+class="cmbx-10">NaNChecker</span><span 
+class="cmbx-10">_NaNCheck</span>
+</p><!--l. 481--><p class="noindent" >      nanchecker_nancheck_finish
+</p><!--l. 483--><p class="noindent" >     <span 
+class="cmti-10">count nans in nanchecker::nansfound</span>
+</p><!--l. 486--><p class="noindent" > 
+</p><!--l. 488--><p class="noindent" ></p> <table id="TBL-20" class="tabular" 
+ 
+><colgroup id="TBL-20-1g"><col 
+id="TBL-20-1" /><col 
+id="TBL-20-2" /><col 
+id="TBL-20-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-20-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-1-3"  
+class="td11"> nanchecker_nancheck_check            </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-2-1"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-2-2"  
+class="td11"> Language: </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-2-3"  
+class="td11"> c</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-3-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-3-3"  
+class="td11"> level                                          </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-4-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-4-3"  
+class="td11"> function                                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-5-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-5-3"  
+class="td11"> nanchecker::nansfound(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-6-1"  
+class="td11">    </td></tr></table>
+<!--l. 499--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_POSTSTEP</span>
+</p><!--l. 501--><p class="noindent" >      nanchecker_takeaction
+</p><!--l. 503--><p class="noindent" >     <span 
+class="cmti-10">output nanchecker::nanmask and take action according to nanchecker::action</span><span 
+class="cmti-10">_if</span><span 
+class="cmti-10">_found</span>
+                                                                                       
+                                                                                       
+</p><!--l. 506--><p class="noindent" > 
+</p><!--l. 508--><p class="noindent" ></p> <table id="TBL-21" class="tabular" 
+ 
+><colgroup id="TBL-21-1g"><col 
+id="TBL-21-1" /><col 
+id="TBL-21-2" /><col 
+id="TBL-21-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-21-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-1-3"  
+class="td11"> zzz_nanchecker_nancheck               </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-2-1"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-2-2"  
+class="td11"> Language: </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-2-3"  
+class="td11"> c</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-3-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-3-3"  
+class="td11"> global                                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-4-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-4-3"  
+class="td11"> loop-level                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-5-2"  
+class="td11"> Reads:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-5-3"  
+class="td11"> nanchecker::nansfound(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-6-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-6-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-6-3"  
+class="td11"> function                                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-7-1"  
+class="td11">    </td></tr></table>
+<!--l. 520--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_POST</span><span 
+class="cmbx-10">_RECOVER</span><span 
+class="cmbx-10">_VARIABLES</span>
+</p><!--l. 522--><p class="noindent" >      nanchecker_nancheck
+</p><!--l. 524--><p class="noindent" >     <span 
+class="cmti-10">check for nans and count them in nanchecker::nansfound</span>
+</p><!--l. 527--><p class="noindent" > 
+</p><!--l. 529--><p class="noindent" ></p> <table id="TBL-22" class="tabular" 
+ 
+><colgroup id="TBL-22-1g"><col 
+id="TBL-22-1" /><col 
+id="TBL-22-2" /><col 
+id="TBL-22-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-22-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-1-2"  
+class="td11"> Type:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-1-3"  
+class="td11"> group  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-2-1"  
+class="td11">    </td></tr></table>
+<!--l. 536--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_POST</span><span 
+class="cmbx-10">_RECOVER</span><span 
+class="cmbx-10">_VARIABLES</span>
+</p><!--l. 538--><p class="noindent" >      nanchecker_takeaction
+</p><!--l. 540--><p class="noindent" >     <span 
+class="cmti-10">output nanchecker::nanmask and take action according to nanchecker::action</span><span 
+class="cmti-10">_if</span><span 
+class="cmti-10">_found</span>
+</p><!--l. 543--><p class="noindent" > 
+</p><!--l. 545--><p class="noindent" ></p> <table id="TBL-23" class="tabular" 
+ 
+><colgroup id="TBL-23-1g"><col 
+id="TBL-23-1" /><col 
+id="TBL-23-2" /><col 
+id="TBL-23-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-23-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-1-3"  
+class="td11"> zzz_nanchecker_nancheck               </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-2-1"  
+class="td11">   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-2-2"  
+class="td11"> Language: </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-2-3"  
+class="td11"> c</td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-3-2"  
+class="td11"> Options:    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-3-3"  
+class="td11"> global                                        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-4-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-4-3"  
+class="td11"> loop-level                                    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-5-2"  
+class="td11"> Reads:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-5-3"  
+class="td11"> nanchecker::nansfound(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-6-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-6-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-6-3"  
+class="td11"> function                                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-7-1"  
+class="td11">    </td></tr></table>
+<!--l. 557--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_INITIAL </span>(conditional)
+</p><!--l. 559--><p class="noindent" >      nanchecker_setuptest
+</p><!--l. 561--><p class="noindent" >     <span 
+class="cmti-10">set test grid function to nan</span>
+</p><!--l. 564--><p class="noindent" > 
+</p><!--l. 566--><p class="noindent" ></p> <table id="TBL-24" class="tabular" 
+ 
+><colgroup id="TBL-24-1g"><col 
+id="TBL-24-1" /><col 
+id="TBL-24-2" /><col 
+id="TBL-24-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-24-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-24-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 572--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-13000"></a>Aliased Functions</h4>
+<!--l. 574--><p class="noindent" > 
+</p><!--l. 576--><p class="noindent" ></p> <table id="TBL-25" class="tabular" 
+ 
+><colgroup id="TBL-25-1g"><col 
+id="TBL-25-1" /><col 
+id="TBL-25-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-25-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-25-1-1"  
+class="td11"> <span 
+class="cmbx-10">Alias Name: </span>         </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-1-2"  
+class="td11"> <span 
+class="cmbx-10">Function Name:             </span></td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-25-2-1"  
+class="td11"> NaNChecker_NaNCheck  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-2-2"  
+class="td11"> zzz_NaNChecker_NaNCheck  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-25-3-1"  
+class="td11">                       </td></tr></table>
+ 
+</body></html> 
+
+                                                                                       
+
+

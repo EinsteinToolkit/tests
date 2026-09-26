@@ -1,0 +1,1351 @@
+% *======================================================================*
+%  Cactus Thorn template for ThornGuide documentation
+%  Author: Ian Kelley
+%  Date: Sun Jun 02, 2002
+%  $Header$                                                             
+%
+%  Thorn documentation in the latex file doc/documentation.tex 
+%  will be included in ThornGuides built with the Cactus make system.
+%  The scripts employed by the make system automatically include 
+%  pages about variables, parameters and scheduling parsed from the 
+%  relevent thorn CCL files.
+%  
+%  This template contains guidelines which help to assure that your     
+%  documentation will be correctly added to ThornGuides. More 
+%  information is available in the Cactus UsersGuide.
+%                                                    
+%  Guidelines:
+%   - Do not change anything before the line
+%       % BEGIN CACTUS THORNGUIDE",
+%     except for filling in the title, author, date etc. fields.
+%   - You can define your own macros are OK, but they must appear after
+%     the BEGIN CACTUS THORNGUIDE line, and do not redefine standard 
+%     latex commands.
+%   - To avoid name clashes with other thorns, 'labels', 'citations', 
+%     'references', and 'image' names should conform to the following 
+%     convention:          
+%       ARRANGEMENT_THORN_LABEL
+%     For example, an image wave.eps in the arrangement CactusWave and 
+%     thorn WaveToyC should be renamed to CactusWave_WaveToyC_wave.eps
+%   - Graphics should only be included using the graphix package. 
+%     More specifically, with the "includegraphics" command. Do
+%     not specify any graphic file extensions in your .tex file. This 
+%     will allow us (later) to create a PDF version of the ThornGuide
+%     via pdflatex. |
+%   - References should be included with the latex "bibitem" command.  
+%   - For the benefit of our Perl scripts, and for future extensions, 
+%     please use simple latex.     
+%
+% *======================================================================* 
+% 
+% Example of including a graphic image:
+%    \begin{figure}[ht]
+% 	\begin{center}
+%    	   \includegraphics[width=6cm]{/home/runner/work/tests/tests/arrangements/EinsteinAnalysis/Extract/doc/MyArrangement_MyThorn_MyFigure}
+% 	\end{center}
+% 	\caption{Illustration of this and that}
+% 	\label{MyArrangement_MyThorn_MyLabel}
+%    \end{figure}
+%
+% Example of using a label:
+%   \label{MyArrangement_MyThorn_MyLabel}
+%
+% Example of a citation:
+%    \cite{MyArrangement_MyThorn_Author99}
+%
+% Example of including a reference
+%   \bibitem{MyArrangement_MyThorn_Author99}
+%   {J. Author, {\em The Title of the Book, Journal, or periodical}, 1 (1999), 
+%   1--16. {\tt http://www.nowhere.com/}}
+%
+% *======================================================================* 
+
+% If you are using CVS use this line to give version information
+% $Header$
+
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a 
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+% The author of the documentation
+\author{Gabrielle Allen} 
+
+% The title of the document (not necessarily the name of the Thorn)
+\title{Extracting Gravitational Waves and Other Quantities from Numerical Spacetimes}
+
+% the date your document was last changed, if your document is in CVS, 
+% please us:
+%    \date{$ $Date$ $}
+\date{}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+% Add all definitions used in this documentation here 
+%   \def\mydef etc
+\def\a   {\alpha}
+\def\b   {\beta}
+\def\p   {\phi}
+\def\t   {\theta}
+\def\Y   {Y_{lm}}
+\def\Ys  {Y^*_{lm}}
+\def\Yt  {Y_{lm,\theta}}
+\def\Ytt {Y_{lm,\theta\theta}}
+\def\Ytp {Y_{lm,\theta\phi}}
+\def\Yp  {Y_{lm,\phi}}
+\def\Ypp {Y_{lm,\phi\phi}}
+\def\Yz  {Y_{l0}}
+\def\Yzt {Y_{l0,\theta}}
+\def\Yztt{Y_{l0,\theta\theta}}
+\def\c   {\cos\theta}
+\def\s   {\sin\theta}
+% Add an abstract for this thorn's documentation
+\begin{abstract}
+
+\end{abstract}
+
+% The following sections are suggestive only.
+% Remove them or add your own.
+
+\section{Introduction}
+
+Thorn Extract calculates first order gauge invariant waveforms from a
+numerical spacetime, under the basic assumption that, at the spheres
+of extract the spacetime is approximately Schwarzschild. In addition,
+other quantities such as mass, angular momentum and spin can be
+determined.
+
+This thorn should not be used blindly, it will always return some
+waveform, however it is up to the user to determine whether this is
+the appropriate expected first order gauge invariant waveform.
+
+\section{Physical System}
+
+\subsection{Wave Forms}
+
+Assume a spacetime $g_{\alpha\beta}$ which can be written as a Schwarzschild 
+background $g_{\alpha\beta}^{Schwarz}$ with perturbations $h_{\alpha\beta}$:
+%
+\begin{equation}
+g_{\alpha\beta} = g^{Schwarz}_{\alpha\beta} + h_{\alpha\beta}
+\end{equation}
+with
+%
+\begin{equation}
+\{g^{Schwarz}_{\alpha\beta}\}(t,r,\theta,\phi) = 
+\left( \begin{array}{cccc}
+ -S & 0      & 0   & 0                \\
+ 0  & S^{-1} & 0   & 0                \\
+ 0  & 0      & r^2 & 0                \\
+ 0  & 0      & 0   & r^2 \sin^2\theta
+\end{array}\right)
+\qquad
+S(r)=1-\frac{2M}{r}
+\end{equation}
+%
+The 3-metric perturbations $\gamma_{ij}$ can be decomposed using tensor
+harmonics into  $\gamma_{ij}^{lm}(t,r)$ where
+$$
+  \gamma_{ij}(t,r,\theta,\phi)=\sum_{l=0}^\infty \sum_{m=-l}^l
+                       \gamma_{ij}^{lm}(t,r)
+$$
+%
+and
+%
+$$
+  \gamma_{ij}(t,r,\t,\p) = \sum_{k=0}^6 p_k(t,r) {\bf V}_k(\t,\p)
+$$
+where $\{{\bf V}_k\}$ is some basis for tensors on a 2-sphere
+in 3-D Euclidean space.
+%
+%
+%
+Working with the Regge-Wheeler basis (see Section~\ref{reggewheeler})
+the 3-metric is then expanded in terms of the (six) standard
+Regge-Wheeler functions $\{c_1^{\times lm}, c_2^{\times lm},
+h_1^{+lm}, H_2^{+lm}, K^{+lm},
+G^{+lm}\}$~\cite{regge},~\cite{moncrief74}. Where each of the
+functions is either {\it odd} ($\times$) or {\it even} ($+$)
+parity. The decomposition is then written
+%
+\begin{eqnarray}
+\gamma_{ij}^{lm} & = & c_1^{\times lm}(\hat{e}_1)_{ij}^{lm}
+                   +   c_2^{\times lm}(\hat{e}_2)_{ij}^{lm} 
+\nonumber\\
+                 & + & h_1^{+lm}(\hat{f}_1)_{ij}^{lm} 
+                   +   A^2 H_2^{+lm}(\hat{f}_2)_{ij}^{lm}
+                   +   R^2 K^{+lm}(\hat{f}_3)_{ij}^{lm}
+                   +   R^2 G^{+lm}(\hat{f}_4)_{ij}^{lm}
+\end{eqnarray}
+%
+which we can write in an expanded form as 
+%
+\begin{eqnarray}
+\gamma_{rr}^{lm} 
+  & = & A^2 H_2^{+lm} \Y 
+\\
+\gamma_{r\t}^{lm} 
+  & = & - c_1^{\times lm} \frac{1}{\s} \Yp+h_1^{+lm}\Yt 
+\\
+\gamma_{r\p}^{lm} 
+  & = & c_1^{\times lm} \s \Yt+ h_1^{+lm}\Yp 
+\\
+\gamma_{\t\t}^{lm} 
+  & = & c_2^{\times lm}\frac{1}{\s}(\Ytp-\cot\t \Yp) 
+      + R^2 K^{+lm}\Y + R^2 G^{+lm}    \Ytt 
+\\
+\gamma_{\t\p}^{lm} 
+  & = & -c_2^{\times lm}\s \frac{1}{2} 
+  \left(
+  \Ytt-\cot\t \Yt-\frac{1}{\sin^2\theta}\Y \right)
+  + R^2 G^{+lm}(\Ytp-\cot\t \Yp)
+\\
+\gamma_{\p\p}^{lm}
+  & = &  -\s c_2^{\times lm} (\Ytp - \cot\t \Yp)
+        +R^2 K^{+lm}\sin^2\t \Y
+        +R^2 G^{+lm} (\Ypp+\s\c \Yt)
+\end{eqnarray}
+%
+A similar decomposition allows the four gauge components of the
+4-metric to be written in terms of {\it three} even-parity variables
+$\{H_0,H_1,h_0\}$ and the {\it one} odd-parity variable $\{c_0\}$
+%
+\begin{eqnarray}
+  g_{tt}^{lm} & = & N^2 H_0^{+lm} \Y 
+\\
+  g_{tr}^{lm} & = & H_1^{+lm} \Y
+\\
+  g_{t\t}^{lm} & = & h_0^{+lm} \Yt - c_0^{\times lm}\frac{1}{\s}\Yp
+\\
+  g_{t\p}^{lm} & = & h_0^{+lm} \Yp + c_0^{\times lm} \s \Yt
+\end{eqnarray} 
+%        
+Also from $g_{tt}=-\alpha^2+\beta_i\beta^i$ we have
+%
+\begin{equation}
+  \alpha^{lm} = -\frac{1}{2}NH_0^{+lm}Y_{lm}
+\end{equation}
+%
+It is useful to also write this with the perturbation split into even and
+odd parity parts:
+$$
+g_{\alpha\beta} = {g}^{background}_{\alpha\beta} +
+   \sum_{l,m} g^{lm,odd}_{\alpha\beta}
++\sum_{l,m} g^{lm,even}_{\alpha\beta}
+$$
+where (dropping some superscripts)
+\begin{eqnarray*}
+\{g_{\alpha\beta}^{odd}\}
+&=&
+\left( 
+\begin{array}{cccc}
+0 & 0 &  - c_0\frac{1}{\s}\Yp
+    & c_0 \s \Yt
+\\
+. & 0 & - c_1\frac{1}{\s} \Yp
+  & c_1 \s \Yt
+\\
+. & . & c_2\frac{1}{\s}(\Ytp-\cot\t \Yp)  
+  & c_2\frac{1}{2} \left(\frac{1}{\s}
+          \Ypp+\c\Yt-\s\Ytt\right)
+\\
+.&.&.&c_2 (-\s \Ytp+\c \Yp)
+\end{array}
+\right)
+\\
+\{g_{\alpha\beta}^{even}\}
+&=&
+\left( 
+\begin{array}{cccc}
+N^2 H_0\Y & H_1\Y       & h_0\Yt          & h_0 \Yp             \\ 
+.       & A^2H_2\Y & h_1\Yt          & h_1 \Yp             \\
+.       & .           & R^2K\Y+r^2G\Ytt & R^2(\Ytp-\cot\t\Yp) \\
+.       & .           & .                & R^2 K\sin^2\t\Y+R^2G(\Ypp+\s\c\Yt)
+\end{array}
+\right)
+\end{eqnarray*}
+
+Now, for such a Schwarzschild background we can define two (and only two)
+unconstrained gauge invariant quantities 
+  $Q^{\times}_{lm}=Q^{\times}_{lm}(c_1^{\times lm},c_2^{\times lm})$ 
+and
+  $Q^{+}_{lm}=Q^{+}_{lm}(K^{+ lm},G^{+ lm},H_2^{+lm},h_1^{+lm})$, 
+which from
+\cite{abrahams96a} are
+\begin{eqnarray}
+Q^{\times}_{lm} 
+  & = & \sqrt{\frac{2(l+2)!}{(l-2)!}}\left[c_1^{\times lm}
+        + \frac{1}{2}\left(\partial_r c_2^{\times lm} - \frac{2}{r}
+        c_2^{\times lm}\right)\right] \frac{S}{r}
+\\
+Q^{+}_{lm}
+  & = & \frac{1}{\Lambda}\sqrt{\frac{2(l-1)(l+2)}{l(l+1)}}
+        (4rS^2 k_2+l(l+1)r k_1) 
+\\
+  & \equiv &
+        \frac{1}{\Lambda}\sqrt{\frac{2(l-1)(l+2)}{l(l+1)}}
+        \left(l(l+1)S(r^2\partial_r G^{+lm}-2h_1^{+lm})+
+        2rS(H_2^{+lm}-r\partial_r K^{+lm})+\Lambda r K^{+lm}\right)
+\end{eqnarray}
+where
+\begin{eqnarray}
+k_1 & = & K^{+lm} + \frac{S}{r}(r^2\partial_r G^{+lm} - 2h^{+lm}_1) \\
+k_2 & = & \frac{1}{2S}
+          \left[H^{+lm}_2-r\partial_r k_1-\left(1-\frac{M}{rS}\right) 
+            k_1 + S^{1/2}\partial_r
+          (r^2 S^{1/2} \partial_r G^{+lm}-2S^{1/2}h_1^{+lm})\right]
+\\
+&\equiv& \frac{1}{2S}\left[H_2-rK_{,r}-\frac{r-3M}{r-2M}K\right]
+\end{eqnarray}
+
+\noindent
+NOTE: These quantities compare with those in Moncrief \cite{moncrief74} by
+\begin{eqnarray*}
+\mbox{Moncriefs odd parity Q: }\qquad Q^\times_{lm} &=&
+ \sqrt{\frac{2(l+2)!}{(l-2)!}}Q
+ \\
+\mbox{Moncriefs even parity Q: } \qquad Q^+_{lm} &=&
+ \sqrt{\frac{2(l-1)(l+2)}{l(l+1)}}Q
+\end{eqnarray*}
+
+Note that these quantities only depend on the purely spatial 
+Regge-Wheeler functions, and not the gauge parts. (In the Regge-Wheeler 
+and Zerilli gauges, these are just respectively (up to a rescaling)
+ the Regge-Wheeler 
+and Zerilli functions).
+These quantities satisfy the wave equations
+\begin{eqnarray*}
+  &&(\partial^2_t-\partial^2_{r^*})Q^\times_{lm}+S\left[\frac{l(l+1)}{r^2}-\frac{6M}{r^3}
+  \right]Q^{\times}_{lm}  =  0 
+  \\
+  &&(\partial^2_t-\partial^2_{r^*})Q^+_{lm}+S\left[
+    \frac{1}{\Lambda^2}\left(\frac{72M^3}{r^5}-\frac{12M}{r^3}(l-1)(l+2)\left(1-\frac{3M}{r}\right)
+    \right)+\frac{l(l-1)(l+1)(l+2)}{r^2\Lambda}\right]Q^+_{lm}=0
+\end{eqnarray*}
+where
+\begin{eqnarray*}
+  \Lambda &=& (l-1)(l+2)+6M/r \\
+  r^*     &=& r+2M\ln(r/2M-1)
+\end{eqnarray*}
+ 
+
+
+
+\section{Numerical Implementation}
+
+The implementation assumes that the numerical solution, on a Cartesian
+grid, is approximately Schwarzshild on the spheres of constant
+$r=\sqrt(x^2+y^2+z^2)$ where the waveforms are extracted. The general
+procedure is then:
+
+\begin{itemize}
+
+  \item Project the required metric components, and radial derivatives
+  of metric components, onto spheres of constant coordinate radius
+  (these spheres are chosen via parameters).
+
+  \item Transform the metric components and there derivatives on the
+  2-spheres from Cartesian coordinates into a spherical coordinate
+  system.
+
+  \item Calculate the physical metric on these spheres if a conformal
+  factor is being used.
+
+  \item Calculate the transformation from the coordinate radius to an
+  areal radius for each sphere.
+
+  \item Calculate the $S$ factor on each sphere. Combined with the
+  areal radius This also produces an estimate of the mass.
+
+  \item Calculate the six Regge-Wheeler variables, and required radial
+  derivatives, on these spheres by integration of combinations of the
+  metric components over each sphere.
+
+  \item Contruct the gauge invariant quantities from these
+  Regge-Wheeler variables.
+
+\end{itemize}
+
+\subsection{Project onto Spheres of Constant Radius}
+
+This is performed by interpolating the metric components, and if
+needed the conformal factor, onto the spheres. Although 2-spheres are
+hardcoded, the source code could easily be changed here to project
+onto e.g. 2-ellipsoids.
+
+\subsection{Calculate Radial Transformation}
+
+The areal coordinate $\hat{r}$ of each sphere is calculated by
+%
+\begin{equation}
+  \hat{r}    =  \hat{r}(r) = \left[
+            \frac{1}{4\pi}
+            \int\sqrt{\gamma_{\t\t}
+            \gamma_{\p\p}}d\t d\p \right]^{1/2}
+\end{equation}
+%
+from which
+%
+\begin{equation}
+\frac{d\hat{r}}{d\eta} = \frac{1}{16\pi \hat{r}}
+  \int\frac{\gamma_{\t\t,\eta}\gamma_{\p\p}+\gamma_{\t\t}\gamma_{\p\p,\eta}}
+  {\sqrt{\gamma_{\t\t}\gamma_{\p\p}}} \ d\t d\p
+\end{equation}
+%
+Note that this is not the only way to combine metric components to get
+the areal radius, but this one was used because it gave better values
+for extracting close to the event horizon for perturbations of black
+holes.
+
+\subsection{Calculate $S$ factor and Mass Estimate}
+
+\begin{equation}
+S(\hat{r}) = \left(\frac{\partial\hat{r}}{\partial r}\right)^2 \int \gamma_{rr} \ d\t d\p
+\end{equation}
+
+\begin{equation}
+M(\hat{r}) = \hat{r}\frac{1-S}{2}
+\end{equation}
+
+\subsection{Calculate Regge-Wheeler Variables}
+
+\begin{eqnarray*}
+c_1^{\times lm}  &=&  \frac{1}{l(l+1)}
+                      \int \frac{\gamma_{\hat{r}\p}Y^*_{lm,\t}
+                                -\gamma_{\hat{r}\t} Y^*_{lm,\p} }
+                     {\s}d\Omega
+\\
+c_2^{\times lm} & = & -\frac{2}{l(l+1)(l-1)(l+2)}
+                      \int\left\{
+           \left(-\frac{1}{\sin^2\t}\gamma_{\t\t}+\frac{1}
+           {\sin^4\t}\gamma_{\p\p}\right)
+           (\s Y^*_{lm,\t\p}-\c Y^*_{lm,\p})
+\right.
+\\
+&&\left.
+           + \frac{1}{\s} \gamma_{\t\p}
+           (Y^*_{lm,\t\t}-\cot\t Y^*_{lm,\t}
+           -\frac{1}{\sin^2\t}Y^*_{lm,\p\p}) \right\}d\Omega
+\\
+h_1^{+lm} &=& \frac{1}{l(l+1)}
+            \int \left\{
+                \gamma_{\hat{r}\t} Y^*_{lm,\t} + \frac{1}{\sin^2\t}
+                \gamma_{\hat{r}\p}Y^*_{lm,\p}\right\} d\Omega
+\\
+H_2^{+lm} &=& S  \int \gamma_{\hat{r}\hat{r}} \Ys d\Omega
+\\
+K^{+lm}   &=& \frac{1}{2\hat{r}^2} \int \left(\gamma_{\t\t}+
+           \frac{1}{\sin^2\t}\gamma_{\p\p}\right)\Ys
+           d\Omega
+\\
+          &&+\frac{1}{2\hat{r}^2(l-1)(l+2)}
+\int \left\{
+  \left(\gamma_{\t\t}-\frac{\gamma_{\p\p}}{\sin^2\t}\right)
+    \left(Y^*_{lm,\t\t}-\cot\t Y^*_{lm,\t}-\frac{1}{\sin^2\t}
+    Y^*_{lm,\p\p}\right) 
+\right.
+\\
+&&\left.
+   + \frac{4}{\sin^2\t}\gamma_{\t\p}(Y^*_{lm,\t\p}-\cot\t
+     Y^*_{lm,\p})
+     \right \} d\Omega
+\\
+G^{+lm}  &=& \frac{1}{\hat{r}^2 l(l+1)(l-1)(l+2)}
+  \int \left\{
+  \left(\gamma_{\t\t}-\frac{\gamma_{\p\p}}{\sin^2\t}\right)
+    \left(Y^*_{lm,\t\t}-\cot\t Y^*_{lm,\t}-\frac{1}{\sin^2\t}
+    Y^*_{lm,\p\p}\right) 
+\right.
+\\
+&&\left.
+   +\frac{4}{\sin^2\t}\gamma_{\t\p}(Y^*_{lm,\t\p}-\cot\t
+   Y^*_{lm,\p})
+   \right\}d\Omega
+\end{eqnarray*}
+where
+\begin{eqnarray}
+\gamma_{\hat{r}\hat{r}}      & = & \frac{\partial r}{\partial \hat{r}}
+                       \frac{\partial r}{\partial \hat{r}}
+                       \gamma_{rr} 
+\\
+\gamma_{\hat{r}\t} & = & \frac{\partial r}{\partial \hat{r}}
+                       \gamma_{r\t} 
+\\
+\gamma_{\hat{r}\p}   & = & \frac{\partial r}{\partial \hat{r}}
+                       \gamma_{r\p}
+\end{eqnarray}
+
+\subsection{Calculate Gauge Invariant Quantities}
+
+\begin{eqnarray}
+Q^{\times}_{lm} 
+  & = & \sqrt{\frac{2(l+2)!}{(l-2)!}}\left[c_1^{\times lm}
+        + \frac{1}{2}\left(\partial_{\hat{r}} c_2^{\times lm} - \frac{2}{\hat{r}}
+        c_2^{\times lm}\right)\right] \frac{S}{\hat{r}}
+\\
+Q^{+}_{lm}
+  & = & \frac{1}{(l-1)(l+2)+6M/\hat{r}}\sqrt{\frac{2(l-1)(l+2)}{l(l+1)}}
+        (4\hat{r}S^2 k_2+l(l+1)\hat{r} k_1) 
+\end{eqnarray}
+where
+\begin{eqnarray}
+k_1 & = & K^{+lm} + \frac{S}{\hat{r}}(\hat{r}^2\partial_{\hat{r}} G^{+lm} - 2h^{+lm}_1) \\
+k_2 & = & \frac{1}{2S}
+          [H^{+lm}_2-\hat{r}\partial_{\hat{r}} k_1-(1-\frac{M}{\hat{r}S}) k_1 + S^{1/2}\partial_{\hat{r}}
+          (\hat{r}^2 S^{1/2} \partial_{\hat{r}} G^{+lm}-2S^{1/2}h_1^{+lm}
+\end{eqnarray}
+
+\section{Using This Thorn}
+
+Use this thorn very carefully. Check the validity of the waveforms by running
+tests with different resolutions, different outer boundary conditions, etc
+to check that the waveforms are consistent.
+
+\subsection{Basic Usage}
+
+\subsection{Output Files}
+
+Although Extract is really an {\tt ANALYSIS} thorn, at the moment it
+is scheduled at {\tt POSTSTEP}, with the iterations at which output is
+performed determined by the parameter {\it itout}. Output files from
+{\tt Extract} are always placed in the main output directory defined
+by {\tt CactusBase/IOUtil}.
+
+Output files are generated for each detector (2-sphere) used, and
+these detectors are identified in the name of each output file by {\tt
+R1}, {\tt R2}, \ldots.
+
+The extension denotes whether coordinate time ({\.tl}) or proper time
+({\.ul}) is used for the first column.
+
+\begin{itemize}
+
+  \item {\tt rsch\_R?.[tu]l} 
+
+	The extracted areal radius on each 2-sphere.
+
+  \item {\tt mass\_R?.[tu]l}
+
+	Mass estimate calculated from $g_{rr}$ on each 2-sphere.
+
+  \item {\tt Qeven\_R?\_??.[tu]l}
+
+	The even parity gauge invariate variable ({\it waveform}) on 
+	each 2-sphere. This is a complex quantity, the 2nd column is 
+	the real part, and the third column the imaginary part.
+
+  \item {\tt Qodd\_R?\_??.[tu]l}
+
+	The odd parity gauge invariate variable ({\it waveform}) on 
+	each 2-sphere. This is a complex quantity, the 2nd column is 
+	the real part, and the third column the imaginary part.
+
+  \item {\tt ADMmass\_R?.[tu]l}
+
+	Estimate of ADM mass enclosed within each 2-sphere.
+	(To produce this set {\tt doADMmass = ``yes''}).
+
+  \item {\tt momentum\_[xyz]\_R?.[tu]l}
+
+	Estimate of momentum at each 2-sphere.
+	(To produce this set {\tt do\_momentum = ``yes''}).
+
+  \item {\tt spin\_[xyz]\_R?.[tu]l}
+
+	Estimate of momentum at each 2-sphere.
+	(To produce this set {\tt do\_spin = ``yes''}).
+
+
+\end{itemize}
+
+\section{History}
+
+Much of the source code
+ for Extract comes from a code written outside
+of Cactus for extracting waveforms from data generated by the NCSA
+G-Code for compare with linear evolutions of waveforms extracted from
+the Cauchy initial data.  This work was carried out in collaboration
+with Karen Camarda and Ed Seidel.
+
+
+\section{Appendix: Regge-Wheeler Harmonics}
+
+\label{reggewheeler}
+
+\begin{eqnarray*}
+(\hat{e}_1)^{lm} &=& 
+\left( \begin{array}{ccc}
+0  & -\frac{1}{\s}\Yp & \s \Yt \\
+.  & 0                                & 0                        \\
+.  & 0                                & 0 
+\end{array}\right)
+\\
+(\hat{e}_2)^{lm} &=& 
+\left( \begin{array}{ccc} 
+0 & 0 & 0 \\
+0 & \frac{1}{\s}(\Ytp-\cot\t \Yp) & . \\
+0 & -\frac{\s}{2}[\Ytt-\cot\t 
+    \Yt-\frac{1}{\sin^2\t}\Ypp]           & 
+            -\s [\Ytp-\cot\t \Yp]
+\end{array}\right)
+\\
+(\hat{f}_1)^{lm} &=& 
+\left( \begin{array}{ccc}
+  0 & \Yt & \Yp \\
+  . & 0   & 0           \\
+  . & 0   & 0 
+\end{array}\right)
+\\
+(\hat{f}_2)^{lm} &=& 
+\left( \begin{array}{ccc}
+\Y & 0 & 0 \\
+0      & 0 & 0 \\
+0      & 0 & 0 
+\end{array}\right)
+\\
+(\hat{f}_3)^{lm} &=& 
+\left( \begin{array}{ccc}
+0 & 0  & 0                  \\
+0 & \Y & 0                  \\
+0 & 0  & \sin^2\t \Y 
+\end{array}\right)
+\\
+(\hat{f}_4)^{lm} &=& 
+\left( \begin{array}{ccc}
+0 & 0                   & 0 \\
+0 & \Ytt & . \\
+0 & \Ytp-\cot \t \Yp & \Ypp+ \s \c \Yt
+\end{array}\right)
+\end{eqnarray*}
+
+\section{Appendix: Transformation Between Cartesian and Spherical Coordinates}
+
+First, the transformations between metric components in $(x,y,z)$ and $(r,\t,\p)$ coordinates. Here, $\rho=\sqrt{x^2+y^2}=r\s$,
+\begin{eqnarray*}
+  \frac{\partial x}{\partial r}
+  &=&
+  \sin\t\cos\p 
+  =
+  \frac{x}{r}
+\\
+  \frac{\partial y}{\partial r}
+  &=&
+  \sin\t\sin\p 
+  =
+  \frac{y}{r}
+\\
+  \frac{\partial z}{\partial r}
+  &=&
+  \cos\t 
+  =
+  \frac{z}{r}
+\\
+  \frac{\partial x}{\partial \t}
+  &=&
+  r\cos\t\cos\p 
+  =
+  \frac{xz}{\rho}
+\\
+  \frac{\partial y}{\partial \t}
+  &=&
+  r\cos\t\sin\p 
+  =
+  \frac{yz}{\rho}
+\\
+  \frac{\partial z}{\partial \t}
+  &=&
+  -r\sin\t 
+  =
+  -\rho
+\\
+  \frac{\partial x}{\partial \p}
+  &=&
+  -r\sin\t\sin\p
+  =
+  -y
+\\
+  \frac{\partial y}{\partial \p}
+  &=&
+  r\sin\t\cos\p 
+  =
+  x
+\\
+  \frac{\partial z}{\partial \p}
+  &=&
+  0
+\end{eqnarray*}
+
+
+\begin{eqnarray*}
+  \gamma_{rr} &=&
+  \frac{1}{r^2}
+     (x^2\gamma_{xx}+
+      y^2\gamma_{yy}+
+      z^2\gamma_{zz}+
+      2xy\gamma_{xy}+
+      2xz\gamma_{xz}+
+      2yz\gamma_{yz})
+\\
+  \gamma_{r\t} &=&
+  \frac{1}{r\rho}
+     (x^2 z \gamma_{xx}
+     +y^2 z \gamma_{yy}
+     -z \rho^2 \gamma_{zz}
+     +2xyz \gamma_{xy}
+     +x(z^2-\rho^2)\gamma_{xz}
+     +y(z^2-\rho^2)\gamma_{yz})
+\\
+  \gamma_{r\p} &=&
+  \frac{1}{r}
+     (-xy\gamma_{xx}
+      +xy\gamma_{yy}
+      +(x^2-y^2)\gamma_{xy}
+      -yz \gamma_{xz}
+      +xz\gamma_{yz})
+\\
+  \gamma_{\t\t} &=&
+  \frac{1}{\rho^2}
+  (x^2z^2\gamma_{xx}
+  +2xyz^2\gamma_{xy}
+  -2xz\rho^2\gamma_{xz}
+  +y^2z^2\gamma_{yy}
+  -2yz\rho^2\gamma_{yz}
+  +\rho^4\gamma_{zz})
+\\
+  \gamma_{\t\p} &=&
+  \frac{1}{\rho}
+  (-xyz\gamma_{xx}
+   +(x^2-y^2)z\gamma_{xy}
+   +\rho^2 y \gamma_{xz}
+   +xyz\gamma_{yy}
+   -\rho^2 x \gamma_{yz})
+\\
+  \gamma_{\p\p} &=&
+   y^2\gamma_{xx}
+   -2xy\gamma_{xy}
+   +x^2\gamma_{yy}
+\end{eqnarray*}   
+or,
+\begin{eqnarray*}
+\gamma_{rr}&=&
+\sin^2\t\cos^2\p\gamma_{xx}
++\sin^2\t\sin^2\p\gamma_{yy}
++\cos^2\t\gamma_{zz}
++2\sin^2\theta\cos\p\sin\p\gamma_{xy}
++2\sin\t\cos\t\cos\p\gamma_{xz}
+\\
+&&
++2\s\c\sin\p\gamma_{yz}
+\\
+\gamma_{r\t}&=&
+r(\s\c\cos^2\phi\gamma_{xx}
++2*\s\c\sin\p\cos\p\gamma_{xy}
++(\cos^2\t-\sin^2\t)\cos\p\gamma_{xz}
++\s\c\sin^2\p\gamma_{yy}
+\\
+&&
++(\cos^2\t-\sin^2\t)\sin\p\gamma_{yz}
+-\s\c\gamma_{zz})
+\\
+\gamma_{r\p}&=&
+r\s(-\s\sin\p\cos\p\gamma_{xx}
+-\s(\sin^2\p-\cos^2\p)\gamma_{xy}
+-\c\sin\p\gamma_{xz}
++\s\sin\p\cos\p\gamma_{yy}
+\\
+&&
++\c\cos\p\gamma_{yz})
+\\
+\gamma_{\t\t}&=&
+r^2(\cos^2\t\cos^2\p\gamma_{xx}
++2\cos^2\t\sin\p\cos\p\gamma_{xy}
+-2\s\c\cos\p\gamma_{xz}
++\cos^2\t\sin^2\p\gamma_{yy}
+\\
+&&
+-2\s\c\sin\p\gamma_{yz}
++\sin^2\t\gamma_{zz})
+\\
+\gamma_{\t\p}&=&
+r^2\s(-\c\sin\p\cos\p\gamma_{xx}
+-\c(\sin^2\p-\cos^2\p)\gamma_{xy}
++\s\sin\p\gamma_{xz}
++\c\sin\p\cos\p\gamma_{yy}
+\\
+&&
+-\s\cos\p\gamma_{yz})
+\\
+\gamma_{\p\p}&=&
+r^2\sin^2\t(\sin^2\p\gamma_{xx}
+-2\sin\p\cos\p\gamma_{xy}
++\cos^2\phi\gamma_{yy})
+\end{eqnarray*}
+
+
+We also need 
+the transformation for the radial derivative of the metric components:
+\begin{eqnarray*}
+\gamma_{rr,\eta}&=&
+\sin^2\t\cos^2\p\gamma_{xx,\eta}
++\sin^2\t\sin^2\p\gamma_{yy,\eta}
++\cos^2\t\gamma_{zz,\eta}
++2\sin^2\theta\cos\p\sin\p\gamma_{xy,\eta}
+\\
+&&
++2\sin\t\cos\t\cos\p\gamma_{xz,\eta}
++2\s\c\sin\p\gamma_{yz,\eta}
+\\
+\gamma_{r\t,\eta}&=& 
+\frac{1}{r}\gamma_{r\t}+
+r(\s\c\cos^2\phi\gamma_{xx,\eta}
++\s\c\sin\p\cos\p\gamma_{xy,\eta}
++(\cos^2\t-\sin^2\t)\cos\p\gamma_{xz,\eta}
+\\
+&&
++\s\c\sin^2\p\gamma_{yy,\eta}
++(\cos^2\t-\sin^2\t)\sin\p\gamma_{yz,\eta}
+-\s\c\gamma_{zz,\eta})
+\\
+\gamma_{r\p,\eta}&=&
+\frac{1}{r}\gamma_{r\p}+
+r\s(-\s\sin\p\cos\p\gamma_{xx,\eta}
+-\s(\sin^2\p-\cos^2\p)\gamma_{xy,\eta}
+-\c\sin\p\gamma_{xz,\eta}
+\\
+&&
++\s\sin\p\cos\p\gamma_{yy,\eta}
++\c\cos\p\gamma_{yz,\eta})
+\\
+\gamma_{\t\t,\eta}&=&
+\frac{2}{r}\gamma_{\t\t}+
+r^2(\cos^2\t\cos^2\p\gamma_{xx,\eta}
++2\cos^2\t\sin\p\cos\p\gamma_{xy,\eta}
+-2\s\c\cos\p\gamma_{xz,\eta}
+\\
+&&
++\cos^2\t\sin^2\p\gamma_{yy,\eta}
+-2\s\c\sin\p\gamma_{yz,\eta}
++\sin^2\t\gamma_{zz,\eta})
+\\
+\gamma_{\t\p,\eta}&=&
+\frac{2}{r}\gamma_{\t\p}+
+r^2\s(-\c\sin\p\cos\p\gamma_{xx,\eta}
+-\c(\sin^2\p-\cos^2\p)\gamma_{xy,\eta}
++\s\sin\p\gamma_{xz,\eta}
+\\
+&&
++\c\sin\p\cos\p\gamma_{yy,\eta}
+-\s\cos\p\gamma_{yz,\eta})
+\\
+\gamma_{\p\p,\eta}&=&
+\frac{2}{r}\gamma_{\p\p}+
+r^2\sin^2\t(\sin^2\p\gamma_{xx,\eta}
+-2\sin\p\cos\p\gamma_{xy,\eta}
++\cos^2\phi\gamma_{yy,\eta})
+\end{eqnarray*}
+
+\section{Appendix: Integrations Over the 2-Spheres}
+
+
+This is done by using Simpson's rule twice. Once in each coordinate 
+direction. Simpson's rule is
+\begin{equation}
+\int^{x_2}_{x_1} f(x) dx = 
+  \frac{h}{3} [f_1+4f_2+2f_3+4f_4+\ldots+2f_{N-2}+4 f_{N-1}+f_N]
+  +O(1/N^4)
+\end{equation}
+$N$ must be an odd number.
+
+
+\begin{thebibliography}{9}
+\bibitem{abrahams94}    Abrahams A.M. \& Cook G.B. 
+                        ``Collisions of boosted black holes: 
+                          Perturbation theory predictions of 
+                          gravitational radiation'' 
+                        {\em Phys. Rev. D} 
+                        {\bf 50} 
+                        R2364-R2367 
+                        (1994).
+\bibitem{abrahams95}    Abrahams A.M., Shapiro S.L. \& Teukolsky S.A.  
+                        ``Calculation of gravitational wave forms from 
+                          black hole collisions and disk collapse: Applying
+                          perturbation theory to numerical spacetimes''
+                        {\em Phys. Rev. D.} 
+                        {\bf 51}
+                        4295
+                        (1995).
+\bibitem{abrahams96a}   Abrahams A.M. \& Price R.H. 
+                        ``Applying black hole perturbation
+                          theory to numerically generated spacetimes'' 
+                        {\em Phys. Rev. D.} 
+                        {\bf 53} 
+                        1963 
+                        (1996).
+\bibitem{abrahams96b}   Abrahams A.M. \& Price R.H. 
+                        ``Black-hole collisions from Brill-Lindquist 
+                          initial data: Predictions of perturbation theory'' 
+                        {\em Phys. Rev. D.} 
+                        {\bf 53} 
+                        1972 
+                        (1996).
+\bibitem{abram}         Abramowitz, M. \& Stegun A. 
+                        ``Pocket Book of Mathematical Functions 
+                          (Abridged Handbook of Mathematical Functions'', 
+                        Verlag Harri Deutsch 
+                        (1984).
+\bibitem{andrade96}     Andrade Z., \& Price R.H. 
+                        ``Head-on collisions of unequal mass black holes:
+                          Close-limit predictions'', 
+                        preprint 
+                        (1996).
+\bibitem{anninos95}     Anninos P., Price R.H., Pullin J., Seidel E., 
+                          and Suen W-M. 
+                        ``Head-on collision of two black holes: 
+                          Comparison of different approaches''
+                        {\em Phys. Rev. D.} 
+                        {\bf 52} 
+                        4462 
+                        (1995).
+\bibitem{arfken}        Arfken, G. 
+                        ``Mathematical Methods for Physicists'', 
+                        Academic Press 
+                        (1985).
+\bibitem{baker96}       Baker J., Abrahams A., Anninos P., Brant S., 
+                          Price R., Pullin J. \& Seidel E. 
+                        ``The collision of boosted black holes'' 
+                        (preprint) 
+                        (1996).
+\bibitem{baker97}       Baker J. \& Li C.B.
+                        ``The two-phase approximation for black hole 
+                          collisions: Is it robust''
+                        preprint (gr-qc/9701035),
+                        (1997).
+\bibitem{brandt96}      Brandt S.R. \& Seidel E. 
+                        ``The evolution of distorted rotating black holes III:
+                          Initial data'' 
+                        (preprint) 
+                        (1996).
+\bibitem{cunningham78}  Cunningham C.T., Price R.H., Moncrief V.,
+                        ``Radiation from collapsing 
+                          relativistic stars. 
+                          I. Linearized Odd-Parity Radiation''
+                        {\em Ap. J.}
+                        {\bf 224}
+                        543-667
+                        (1978).
+\bibitem{cunningham79}  Cunningham C.T., Price R.H., Moncrief V.,
+                        ``Radiation from collapsing 
+                          relativistic stars. 
+                          I. Linearized Even-Parity Radiation''
+                        {\em Ap. J.}
+                        {\bf 230}
+                        870-892
+                        (1979).
+\bibitem{landau80}      Landau L.D. \& Lifschitz E.M.,
+                        ``The Classical Theory of Fields''
+                        (4th Edition),
+                        Pergamon Press
+                        (1980).
+\bibitem{mathews}       Mathews J. ``'', 
+                        {\em J. Soc. Ind. Appl. Math.} 
+                        {\bf 10}
+                        768 
+                        (1962).
+\bibitem{moncrief74}    Moncrief V. ``Gravitational perturbations of spherically
+                        symmetric systems. I. The exterior problem''
+                        {\em Annals of Physics} 
+                        {\bf 88}
+                        323-342 
+                        (1974).
+\bibitem{numrec}        Press W.H., Flannery B.P., Teukolsky S.A., \& Vetterling W.T.,
+                        ``Numerical Recipes, The Art of Scientific Computing''
+                        {\em Cambridge University Press} 
+                        (1989).
+\bibitem{price94}       Price R.H. \& Pullin J. 
+                        ``Colliding black holes: The close limit'',
+                        {\em Phys. Rev. Lett.} 
+                        {\bf 72} 
+                        3297-3300 
+                        (1994).
+\bibitem{regge}         Regge T., \& Wheeler J.A. 
+                        ``Stability of a Schwarzschild Singularity'', 
+                        {\em Phys. Rev. D} 
+                        {\bf 108} 
+                        1063 
+                        (1957).
+\bibitem{seidel90}      Seidel E. 
+                        {\em Phys Rev D.} 
+                        {\bf 42} 
+                        1884 
+                        (1990).
+\bibitem{thorne80}      Thorne K.S., 
+                        ``Multipole expansions of gravitational radiation'', 
+                        {\em Rev. Mod. Phys.} 
+                        {\bf 52} 
+                        299 
+                        (1980).
+\bibitem{vish}          Vishveshwara C.V., 
+                        ``Stability of the Schwarzschild metric'',
+                        {\em Phys. Rev. D.} 
+                        {\bf 1} 
+                        2870, 
+                        (1970).
+\bibitem{zerilli70a}    Zerilli F.J., 
+                        ``Tensor harmonics in canonical form for gravitational 
+                          radiation and other applications'', 
+                        {\em J. Math. Phys.} 
+                        {\bf 11} 
+                        2203, 
+                        (1970).
+\bibitem{zerilli70}     Zerilli F.J., 
+                        ``Gravitational field of a particle falling 
+                          in a Schwarzschild geometry analysed in 
+                          tensor harmonics'',
+                        {\em Phys. Rev. D.} 
+                        {\bf 2} 
+                        2141, 
+                        (1970).
+\end{thebibliography}
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{interpolation\_operator}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{all\_modes} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Extract: all l,m modes up to l}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{cauchy} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Do Cauchy data extraction at given timestep}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{cauchy\_dr} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Gridspacing for Cauchy data extraction}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{cauchy\_r1} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em First radius for Cauchy data extraction}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{cauchy\_timestep} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Timestep for Cauchy data extraction}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{detector1} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Coordinate radius of detector 1}} \\
+\hline{\bf Range} & &  {\bf Default:} 5.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{detector2} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Coordinate radius of detector 2}} \\
+\hline{\bf Range} & &  {\bf Default:} 5.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{detector3} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Coordinate radius of detector 3}} \\
+\hline{\bf Range} & &  {\bf Default:} 5.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{detector4} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Coordinate radius of detector 4}} \\
+\hline{\bf Range} & &  {\bf Default:} 5.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{detector5} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Coordinate radius of detector 5}} \\
+\hline{\bf Range} & &  {\bf Default:} 5.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{detector6} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Coordinate radius of detector 6}} \\
+\hline{\bf Range} & &  {\bf Default:} 5.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{detector7} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Coordinate radius of detector 7}} \\
+\hline{\bf Range} & &  {\bf Default:} 5.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{detector8} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Coordinate radius of detector 8}} \\
+\hline{\bf Range} & &  {\bf Default:} 5.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{detector9} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Coordinate radius of detector 9}} \\
+\hline{\bf Range} & &  {\bf Default:} 5.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{do\_momentum} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Calculate momentum at extraction radii}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{do\_spin} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Calculate spin at extraction radii}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{doadmmass} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Calculate ADM mass at extraction radii}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{interpolation\_operator} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Interpolation operator to use (check LocalInterp)}} \\
+\hline{\bf Range} & &  {\bf Default:} uniform cartesian \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .+} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{interpolation\_order} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Order for interpolation}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:4} & \multicolumn{2}{p{\paraWidth}|}{Choose between first and forth order interpolation} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{itout} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How often to extract, in iterations}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{l\_mode} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em l mode}} \\
+\hline{\bf Range} & &  {\bf Default:} 2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{m\_mode} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em m mode (ignore if extracting all modes}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{np} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Number of phi divisions}} \\
+\hline{\bf Range} & &  {\bf Default:} 100 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{nt} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Number of theta divisions}} \\
+\hline{\bf Range} & &  {\bf Default:} 100 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{num\_detectors} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Number of detectors}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{origin\_x} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em x-origin to extract about}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{origin\_y} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em y-origin to extract about}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{origin\_z} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em z-origin to extract about}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{timecoord} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Which time coordinate to use}} \\
+\hline{\bf Range} & &  {\bf Default:} both \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering proper} & \multicolumn{2}{p{\paraWidth}|}{} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering coordinate} & \multicolumn{2}{p{\paraWidth}|}{} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering both} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{verbose} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Say what is happening}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_dir} & {\bf Scope:} shared from IO & STRING \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+extract
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+grid
+
+admbase
+
+staticconformal
+
+io
+\vspace{2mm}
+\subsection*{Grid Variables}
+\vspace{5mm}\subsubsection{PRIVATE GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+temps &  & compact & 0 \\ 
+ & temp3d & dimensions & 3 \\ 
+ & g00 & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn EinsteinAnalysis/Extract.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}NONE
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PARAMCHECK} 
+
+\hspace{5mm} extract\_paramcheck 
+
+\hspace{5mm}{\it check parameters } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTSTEP} 
+
+\hspace{5mm} extract 
+
+\hspace{5mm}{\it extract waveforms } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Storage:  & temps \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

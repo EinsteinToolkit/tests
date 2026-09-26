@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>ADMCoupling</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">ADMCoupling</h2>
+ <div class="author" ><span 
+class="cmr-12">Ian Hawke, David Rideout</span></div>
+<br />
+<div class="date" >\( \)<span 
+class="cmr-12">Date</span>\( \)</div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 21--><p class="noindent" ><span 
+class="cmr-9">This thorn allows seamless coupling of evolution and analysis thorns to any thorns which contribute</span>
+     <span 
+class="cmr-9">matter terms to the stress energy tensor</span> \(T_{ab}\)<span 
+class="cmr-9">.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Purpose</h3>
+<!--l. 28--><p class="noindent" >This thorn is completely trivial (there’s already more words in the documentation than in the code). The point
+is to allow clean coupling of matter thorns and spacetime evolution thorns. By making a spacetime thorn (such
+as BSSN) a friend of <span 
+class="cmtt-10">ADMCoupling </span>it can know about the variables of the matter thorns (such as Whisky) as
+long as they are also friends of <span 
+class="cmtt-10">ADMCoupling</span>, and then the appropriate stress energy tensor terms can be
+included through the <span 
+class="cmtt-10">CalcTmunu </span>interface. This avoids explicit dependencies between the spacetime and
+matter evolution thorns. Note that we need to do the same for certain analysis thorns, such as
+<span 
+class="cmtt-10">ADMConstraints</span>.
+                                                                                       
+                                                                                       
+</p><!--l. 39--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a>CalcTmunu</h3>
+<!--l. 41--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.1   </span> <a 
+ id="x1-30002.1"></a>Background</h4>
+<!--l. 42--><p class="noindent" >So what is this “<span 
+class="cmtt-10">CalcTmunu</span>”, anyway? <span 
+class="cmtt-10">CalcTmunu </span>is a general interface which allows any thorn to ‘declare’ that
+it contains matter variables, by adding terms to the components of the stress energy tensor. This is done using
+the Cactus include file mechanism, which allows thorns to contribute code to include files, which can
+then be included by any thorn which wishes to use them. For <span 
+class="cmtt-10">CalcTmunu </span>there are two include
+files<span class="footnote-mark"><a 
+href="documentation2.html#fn1x0"><sup class="textsuperscript">1</sup></a></span><a 
+ id="x1-3001f1"></a> ,
+<span 
+class="cmtt-10">CalcTmunu.inc </span>and <span 
+class="cmtt-10">CalcTmunu</span><span 
+class="cmtt-10">_temps.inc</span>.
+</p><!--l. 57--><p class="noindent" >In <span 
+class="cmtt-10">CalcTmunu.inc</span>, one can place code of the form
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-1">
+ Ttt = Ttt + ...
+ Ttx = Ttx + ...
+ Tty = Tty + ...
+ Ttz = Ttz + ...
+ Txx = Txx + ...
+ Txy = Txy + ...
+ Txz = Txz + ...
+ Tyy = Tyy + ...
+ Tyz = Tyz + ...
+ Tzz = Tzz + ...
+</pre>
+<!--l. 69--><p class="nopar" > to add terms to the components \(T_{\mu \nu }\). Each of these variables is of type <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_REAL</span>. (If you omit the <span 
+class="cmtt-10">Ttt +</span>, <span 
+class="cmtt-10">Ttx +</span>,
+etc. from the right hand sides of these assignment statements then you will be assuming that your thorn is
+the only one which provides matter degrees of freedom, and excluding contributions from other
+matter thorns which may be activated.) This code will be executed for each point on the grid,
+whose indices will be stored in the integers <span 
+class="cmtt-10">i</span>, <span 
+class="cmtt-10">j</span>, and <span 
+class="cmtt-10">k</span>. Currently it must be ‘fixed form’ Fortran
+code.
+</p><!--l. 82--><p class="noindent" ><span 
+class="cmtt-10">CalcTmunu</span><span 
+class="cmtt-10">_temps.inc </span>will be included in the variable declaration section for the block of code which contains
+the
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-2">
+#include &#x0022;CalcTmunu.inc&#x0022;
+</pre>
+<!--l. 88--><p class="nopar" > One can put local temporary variable declarations needed for the code above into this file. The <span 
+class="cmtt-10">Ttt</span>, <span 
+class="cmtt-10">Ttx</span>,
+etc. will be declared within a macro from <span 
+class="cmtt-10">ADMMacros</span>.
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.2   </span> <a 
+ id="x1-40002.2"></a>For matter thorns</h4>
+<!--l. 94--><p class="noindent" >To make use of the <span 
+class="cmtt-10">CalcTmunu </span>interface, simply place the lines
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-3">
+INCLUDES HEADER: &#x003C;MyThorn_CalcTmunu_temps.inc&#x003E; in CalcTmunu_temps.inc
+INCLUDES SOURCE: &#x003C;MyThorn_CalcTmunu.inc&#x003E; in CalcTmunu.inc
+</pre>
+<!--l. 98--><p class="nopar" > in your thorn’s <span 
+class="cmtt-10">interface.ccl </span>file, and declare your thorn to be friends with <span 
+class="cmtt-10">ADMCoupling</span>. Then provide the
+files <span 
+class="cmtt-10">&#x003C;MyThorn</span><span 
+class="cmtt-10">_CalcTmunu</span><span 
+class="cmtt-10">_temps.inc&#x003E; </span>and <span 
+class="cmtt-10">&#x003C;MyThorn</span><span 
+class="cmtt-10">_CalcTmunu.inc&#x003E; </span>somewhere in your thorn’s source code.
+We expect to add a sample matter thorn to <span 
+class="cmtt-10">CactusEinstein </span>soon, which will illustrate the use of
+this.
+</p><!--l. 107--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.3   </span> <a 
+ id="x1-50002.3"></a>For thorns which need the stress energy tensor</h4>
+<!--l. 108--><p class="noindent" >Spacetime evolution thorns and various analysis thorns (e.g. one which computes the constraints) may need to
+know the value of the stress-energy tensor. See thorn <span 
+class="cmtt-10">CactusEinstein/ADM </span>for an example the former.
+There the macro <span 
+class="cmtt-10">KSOURCES </span>(see <span 
+class="cmtt-10">KSOURCES</span><span 
+class="cmtt-10">_declare.h </span>and <span 
+class="cmtt-10">KSOURCES</span><span 
+class="cmtt-10">_guts.h</span>) is called from the
+various time integration source files <span 
+class="cmtt-10">DoubleLeap.F</span>, <span 
+class="cmtt-10">IterativeCN.F</span>, etc., which in turn include the
+<span 
+class="cmtt-10">CalcTmunu</span><span 
+class="cmtt-10">_temps.inc </span>and <span 
+class="cmtt-10">CalcTmunu.inc </span>files. In this example, the \(T_{\mu \nu }\) temporary variables are provided by
+including <span 
+class="cmtt-10">CactusEinstein/ADMMacros/src/macro/TRT</span><span 
+class="cmtt-10">_declare.h</span>.
+</p><!--l. 130--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-60003"></a>Parameters</h3>
+<!--l. 136--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-70004"></a>Interfaces</h3>
+<!--l. 141--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-8000"></a>General</h4>
+                                                                                       
+                                                                                       
+<!--l. 143--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 145--><p class="noindent" >admcoupling
+</p><!--l. 150--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-90005"></a>Schedule</h3>
+<!--l. 156--><p class="noindent" >This section lists all the variables which are assigned storage by thorn EinsteinBase/ADMCoupling. Storage can
+either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 159--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-10000"></a>Storage</h4>
+<!--l. 159--><p class="noindent" >NONE
+</p>
+ 
+</body></html> 
+
+                                                                                       
+
+

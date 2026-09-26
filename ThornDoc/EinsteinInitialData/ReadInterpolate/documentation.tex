@@ -1,0 +1,701 @@
+% *======================================================================*
+%  Cactus Thorn template for ThornGuide documentation
+%  Author: Ian Kelley
+%  Date: Sun Jun 02, 2002
+%  $Header$
+%
+%  Thorn documentation in the latex file doc/documentation.tex
+%  will be included in ThornGuides built with the Cactus make system.
+%  The scripts employed by the make system automatically include
+%  pages about variables, parameters and scheduling parsed from the
+%  relevant thorn CCL files.
+%
+%  This template contains guidelines which help to assure that your
+%  documentation will be correctly added to ThornGuides. More
+%  information is available in the Cactus UsersGuide.
+%
+%  Guidelines:
+%   - Do not change anything before the line
+%       % START CACTUS THORNGUIDE",
+%     except for filling in the title, author, date, etc. fields.
+%        - Each of these fields should only be on ONE line.
+%        - Author names should be separated with a \\ or a comma.
+%   - You can define your own macros, but they must appear after
+%     the START CACTUS THORNGUIDE line, and must not redefine standard
+%     latex commands.
+%   - To avoid name clashes with other thorns, 'labels', 'citations',
+%     'references', and 'image' names should conform to the following
+%     convention:
+%       ARRANGEMENT_THORN_LABEL
+%     For example, an image wave.eps in the arrangement CactusWave and
+%     thorn WaveToyC should be renamed to CactusWave_WaveToyC_wave.eps
+%   - Graphics should only be included using the graphicx package.
+%     More specifically, with the "\includegraphics" command.  Do
+%     not specify any graphic file extensions in your .tex file. This
+%     will allow us to create a PDF version of the ThornGuide
+%     via pdflatex.
+%   - References should be included with the latex "\bibitem" command.
+%   - Use \begin{abstract}...\end{abstract} instead of \abstract{...}
+%   - Do not use \appendix, instead include any appendices you need as
+%     standard sections.
+%   - For the benefit of our Perl scripts, and for future extensions,
+%     please use simple latex.
+%
+% *======================================================================*
+%
+% Example of including a graphic image:
+%    \begin{figure}[ht]
+% 	\begin{center}
+%    	   \includegraphics[width=6cm]{/home/runner/work/tests/tests/arrangements/EinsteinInitialData/ReadInterpolate/doc/MyArrangement_MyThorn_MyFigure}
+% 	\end{center}
+% 	\caption{Illustration of this and that}
+% 	\label{MyArrangement_MyThorn_MyLabel}
+%    \end{figure}
+%
+% Example of using a label:
+%   \label{MyArrangement_MyThorn_MyLabel}
+%
+% Example of a citation:
+%    \cite{MyArrangement_MyThorn_Author99}
+%
+% Example of including a reference
+%   \bibitem{MyArrangement_MyThorn_Author99}
+%   {J. Author, {\em The Title of the Book, Journal, or periodical}, 1 (1999),
+%   1--16. {\tt http://www.nowhere.com/}}
+%
+% *======================================================================*
+
+% If you are using CVS use this line to give version information
+% $Header$
+
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+% The author of the documentation
+\author{Roland Haas \textless rhaas@illinois.edu\textgreater}
+
+% The title of the document (not necessarily the name of the Thorn)
+\title{ReadInterpolate}
+
+% the date your document was last changed, if your document is in CVS,
+% please use:
+%    \date{$ $Date: 2004-01-07 12:12:39 -0800 (Wed, 07 Jan 2004) $ $}
+\date{August 17 2020}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+% Add all definitions used in this documentation here
+%   \def\mydef etc
+
+\newcommand{\var}[1]{\code{#1}}
+
+% Add an abstract for this thorn's documentation
+\begin{abstract}
+A FileReader like thorn that uses \code{InterpolateLocalUniform} to
+interpolate the data read in onto the new grid.
+\end{abstract}
+
+% The following sections are suggestive only.
+% Remove them or add your own.
+
+\section{Introduction}
+\code{IOUtil}~\cite{EinsteinInitialData_ReadInterpolate_IOUtil} defines a file
+reading interface via the \var{IO} parameters \var{filereader\_ID\_dir},
+\var{filereader\_ID\_files}, \var{filereader\_ID\_vars} parameters.
+\code{IOUtil} uses the checkpoint recovery routines to read grid variable data
+from disk.  This requires that the grid resolution used to write the files
+agrees with the resolution using when reading in data and that, for each
+refinement level, the to be read in region is fully contained in the
+corresponding refinement level in the source files.
+
+\code{ReadInterpolate} relaxes this restriction by allowing arbitrary changes
+in resolution and grid structure in between source files and simulation. It
+uses \code{Cactus} local interpolation operators
+\code{CCTK\_InterpLocalUniform} to interpolate data using the highest
+resolution source data available for each target grid point.
+
+It provides parameters \var{files} and
+\var{only\_these\_datasets} that mirror \code{IOUtil}'s parameters to select
+files and datasets in \var{IO::filereader\_ID\_dir}.
+
+Auxiliary parameters are provided to fine tune what is read and to control the
+interpolator.
+
+\section{Physical System}
+\code{ReadInterpolate} takes input data $\psi$ on a grid patch described by
+its origin $\vec O$, grid spacing $\Delta \vec x$ and shape $\vec N$. Data is
+interpolated to the coordinates of the simulation grid $\vec x$ using
+\code{Cactus}' interpolation operators: $\psi(\vec x) = L(\psi, \vec x; \vec
+O, \Delta \vec x, \vec N)$.
+
+\section{Numerical Implementation}
+For a target point $\vec x$ multiple datasets in the source files may contain
+this physical coordinate. When this happens the following selection
+algorithm applies:
+
+\begin{itemize}
+\item unless the candidate datasets overlaps the outer boundary of the
+current grid, require that there are at least \var{cctk\_nghostzones} or
+\var{interpolator\_half\_width} extra points for use by the interpolator. This
+may involve using an off-centered interpolation stencil for points near the
+outer boundary. Then
+\item if reading in data from time level 0, pick the largest refinement level
+dataset that contains the point, otherwise pick the refinement level that
+matches the refinement level of the target point. This assumes that the files
+were written at a timestep when all refinement level align in time and that
+the timestep in the data files and simulation are identical. Setting 
+\end{itemize}
+
+Once a source data set has been selected its data and the target coordinate
+triplet are passed to \code{CCTK\_InterpLocalUniform} for interpolation.
+
+\section{Using This Thorn}
+This thorn is intended as an initial data thorn, scheduling itself in the
+\code{CCTK\_INITIAL} time bin of \code{Cactus}.
+
+\subsection{Obtaining This Thorn}
+This thorn is part of the Einstein Toolkit in the \texttt{EinsteinInitialData}
+repository.
+
+\subsection{Basic Usage}
+To use this thorn, set \var{IO::filereader\_ID\_dir} to the directory
+containing the data files, set \var{ReadInterpolate}'s \var{files} to the base
+names of the file to read and \var{only\_these\_datasets} to a comma separated
+list of regular expressions to match the datasets to read. To obtain the list
+of data sets present in the file the \code{h5ls} tool, which is part of
+\code{HDF5}, can be used. The parameter
+\code{max\_number\_of\_read\_variables} must be set to the expected number of
+grid variables to be read.
+
+If desired read in data can be moved to a different position on the grid using
+\var{shift\_read\_datasets\_by[3]} which relocates the origin of the
+coordinates in the read in data to the given coordinate triplet.
+
+\subsection{Special Behavior}
+\code{ReadInterpolate} attempts to avoid one sided interpolation as much as
+possible, yet tried to allow reading in data at the outer boundaries of the
+grid. A heuristic is used to allow one sided derivatives there.  This requires
+changing \code{interpolator\_pars} to allow off centered interpolation
+stencils.
+
+A number of parameters are provided to select which datasets to read:
+
+\begin{description}
+\item[\code{minimum\_reflevel}] ignore any datasets with refinement level less
+than this,
+\item[\code{maximum\_reflevel}] ignore any datasets with refinement level
+higher than this,
+\end{description}
+
+Some \code{Carpet} version contain a bug and do not set \var{origin} correctly
+for cell centered grids (it is off by half a grid point, i.e. it does not take
+the staggering into account). This option fixes this issue by offsetting all
+datasets that should be offset.  Setting \var{fix\_cell\_centered\_origins}
+adds an offset to correct for this. This is \emph{incorrect} for files where
+Carpet already used the correct \var{origin}. This parameter only affects cell
+centered input data.
+
+\paragraph{Interpolation parameters}
+\code{ReadInterpolate} uses \var{interpolator\_name} as the local interpolator
+to interpolate read in data to simulation grid points. It passes
+\var{interpolator\_vars} to the interpolator. The default values select
+\code{AEILocalInterp}'s \texttt{Hermite} interpolator and forbid off centered
+interpolation stencils or extrapolation.
+
+\code{ReadInterpolate} uses \var{epsilon} as a fuzziness
+parameter when determining if a point is contained in a read in dataset. This
+may require changes for very large grids.
+
+When deciding if a read in dataset is large enough to allow for interpolation
+without off centered stencils \code{ReadInterpolate} requires knowledge about
+the stencil width of the chosen interpolation operator. This can be explicitly
+specified as \var{interpolator\_half\_width} or alternatively
+assumed to be \var{cctk\_nghostzones} if this parameter is set to \code{-1},
+which is the default.
+
+This makes sure that the interpolator does not  off center the interpolation
+stencil if there are insufficient points to interpolate, which can happen if
+there are insufficient ghost-zones for the interpolation method used, and can
+lead to processor-number dependent results.
+
+\code{ReadInterpolate} is no aware of any symmetry conditions used  in either
+the simulation used to produce the data files the current simulation. Thus it
+will interpolated into symmetry points in the same manner as for outer
+boundary points. In these situations the parameter
+\var{enforce\_symmetries\_after\_reading} to apply symmetry boundary
+conditions after having read in all data. This does \emph{not} enable
+\code{ReadInterpolate} to read in data produced on, for example, an octant
+grid and provide data on a full grid.
+
+\subsection{Interaction With Other Thorns}
+\code{ReadInterpolate} assumes that data files were written by
+\code{CarpetIOHDF5} and may not work with files written by \code{PUGH}'s
+\code{IOHDF5}.
+
+This thorn is intended as an initial data thorn, however since it is generic
+it does not extend \code{ADMBase}'s or \code{HydroBase}'s \code{initial\_XXX}
+parameters.
+
+\code{ReadInterpolate} can be used to read data \emph{into} curvilinear grids
+set up by \code{Llama} but cannot read data \emph{from} curvilinear grids.
+
+\subsection{Examples}
+The test suite file \texttt{admhydro.par} shows how to use
+\code{ReadInterpolate} to read in metric and fluid variables:
+
+\begin{verbatim}
+ActiveThorns = "ReadInterpolate"
+
+
+# ReadInterpolate ignore these but they are required to allocate storage
+ADMBase::initial_data    = "Cartesian Minkowski"
+ADMBase::initial_lapse   = "one"
+ADMBase::initial_shift   = "zero"
+ADMBase::initial_dtlapse = "zero"
+ADMBase::initial_dtshift = "zero"
+HydroBase::initial_hydro = "zero"
+
+IO::filereader_ID_dir = "tov_write"
+ReadInterpolate::files = "alp rho"
+ReadInterpolate::max_number_of_read_variables = 2
+ReadInterpolate::shift_read_datasets_by[0] = +3.14
+ReadInterpolate::shift_read_datasets_by[1] = -42
+ReadInterpolate::shift_read_datasets_by[2] = -6
+\end{verbatim}
+
+\subsection{Support and Feedback}
+Please use the Einstein Toolkit ticket system to report issues.
+
+\section{History}
+This thorn was originally inspired by
+\code{SpEC}'s~\cite{EinsteinInitialData_ReadInterpolate_SpEC}
+\code{ReadTensorsFromDiskWithMap} item and developed to read in single neutron
+star data produced by
+\code{THC}~\cite{EinsteinInitialData_ReadInterpolate_THC} into
+\code{GRHydro}~\cite{EinsteinInitialData_ReadInterpolate_GRHydro}. It has been
+found useful to in combination with \code{CT\_MultiLevel} since then.
+
+\subsection{Acknowledgments}
+David Radice and Philipp M\"osta provided bug reports and comments during the
+time this thorn was developed.
+
+\begin{thebibliography}{9}
+
+\bibitem{EinsteinInitialData_ReadInterpolate_IOUtil}
+\verb+https://bitbucket.org/cactuscode/cactusbase/src/master/IOUtil/+
+\bibitem{EinsteinInitialData_ReadInterpolate_SpEC}
+Spectral Einstein Code,
+\verb+https://www.black-holes.org/code/SpEC.html+
+\bibitem{EinsteinInitialData_ReadInterpolate_THC}
+WhiskyTHC: The General-Relativistic Templated Hydrodynamics Code,
+\verb+http://personal.psu.edu/dur566/whiskythc.html+
+\bibitem{EinsteinInitialData_ReadInterpolate_GRHydro}
+GRHydro is an evolution code for a general-purpose 3D relativistic
+hydrodynamics,
+\verb+https://bitbucket.org/einsteintoolkit/einsteinevolve/src/master/GRHydro/+
+
+\end{thebibliography}
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{enforce\_symmetries\_after\_reading}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{enforce\_symmetries\_after\_reading} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em apply symmetry boundary conditions after reading data}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{epsilon} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Tolerance when deciding if a grid point lies within an overlap region}} \\
+\hline{\bf Range} & &  {\bf Default:} 1e-12 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{any positive number, should be similar to AEILocalInterp's tolerance} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{files} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em List of basenames of files to read in as initial data (e.g. omit the .file\_XXX.h5 part)}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .+} & \multicolumn{2}{p{\paraWidth}|}{Space-separated list of initial data filenames} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering \^\$} & \multicolumn{2}{p{\paraWidth}|}{An empty string for not recovering initial data} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{fix\_cell\_centered\_origins} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em offset rl{\textgreater}1 cell centered input data by half a grid step to fix broken HDF5 files}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{interpolator\_half\_width} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em maximum number of points to one side of the interpolated location the interpolator uses}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{this is similar to cctk\_nghostzones, 1 for linear and constant interpolation} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 2:*} & \multicolumn{2}{p{\paraWidth}|}{2nd for second order and 3rd interpolation} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1} & \multicolumn{2}{p{\paraWidth}|}{use cctk\_nghostzones} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{interpolator\_name} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Which interpolator should I use}} \\
+\hline{\bf Range} & &  {\bf Default:} Hermite polynomial interpolation \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .+} & \multicolumn{2}{p{\paraWidth}|}{Any nonempty string} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{interpolator\_pars} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Parameters for the interpolator}} \\
+\hline{\bf Range} & &  {\bf Default:} order=3 boundary\_off\_centering\_tolerance=\{1e12 1e12 1e12 1e12 1e12 1e12\} boundary\_extrapolation\_tolerance=\{1e-12 1e-12 1e-12 1e-12 1e-12 1e-12\} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{"Any string that Util\_TableSetFromStr 
+ing() will take"} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{max\_number\_of\_read\_variables} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em how many variables will be read in?}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{any positive number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{maximum\_reflevel} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em ignore any datasets with refinement level higher than this}} \\
+\hline{\bf Range} & &  {\bf Default:} 1000 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{maximum refinement level to keep} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{minimum\_reflevel} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em ignore any datasets with refinement level less than this}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{minimum refinement level to keep} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{only\_these\_datasets} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em comma separated list of dataset regular expression patterns to consider for reading}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .+} & \multicolumn{2}{p{\paraWidth}|}{any valid Cactus regular expression} \\\multicolumn{1}{|p{\maxVarWidth}|}{see [1] below} & \multicolumn{2}{p{\paraWidth}|}{refinement level 6, all metric} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :g[xyz][xyz],:rho} & \multicolumn{2}{p{\paraWidth}|}{metric and rho everywhere} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent {\bf [1]} \noindent \begin{verbatim}ADMBASE[:][:]g[xyz][xyz].*rl=6\end{verbatim}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{shift\_read\_datasets\_by} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em add to all read in coordinates}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{what used to be origin in datasets appear here} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{test} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em control how test data is used}} \\
+\hline{\bf Range} & &  {\bf Default:} no \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering no} & \multicolumn{2}{p{\paraWidth}|}{do not use test data} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering generate} & \multicolumn{2}{p{\paraWidth}|}{generate test data} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering compare} & \multicolumn{2}{p{\paraWidth}|}{compare read data to test data} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{verbosity} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em how much diagnostic output to produce}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:0} & \multicolumn{2}{p{\paraWidth}|}{only errors} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:1} & \multicolumn{2}{p{\paraWidth}|}{warn about suspicous states} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 2:*} & \multicolumn{2}{p{\paraWidth}|}{more and more detailed debug output (values up to 10 are defined. 10 is very verbose.)} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{filereader\_id\_dir} & {\bf Scope:} shared from IO & STRING \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+readinterpolate
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+grid
+\vspace{2mm}
+\subsection*{Grid Variables}
+\vspace{5mm}\subsubsection{PRIVATE GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+reflevelseen & reflevelseen & compact & 0 \\ 
+ &  & description & highest refinement level in source data that overlaps this point so far \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & Checkpoint="no" Prolongation="none" \\ 
+ &  & timelevels & 1 \\ 
+ &  & vararray\_size & max\_number\_of\_read\_variables \\ 
+ &  & variable type & INT \\ 
+\hline 
+interpthispoint & interpthispoint & compact & 0 \\ 
+ &  & description & fill this point this time around \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & Checkpoint="no" Prolongation="none" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & INT \\ 
+\hline 
+interp\_coords &  & compact & 0 \\ 
+ & interp\_x & description & coordinate arrays for the interpolator \\ 
+ & interp\_y & dimensions & 3 \\ 
+ & interp\_z & distribution & DEFAULT \\ 
+ & interp\_data & group type & GF \\ 
+ &  & tags & Checkpoint="no" Prolongation="none" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+test\_values & test\_values & compact & 0 \\ 
+ &  & description & store values for test \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & Checkpoint="yes" ProlongationOperator="none" \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+test\_results & test\_results & compact & 0 \\ 
+ &  & description & difference values for test \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & Checkpoint="no" ProlongationOperator="none" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+
+\noindent {\bf Uses header}: 
+
+carpet.hh
+\vspace{2mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn EinsteinInitialData/ReadInterpolate.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+~& {\bf Conditional:} \\ 
+~ &  test\_values[3] test\_results\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PARAMCHECK}   (conditional) 
+
+\hspace{5mm} readinterpolate\_paramcheck 
+
+\hspace{5mm}{\it sanity check given parameters } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_INITIAL}   (conditional) 
+
+\hspace{5mm} readinterpolate\_readdata 
+
+\hspace{5mm}{\it read in datasets from disk } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & admbase\_initialdata \\ 
+~& ~ &hydrobase\_initial\\ 
+~ & Before:  & admbase\_postinitial \\ 
+~& ~ &hydrobase\_prim2coninitial\\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf ReadInterpolate\_ReadData}   (conditional) 
+
+\hspace{5mm} readinterpolate\_read 
+
+\hspace{5mm}{\it read in datasets } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & level \\ 
+~ & Storage:  & reflevelseen \\ 
+~& ~ &interpthispoint\\ 
+~& ~ &interp\_coords\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTPOSTINITIAL}   (conditional) 
+
+\hspace{5mm} readinterpolate\_freecache 
+
+\hspace{5mm}{\it free memory used for dataset caches } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf ReadInterpolate\_ReadData}   (conditional) 
+
+\hspace{5mm} readinterpolate\_enforcesymmetry 
+
+\hspace{5mm}{\it enforce symmeries if desired } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & readinterpolate\_read \\ 
+~ & Language:  & c \\ 
+~ & Options:  & level \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf ReadInterpolate\_ReadData}   (conditional) 
+
+\hspace{5mm} applybcs 
+
+\hspace{5mm}{\it apply symmetry conditions to read in variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & readinterpolate\_enforcesymmetry \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_INITIAL}   (conditional) 
+
+\hspace{5mm} readinterpolate\_generatetestdata 
+
+\hspace{5mm}{\it generate polynomial test data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTPOSTINITIAL}   (conditional) 
+
+\hspace{5mm} readinterpolate\_comparetestdata 
+
+\hspace{5mm}{\it compare to polynomial test data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\subsection*{Aliased Functions}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Alias Name:} ~~~~~~~ & {\bf Function Name:} \\ 
+ApplyBCs & ReadInterpolate\_ApplyBCs \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

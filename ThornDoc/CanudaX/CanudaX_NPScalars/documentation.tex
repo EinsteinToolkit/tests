@@ -1,0 +1,362 @@
+% *======================================================================*
+%  Cactus Thorn template for ThornGuide documentation
+%  Author: Ian Kelley
+%  Date: Sun Jun 02, 2002
+%  $Header$
+%
+%  Thorn documentation in the latex file doc/documentation.tex
+%  will be included in ThornGuides built with the Cactus make system.
+%  The scripts employed by the make system automatically include
+%  pages about variables, parameters and scheduling parsed from the
+%  relevant thorn CCL files.
+%
+%  This template contains guidelines which help to assure that your
+%  documentation will be correctly added to ThornGuides. More
+%  information is available in the Cactus UsersGuide.
+%
+%  Guidelines:
+%   - Do not change anything before the line
+%       % START CACTUS THORNGUIDE",
+%     except for filling in the title, author, date, etc. fields.
+%        - Each of these fields should only be on ONE line.
+%        - Author names should be separated with a \\ or a comma.
+%   - You can define your own macros, but they must appear after
+%     the START CACTUS THORNGUIDE line, and must not redefine standard
+%     latex commands.
+%   - To avoid name clashes with other thorns, 'labels', 'citations',
+%     'references', and 'image' names should conform to the following
+%     convention:
+%       ARRANGEMENT_THORN_LABEL
+%     For example, an image wave.eps in the arrangement CactusWave and
+%     thorn WaveToyC should be renamed to CactusWave_WaveToyC_wave.eps
+%   - Graphics should only be included using the graphicx package.
+%     More specifically, with the "\includegraphics" command.  Do
+%     not specify any graphic file extensions in your .tex file. This
+%     will allow us to create a PDF version of the ThornGuide
+%     via pdflatex.
+%   - References should be included with the latex "\bibitem" command.
+%   - Use \begin{abstract}...\end{abstract} instead of \abstract{...}
+%   - Do not use \appendix, instead include any appendices you need as
+%     standard sections.
+%   - For the benefit of our Perl scripts, and for future extensions,
+%     please use simple latex.
+%
+% *======================================================================*
+%
+% Example of including a graphic image:
+%    \begin{figure}[ht]
+% 	\begin{center}
+%    	   \includegraphics[width=6cm]{/home/runner/work/tests/tests/arrangements/CanudaX/CanudaX_NPScalars/doc/MyArrangement_MyThorn_MyFigure}
+% 	\end{center}
+% 	\caption{Illustration of this and that}
+% 	\label{MyArrangement_MyThorn_MyLabel}
+%    \end{figure}
+%
+% Example of using a label:
+%   \label{MyArrangement_MyThorn_MyLabel}
+%
+% Example of a citation:
+%    \cite{MyArrangement_MyThorn_Author99}
+%
+% Example of including a reference
+%   \bibitem{MyArrangement_MyThorn_Author99}
+%   {J. Author, {\em The Title of the Book, Journal, or periodical}, 1 (1999),
+%   1--16. {\tt http://www.nowhere.com/}}
+%
+% *======================================================================*
+
+% If you are using CVS use this line to give version information
+% $Header$
+
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+% The author of the documentation
+\author{Cheng-Hsin~Cheng}
+
+% The title of the document (not necessarily the name of the Thorn)
+\title{\texttt{CanudaX\_NPScalars}}
+
+% the date your document was last changed, if your document is in CVS,
+% please use:
+%    \date{$ $Date$ $}
+% when using git instead record the commit ID:
+%    \date{\gitrevision{<path-to-your-.git-directory>}}
+\date{April 15, 2026}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+% Add all definitions used in this documentation here
+%   \def\mydef etc
+
+% Add an abstract for this thorn's documentation
+\begin{abstract}
+\texttt{CanudaX\_NPScalars} is the \texttt{CarpetX}-compatible version of \texttt{NPScalars},
+which computes the Newman-Penrose scalar $\Psi_{4}$.
+\texttt{CanudaX\_NPScalars} uses finite-difference stencils which are accurate up to 8th order, compared with only 6th order in \texttt{NPScalars}.
+\end{abstract}
+
+\section{\texttt{CanudaX\_NPScalars}}
+
+\texttt{NPScalars} was introduced in~\cite{Sperhake:2006cy} (cf.~Appendix C therein for the detailed description) as part of the \texttt{Lean} code, to compute the Newman-Penrose scalar $\Psi_{4}$ and perform its decomposition into spherical harmonics.
+%
+It has since been modified to interface instead with the \texttt{Multipole} thorn for this decomposition, and ported to support the \texttt{CarpetX} AMR driver.
+
+In addition, \texttt{CanudaX\_NPScalars} can compute $\Psi_{4}$ with backreaction from matter sources.
+The matter energy density and momentum fluxes contribute to the gravito-electric and gravito-magnetic fields, which are then used to construct $\Psi_{4}$ (cf. Eqs. (21a) and (21b) of~\cite{Cheng:2025wac}).
+The option to enable this backreaction is controlled by the boolean parameter \texttt{CanudaX\_BSSNMoL::stress\_energy\_state}, which adds matter contributions from the stress-energy tensor in \texttt{TmunuBaseX} to the evolution of the spacetime and $\Psi_{4}$.
+
+The bulk of the code is written in C++ and should be simple to follow -- emphasis has been given to readability.
+
+\section{Obtaining this thorn}
+
+\texttt{CanudaX\_NPScalars} and \texttt{NPScalars} are included with the Einstein Toolkit.
+\texttt{NPScalars} can also be obtained through the \texttt{Canuda} numerical relativity library~\cite{Canuda}.
+
+
+\begin{thebibliography}{9}
+
+%\cite{Sperhake:2006cy}
+\bibitem{Sperhake:2006cy}
+U.~Sperhake,
+``Binary black-hole evolutions of excision and puncture data,''
+Phys. Rev. D \textbf{76} (2007), 104015
+doi:10.1103/PhysRevD.76.104015
+[arXiv:gr-qc/0606079 [gr-qc]].
+
+\bibitem{Canuda}
+H.~Witek, M.~Zilhao, G.~Bozzola, C.-H.~Cheng, A.~Dima, M.~Elley, G.~Ficarra, T.~Ikeda, R.~Luna, C.~Richards, N.~Sanchis-Gual, H.~Okada~da~Silva.
+``Canuda: a public numerical relativity library to probe fundamental physics,''
+Zenodo (2023)
+doi: 10.5281/zenodo.3565474
+
+\bibitem{Cheng:2025wac}
+C.~H.~Cheng, G.~Ficarra and H.~Witek,
+``Dephasing in binary black hole mergers surrounded by scalar wave dark matter clouds,''
+Phys. Rev. D \textbf{113}, no.2, 024063 (2026)
+doi:10.1103/715r-4p7g
+[arXiv:2510.20037 [gr-qc]].
+
+\end{thebibliography}
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{stress\_energy\_state}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{calculate\_np\_every} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Calculate Psi4 every N iterations}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{0 or negative is never} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{np\_order} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Accuracy of finite differences used in computing Psi4}} \\
+\hline{\bf Range} & &  {\bf Default:} 4 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 4} & \multicolumn{2}{p{\paraWidth}|}{Fourth order} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 6} & \multicolumn{2}{p{\paraWidth}|}{Sixth order} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 8} & \multicolumn{2}{p{\paraWidth}|}{Eighth order} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{stress\_energy\_state} & {\bf Scope:} shared from CANUDAX\_BSSNMOL & BOOLEAN \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+canudax\_npscalars
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+admbasex
+
+tmunubasex
+\vspace{2mm}
+\subsection*{Grid Variables}
+\vspace{5mm}\subsubsection{PRIVATE GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+nppsi4r\_group &  & compact & 0 \\ 
+ & psi4re & description & Real part of Newman-Penrose scalar Psi\_4 \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & checkpoint="no" tensortypealias="Scalar" tensorweight=0 tensorparity=1 \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+nppsi4i\_group &  & compact & 0 \\ 
+ & psi4im & description & Imaginary part of Newman-Penrose scalar Psi\_4 \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & checkpoint="no" tensortypealias="Scalar" tensorweight=0 tensorparity=-1 \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+
+\noindent {\bf Uses header}: 
+
+loop.hxx
+
+loop\_device.hxx
+
+evolve\_utils.hxx
+
+fd\_stencils.hxx
+\vspace{2mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn CanudaX/CanudaX\_NPScalars.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Always:}&  ~ \\ 
+ NPPsi4R\_group & ~\\ 
+ NPPsi4I\_group & ~\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PARAMCHECK} 
+
+\hspace{5mm} canudax\_npscalars\_paramcheck 
+
+\hspace{5mm}{\it check canudax\_npscalars parameters for consistency } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTINITIAL} 
+
+\hspace{5mm} canudax\_npscalars\_calc 
+
+\hspace{5mm}{\it calculate newman-penrose scalars } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & odesolvers\_poststep \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_EVOL} 
+
+\hspace{5mm} canudax\_npscalars\_calc 
+
+\hspace{5mm}{\it calculate newman-penrose scalars } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & odesolvers\_calledbysolve \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CanudaX\_NPScalars\_Calc} 
+
+\hspace{5mm} canudax\_npscalars\_calc\_psi4 
+
+\hspace{5mm}{\it calculate newman-penrose scalar psi4 as a grid function } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbasex::metric(everywhere) \\ 
+~& ~ &admbasex::curv(everywhere)\\ 
+~& ~ &admbasex::lapse(everywhere)\\ 
+~& ~ &admbasex::shift(everywhere)\\ 
+~& ~ &tmunubasex::ettt(everywhere)\\ 
+~& ~ &tmunubasex::etti(everywhere)\\ 
+~& ~ &tmunubasex::etij(everywhere)\\ 
+~ & Sync:  & nppsi4r\_group \\ 
+~& ~ &nppsi4i\_group\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & psi4re(interior) \\ 
+~& ~ &psi4im(interior)\\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

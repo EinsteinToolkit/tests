@@ -1,0 +1,502 @@
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a 
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+\title{IOBasic}
+\author{Gabrielle Allen \\ Thomas Radke}
+\date{$ $Date$ $}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+\begin{abstract}
+Thorn {\bf IOBasic} provides I/O methods for outputting scalar values in
+ASCII format into files and for printing them as runtime information to screen.
+\end{abstract}
+
+
+\section{Purpose}
+Thorn {\bf IOBasic} registers 2 I/O methods with the I/O interface in the flesh
+which both output the same following information:
+%
+\begin{itemize}
+  \item for CCTK\_SCALAR variables, the value of the scalar versus time
+  \item for CCTK\_GF and CCTK\_ARRAY variables, the values of global reduction
+        operations (eg. minimum, maximum, L1, and L2 norm) versus time
+\end{itemize}
+%
+The I/O methods differ in the destination the output is written to:
+\begin{itemize}
+  \item{\tt Scalar}\\
+    This method outputs the information into ASCII files named {\tt "<scalar\_name>.\{asc|xg\}"} (for CCTK\_SCALAR variables) and {\tt "<var\_name>\_<reduction>.\{asc|xg\}"}
+    (for CCTK\_GF and CCTK\_ARRAY variables where {\tt reduction} would stand
+    for the type of reduction value that is output).\\
+    The output data can be plotted by using either {\it xgraph} (for {\tt "*.xg"} files) or
+    {\it gnuplot} (for {\tt "*.asc"} files). The output style can be selected via parameter settings.
+  \item {\tt Info}\\
+    This method prints the data as runtime information to {\it stdout}.\\
+    The output occurs as a table with columns containing the current iteration
+    number, the physical time at this iteration, and more columns for
+    scalar/reduction values of each variable to be output.\\
+\end{itemize}
+%
+%
+\section{{\bf IOBasic} Parameters}
+%
+Parameters to control the {\tt Scalar} I/O method are:
+\begin{itemize}
+  \item {\tt IOBasic::outScalar\_criterion} (steerable)\\
+        The criterion that decides when to {\tt Scalar} output.  If
+        this parameter is set in the parameter file, it will override
+        the setting of the shared {\tt IO::out\_criterion} parameter.
+  \item {\tt IOBasic::outScalar\_every} (steerable)\\
+        How often, in terms of iterations, to do {\tt Scalar} output.
+        If this parameter is set in the
+        parameter file, it will override the setting of the shared
+        {\tt IO::out\_every} parameter.
+  \item {\tt IOBasic::outScalar\_dt} (steerable)\\
+        How often, in terms of simulation time, to do {\tt Scalar}
+        output.  If this parameter is set in the parameter file, it
+        will override the setting of the shared {\tt IO::out\_dt}
+        parameter.
+  \item {\tt IOBasic::out\_dir}\\
+        The directory in which to place the {\tt Scalar} ASCII output files.
+        If the directory doesn't exist at startup it will be created.\\
+        If this paraeter is set to an empty string {\tt Scalar} output will go
+        to the standard output directory as specified in {\tt IO::out\_dir}.
+  \item {\tt IOBasic::outScalar\_style}\\
+        How to start comments in the {\tt Scalar} ASCII output files.\\
+        Possible choices for this keywork parameter are {\it xgraph} and
+        {\it gnuplot}.
+  \item {\tt IOBasic::out\_format} (steerable)\\
+        The output format for floating-point numbers in {\tt Scalar} output.\\
+        This parameter conforms to the format modifier of the C library routine
+        {\it fprintf(3)}. You can set the format for outputting floating-point
+        numbers (fixed or exponential) as well as their precision (number of
+        digits).
+  \item {\tt IOBasic::outScalar\_vars} (steerable)\\
+        The list of variables to output into individual ASCII files.\\
+        The variables must be given by their fully qualified variable or group
+        name. The special keyword {\it all} requests {\tt Scalar}
+        output for all
+        variables. Multiple variables must be separated by spaces.
+        For CCTK\_GF and CCTK\_ARRAY variables, an option string can
+        be appended 
+        in curly braces to the name of the variable. The only option
+        supported so far is an individual list of reductions for that variable
+        which would take precedence over the default reduction operations to
+        perform.
+  \item {\tt IOBasic::outScalar\_reductions} (steerable)\\
+        The list of global reduction operations to perform on
+        CCTK\_GF and CCTK\_ARRAY variables for {\tt Scalar} output.
+        This setting can be overridden for individual variables using an
+        option string.\\
+        Multiple reduction names must be separated by spaces.
+\end{itemize}
+%
+%
+Parameters to control the {\tt Info} I/O method are:
+\begin{itemize}
+  \item {\tt IOBasic::outInfo\_criterion} (steerable)\\
+        The criterion that decides when to {\tt Info} output.  If
+        this parameter is set in the parameter file, it will override
+        the setting of the shared {\tt IO::out\_criterion} parameter.
+  \item {\tt IOBasic::outInfo\_every} (steerable)\\
+        How often, in terms of iterations, to do {\tt Info} output.
+        If this parameter is set in the
+        parameter file, it will override the setting of the shared
+        {\tt IO::out\_every} parameter.
+  \item {\tt IOBasic::outInfo\_dt} (steerable)\\
+        How often, in terms of simulation time, to do {\tt Info}
+        output.  If this parameter is set in the parameter file, it
+        will override the setting of the shared {\tt IO::out\_dt}
+        parameter.
+  \item {\tt IOBasic::outInfo\_vars} (steerable)\\
+        The list of variables to output to screen.\\
+        The variables must be given by their fully qualified variable or group
+        name. The special keyword {\it all} requests {\tt Info} output for all
+        variables. Multiple variables must be separated by spaces.\\
+        For CCTK\_GF and CCTK\_ARRAY variables, an option string can
+        be appended 
+        in curly braces to the name of the variable. The only option
+        supported so far is an individual list of reductions for that variable
+        which would take precedence over the default reduction operations to
+        perform.
+  \item {\tt IOBasic::outInfo\_reductions} (steerable)\\
+        The default list of global reduction operations to perform on
+        CCTK\_GF and CCTK\_ARRAY variables. This setting can be overridden
+        for individual variables using an option string.\\
+        Multiple reduction names must be separated by spaces.
+\end{itemize}
+All of the above parameters marked as steerable can be changed at runtime.
+%
+%
+\section{Examples}
+%
+\subsection {Example for {\tt Info} Output}
+%
+The following parameter settings request info output for variables {\tt
+grid::r, wavetoy::phi} (both are CCTK grid functions) and {\tt
+mythorn::complex}
+(a complex CCTK scalar) at every other iteration.
+
+The minimum and maximum of {\tt grid::r} is printed according to the list
+of default reductions for info output (parameter {\tt
+IOBasic::outInfo\_reductions}). This list is overridden for {\tt
+wavetoy::phi} where only the L2 norm
+is output as specified in the option string for this variable. You can also
+add other reduction operators within the $\{\}$ braces.
+
+For the scalar variable {\tt mythorn::complex} both the real and
+imaginary part are printed.
+\begin{verbatim}
+  IOBasic::outInfo_every      = 2
+  IOBasic::outInfo_vars       = "grid::r
+                                 wavetoy::phi{reductions = 'norm2'}
+                                 mythorn::complex"
+  IOBasic::outInfo_reductions = "minimum maximum"
+\end{verbatim}
+The resulting screen output would look like this:
+\begin{verbatim}
+---------------------------------------------------------------------------------------------
+  it  |          | GRID::r                     | WAVETOY::phi | MYTHORN::complex            |
+      |    t     | minimum      | maximum      | norm2        | real part    | imag part    |
+---------------------------------------------------------------------------------------------
+    0 |    0.000 |   0.02986294 |   0.86602540 |   0.04217014 |   6.90359593 |   0.00000000 |
+    2 |    0.034 |   0.02986294 |   0.86602540 |   0.00934749 |   6.90359593 |   0.00000000 |
+    4 |    0.069 |   0.02986294 |   0.86602540 |   0.02989811 |   6.90359593 |   0.00000000 |
+    6 |    0.103 |   0.02986294 |   0.86602540 |   0.05899959 |   6.90359593 |   0.00000000 |
+    8 |    0.138 |   0.02986294 |   0.86602540 |   0.07351147 |   6.90359593 |   0.00000000 |
+   10 |    0.172 |   0.02986294 |   0.86602540 |   0.07781795 |   6.90359593 |   0.00000000 |
+\end{verbatim}
+%
+\subsection {Example for {\tt Scalar} Output}
+%
+The following parameter settings request scalar output for all grid function
+variables in the group {\tt grid::coordinates} and for the scalar variable
+{\tt grid::coarse\_dx}.\\
+Output occurs every 10th iteration. {\tt gnuplot} output style is selected
+for the ASCII files which are placed into a subdirectory {\tt scalar\_output}.
+The minimum and maximum of {\tt grid::r} is printed according to the list
+of default reductions for scalar output (parameter {\tt
+IOBasic::outScalar\_reductions}). This list is overridden for {\tt
+wavetoy::phi} where only the L1 norm
+is output as specified in the option string for this variable. You can also
+add other reduction operators within the $\{\}$ braces.
+
+\begin{verbatim}
+  IOBasic::outScalar_every      = 10
+  IOBasic::outScalar_vars       = "grid::coordinates grid::coarse_dx wavetoy::phi{reductions = 'norm1'}"
+  IOBasic::outScalar_reductions = "minimum maximum"
+  IOBasic::outScalar_style      = "gnuplot"
+  IOBasic::out_dir              = "scalar_output"
+\end{verbatim}
+This would create the following ASCII files:
+\begin{verbatim}
+  ~/Cactus/par> ls scalar_output
+  coarse_dx.asc  r_minimum.asc  x_minimum.asc  y_minimum.asc  z_minimum.asc
+  r_maximum.asc  x_maximum.asc  y_maximum.asc  z_maximum.asc  phi_norm1.asc
+\end{verbatim}
+%
+%
+\section{Comments}
+%
+{\bf Possible Reduction Operations}\\
+%
+In order to get output of reduction values for {\tt CCTK\_GF} and {\tt
+CCTK\_ARRAY} variables you need to activate a thorn which provides
+reduction operators (eg. thorn {\tt PUGHReduce} in the {\tt CactusPUGH}
+arrangement). For a list of possible reduction operations please refer to
+the documention of this reduction thorn.\\[3ex]
+%
+{\bf Getting Output from {\bf IOBasic}'s I/O Mehtods}\\
+%
+You obtain output by an I/O method by either
+%
+\begin{itemize}
+  \item setting the appropriate I/O parameters
+  \item calling one of the routines of the I/O function interface
+        provided by the flesh
+\end{itemize}
+%
+For a description of basic I/O parameters and the I/O function interface to
+invoke I/O methods by application thorns please see the documentation of thorn
+{\tt IOUtil} and the flesh.\\[3ex]
+%
+%
+{\bf Building Cactus configurations with {\bf IOBasic}}\\
+%
+Since {\bf IOBasic} uses parameters from {\tt IOUtil} it also needs this I/O
+helper thorn be compiled into Cactus and activated at runtime in the
+{\tt ActiveThorns} parameter in your parameter file.
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{strict\_io\_parameter\_check}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_dir} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Output directory for IOBasic's scalar files, overrides IO::out\_dir}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .+} & \multicolumn{2}{p{\paraWidth}|}{A valid directory name} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering \^\$} & \multicolumn{2}{p{\paraWidth}|}{An empty string to choose the default from IO::out\_dir} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_format} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Which format for Scalar floating-point number output}} \\
+\hline{\bf Range} & &  {\bf Default:} .13f \\\multicolumn{1}{|p{\maxVarWidth}|}{see [1] below} & \multicolumn{2}{p{\paraWidth}|}{output with given precision in exponential / floating point notation} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent {\bf [1]} \noindent \begin{verbatim}\^({\textbackslash}.[1]?[0-9])?[EGefg]\$\end{verbatim}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{outinfo\_criterion} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Criterion to select Info output intervals}} \\
+\hline{\bf Range} & &  {\bf Default:} iteration \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering never} & \multicolumn{2}{p{\paraWidth}|}{Never output} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering iteration} & \multicolumn{2}{p{\paraWidth}|}{Output every so many iterations} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering time} & \multicolumn{2}{p{\paraWidth}|}{Output every that much coordinate time} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{outinfo\_dt} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How often to do Info output}} \\
+\hline{\bf Range} & &  {\bf Default:} -2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{In intervals of that much coordinate time} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering } & \multicolumn{2}{p{\paraWidth}|}{As often as possible} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1} & \multicolumn{2}{p{\paraWidth}|}{Disable output} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -2} & \multicolumn{2}{p{\paraWidth}|}{Default to IO::out\_dt} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{outinfo\_every} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How often to do Info output}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{Every so many iterations} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:} & \multicolumn{2}{p{\paraWidth}|}{Disable Info output} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1:} & \multicolumn{2}{p{\paraWidth}|}{Default to IO::out\_every} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{outinfo\_reductions} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em List of reductions to output as Info to screen}} \\
+\hline{\bf Range} & &  {\bf Default:} minimum maximum \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .+} & \multicolumn{2}{p{\paraWidth}|}{Space-separated list of reduction operators} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{outinfo\_vars} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Variables to output as Info to screen}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .+} & \multicolumn{2}{p{\paraWidth}|}{Space-separated list of fully qualified variable/group names} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering \^\$} & \multicolumn{2}{p{\paraWidth}|}{An empty string to output nothing} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{outscalar\_criterion} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Criterion to select Scalar output intervals}} \\
+\hline{\bf Range} & &  {\bf Default:} iteration \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering never} & \multicolumn{2}{p{\paraWidth}|}{Never output} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering iteration} & \multicolumn{2}{p{\paraWidth}|}{Output every so many iterations} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering time} & \multicolumn{2}{p{\paraWidth}|}{Output every that much coordinate time} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{outscalar\_dt} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How often to do Scalar output}} \\
+\hline{\bf Range} & &  {\bf Default:} -2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{In intervals of that much coordinate time} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering } & \multicolumn{2}{p{\paraWidth}|}{As often as possible} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1} & \multicolumn{2}{p{\paraWidth}|}{Disable output} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -2} & \multicolumn{2}{p{\paraWidth}|}{Default to IO::out\_dt} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{outscalar\_every} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How often to do Scalar output}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{Every so many iterations} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:} & \multicolumn{2}{p{\paraWidth}|}{Disable Scalar output} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1:} & \multicolumn{2}{p{\paraWidth}|}{Default to IO::out\_every} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{outscalar\_reductions} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em List of reductions to output into files}} \\
+\hline{\bf Range} & &  {\bf Default:} minimum maximum norm1 norm2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .+} & \multicolumn{2}{p{\paraWidth}|}{Space-separated list of reduction operators} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{outscalar\_style} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Which style for Scalar output}} \\
+\hline{\bf Range} & &  {\bf Default:} xgraph \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering gnuplot} & \multicolumn{2}{p{\paraWidth}|}{1D output readable by gnuplot} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering xgraph} & \multicolumn{2}{p{\paraWidth}|}{1D output readable by xgraph} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{outscalar\_vars} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Variables to output into files}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .+} & \multicolumn{2}{p{\paraWidth}|}{Space-separated list of fully qualified variable/group names} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering \^\$} & \multicolumn{2}{p{\paraWidth}|}{An empty string to output nothing} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{io\_out\_dir} & {\bf Scope:} shared from IO & STRING \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{new\_filename\_scheme} & {\bf Scope:} shared from IO & BOOLEAN \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_criterion} & {\bf Scope:} shared from IO & KEYWORD \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_dt} & {\bf Scope:} shared from IO & REAL \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_every} & {\bf Scope:} shared from IO & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_fileinfo} & {\bf Scope:} shared from IO & KEYWORD \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{strict\_io\_parameter\_check} & {\bf Scope:} shared from IO & BOOLEAN \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{verbose} & {\bf Scope:} shared from IO & KEYWORD \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+iobasic
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+io
+\vspace{2mm}
+\subsection*{Grid Variables}
+\vspace{5mm}\subsubsection{PRIVATE GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+next\_info\_output\_time & next\_info\_output\_time & compact & 0 \\ 
+ &  & dimensions & 0 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+next\_scalar\_output\_time & next\_scalar\_output\_time & compact & 0 \\ 
+ &  & dimensions & 0 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn CactusBase/IOBasic.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Always:}&  ~ \\ 
+ next\_info\_output\_time next\_scalar\_output\_time & ~\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_STARTUP} 
+
+\hspace{5mm} iobasic\_startup 
+
+\hspace{5mm}{\it startup routine } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ioutil\_startup \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_INITIAL} 
+
+\hspace{5mm} iobasic\_init 
+
+\hspace{5mm}{\it initialisation routine } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & iobasic::next\_info\_output\_time(everywhere) \\ 
+~& ~ &iobasic::next\_scalar\_output\_time(everywhere)\\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}
