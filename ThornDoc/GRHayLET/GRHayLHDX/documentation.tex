@@ -1,0 +1,1685 @@
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a 
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+\title{GRHayLHDX}
+\author{Samuel Cupp \\ Leonardo Rosa Werneck \\ Terrence Pierre Jacques \\ Zachariah Etienne}
+\date{$ $Date$ $}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+% Add all definitions used in this documentation here
+\newcommand{\grhayl}{\texttt{GRHayL}}
+\newcommand{\glib}{\texttt{GRHayLib}}
+\newcommand{\ghd}{\texttt{GRHayLHD}}
+\newcommand{\ghdx}{\texttt{GRHayLHDX}}
+\newcommand{\igm}{\texttt{IllinoisGRMHD}}
+\newcommand{\hydrobase}{\texttt{HydroBase}}
+
+\begin{abstract}
+Provides a hydrodynamic evolution code using \grhayl via the
+\glib thorn. This is a trimmed-down version of the \igm thorn
+where magnetic fields are set to zero adapted to use the
+\texttt{CarpetX} driver thorn. The thorn currently only
+runs on cpus, though extension to gpus is planned.
+\end{abstract}
+
+\section{Introduction}
+
+This thorn provides a GRHD evolution code built on
+the General Relativistic Hydrodynamics Library (\grhayl),
+which is included in the Einstein Toolkit via the \glib{}
+thorn. The core library inherits or adapts code from the
+original \igm{} thorn into a modular, infrastructure-agnostic
+library. While the \igm{} thorn can be set to have
+zero magnetic fields, they will still be evolved. This
+is much slower than not evolving them, and \ghd{} provides an
+implementation for evolving systems without magnetic
+fields.
+
+This thorn currently only provides support for hybrid EOS, but
+work towards providing full support for tabulated EOS is ongoing.
+The core functions all come from \glib,
+ensuring that any improvements or updates to the library can
+be easily adopted by the thorn. The conservative-to-primitive
+solver is selected at runtime, allowing for users to take
+advantage of any Con2Prim methods provided by \grhayl.
+
+\section{Parameters}
+
+Most of the behavior of this thorn is controlled by \glib,
+the thorn that provides \grhayl{} functionality
+within the Einstein Toolkit. However, there are several
+parameters in the thorn which control diagnostic or debugging
+features. Most are self-explanatory, but some parameters deserve
+a more detailed explanation.
+
+First, many analysis or diagnostic thorns use \hydrobase{} variables.
+By default, \ghd{} never copies the data back from \ghd{} variables
+to \hydrobase{} variables, which would prevent the usage of these
+thorns. The \textbf{Convert\_to\_HydroBase\_every} parameter
+sets how often to copy back this data. Naturally, copying more
+frequently will slow down the simulation, so this should be set
+on the same frequency as the analysis or IO thorn that is using
+the \hydrobase{} variable. We reduced the amount of data copying in \ghd{}
+by using the \hydrobase{} variables directly, which removes the need
+to copy them back and removes extra grid functions from memory.
+We still use distinct velocity variables because we use a different
+velocity than is defined in \hydrobase.
+
+Next, there are several parameters for debugging or other testing.
+The perturbing parameters give users the ability to affect either
+the initial data or evolution data at runtime without slowing down
+standard simulations. The \textbf{perturb\_initial\_data} parameter
+controls whether the initial data from \hydrobase{} is perturbed, and
+the \textbf{perturb\_every\_con2prim} parameter controls whether
+the conservative variables are perturbed before every con2prim call.
+The magnitude of these perturbations is set by \textbf{random\_pert}.
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{convert\_to\_hydrobase\_every}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{convert\_to\_hydrobase\_every} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How often to convert GRHayLHDX primitive variables to HydroBase (Valencia formulation) primitive variables? Needed for some ET-based diagnostics. NOT needed for pure GRHayLHDX runs.}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{zero (disable) or positive (every N iterations)} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{matter\_bc} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Chosen Matter boundary condition}} \\
+\hline{\bf Range} & &  {\bf Default:} outflow \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering copy} & \multicolumn{2}{p{\paraWidth}|}{Copy BCs} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering outflow} & \multicolumn{2}{p{\paraWidth}|}{Copy BCs with additional outflow BC for velocities} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering frozen} & \multicolumn{2}{p{\paraWidth}|}{Frozen boundaries} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{perturb\_every\_con2prim} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Random perturbation applied every time con2prim runs}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{perturb\_initial\_data} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Random perturbation to initial data}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{random\_pert} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Magnitude of random perturbations}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Anything goes.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{random\_seed} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Random seed for random, generally roundoff-level perturbation on initial data. Seeds srand(), and rand() is used for the RNG.}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:99999999} & \multicolumn{2}{p{\paraWidth}|}{Anything unsigned goes.} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{update\_tmunu} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Update Tmunu, for RHS of Einstein's equations?}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{verbose} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Determines how much evolution information is output}} \\
+\hline{\bf Range} & &  {\bf Default:} yes \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering no} & \multicolumn{2}{p{\paraWidth}|}{Complete silence} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering yes} & \multicolumn{2}{p{\paraWidth}|}{"Outputs information about conservative-to-prim 
+itive fixes, failures, etc."} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{eos\_type} & {\bf Scope:} shared from GRHAYLIB & KEYWORD \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{evolve\_entropy} & {\bf Scope:} shared from GRHAYLIB & BOOLEAN \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+grhaylhdx
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+admbasex
+
+tmunubasex
+
+hydrobasex
+
+grhaylib
+\vspace{2mm}
+\subsection*{Grid Variables}
+\vspace{5mm}\subsubsection{PRIVATE GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+ccc\_spacetime &  & centering & centering=\{1 1 1\} \\ 
+ & ccc\_lapse & compact & 0 \\ 
+ & ccc\_betax & description & Cell-centered spacetime quantities \\ 
+ & ccc\_betay & dimensions & 3 \\ 
+ & ccc\_betaz & distribution & DEFAULT \\ 
+ & ccc\_gxx & group type & GF \\ 
+ & ccc\_gxy & tags & InterpNumTimelevels=1 prolongation="none" checkpoint="no" parity=\{ +1 +1 +1  +1 +1 +1  -1 +1 +1  +1 -1 +1  +1 +1 -1\} \\ 
+ & ccc\_gxz & timelevels & 1 \\ 
+ & ccc\_gyy & variable type & REAL \\ 
+\hline 
+ccc\_curv &  & centering & centering=\{1 1 1\} \\ 
+ & ccc\_kxx & compact & 0 \\ 
+ & ccc\_kxy & description & Cell-centered extrinsic curvature \\ 
+ & ccc\_kxz & dimensions & 3 \\ 
+ & ccc\_kyy & distribution & DEFAULT \\ 
+ & ccc\_kyz & group type & GF \\ 
+ & ccc\_kzz & tags & InterpNumTimelevels=1 prolongation="none" checkpoint="no" parity=\{ +1 +1 +1  +1 +1 +1  -1 +1 +1  +1 -1 +1  +1 +1 -1\} \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+ccc\_tmunu &  & centering & centering=\{1 1 1\} \\ 
+ & ccc\_Ttt & compact & 0 \\ 
+ & ccc\_Ttx & description & Cell-centered stress-energy tensor \\ 
+ & ccc\_Tty & dimensions & 3 \\ 
+ & ccc\_Ttz & distribution & DEFAULT \\ 
+ & ccc\_Txx & group type & GF \\ 
+ & ccc\_Txy & tags & InterpNumTimelevels=1 prolongation="none" checkpoint="no" parity=\{ +1 +1 +1  +1 +1 +1  -1 +1 +1  +1 -1 +1  +1 +1 -1\} \\ 
+ & ccc\_Txz & timelevels & 1 \\ 
+ & ccc\_Tyy & variable type & REAL \\ 
+\hline 
+grmhd\_velocities &  & centering & centering=\{1 1 1\} \\ 
+ & vx & compact & 0 \\ 
+ & vy & description & Components of primitive three velocity v\^i. Note that v\^i is defined in terms of 4-velocity as: v\^i = u\^i/u\^0. Note that this definition differs from the Valencia formalism. \\ 
+ & vz & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & InterpNumTimelevels=1 prolongation="none" checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+u0 & u0 & centering & centering=\{1 1 1\} \\ 
+ &  & compact & 0 \\ 
+ &  & description & 4-velocity component u\^0 \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & InterpNumTimelevels=1 prolongation="none" checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+grmhd\_conservatives &  & centering & centering=\{1 1 1\} \\ 
+ & rho\_star & compact & 0 \\ 
+ & tau & description & Evolved hydrodynamic variables \\ 
+ & Stildex & dimensions & 3 \\ 
+ & Stildey & distribution & DEFAULT \\ 
+ & Stildez & group type & GF \\ 
+ &  & tags & rhs="grmhd\_conservatives\_rhs" dependents="GRHayLHDX::grmhd\_conservatives\_rhs GRHayLHDX::flux\_x GRHayLHDX::flux\_y GRHayLHDX::flux\_z" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~ \\ 
+\hline 
+ent\_star & ent\_star & centering & centering=\{1 1 1\} \\ 
+ &  & compact & 0 \\ 
+ &  & description & conservative entropy variable W S \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & rhs="ent\_star\_rhs" dependents="GRHayLHDX::ent\_star\_rhs GRHayLHDX::ent\_flux\_x GRHayLHDX::ent\_flux\_y GRHayLHDX::ent\_flux\_z" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+ye\_star & Ye\_star & centering & centering=\{1 1 1\} \\ 
+ &  & compact & 0 \\ 
+ &  & description & conservative electron fraction variable W rho Y\_e \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & rhs="Ye\_star\_rhs" dependents="GRHayLHDX::Ye\_star\_rhs GRHayLHDX::Ye\_flux\_x GRHayLHDX::Ye\_flux\_y GRHayLHDX::Ye\_flux\_z" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+grmhd\_conservatives\_rhs &  & centering & centering=\{1 1 1\} \\ 
+ & rho\_star\_rhs & compact & 0 \\ 
+ & tau\_rhs & description & Right-hand side for grmhd\_conservatives variables \\ 
+ & Stildex\_rhs & dimensions & 3 \\ 
+ & Stildey\_rhs & distribution & DEFAULT \\ 
+ & Stildez\_rhs & group type & GF \\ 
+ &  & tags & prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+ent\_star\_rhs & ent\_star\_rhs & centering & centering=\{1 1 1\} \\ 
+ &  & compact & 0 \\ 
+ &  & description & RHS for partial\_t {\textbackslash}tilde\{S\} equation \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+ye\_star\_rhs & Ye\_star\_rhs & centering & centering=\{1 1 1\} \\ 
+ &  & compact & 0 \\ 
+ &  & description & RHS for partial\_t {\textbackslash}tilde\{Y\}\_e equation \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+flux\_x &  & centering & centering=\{0 1 1\} \\ 
+ & rho\_star\_flux\_x & compact & 0 \\ 
+ & tau\_flux\_x & description & Fluxes in x direction \\ 
+ & Sx\_flux\_x & dimensions & 3 \\ 
+ & Sy\_flux\_x & distribution & DEFAULT \\ 
+ & Sz\_flux\_x & group type & GF \\ 
+ &  & tags & prolongation="none" checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~ \\ 
+\hline 
+flux\_y &  & centering & centering=\{1 0 1\} \\ 
+ & rho\_star\_flux\_y & compact & 0 \\ 
+ & tau\_flux\_y & description & Fluxes in y direction \\ 
+ & Sx\_flux\_y & dimensions & 3 \\ 
+ & Sy\_flux\_y & distribution & DEFAULT \\ 
+ & Sz\_flux\_y & group type & GF \\ 
+ &  & tags & prolongation="none" checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+flux\_z &  & centering & centering=\{1 1 0\} \\ 
+ & rho\_star\_flux\_z & compact & 0 \\ 
+ & tau\_flux\_z & description & Fluxes in z direction \\ 
+ & Sx\_flux\_z & dimensions & 3 \\ 
+ & Sy\_flux\_z & distribution & DEFAULT \\ 
+ & Sz\_flux\_z & group type & GF \\ 
+ &  & tags & prolongation="none" checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+ent\_flux\_x & ent\_flux\_x & centering & centering=\{0 1 1\} \\ 
+ &  & compact & 0 \\ 
+ &  & description & Entropy flux in x direction \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & prolongation="none" checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+ent\_flux\_y & ent\_flux\_y & centering & centering=\{1 0 1\} \\ 
+ &  & compact & 0 \\ 
+ &  & description & Entropy flux in y direction \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & prolongation="none" checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+ent\_flux\_z & ent\_flux\_z & centering & centering=\{1 1 0\} \\ 
+ &  & compact & 0 \\ 
+ &  & description & Entropy flux in z direction \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & prolongation="none" checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+ye\_flux\_x & Ye\_flux\_x & centering & centering=\{0 1 1\} \\ 
+ &  & compact & 0 \\ 
+ &  & description & Electron fraction flux in x direction \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & prolongation="none" checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~ \\ 
+\hline 
+ye\_flux\_y & Ye\_flux\_y & centering & centering=\{1 0 1\} \\ 
+ &  & compact & 0 \\ 
+ &  & description & Electron fraction flux in y direction \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & prolongation="none" checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+ye\_flux\_z & Ye\_flux\_z & centering & centering=\{1 1 0\} \\ 
+ &  & compact & 0 \\ 
+ &  & description & Electron fraction flux in z direction \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & prolongation="none" checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+failure\_checker & failure\_checker & centering & centering=\{1 1 1\} \\ 
+ &  & compact & 0 \\ 
+ &  & description & Gridfunction to track conservative-to-primitives solver fixes. Beware that this gridfunction is overwritten at each RK substep. \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & prolongation="none" Checkpoint="no" InterpNumTimelevels=1 \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+
+\noindent {\bf Uses header}: 
+
+GRHayLib.h
+\vspace{2mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn GRHayLET/GRHayLHDX.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Always:}& {\bf Conditional:} \\ 
+ grmhd\_conservatives grmhd\_velocities &  Ye\_star Ye\_star\_rhs Ye\_flux\_x Ye\_flux\_y Ye\_flux\_z\\ 
+ u0 grmhd\_conservatives\_rhs &  ent\_star ent\_star\_rhs ent\_flux\_x ent\_flux\_y ent\_flux\_z\\ 
+ flux\_x flux\_y flux\_z failure\_checker & ~\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf HydroBaseX\_PostInitial}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_prim2con2prim 
+
+\hspace{5mm}{\it initialize grhaylhdx variables using hydrobasex initial data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_Prim2Con2Prim}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_compute\_ccc\_centered\_spacetime\_quantities 
+
+\hspace{5mm}{\it interpolate spacetime quantities to cell centers } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbasex::metric \\ 
+~& ~ &admbasex::lapse\\ 
+~& ~ &admbasex::shift\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & ccc\_spacetime(everywhere) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_Con2Prim}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_conservs\_to\_prims 
+
+\hspace{5mm}{\it compute primitive variables from conservatives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & grhaylhdx\_compute\_ccc\_centered\_spacetime\_quantities \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf TmunuBaseX\_AddToTmunu}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_compute\_tmunu 
+
+\hspace{5mm}{\it compute stress-energy tensor and interpolate to vertices } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & ccc\_spacetime \\ 
+~& ~ &grmhd\_velocities\\ 
+~& ~ &u0\\ 
+~& ~ &hydrobasex::rho\\ 
+~& ~ &hydrobasex::press\\ 
+~& ~ &hydrobasex::eps\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & ccc\_tmunu(everywhere) \\ 
+~& ~ &tmunubasex::ettt\\ 
+~& ~ &tmunubasex::etti\\ 
+~& ~ &tmunubasex::etij\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf ODESolvers\_RHS}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_rhs 
+
+\hspace{5mm}{\it evaluate rhss grhd equations } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_RHS}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_compute\_ccc\_centered\_extrinsic\_curvature 
+
+\hspace{5mm}{\it interpolate extrinsic curvature to cell centers } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbasex::curv \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & ccc\_curv(everywhere) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_RHS}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_evaluate\_sources\_rhs 
+
+\hspace{5mm}{\it evaluate source terms in grhd rhss } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & grhaylhdx\_compute\_ccc\_centered\_extrinsic\_curvature \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_RHS}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_evaluate\_fluxes 
+
+\hspace{5mm}{\it evaluate fluxes for grhd rhss } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & grhaylhdx\_evaluate\_sources\_rhs \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_RHS}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_evaluate\_fluxes\_rhs 
+
+\hspace{5mm}{\it evaluate flux terms in grhd rhss } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & grhaylhdx\_evaluate\_fluxes \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_RHS}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_validate\_yestar 
+
+\hspace{5mm}{\it  } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & grhaylhdx\_evaluate\_fluxes\_rhs \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & ye\_star(everywhere) \\ 
+~& ~ &ye\_star\_rhs(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_RHS}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_validate\_entstar 
+
+\hspace{5mm}{\it  } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & grhaylhdx\_evaluate\_fluxes\_rhs \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & ent\_star(everywhere) \\ 
+~& ~ &ent\_star\_rhs(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_RHS}   (conditional) 
+
+\hspace{5mm} convert\_grhaylhdx\_to\_hydrobase 
+
+\hspace{5mm}{\it convert grhaylhdx variables to hydrobasex } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & grhaylhdx\_evaluate\_fluxes\_rhs \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & ccc\_spacetime \\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & hydrobasex::vel(everywhere) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_Prim2Con2Prim}   (conditional) 
+
+\hspace{5mm} convert\_hydrobase\_to\_grhaylhdx 
+
+\hspace{5mm}{\it convert hydrobasex initial data to grhaylhdx variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & grhaylhdx\_compute\_ccc\_centered\_spacetime\_quantities \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & hydrobasex::vel \\ 
+~& ~ &ccc\_spacetime\\ 
+~ & Sync:  & grmhd\_velocities \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_velocities(everywhere) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_ANALYSIS}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_compute\_ccc\_centered\_spacetime\_quantities 
+
+\hspace{5mm}{\it interpolate spacetime quantities to cell centers } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbasex::metric \\ 
+~& ~ &admbasex::lapse\\ 
+~& ~ &admbasex::shift\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & ccc\_spacetime(everywhere) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_ANALYSIS}   (conditional) 
+
+\hspace{5mm} convert\_grhaylhdx\_to\_hydrobase 
+
+\hspace{5mm}{\it convert grhaylhdx variables to hydrobasex } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & grhaylhdx\_compute\_ccc\_centered\_spacetime\_quantities \\ 
+~& ~ &ml\_bssn\_evolcalcgroup\\ 
+~ & Before:  & particle\_traceret \\ 
+~& ~ &volumeintegralgroup\\ 
+~& ~ &convert\_to\_mhdx\_3velocity\\ 
+~ & Language:  & c \\ 
+~ & Reads:  & ccc\_spacetime \\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & hydrobasex::vel(everywhere) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_prims\_to\_conservs}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_hybrid\_entropy\_prims\_to\_conservs 
+
+\hspace{5mm}{\it entropy+hybrid version of grhaylhdx\_prims\_to\_conservs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & ccc\_spacetime \\ 
+~& ~ &hydrobasex::rho\\ 
+~& ~ &hydrobasex::press\\ 
+~& ~ &hydrobasex::eps\\ 
+~& ~ &hydrobasex::entropy\\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & u0(everywhere) \\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &grmhd\_conservatives(everywhere)\\ 
+~& ~ &ent\_star(everywhere)\\ 
+~& ~ &ye\_star(everywhere)\\ 
+~& ~ &hydrobasex::rho(everywhere)\\ 
+~& ~ &hydrobasex::press(everywhere)\\ 
+~& ~ &hydrobasex::eps(everywhere)\\ 
+~& ~ &hydrobasex::entropy(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_conservs\_to\_prims}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_hybrid\_entropy\_conservs\_to\_prims 
+
+\hspace{5mm}{\it entropy+hybrid version of grhaylhdx\_conservs\_to\_prims } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & ccc\_spacetime \\ 
+~& ~ &grmhd\_conservatives\\ 
+~& ~ &ent\_star\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives(everywhere) \\ 
+~& ~ &ent\_star(everywhere)\\ 
+~& ~ &failure\_checker(everywhere)\\ 
+~& ~ &u0(everywhere)\\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &hydrobasex::rho(everywhere)\\ 
+~& ~ &hydrobasex::press(everywhere)\\ 
+~& ~ &hydrobasex::eps(everywhere)\\ 
+~& ~ &hydrobasex::entropy(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_evaluate\_sources\_rhs}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_hybrid\_entropy\_evaluate\_sources\_rhs 
+
+\hspace{5mm}{\it entropy+hybrid version of grhaylhdx\_evaluate\_sources\_rhs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & hydrobasex::rho \\ 
+~& ~ &hydrobasex::press\\ 
+~& ~ &hydrobasex::entropy\\ 
+~& ~ &ccc\_spacetime\\ 
+~& ~ &ccc\_curv\\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives\_rhs \\ 
+~& ~ &ent\_star\_rhs\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_evaluate\_fluxes}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_hybrid\_entropy\_evaluate\_fluxes 
+
+\hspace{5mm}{\it entropy+hybrid version of grhaylhdx\_evaluate\_fluxes } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & hydrobasex::rho \\ 
+~& ~ &hydrobasex::press\\ 
+~& ~ &hydrobasex::entropy\\ 
+~& ~ &ccc\_spacetime\\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & flux\_x \\ 
+~& ~ &flux\_y\\ 
+~& ~ &flux\_z\\ 
+~& ~ &ent\_flux\_x\\ 
+~& ~ &ent\_flux\_y\\ 
+~& ~ &ent\_flux\_z\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_evaluate\_fluxes\_rhs}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_hybrid\_entropy\_evaluate\_fluxes\_rhs 
+
+\hspace{5mm}{\it entropy+hybrid version of grhaylhdx\_evaluate\_fluxes\_rhs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & flux\_x(interior) \\ 
+~& ~ &flux\_y(interior)\\ 
+~& ~ &flux\_z(interior)\\ 
+~& ~ &ent\_flux\_x(interior)\\ 
+~& ~ &ent\_flux\_y(interior)\\ 
+~& ~ &ent\_flux\_z(interior)\\ 
+~& ~ &grmhd\_conservatives\_rhs(interior)\\ 
+~& ~ &ent\_star\_rhs(interior)\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives\_rhs \\ 
+~& ~ &ent\_star\_rhs\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_perturb\_primitives}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_hybrid\_entropy\_perturb\_primitives 
+
+\hspace{5mm}{\it entropy+hybrid version of grhaylhdx\_perturb\_primitives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & hydrobasex::rho \\ 
+~& ~ &hydrobasex::press\\ 
+~& ~ &hydrobasex::eps\\ 
+~& ~ &hydrobasex::entropy\\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & hydrobasex::rho(everywhere) \\ 
+~& ~ &hydrobasex::press(everywhere)\\ 
+~& ~ &hydrobasex::eps(everywhere)\\ 
+~& ~ &hydrobasex::entropy(everywhere)\\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_perturb\_conservatives}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_hybrid\_entropy\_perturb\_conservatives 
+
+\hspace{5mm}{\it entropy+hybrid version of grhaylhdx\_perturb\_conservatives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & grmhd\_conservatives \\ 
+~& ~ &ent\_star\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives(everywhere) \\ 
+~& ~ &ent\_star(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_prims\_to\_conservs}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_hybrid\_prims\_to\_conservs 
+
+\hspace{5mm}{\it hybrid version of grhaylhdx\_prims\_to\_conservs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & ccc\_spacetime \\ 
+~& ~ &hydrobasex::rho\\ 
+~& ~ &hydrobasex::press\\ 
+~& ~ &hydrobasex::eps\\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & u0(everywhere) \\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &grmhd\_conservatives(everywhere)\\ 
+~& ~ &ent\_star(everywhere)\\ 
+~& ~ &ye\_star(everywhere)\\ 
+~& ~ &hydrobasex::rho(everywhere)\\ 
+~& ~ &hydrobasex::press(everywhere)\\ 
+~& ~ &hydrobasex::eps(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_Prim2Con2Prim}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_perturb\_primitives 
+
+\hspace{5mm}{\it perturb initial primitive data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & convert\_hydrobase\_to\_grhaylhdx \\ 
+~ & Before:  & grhaylhdx\_prims\_to\_conservs \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_conservs\_to\_prims}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_hybrid\_conservs\_to\_prims 
+
+\hspace{5mm}{\it hybrid version of grhaylhdx\_conservs\_to\_prims } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & ccc\_spacetime \\ 
+~& ~ &grmhd\_conservatives\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives(everywhere) \\ 
+~& ~ &failure\_checker(everywhere)\\ 
+~& ~ &u0(everywhere)\\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &hydrobasex::rho(everywhere)\\ 
+~& ~ &hydrobasex::press(everywhere)\\ 
+~& ~ &hydrobasex::eps(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_evaluate\_sources\_rhs}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_hybrid\_evaluate\_sources\_rhs 
+
+\hspace{5mm}{\it hybrid version of grhaylhdx\_evaluate\_sources\_rhs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & hydrobasex::rho \\ 
+~& ~ &hydrobasex::press\\ 
+~& ~ &ccc\_spacetime\\ 
+~& ~ &ccc\_curv\\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives\_rhs \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_evaluate\_fluxes}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_hybrid\_evaluate\_fluxes 
+
+\hspace{5mm}{\it hybrid version of grhaylhdx\_evaluate\_fluxes } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & hydrobasex::rho \\ 
+~& ~ &hydrobasex::press\\ 
+~& ~ &ccc\_spacetime\\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & flux\_x \\ 
+~& ~ &flux\_y\\ 
+~& ~ &flux\_z\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_evaluate\_fluxes\_rhs}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_hybrid\_evaluate\_fluxes\_rhs 
+
+\hspace{5mm}{\it hybrid version of grhaylhdx\_evaluate\_fluxes\_rhs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & flux\_x(interior) \\ 
+~& ~ &flux\_y(interior)\\ 
+~& ~ &flux\_z(interior)\\ 
+~& ~ &grmhd\_conservatives\_rhs(interior)\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives\_rhs \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_perturb\_primitives}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_hybrid\_perturb\_primitives 
+
+\hspace{5mm}{\it hybrid version of grhaylhdx\_perturb\_primitives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & hydrobasex::rho \\ 
+~& ~ &hydrobasex::press\\ 
+~& ~ &hydrobasex::eps\\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & hydrobasex::rho(everywhere) \\ 
+~& ~ &hydrobasex::press(everywhere)\\ 
+~& ~ &hydrobasex::eps(everywhere)\\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_perturb\_conservatives}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_hybrid\_perturb\_conservatives 
+
+\hspace{5mm}{\it hybrid version of grhaylhdx\_perturb\_conservatives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & grmhd\_conservatives \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives(everywhere) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_prims\_to\_conservs}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_tabulated\_entropy\_prims\_to\_conservs 
+
+\hspace{5mm}{\it entropy+tabulated version of grhaylhdx\_prims\_to\_conservs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & ccc\_spacetime \\ 
+~& ~ &hydrobasex::rho\\ 
+~& ~ &hydrobasex::press\\ 
+~& ~ &hydrobasex::eps\\ 
+~& ~ &hydrobasex::entropy\\ 
+~& ~ &hydrobasex::ye\\ 
+~& ~ &hydrobasex::temperature\\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & u0(everywhere) \\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &grmhd\_conservatives(everywhere)\\ 
+~& ~ &ent\_star(everywhere)\\ 
+~& ~ &ye\_star(everywhere)\\ 
+~& ~ &hydrobasex::rho(everywhere)\\ 
+~& ~ &hydrobasex::press(everywhere)\\ 
+~& ~ &hydrobasex::eps(everywhere)\\ 
+~& ~ &hydrobasex::entropy(everywhere)\\ 
+~& ~ &hydrobasex::ye(everywhere)\\ 
+~& ~ &hydrobasex::temperature(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_conservs\_to\_prims}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_tabulated\_entropy\_conservs\_to\_prims 
+
+\hspace{5mm}{\it entropy+tabulated version of grhaylhdx\_conservs\_to\_prims } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & ccc\_spacetime \\ 
+~& ~ &grmhd\_conservatives\\ 
+~& ~ &ent\_star\\ 
+~& ~ &ye\_star\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives(everywhere) \\ 
+~& ~ &ent\_star(everywhere)\\ 
+~& ~ &ye\_star(everywhere)\\ 
+~& ~ &u0(everywhere)\\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &failure\_checker(everywhere)\\ 
+~& ~ &hydrobasex::rho(everywhere)\\ 
+~& ~ &hydrobasex::press(everywhere)\\ 
+~& ~ &hydrobasex::eps(everywhere)\\ 
+~& ~ &hydrobasex::entropy(everywhere)\\ 
+~& ~ &hydrobasex::ye(everywhere)\\ 
+~& ~ &hydrobasex::temperature(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_evaluate\_sources\_rhs}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_tabulated\_entropy\_evaluate\_sources\_rhs 
+
+\hspace{5mm}{\it entropy+tabulated version of grhaylhdx\_evaluate\_sources\_rhs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & hydrobasex::rho \\ 
+~& ~ &hydrobasex::press\\ 
+~& ~ &hydrobasex::entropy\\ 
+~& ~ &hydrobasex::ye\\ 
+~& ~ &hydrobasex::temperature\\ 
+~& ~ &ccc\_spacetime\\ 
+~& ~ &ccc\_curv\\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives\_rhs \\ 
+~& ~ &ent\_star\_rhs\\ 
+~& ~ &ye\_star\_rhs\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_evaluate\_fluxes}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_tabulated\_entropy\_evaluate\_fluxes 
+
+\hspace{5mm}{\it entropy+tabulated version of grhaylhdx\_evaluate\_fluxes } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & hydrobasex::rho \\ 
+~& ~ &hydrobasex::press\\ 
+~& ~ &hydrobasex::entropy\\ 
+~& ~ &hydrobasex::ye\\ 
+~& ~ &hydrobasex::temperature\\ 
+~& ~ &ccc\_spacetime\\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & flux\_x \\ 
+~& ~ &flux\_y\\ 
+~& ~ &flux\_z\\ 
+~& ~ &ent\_flux\_x\\ 
+~& ~ &ent\_flux\_y\\ 
+~& ~ &ent\_flux\_z\\ 
+~& ~ &ye\_flux\_x\\ 
+~& ~ &ye\_flux\_y\\ 
+~& ~ &ye\_flux\_z\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_Prim2Con2Prim}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_prims\_to\_conservs 
+
+\hspace{5mm}{\it enforce simulation limits on primitives and compute conservatives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & convert\_hydrobase\_to\_grhaylhdx \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_evaluate\_fluxes\_rhs}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_tabulated\_entropy\_evaluate\_fluxes\_rhs 
+
+\hspace{5mm}{\it entropy+tabulated version of grhaylhdx\_evaluate\_fluxes\_rhs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & flux\_x(interior) \\ 
+~& ~ &flux\_y(interior)\\ 
+~& ~ &flux\_z(interior)\\ 
+~& ~ &ent\_flux\_x(interior)\\ 
+~& ~ &ent\_flux\_y(interior)\\ 
+~& ~ &ent\_flux\_z(interior)\\ 
+~& ~ &ye\_flux\_x(interior)\\ 
+~& ~ &ye\_flux\_y(interior)\\ 
+~& ~ &ye\_flux\_z(interior)\\ 
+~& ~ &grmhd\_conservatives\_rhs(interior)\\ 
+~& ~ &ent\_star\_rhs(interior)\\ 
+~& ~ &ye\_star\_rhs(interior)\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives\_rhs \\ 
+~& ~ &ent\_star\_rhs\\ 
+~& ~ &ye\_star\_rhs\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_perturb\_primitives}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_tabulated\_entropy\_perturb\_primitives 
+
+\hspace{5mm}{\it entropy+tabulated version of grhaylhdx\_perturb\_primitives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & hydrobasex::rho \\ 
+~& ~ &hydrobasex::press\\ 
+~& ~ &hydrobasex::eps\\ 
+~& ~ &hydrobasex::entropy\\ 
+~& ~ &hydrobasex::ye\\ 
+~& ~ &hydrobasex::temperature\\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & hydrobasex::rho(everywhere) \\ 
+~& ~ &hydrobasex::press(everywhere)\\ 
+~& ~ &hydrobasex::eps(everywhere)\\ 
+~& ~ &hydrobasex::entropy(everywhere)\\ 
+~& ~ &hydrobasex::ye(everywhere)\\ 
+~& ~ &hydrobasex::temperature(everywhere)\\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_perturb\_conservatives}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_tabulated\_entropy\_perturb\_conservatives 
+
+\hspace{5mm}{\it entropy+tabulated version of grhaylhdx\_perturb\_conservatives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & grmhd\_conservatives \\ 
+~& ~ &ent\_star\\ 
+~& ~ &ye\_star\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives(everywhere) \\ 
+~& ~ &ent\_star(everywhere)\\ 
+~& ~ &ye\_star(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_prims\_to\_conservs}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_tabulated\_prims\_to\_conservs 
+
+\hspace{5mm}{\it tabulated version of grhaylhdx\_prims\_to\_conservs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & ccc\_spacetime \\ 
+~& ~ &hydrobasex::rho\\ 
+~& ~ &hydrobasex::press\\ 
+~& ~ &hydrobasex::eps\\ 
+~& ~ &hydrobasex::ye\\ 
+~& ~ &hydrobasex::temperature\\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & u0(everywhere) \\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &grmhd\_conservatives(everywhere)\\ 
+~& ~ &ent\_star(everywhere)\\ 
+~& ~ &ye\_star(everywhere)\\ 
+~& ~ &hydrobasex::rho(everywhere)\\ 
+~& ~ &hydrobasex::press(everywhere)\\ 
+~& ~ &hydrobasex::eps(everywhere)\\ 
+~& ~ &hydrobasex::ye(everywhere)\\ 
+~& ~ &hydrobasex::temperature(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_conservs\_to\_prims}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_tabulated\_conservs\_to\_prims 
+
+\hspace{5mm}{\it tabulated version of grhaylhdx\_conservs\_to\_prims } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & ccc\_spacetime \\ 
+~& ~ &grmhd\_conservatives\\ 
+~& ~ &ye\_star\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives(everywhere) \\ 
+~& ~ &ye\_star(everywhere)\\ 
+~& ~ &u0(everywhere)\\ 
+~& ~ &grmhd\_velocities(everywhere)\\ 
+~& ~ &failure\_checker(everywhere)\\ 
+~& ~ &hydrobasex::rho(everywhere)\\ 
+~& ~ &hydrobasex::press(everywhere)\\ 
+~& ~ &hydrobasex::eps(everywhere)\\ 
+~& ~ &hydrobasex::ye(everywhere)\\ 
+~& ~ &hydrobasex::temperature(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_evaluate\_sources\_rhs}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_tabulated\_evaluate\_sources\_rhs 
+
+\hspace{5mm}{\it tabulated version of grhaylhdx\_evaluate\_sources\_rhs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & hydrobasex::rho \\ 
+~& ~ &hydrobasex::press\\ 
+~& ~ &hydrobasex::ye\\ 
+~& ~ &hydrobasex::temperature\\ 
+~& ~ &grmhd\_velocities\\ 
+~& ~ &ccc\_spacetime\\ 
+~& ~ &ccc\_curv\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives\_rhs \\ 
+~& ~ &ye\_star\_rhs\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_evaluate\_fluxes}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_tabulated\_evaluate\_fluxes 
+
+\hspace{5mm}{\it tabulated version of grhaylhdx\_evaluate\_fluxes } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & hydrobasex::rho \\ 
+~& ~ &hydrobasex::press\\ 
+~& ~ &hydrobasex::ye\\ 
+~& ~ &hydrobasex::temperature\\ 
+~& ~ &ccc\_spacetime\\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & flux\_x \\ 
+~& ~ &flux\_y\\ 
+~& ~ &flux\_z\\ 
+~& ~ &ye\_flux\_x\\ 
+~& ~ &ye\_flux\_y\\ 
+~& ~ &ye\_flux\_z\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_evaluate\_fluxes\_rhs}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_tabulated\_evaluate\_fluxes\_rhs 
+
+\hspace{5mm}{\it tabulated version of grhaylhdx\_evaluate\_fluxes\_rhs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & flux\_x(interior) \\ 
+~& ~ &flux\_y(interior)\\ 
+~& ~ &flux\_z(interior)\\ 
+~& ~ &ye\_flux\_x(interior)\\ 
+~& ~ &ye\_flux\_y(interior)\\ 
+~& ~ &ye\_flux\_z(interior)\\ 
+~& ~ &grmhd\_conservatives\_rhs(interior)\\ 
+~& ~ &ye\_star\_rhs(interior)\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives\_rhs \\ 
+~& ~ &ye\_star\_rhs\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_perturb\_primitives}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_tabulated\_perturb\_primitives 
+
+\hspace{5mm}{\it tabulated version of grhaylhdx\_perturb\_primitives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & hydrobasex::rho \\ 
+~& ~ &hydrobasex::press\\ 
+~& ~ &hydrobasex::eps\\ 
+~& ~ &hydrobasex::ye\\ 
+~& ~ &hydrobasex::temperature\\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_velocities(everywhere) \\ 
+~& ~ &hydrobasex::rho(everywhere)\\ 
+~& ~ &hydrobasex::press(everywhere)\\ 
+~& ~ &hydrobasex::eps(everywhere)\\ 
+~& ~ &hydrobasex::ye(everywhere)\\ 
+~& ~ &hydrobasex::temperature(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_perturb\_conservatives}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_tabulated\_perturb\_conservatives 
+
+\hspace{5mm}{\it tabulated version of grhaylhdx\_perturb\_conservatives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & grmhd\_conservatives \\ 
+~& ~ &ye\_star\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & grmhd\_conservatives(everywhere) \\ 
+~& ~ &ye\_star(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_Prim2Con2Prim}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_conservs\_to\_prims 
+
+\hspace{5mm}{\it compute primitive variables from conservatives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & grhaylhdx\_prims\_to\_conservs \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_Prim2Con2Prim}   (conditional) 
+
+\hspace{5mm} convert\_grhaylhdx\_to\_hydrobase 
+
+\hspace{5mm}{\it convert grhaylhdx variables to hydrobasex } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & grhaylhdx\_conservs\_to\_prims \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & ccc\_spacetime \\ 
+~& ~ &grmhd\_velocities\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & hydrobasex::vel(everywhere) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf ODESolvers\_PostStep}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_con2prim 
+
+\hspace{5mm}{\it compute primitive variables from conservatives } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_Con2Prim}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_compute\_ccc\_centered\_spacetime\_quantities 
+
+\hspace{5mm}{\it interpolate spacetime quantities to cell centers } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & admbasex::metric \\ 
+~& ~ &admbasex::lapse\\ 
+~& ~ &admbasex::shift\\ 
+~ & Sync:  & grmhd\_conservatives \\ 
+~& ~ &ye\_star\\ 
+~& ~ &ent\_star\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & ccc\_spacetime(everywhere) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf GRHayLHDX\_Con2Prim}   (conditional) 
+
+\hspace{5mm} grhaylhdx\_perturb\_conservatives 
+
+\hspace{5mm}{\it perturb conservatives before con2prim } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & grhaylhdx\_compute\_ccc\_centered\_spacetime\_quantities \\ 
+~ & Before:  & grhaylhdx\_conservs\_to\_prims \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

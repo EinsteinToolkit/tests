@@ -1,0 +1,761 @@
+% *======================================================================*
+%  Cactus Thorn template for ThornGuide documentation
+%  Author: Ian Kelley
+%  Date: Sun Jun 02, 2002
+%  $Header$
+%
+%  Thorn documentation in the latex file doc/documentation.tex
+%  will be included in ThornGuides built with the Cactus make system.
+%  The scripts employed by the make system automatically include
+%  pages about variables, parameters and scheduling parsed from the
+%  relevant thorn CCL files.
+%
+%  This template contains guidelines which help to assure that your
+%  documentation will be correctly added to ThornGuides. More
+%  information is available in the Cactus UsersGuide.
+%
+%  Guidelines:
+%   - Do not change anything before the line
+%       % START CACTUS THORNGUIDE",
+%     except for filling in the title, author, date, etc. fields.
+%        - Each of these fields should only be on ONE line.
+%        - Author names should be separated with a \\ or a comma.
+%   - You can define your own macros, but they must appear after
+%     the START CACTUS THORNGUIDE line, and must not redefine standard
+%     latex commands.
+%   - To avoid name clashes with other thorns, 'labels', 'citations',
+%     'references', and 'image' names should conform to the following
+%     convention:
+%       ARRANGEMENT_THORN_LABEL
+%     For example, an image wave.eps in the arrangement CactusWave and
+%     thorn WaveToyC should be renamed to CactusWave_WaveToyC_wave.eps
+%   - Graphics should only be included using the graphicx package.
+%     More specifically, with the "\includegraphics" command.  Do
+%     not specify any graphic file extensions in your .tex file. This
+%     will allow us to create a PDF version of the ThornGuide
+%     via pdflatex.
+%   - References should be included with the latex "\bibitem" command.
+%   - Use \begin{abstract}...\end{abstract} instead of \abstract{...}
+%   - Do not use \appendix, instead include any appendices you need as
+%     standard sections.
+%   - For the benefit of our Perl scripts, and for future extensions,
+%     please use simple latex.
+%
+% *======================================================================*
+%
+% Example of including a graphic image:
+%    \begin{figure}[ht]
+% 	\begin{center}
+%    	   \includegraphics[width=6cm]{/home/runner/work/tests/tests/arrangements/Scalar/ScalarEvolve/doc/MyArrangement_MyThorn_MyFigure}
+% 	\end{center}
+% 	\caption{Illustration of this and that}
+% 	\label{MyArrangement_MyThorn_MyLabel}
+%    \end{figure}
+%
+% Example of using a label:
+%   \label{MyArrangement_MyThorn_MyLabel}
+%
+% Example of a citation:
+%    \cite{MyArrangement_MyThorn_Author99}
+%
+% Example of including a reference
+%   \bibitem{MyArrangement_MyThorn_Author99}
+%   {J. Author, {\em The Title of the Book, Journal, or periodical}, 1 (1999),
+%   1--16. {\tt http://www.nowhere.com/}}
+%
+% *======================================================================*
+
+% If you are using CVS use this line to give version information
+% $Header$
+
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+\usepackage{amsmath}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+% The author of the documentation
+\author{Miguel Zilh\~ao \textless mzilhao@ua.pt\textgreater}
+
+% The title of the document (not necessarily the name of the Thorn)
+\title{ScalarEvolve}
+
+% the date your document was last changed, if your document is in CVS,
+% please use:
+%    \date{$ $Date$ $}
+% when using git instead record the commit ID:
+%    \date{\gitrevision{<path-to-your-.git-directory>}}
+\date{July 1 2023}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+% Add all definitions used in this documentation here
+% \def\mydef etc
+
+% Add an abstract for this thorn's documentation
+\begin{abstract}
+
+ScalarEvolve solves the (Einstein-)Klein-Gordon system of equations with 4th
+order accurate finite-difference stencils. It relies on the MoL thorn
+for the time integration and can work with any spacetime evolution thorn
+to couple with the Einstein equations.
+
+\end{abstract}
+
+
+\section{ScalarEvolve}
+
+This thorn provides the tools to evolve a complex scalar field with
+nonlinear potential in arbitrary background as first described in
+\cite{Scalar_Cunha:2017wao}. Additionally, it is possible to add an
+external periodic forcing to the right-hand side of the Klein-Gordon equation
+for studies of parametric resonances.
+
+ScalarEvolve interfaces with the ScalarBase thorn, which defines the evolution
+variables \texttt{phi1}, \texttt{phi2}, \texttt{Kphi1} and \texttt{Kphi2}.
+%
+This thorn merely takes care of setting the scalar field stress-energy tensor
+and evolving (with MoL) the scalar field itself. The evolution of the metric
+sector needs to be done elsewhere.
+
+\section{Physical System}
+
+Conventions used here are as in~\cite{Scalar_Cunha:2017wao} and as follows:
+\begin{align}
+  G_{\mu \nu} & = 8 \pi G T_{\mu \nu} \\
+  \square \Phi & = \mu^2 \Phi
+\end{align}
+where $\mu$ is the mass parameter defined in \texttt{ScalarBase} and
+\begin{equation}
+  T_{\mu \nu} = \bar \Phi_{,\mu} \Phi_{,\nu} + \Phi_{,\mu} \bar \Phi_{,\nu}
+                - g_{\mu \nu} [  \bar \Phi^{,\sigma} \Phi_{,\sigma}
+                               + \mu^2 \bar \Phi \Phi ]
+\end{equation}
+and the gridfunctions \texttt{phi1} and \texttt{phi2} used in the code (defined in ScalarBase) are the real and imaginary part of the
+complex field $\Phi = \phi_1 + i \phi_2$, which for reasons of convenience are evolved as separate, independent, variables.
+
+Let us briefly present the $3+1$ decomposed equations of motion in the Einstein-Klein-Gordon case. To complete the characterization of the full spacetime we define the extrinsic curvature
+\begin{equation}
+\label{eq:KijDef}
+K_{ij}  =   - \frac{1}{2\alpha} \left( \partial_{t} - \mathcal{L}_{\beta} \right) \gamma_{ij} \ ,
+\end{equation}
+and analogously introduce the ``canonical momentum'' of the complex scalar field $\Phi$
+\begin{equation}
+\label{eq:Kphi}
+K_{\Phi} = -\frac{1}{2\alpha}  \left( \partial_{t} - \mathcal{L}_{\beta} \right) \Phi \,,
+\end{equation}
+where $\mathcal{L}$ denotes the Lie derivative.
+%
+Our evolution system can then be written in the form
+%
+\begin{align}
+  \partial_{t} \gamma_{ij} & = - 2 \alpha K_{ij} + \mathcal{L}_{\beta} \gamma_{ij} \,,
+                       \label{eq:dtgamma} \\
+%
+  \partial_{t} K_{ij}      & =  - D_{i} \partial_{j} \alpha
+                       + \alpha \left( R_{ij} - 2 K_{ik} K^{k}{}_{j} + K K_{ij} \right) \nonumber \\
+                       & \quad + \mathcal{L}_{\beta} K_{ij} 
+                       % \nonumber \\  & \quad
+                       + 4\pi \alpha \left[ (S-\rho) \gamma_{ij} - 2 S_{ij} \right] \,,
+                                         \label{eq:dtKij} \\
+% 
+  \partial_{t} \Phi & = - 2 \alpha K_\Phi + \mathcal{L}_{\beta} \Phi\
+                \,, \label{eq:dtPhi} \\
+%
+  \partial_{t} K_\Phi &  = \alpha \left( K K_{\Phi} - \frac{1}{2} \gamma^{ij} D_i \partial_j \Phi
+                  + \frac{1}{2} \mu^2 \Phi \right) \nonumber \\
+                 & \quad - \frac{1}{2} \gamma^{ij} \partial_i \alpha \partial_j \Phi
+                       + \mathcal{L}_{\beta} K_\Phi \,, \label{eq:dtKphi}
+\end{align}
+% 
+where $D_i$ is the covariant derivative with respect to the $3$-metric.
+
+
+For completeness, we present also the full evolution equations re-written in the BSSN scheme~\cite{Scalar_Shibata:1995we,Scalar_Baumgarte:1998te}.
+The full system of evolution equations is
+%
+\begin{align}
+    \partial_t \tilde{\gamma}_{ij} & = \beta^k \partial_k \tilde{\gamma}_{ij} +
+    2\tilde{\gamma}_{k(i} \partial_{j)} \beta^k - \frac{2}{3}
+    \tilde{\gamma}_{ij} \partial_k \beta^k -2\alpha \tilde{A}_{ij},  \\
+  %
+    \partial_t \chi & = \beta^k \partial_k \chi + \frac{2}{3} \chi (\alpha K
+    - \partial_k \beta^k),  \\
+  % 
+    \partial_t \tilde{A}_{ij} & = \beta^k \partial_k \tilde{A}_{ij}
+      + 2\tilde{A}_{k(i} \partial_{j)} \beta^k
+      - \frac{2}{3} \tilde{A}_{ij} \partial_k \beta^k  \notag \\
+      & \quad + \chi \left( \alpha R_{ij} - D_i \partial_j \alpha\right)^{\rm
+      TF}
+      + \alpha \left( K\,\tilde{A}_{ij}
+      - 2 \tilde{A}_i{}^k \tilde{A}_{kj} \right) \notag \\
+      & \quad - 8 \pi \alpha \left(
+          \chi S_{ij} - \frac{S}{3} \tilde \gamma_{ij}
+        \right), \\
+  % 
+    \partial_t K & = \beta^k \partial_k K - D^k \partial_k \alpha + \alpha \left(
+                   \tilde{A}^{ij} \tilde{A}_{ij} + \frac{1}{3} K^2 \right) \notag \\
+    & \quad  + 4 \pi \alpha (\rho + S), \\
+  %
+    \partial_t \tilde{\Gamma}^i & = \beta^k \partial_k \tilde{\Gamma}^i
+       - \tilde{\Gamma}^k \partial_k \beta^i + \frac{2}{3}
+    \tilde{\Gamma}^i \partial_k \beta^k + 2 \alpha \tilde{\Gamma}^i_{jk}
+                                  \tilde{A}^{jk} \notag \\
+                                  & \quad + \frac{1}{3} \tilde{\gamma}^{ij}\partial_j \partial_k
+    \beta^k
+    + \tilde{\gamma}^{jk} \partial_j \partial_k \beta^i \nonumber \\
+    & \quad - \frac{4}{3} \alpha \tilde{\gamma}^{ij} \partial_j K -
+    \tilde{A}^{ij} \left( 3 \alpha \chi^{-1} \partial_j \chi + 2\partial_j
+      \alpha \right) % -\left( \sigma + \frac{2}{3}\right) \left(\tilde{\Gamma}^i
+      % -\tilde{\gamma}^{jk}\tilde{\Gamma}^i_{jk} \right) \partial_k \beta^k 
+      % \notag \\ & \quad
+                    \notag \\
+    & \quad - 16 \pi \alpha \chi^{-1} j^i \label{eq:tilde-Gamma-evol} \,, \\
+%
+  \partial_{t} \Phi & = - 2 \alpha K_\Phi + \mathcal{L}_{\beta} \Phi\
+                \,, \label{eq:dtPhi-BSSN} \\
+%
+  \partial_{t} K_\Phi &  = \alpha \left( K K_{\Phi} - \frac{1}{2} \gamma^{ij} D_i \partial_j \Phi
+                  + \frac{1}{2} \mu^2 \Phi \right) \nonumber \\
+                 & \quad - \frac{1}{2} \gamma^{ij} \partial_i \alpha \partial_j \Phi
+                       + \mathcal{L}_{\beta} K_\Phi \,, \label{eq:dtKphi-BSSN}
+\end{align}
+%
+with the source terms given by
+%
+\begin{align*}
+  \rho & \equiv T^{\mu \nu}n_{\mu}n_{\nu} \,,\\
+  j_i  &\equiv -\gamma_{i\mu} T^{\mu \nu}n_{\nu} \,, \\
+  S_{ij} &\equiv \gamma^{\mu}{}_i \gamma^{\nu}{}_j T_{\mu \nu} \,, \\
+  S     & \equiv \gamma^{ij}S_{ij} \,.
+\end{align*}
+
+Note however, as mentioned above, that the evolution of the metric sector is \emph{not} done in this thorn, and thus needs to be done elsewhere (ie, LeanBSSNMoL or McLachlan).
+
+
+\section{Obtaining This Thorn}
+
+This thorn is included in the Einstein Toolkit and can also be obtained through
+the \texttt{Canuda} numerical relativity library~\cite{Canuda}.
+
+
+\begin{thebibliography}{9}
+
+\bibitem{Scalar_Cunha:2017wao}
+P.~V.~P.~Cunha, J.~A.~Font, C.~Herdeiro, E.~Radu, N.~Sanchis-Gual and M.~Zilh\~ao,
+``Lensing and dynamics of ultracompact bosonic stars,''
+Phys. Rev. D \textbf{96}, no.10, 104040 (2017)
+doi:10.1103/PhysRevD.96.104040
+[arXiv:1709.06118 [gr-qc]].
+
+\bibitem{Scalar_Shibata:1995we}
+M.~Shibata and T.~Nakamura,
+``Evolution of three-dimensional gravitational waves: Harmonic slicing case,''
+Phys. Rev. D \textbf{52}, 5428-5444 (1995)
+doi:10.1103/PhysRevD.52.5428
+
+\bibitem{Scalar_Baumgarte:1998te}
+T.~W.~Baumgarte and S.~L.~Shapiro,
+``On the numerical integration of Einstein's field equations,''
+Phys. Rev. D \textbf{59}, 024007 (1998)
+doi:10.1103/PhysRevD.59.024007
+[arXiv:gr-qc/9810065 [gr-qc]].
+
+\bibitem{Canuda}
+H.~Witek, M.~Zilhao, G.~Bozzola, C.-H.~Cheng, A.~Dima, M.~Elley, G.~Ficarra, T.~Ikeda, R.~Luna, C.~Richards, N.~Sanchis-Gual, H.~Okada~da~Silva.
+``Canuda: a public numerical relativity library to probe fundamental physics,''
+Zenodo (2023)
+doi: 10.5281/zenodo.3565474
+
+\end{thebibliography}
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{scalarevolve\_maxnumconstrainedvars}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{chi\_floor} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Minimal value of abs(chi)}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0d-06 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Any value possible} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{compute\_fluxes} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Calculate the energy fluxes of the scalar field? calculation not available with multipatch}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{eps\_r} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em of value if rr approaches zero in densities computation}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0d-06 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{any small positive value possible} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{outer\_bound} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em outer boundary condition}} \\
+\hline{\bf Range} & &  {\bf Default:} radiative \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering radiative} & \multicolumn{2}{p{\paraWidth}|}{Sommerfeld BC} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering reflecting} & \multicolumn{2}{p{\paraWidth}|}{reflecting BC} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{use\_advection\_stencils} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Use lop-sided stencils for advection derivs}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{z\_is\_radial} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em use with multipatch}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{scalarevolve\_maxnumconstrainedvars} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em The maximum number of constrained variables used by ScalarEvolve}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:0} & \multicolumn{2}{p{\paraWidth}|}{none} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{scalarevolve\_maxnumevolvedvars} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em The maximum number of evolved variables used by ScalarEvolve}} \\
+\hline{\bf Range} & &  {\bf Default:} 4 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 4:4} & \multicolumn{2}{p{\paraWidth}|}{Just 4: phi1, phi2, Kphi1, Kphi2} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{scalarevolve\_maxnumsandrvars} & {\bf Scope:} restricted & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em The maximum number of save and restore variables used by ScalarEvolve}} \\
+\hline{\bf Range} & &  {\bf Default:} 16 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 16:16} & \multicolumn{2}{p{\paraWidth}|}{lapse, shift, metric, and extrinsic curvature} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{evolution\_method} & {\bf Scope:} shared from SCALARBASE & KEYWORD \\\hline
+\multicolumn{3}{|l|}{\bf Extends ranges:}\\ 
+\hline\multicolumn{1}{|p{\maxVarWidth}|}{\centering ScalarEvolve} & \multicolumn{2}{p{\paraWidth}|}{Use ScalarEvolve to evolve scalar variables} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{forcing\_switch} & {\bf Scope:} shared from SCALARBASE & BOOLEAN \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{kphi1\_0} & {\bf Scope:} shared from SCALARBASE & REAL \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{kphi2\_0} & {\bf Scope:} shared from SCALARBASE & REAL \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{mu} & {\bf Scope:} shared from SCALARBASE & REAL \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{n\_kphi1} & {\bf Scope:} shared from SCALARBASE & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{n\_kphi2} & {\bf Scope:} shared from SCALARBASE & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{n\_phi1} & {\bf Scope:} shared from SCALARBASE & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{n\_phi2} & {\bf Scope:} shared from SCALARBASE & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{phi1\_0} & {\bf Scope:} shared from SCALARBASE & REAL \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{phi2\_0} & {\bf Scope:} shared from SCALARBASE & REAL \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{v\_lambda} & {\bf Scope:} shared from SCALARBASE & REAL \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+scalarevolve
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+admbase
+
+tmunubase
+
+scalarbase
+
+boundary
+
+sphericalsurface
+\vspace{2mm}
+\subsection*{Grid Variables}
+\vspace{5mm}\subsubsection{PRIVATE GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+rhs\_phi &  & compact & 0 \\ 
+ & rhs\_phi1 & description & right hand sides for scalar field evolution equations \\ 
+ & rhs\_phi2 & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="Scalar" tensorweight=0 prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+rhs\_kphi &  & compact & 0 \\ 
+ & rhs\_Kphi1 & description & right hand sides for evolution of conjugated momenta \\ 
+ & rhs\_Kphi2 & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="Scalar" tensorweight=0 prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+hmetric &  & compact & 0 \\ 
+ & hxx & description & {\textbackslash}tilde gamma\_ij \\ 
+ & hxy & dimensions & 3 \\ 
+ & hxz & distribution & DEFAULT \\ 
+ & hyy & group type & GF \\ 
+ & hyz & tags & tensortypealias="DD\_sym" tensorweight=-0.66666666666666666667 prolongation="none" Checkpoint="no" \\ 
+ & hzz & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+conf\_fac\_chi &  & compact & 0 \\ 
+ & chi & description & conformal factor {\textbackslash}chi \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="Scalar" tensorweight=-0.66666666666666666667 prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+trk &  & compact & 0 \\ 
+ & tracek & description & Tr(K) \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="Scalar" tensorweight=0 prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+densities\_sf &  & compact & 0 \\ 
+ & rhoSF\_gf & description & energy-momentum densities of scalar field \\ 
+ & jrSF\_gf & dimensions & 3 \\ 
+ & SrrSF\_gf & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="Scalar" tensorweight=0 prolongation="none" Checkpoint="no" \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn Scalar/ScalarEvolve.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+~& {\bf Conditional:} \\ 
+~ &  rhs\_phi rhs\_Kphi\\ 
+~ &  hmetric conf\_fac\_chi trk\\ 
+~ &  densities\_SF[3]\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf SetTmunu}   (conditional) 
+
+\hspace{5mm} scalar\_zero\_densities 
+
+\hspace{5mm}{\it initialise the sf densities to zero } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & scalarevolve::rhosf\_gf(everywhere) \\ 
+~& ~ &scalarevolve::jrsf\_gf(everywhere)\\ 
+~& ~ &scalarevolve::srrsf\_gf(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PARAMCHECK}   (conditional) 
+
+\hspace{5mm} scalar\_init 
+
+\hspace{5mm}{\it initialise flags and boundary condition } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf AddToTmunu}   (conditional) 
+
+\hspace{5mm} scalar\_calc\_tmunu 
+
+\hspace{5mm}{\it compute the energy-momentum tensor } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_BASEGRID}   (conditional) 
+
+\hspace{5mm} scalar\_initsymbound 
+
+\hspace{5mm}{\it schedule symmetries } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Options:  & meta \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_BASEGRID}   (conditional) 
+
+\hspace{5mm} scalar\_zero\_rhs 
+
+\hspace{5mm}{\it set all rhs functions to zero to prevent spurious nans } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & scalar\_initsymbound \\ 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_Register}   (conditional) 
+
+\hspace{5mm} scalar\_registervars 
+
+\hspace{5mm}{\it register variables for mol } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & meta \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_CalcRHS}   (conditional) 
+
+\hspace{5mm} scalar\_ord4\_calc\_rhs 
+
+\hspace{5mm}{\it mol rhs calculation for scalar variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_CalcRHS}   (conditional) 
+
+\hspace{5mm} scalar\_ord4\_calc\_rhs\_bdry 
+
+\hspace{5mm}{\it mol boundary rhs calculation for scalar variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & scalar\_calcrhs \\ 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_RHSBoundaries}   (conditional) 
+
+\hspace{5mm} scalar\_ord4\_calc\_rhs\_bdry\_sph 
+
+\hspace{5mm}{\it mol boundary rhs calculation for scalar variables for the multipatch system } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_PostStep}   (conditional) 
+
+\hspace{5mm} scalar\_boundaries 
+
+\hspace{5mm}{\it mol boundary enforcement for scalar variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Options:  & level \\ 
+~ & Sync:  & phi \\ 
+~& ~ &kphi\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_PostStep}   (conditional) 
+
+\hspace{5mm} applybcs 
+
+\hspace{5mm}{\it apply boundary conditions } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & scalar\_boundaries \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\subsection*{Aliased Functions}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Alias Name:} ~~~~~~~ & {\bf Function Name:} \\ 
+ApplyBCs & Scalar\_ApplyBCs \\ 
+Scalar\_calc\_Tmunu & Scalar\_AddToTmunu \\ 
+Scalar\_ord4\_calc\_rhs & Scalar\_CalcRHS \\ 
+Scalar\_ord4\_calc\_rhs\_bdry & Scalar\_CalcRHS\_Bdry \\ 
+Scalar\_ord4\_calc\_rhs\_bdry\_sph & Scalar\_CalcRHS\_Bdry\_Sph \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

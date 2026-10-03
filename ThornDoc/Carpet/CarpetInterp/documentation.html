@@ -1,0 +1,395 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>CarpetInterp</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">CarpetInterp</h2>
+ <div class="author" ><span 
+class="cmr-12">Erik Schnetter </span><span 
+class="cmmi-12">&#x003C;</span><span 
+class="cmr-12">schnetter@aei.mpg.de</span><span 
+class="cmmi-12">&#x003E;</span>
+<br />  <span 
+class="cmr-12">Thomas Radke </span><span 
+class="cmmi-12">&#x003C;</span><span 
+class="cmr-12">tradke@aei.mpg.de</span><span 
+class="cmmi-12">&#x003E;</span></div>
+<br />
+<div class="date" ><span 
+class="cmr-12">26 August 2005</span></div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 99--><p class="noindent" ><span 
+class="cmr-9">Thorn </span><span 
+class="cmbx-9">CarpetInterp </span><span 
+class="cmr-9">provides a parallel interpolator for Carpet.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Introduction</h3>
+<!--l. 108--><p class="noindent" ><span 
+class="cmbx-10">CarpetInterp </span>works similar to <span 
+class="cmbx-10">PUGHInterp</span>, the interpolation thorn of the standard unigrid driver in
+Cactus.
+</p><!--l. 111--><p class="noindent" >
+     </p><ol  class="enumerate1" >
+<li 
+  class="enumerate" id="x1-1002x1">
+                                                                                       
+                                                                                       
+     <!--l. 112--><p class="noindent" >Firstly, the points to interpolate at (which can vary from processor to processor) are mapped
+     onto processors. Each processor accumulates the number of coordinates it needs to send to other
+     processors (which own the corresponding points).
+     </p></li>
+<li 
+  class="enumerate" id="x1-1004x2">
+     <!--l. 117--><p class="noindent" >In a collective communication step, all processors exchange the coordinates of the interpolation
+     points which are not located locally.
+     </p></li>
+<li 
+  class="enumerate" id="x1-1006x3">
+     <!--l. 120--><p class="noindent" >After each processor received the coordinates of (local) points to interpolate at, it maps them onto
+     components (also counting the number of points for each component).
+     </p></li>
+<li 
+  class="enumerate" id="x1-1008x4">
+     <!--l. 124--><p class="noindent" >Now all processors do – in parallel – the actual interpolation by calling the local interpolator (via
+     <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_InterpLocalUnform()</span>) on each component.
+     </p></li>
+<li 
+  class="enumerate" id="x1-1010x5">
+     <!--l. 128--><p class="noindent" >Finally, the interpolation results are sent back to the requesting processors in another collective
+     communication step.</p></li></ol>
+<!--l. 133--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a>Using CarpetInterp</h3>
+<!--l. 135--><p class="noindent" ><span 
+class="cmbx-10">CarpetInterp </span>overloads the flesh interpolation C API routine
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-1">
+  int CCTK_InterpGridArrays
+                     (const cGH *GH,
+                      int N_dims,
+                      int local_interp_handle,
+                      int param_table_handle,
+                      int coord_system_handle,
+                      int N_interp_points,
+                        int interp_coords_type,
+                        const void *const interp_coords[],
+                      int N_input_arrays,
+                        const CCTK_INT input_array_indices[],
+                      int N_output_arrays,
+                        const CCTK_INT output_array_types[],
+                        void *const output_arrays[])
+</pre>
+<!--l. 151--><p class="nopar" > which is described in detail in the Cactus Reference Manual.
+</p><!--l. 154--><p class="noindent" >It also provides an equivalent aliased function
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-2">
+  CCTK_INT FUNCTION DriverInterpolate
+                     (CCTK_POINTER_TO_CONST IN cctkGH,
+                      CCTK_INT IN N_dims,
+                      CCTK_INT IN local_interp_handle,
+                      CCTK_INT IN param_table_handle,
+                      CCTK_INT IN coord_system_handle,
+                      CCTK_INT IN N_interp_points,
+                      CCTK_INT IN interp_coords_type,
+                      CCTK_POINTER_TO_CONST ARRAY IN interp_coords,
+                      CCTK_INT IN N_input_arrays,
+                      CCTK_INT ARRAY IN input_array_indices,
+                      CCTK_INT IN N_output_arrays,
+                      CCTK_INT ARRAY IN output_array_types,
+                      CCTK_POINTER ARRAY IN output_arrays)
+</pre>
+<!--l. 170--><p class="nopar" > which can be called by symmetry thorns to implement symmetry interpolations (see the thorn documentation of
+<span 
+class="cmbx-10">CactusBase/SymBase </span>for details).
+</p><!--l. 175--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.1   </span> <a 
+ id="x1-30002.1"></a>Limitations</h4>
+<!--l. 177--><p class="noindent" >The current implementation of <span 
+class="cmbx-10">CarpetInterp </span>supports only 3-dimensional grid variables as inputs (<span 
+class="cmtt-10">N</span><span 
+class="cmtt-10">_dims</span> \(==\)
+<span 
+class="cmtt-10">3</span>).
+</p><!--l. 180--><p class="noindent" >Interpolation coordinates and output arrays must be of type <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_VARIABLE</span><span 
+class="cmtt-10">_REAL</span>.
+</p><!--l. 183--><p class="noindent" >A valid handle for a parameter table must be passed in so that <span 
+class="cmbx-10">CarpetInterp </span>can store in it the overall status
+code of the local interpolator.
+</p><!--l. 192--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-40003"></a>Parameters</h3>
+<!--l. 211--><p class="noindent" ></p> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /></colgroup><colgroup id="TBL-2-2g"><col 
+id="TBL-2-2" /><col 
+id="TBL-2-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:normal; text-align:left;" id="TBL-2-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">barriers</div>            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-1-3"  
+class="td01">                                       BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-2-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Insert barriers at strategic places for debugging purposes (slows down execution)</span></div>     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-1"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-3-3"  
+class="td01">                                      <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-4-1"  
+class="td11">                </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 218--><p class="noindent" ></p> <table id="TBL-3" class="tabular" 
+ 
+><colgroup id="TBL-3-1g"><col 
+id="TBL-3-1" /></colgroup><colgroup id="TBL-3-2g"><col 
+id="TBL-3-2" /><col 
+id="TBL-3-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-1-"><td  style="white-space:normal; text-align:left;" id="TBL-3-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">check_tree_search</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-1-3"  
+class="td01">                                       BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-3-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Cross-check the result of the tree search</span></div>                                                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-3-1"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-3-3"  
+class="td01">                                      <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-4-1"  
+class="td11">                </td></tr></table>
+<!--l. 225--><p class="noindent" ></p> <table id="TBL-4" class="tabular" 
+ 
+><colgroup id="TBL-4-1g"><col 
+id="TBL-4-1" /></colgroup><colgroup id="TBL-4-2g"><col 
+id="TBL-4-2" /><col 
+id="TBL-4-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-1-"><td  style="white-space:normal; text-align:left;" id="TBL-4-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">ipoison</div>             </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-1-3"  
+class="td01">                                                REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-4-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Integer poison value</span></div>                                                                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-3-1"  
+class="td11">     <span 
+class="cmbx-10">Range       </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-3-3"  
+class="td01">                                       <span 
+class="cmbx-10">Default: </span>-420042  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-4-"><td  style="white-space:normal; text-align:left;" id="TBL-4-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                   </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                                                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-5-1"  
+class="td11">                </td></tr></table>
+<!--l. 232--><p class="noindent" ></p> <table id="TBL-5" class="tabular" 
+ 
+><colgroup id="TBL-5-1g"><col 
+id="TBL-5-1" /></colgroup><colgroup id="TBL-5-2g"><col 
+id="TBL-5-2" /><col 
+id="TBL-5-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-1-"><td  style="white-space:normal; text-align:left;" id="TBL-5-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">poison</div>              </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-1-3"  
+class="td01">                                                REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-5-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Poison value</span></div>                                                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-3-1"  
+class="td11">     <span 
+class="cmbx-10">Range       </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-3-3"  
+class="td01">                                  <span 
+class="cmbx-10">Default: </span>-4.20042e+30  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-4-"><td  style="white-space:normal; text-align:left;" id="TBL-5-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>                   </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-5-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                                                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-5-1"  
+class="td11">                </td></tr></table>
+<!--l. 239--><p class="noindent" ></p> <table id="TBL-6" class="tabular" 
+ 
+><colgroup id="TBL-6-1g"><col 
+id="TBL-6-1" /></colgroup><colgroup id="TBL-6-2g"><col 
+id="TBL-6-2" /><col 
+id="TBL-6-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-1-"><td  style="white-space:normal; text-align:left;" id="TBL-6-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">tree_search</div>       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-1-3"  
+class="td01">                                       BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-6-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Use a tree search to find the source processor</span></div>                                                
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-3-1"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-3-3"  
+class="td01">                                      <span 
+class="cmbx-10">Default: </span>yes  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-4-1"  
+class="td11">                </td></tr></table>
+<!--l. 248--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-50004"></a>Interfaces</h3>
+<!--l. 253--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-6000"></a>General</h4>
+<!--l. 255--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 257--><p class="noindent" >interp
+</p><!--l. 262--><p class="noindent" ><span 
+class="cmbx-10">Uses header</span>:
+</p><!--l. 264--><p class="noindent" >nompi.h
+</p><!--l. 266--><p class="noindent" >data.hh
+</p><!--l. 268--><p class="noindent" >bbox.hh
+</p><!--l. 270--><p class="noindent" >data.hh
+</p><!--l. 272--><p class="noindent" >defs.hh
+</p><!--l. 274--><p class="noindent" >dist.hh
+</p><!--l. 276--><p class="noindent" >ggf.hh
+</p><!--l. 278--><p class="noindent" >timestat.hh
+</p><!--l. 280--><p class="noindent" >typecase.hh
+</p><!--l. 282--><p class="noindent" >typeprops.hh
+</p><!--l. 284--><p class="noindent" >vect.hh
+</p><!--l. 286--><p class="noindent" >carpet.hh
+</p><!--l. 289--><p class="noindent" ><span 
+class="cmbx-10">Provides</span>:
+</p><!--l. 293--><p class="noindent" >DriverInterpolate to
+                                                                                       
+                                                                                       
+</p><!--l. 296--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-70005"></a>Schedule</h3>
+<!--l. 302--><p class="noindent" >This section lists all the variables which are assigned storage by thorn Carpet/CarpetInterp. Storage can
+either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 305--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-8000"></a>Storage</h4>
+<!--l. 305--><p class="noindent" >NONE
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-9000"></a>Scheduled Functions</h4>
+<!--l. 309--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_STARTUP</span>
+</p><!--l. 311--><p class="noindent" >      carpetinterpstartup
+</p><!--l. 313--><p class="noindent" >     <span 
+class="cmti-10">startup routine</span>
+</p><!--l. 316--><p class="noindent" > 
+</p><!--l. 318--><p class="noindent" ></p> <table id="TBL-7" class="tabular" 
+ 
+><colgroup id="TBL-7-1g"><col 
+id="TBL-7-1" /><col 
+id="TBL-7-2" /><col 
+id="TBL-7-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-7-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-3-1"  
+class="td11">    </td></tr></table>
+ 
+</body></html> 
+
+                                                                                       
+
+
