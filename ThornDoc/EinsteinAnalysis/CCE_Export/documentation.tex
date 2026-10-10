@@ -1,0 +1,279 @@
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+% The author of the documentation
+\author{Deborah Ferguson}
+
+% The title of the document (not necessarily the name of the Thorn)
+\title{CCE Export}
+
+% the date your document was last changed, if your document is in CVS,
+% please use:
+%    \date{$ $Date$ $}
+% when using git instead record the commit ID:
+%    \date{\gitrevision{<path-to-your-.git-directory>}}
+\date{23 April 2025}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+% Add all definitions used in this documentation here
+%   \def\mydef etc
+
+% Add an abstract for this thorn's documentation
+\begin{abstract}
+
+    Outputs EinsteinToolkit data in a format which can be read by SpECTRE's CCE code for obtaining waveform data at infinity.
+
+\end{abstract}
+
+% The following sections are suggestive only.
+% Remove them or add your own.
+
+\section{Introduction}
+
+This thorn allows the user to output the metric, lapse, and shift data in a format which can be fed directly into SpECTRE's
+Cauchy Characteristic Evolution code (documentation for that code here: \url{https://spectre-code.org/tutorial_cce.html}).
+Doing so enables the evolution of gravitational radiation to spatial and temporal infinity as well as the direct extraction
+of gravitational wave strain.
+
+The format is an h5 file for each desired worldtube radius. Within this h5 file are datasets for the metric, lapse, shift, and
+their respective radial and time derivatives:
+
+\begin{verbatim}
+gxx.dat, gxy.dat, gxz.dat, gyy.dat, gyz.dat, gzz.dat
+Drgxx.dat, Drgxy.dat, Drgxz.dat, Drgyy.dat, Drgyz.dat, Drgzz.dat
+Dtgxx.dat, Dtgxy.dat, Dtgxz.dat, Dtgyy.dat, Dtgyz.dat, Dtgzz.dat
+Shiftx.dat, Shifty.dat, Shiftz.dat
+DrShiftx.dat, DrShifty.dat, DrShiftz.dat
+DtShiftx.dat, DtShifty.dat, DtShiftz.dat
+Lapse.dat
+DrLapse.dat
+DtLapse.dat
+\end{verbatim}
+
+Each dataset is two dimensional with rows signifying timesteps and coluns containing the data decomposed into spin-weight 0
+spherical harmonics. The first column denotes the time, and the remaining columns are the real and imaginary coefficients 
+for the modes in m-changes-fastest order:
+
+\begin{verbatim}
+"time", "Re(0,0)", "Im(0,0)", "Re(1,-1)", "Im(1,-1)", "Re(1,0)", "Im(1,0)",
+"Re(1,1)", "Im(1,1)", "Re(2,-2)", "Im(2,-2)", "Re(2,-1)", "Im(2,-1)", "Re(2,0)",
+"Im(2,0)", "Re(2,1)", "Im(2,1)", "Re(2,2)", "Im(2,2)", ...
+\end{verbatim}
+
+\section{Numerical Implementation}
+
+To accomplish this, the metric, extrinsic curvature, lapse, shift, dtlapse, and dtshift are interpolated onto spheres
+of the desired radii using \code{CCTK\_InterpGridArrays}. This interpolater can also return the cartesian derivatives
+which are then used to compute the radial derivatives for the metric, lapse, and shift.
+
+The metric is computed from the extrinsic curvature, lapse, and shift as:
+
+\begin{equation}
+K_{ij} = \frac{1}{2 \alpha} \left ( -\partial_0 \gamma_{ij} + \beta^k \partial_k \gamma_{ij} + \gamma_{ki} \partial_j \beta^k + \gamma_{kj} \partial_i \beta^k \right ) \, .
+\end{equation}
+
+The metric, lapse, shift, and their radial and time derivatives are then decomposed using spin-weight 0 spherical harmonics.
+As described in the Multipole thorn, this allows us to separate out the angular dependence and represent a field as:
+
+\begin{eqnarray}
+    u(t, r, \theta, \varphi) = \sum_{l=0}^\infty \sum_{m=-l}^l C^{lm}(t,r) {}_0 Y_{lm}(\theta,\varphi) \, .
+\end{eqnarray}
+  
+The coefficients $C^{lm}(t,r)$ are computed as
+  
+\begin{eqnarray}
+    C^{lm}(t, r) = \int {}_0 Y_{lm}^* u(t, r, \theta, \varphi) r^2 d \Omega \label{eqn:clmint} \, .
+\end{eqnarray}
+
+This thorn uses the same numerical implementation of spherical harmonic decomposition as the Multipole thorn using 
+Simpson’s rule for the integration.
+
+The data is then output into h5 files in the format specified above.
+
+\section{Using This Thorn}
+
+\subsection{Obtaining This Thorn}
+
+This thorn can be obtained at \url{https://github.com/deborahferguson/CCE_Export} and is included as part of the EinsteinToolkit.
+
+\subsection{Basic Usage}
+
+The user specifies how many radii they would like to extract at (\code{nradii}) and the value of each of those radii
+in M (\code{radius[]}). The user should also specify how often they want to output the data in iterations (\code{out\_every}).
+Optionally, the user can also provide a specific location to output the files (\code{out\_dir}) as well as the desired
+number of iterations to preallocate in the h5 files (\code{hdf5\_chunk\_size}).
+
+\subsection{Interaction With Other Thorns}
+
+The functionality of this thorn relies upon grid variables set up in ADMBase, specifically those in the groups metric, curv, 
+lapse, shift, dtlapse, and dtshift. These grid variables must all be populated in order to use this thorn. Since some 
+evolution codes do not write the time derivatives of the lapse and shift to these variables, those evolution codes are not 
+compatible with this thorn.
+
+\subsection{Examples}
+
+\begin{verbatim}
+CCE_Export::nradii       = 3
+CCE_Export::radius[0]    = 100.00
+CCE_Export::radius[1]    = 150.00
+CCE_Export::radius[2]    = 200.00
+CCE_Export::out_every    = 32
+\end{verbatim}
+
+\subsection{Support and Feedback}
+
+If any issues arise, please create a ticket on the github (\url{https://github.com/deborahferguson/CCE_Export/issues}).
+
+
+\begin{thebibliography}{9}
+
+\end{thebibliography}
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{hdf5\_chunk\_size}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{base\_file\_name} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Base file name for CCE\_Export's files, will be appended by 'R' and then the   worldtube radius with 2 sig figs after the decimal}} \\
+\hline{\bf Range} & &  {\bf Default:} CCE\_Export \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .+} & \multicolumn{2}{p{\paraWidth}|}{A valid base file name} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{extension} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Extension for CCE\_Extract's files}} \\
+\hline{\bf Range} & &  {\bf Default:} h5 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .+} & \multicolumn{2}{p{\paraWidth}|}{A nonempty string} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{hdf5\_chunk\_size} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How many iterations to preallocate in extensible HDF5 datasets}} \\
+\hline{\bf Range} & &  {\bf Default:} 200 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{Any integer} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{nradii} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How many radii to export the data on}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:100} & \multicolumn{2}{p{\paraWidth}|}{number of radii} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_dir} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Output directory for CCE\_Export's files, overrides IO::out\_dir}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .+} & \multicolumn{2}{p{\paraWidth}|}{A valid directory name} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering \^\$} & \multicolumn{2}{p{\paraWidth}|}{An empty string to choose the default from IO::out\_dir} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_every} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How often to output the metric data}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering } & \multicolumn{2}{p{\paraWidth}|}{no output} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{output every x iterations} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{radius} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Radii to export the metric data on}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:*} & \multicolumn{2}{p{\paraWidth}|}{Extraction radius} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{io\_out\_dir} & {\bf Scope:} shared from IO & STRING \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+cce\_export
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+admbase
+\vspace{2mm}
+
+\vspace{5mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn EinsteinAnalysis/CCE\_Export.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}NONE
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_ANALYSIS} 
+
+\hspace{5mm} cce\_export 
+
+\hspace{5mm}{\it export metric data on sphere for cce } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Reads:  & admbase::metric(everywhere) \\ 
+~& ~ &admbase::curv(everywhere)\\ 
+~& ~ &admbase::lapse(everywhere)\\ 
+~& ~ &admbase::shift(everywhere)\\ 
+~& ~ &admbase::dtlapse(everywhere)\\ 
+~& ~ &admbase::dtshift(everywhere)\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

@@ -1,0 +1,627 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>CoordGauge</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">CoordGauge</h2>
+ <div class="author" ><span 
+class="cmr-12">Tom Goodale</span></div>
+<br />
+<div class="date" >\( \)<span 
+class="cmr-12">Date</span>\( \)</div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 23--><p class="noindent" ><span 
+class="cmr-9">This thorn provides an infrastructure for dynamic gauge selection. However, at present (summer</span>
+     <span 
+class="cmr-9">2004) many thorns don’t use this infrastructure.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>The Infrastructure</h3>
+<!--l. 31--><p class="noindent" >The <span 
+class="cmbx-10">CoordGauge </span>implementation schedules five groups:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-1">
+CoordGauge
+LapseSelect IN CoordGauge BEFORE PickCoordGauge
+LapseApply  IN CoordGauge AFTER  PickCoordGauge
+ShiftSelect IN CoordGauge BEFORE PickCoordGauge
+ShiftApply  IN CoordGauge AFTER  PickCoordGauge
+</pre>
+<!--l. 39--><p class="nopar" > and one function
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-2">
+PickCoordGauge IN CoordGauge
+</pre>
+<!--l. 44--><p class="nopar" > and has two public grid scalars
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-3">
+selected_lapse
+selected_shift
+</pre>
+<!--l. 50--><p class="nopar" > and two string parameters
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-4">
+lapse_list
+shift_list
+</pre>
+<!--l. 56--><p class="nopar" >
+</p><!--l. 58--><p class="noindent" >It also provides four aliased functions
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-5">
+int CoordGauge_RegisterLapse(&#x0022;lapse-name&#x0022;)
+int CoordGauge_RegisterShift(&#x0022;shift-name&#x0022;)
+CoordGauge_Lapse(&#x0022;lapse-name&#x0022;)
+CoordGauge_Shift(&#x0022;shift-name&#x0022;)
+</pre>
+<!--l. 65--><p class="nopar" >
+</p><!--l. 67--><p class="noindent" >(If someone can think of better names, please say so 8-)
+</p><!--l. 69--><p class="noindent" >Then each thorn which wants to apply a coordinate gauge condition registers itself, receiving a unique integer as
+an id, and schedules a selection routine and an application routine in the appropriate schedule
+groups.
+</p><!--l. 74--><p class="noindent" >The selection routine decides if this gauge condition should be applied at this time, and calls the
+<span class="obeylines-h"><code class="verb">CoordGauge_Lapse/Shift</code></span> aliased function. (It should check that it is actually in the appropriate parameter as a
+minimum.)
+</p><!--l. 79--><p class="noindent" >The <span class="obeylines-h"><code class="verb">PickCoordGauge</code></span> function traverses the list of lapses/shifts and selects the first one in the list which has
+called the <span class="obeylines-h"><code class="verb">CoordGauge_Lapse/Shift</code></span> aliased function and sets the appropriate grid scalar to the id of this
+one.
+</p><!--l. 84--><p class="noindent" >The application routine checks to see if the grid scalar is set to its id, and if so, applies the gauge
+condition.
+</p><!--l. 87--><p class="noindent" >Evolution thorns could schedule <span 
+class="cmbx-10">CoordGauge </span>at the appropriate point or points in their schedule.
+</p><!--l. 90--><p class="noindent" >An advantage of this scheme over the current one is that it provides the selection routines with a full set of
+variables from which to decide whether they should apply a guage or not. So it becomes very easy to choose to
+switch off maximal if the lapse has collapsed within a certain volume, etc.
+</p><!--l. 96--><p class="noindent" >This is simpler than the previous scheme as there is no arbitrary ’bid’ floating around. It also allows us to keep
+the logic of the final selection in one place, thus allowing people to override this logic if they need
+to.
+</p><!--l. 103--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a>Current Status</h3>
+<!--l. 105--><p class="noindent" >As of summer 2004, many thorns don’t use the above mechanism, instead they directly extend
+<br 
+class="newline" /><span class="obeylines-h"><code class="verb">ADMBase::lapse_evolution_method</code></span> and/or <span class="obeylines-h"><code class="verb">ADMBase::shift_evolution_method</code></span>. That is, the thorn
+implementing a coordinate condition thorn says in its <span class="obeylines-h"><code class="verb">param.ccl</code></span>:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-6">
+EXTENDS KEYWORD lapse_evolution_method &#x0022;Which lapse condition to use&#x0022;
+{
+&#x0022;super-duper&#x0022; :: &#x0022;my super-duper new lapse condition&#x0022;
+} &#x0022;&#x0022;
+</pre>
+<!--l. 115--><p class="nopar" > (and/or the equivalent for <span class="obeylines-h"><code class="verb">shift_evolution_method</code></span>).
+</p><!--l. 118--><p class="noindent" >The thorn then schedules a routine in some suitable schedule bin/group (probably <span class="obeylines-h"><code class="verb">CCTK_PRESTEP</code></span> or
+<span class="obeylines-h"><code class="verb">MOL_PRESTEP</code></span>) to check <span class="obeylines-h"><code class="verb">ADMBase::lapse_evolution_method</code></span> and/or <span class="obeylines-h"><code class="verb">ADMBase::shift_evolution_method</code></span>, and
+if they’re equal to the appropriate string, it does the coordinate condition.
+</p><!--l. 130--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-30003"></a>Parameters</h3>
+<!--l. 149--><p class="noindent" ></p> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /></colgroup><colgroup id="TBL-2-2g"><col 
+id="TBL-2-2" /><col 
+id="TBL-2-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:normal; text-align:left;" id="TBL-2-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">slicing_verbose</div>           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-1-3"  
+class="td01">                                      KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-2-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Print information on current slicing</span></div>                                                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-1"  
+class="td11">       <span 
+class="cmbx-10">Range          </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-3-3"  
+class="td01">                                      <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-4-"><td  style="white-space:normal; text-align:left;" id="TBL-2-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">yes</div>                           </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-2-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">print slicing info</div>                                                                               
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-5-"><td  style="white-space:normal; text-align:left;" id="TBL-2-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">no</div>                            </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-2-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">do not print slicing info</div>                                                                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-6-1"  
+class="td11">                     </td></tr></table>
+<!--l. 156--><p class="noindent" ></p> <table id="TBL-3" class="tabular" 
+ 
+><colgroup id="TBL-3-1g"><col 
+id="TBL-3-1" /></colgroup><colgroup id="TBL-3-2g"><col 
+id="TBL-3-2" /><col 
+id="TBL-3-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-1-"><td  style="white-space:normal; text-align:left;" id="TBL-3-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">lapse_list</div>                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-1-3"  
+class="td01">                                       STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-3-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">List of allowed lapses to use</span></div>                                                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-3-1"  
+class="td11">       <span 
+class="cmbx-10">Range          </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-4-"><td  style="white-space:normal; text-align:left;" id="TBL-3-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.*</div>                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-3-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Any string</div>                                                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-5-1"  
+class="td11">                     </td></tr></table>
+<!--l. 163--><p class="noindent" ></p> <table id="TBL-4" class="tabular" 
+ 
+><colgroup id="TBL-4-1g"><col 
+id="TBL-4-1" /></colgroup><colgroup id="TBL-4-2g"><col 
+id="TBL-4-2" /><col 
+id="TBL-4-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-1-"><td  style="white-space:normal; text-align:left;" id="TBL-4-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">shift_list</div>                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>restricted</td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-1-3"  
+class="td01">                                       STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-4-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">List of allowed shifts to use</span></div>                                                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-3-1"  
+class="td11">       <span 
+class="cmbx-10">Range          </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-2"  
+class="td10">                </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-4-"><td  style="white-space:normal; text-align:left;" id="TBL-4-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.*</div>                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Any string</div>                                                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-5-1"  
+class="td11">                     </td></tr></table>
+<!--l. 170--><p class="noindent" ></p> <table id="TBL-5" class="tabular" 
+ 
+><colgroup id="TBL-5-1g"><col 
+id="TBL-5-1" /></colgroup><colgroup id="TBL-5-2g"><col 
+id="TBL-5-2" /><col 
+id="TBL-5-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-1-"><td  style="white-space:normal; text-align:left;" id="TBL-5-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">lapse_evolution_method</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from ADMBASE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-1-3"  
+class="td01">                       KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-2-"><td colspan="3" style="white-space:nowrap; text-align:left;" id="TBL-5-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:nowrap; text-align:left;"><span 
+class="cmbx-10">Extends ranges:</span></div>                                                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-3-"><td  style="white-space:normal; text-align:left;" id="TBL-5-3-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">coordgauge</div>                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-5-3-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Use dynamic stuff from CoordGauge</div>                                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-4-1"  
+class="td11">                     </td></tr></table>
+<!--l. 177--><p class="noindent" ></p> <table id="TBL-6" class="tabular" 
+ 
+><colgroup id="TBL-6-1g"><col 
+id="TBL-6-1" /></colgroup><colgroup id="TBL-6-2g"><col 
+id="TBL-6-2" /><col 
+id="TBL-6-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-1-"><td  style="white-space:normal; text-align:left;" id="TBL-6-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">shift_evolution_method</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from ADMBASE</td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-1-3"  
+class="td01">                       KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-2-"><td colspan="3" style="white-space:nowrap; text-align:left;" id="TBL-6-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:nowrap; text-align:left;"><span 
+class="cmbx-10">Extends ranges:</span></div>                                                                                                  
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-3-"><td  style="white-space:normal; text-align:left;" id="TBL-6-3-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">coordgauge</div>                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-6-3-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Use dynamic stuff from CoordGauge</div>                                                     
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-4-1"  
+class="td11">                     </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 186--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-40004"></a>Interfaces</h3>
+<!--l. 191--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-5000"></a>General</h4>
+<!--l. 193--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 195--><p class="noindent" >coordgauge
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-6000"></a>Grid Variables</h4>
+<!--l. 198--><p class="noindent" >
+</p>
+<h5 class="subsubsectionHead"><span class="titlemark">4.0.1   </span> <a 
+ id="x1-70004.0.1"></a>PUBLIC GROUPS</h5>
+<!--l. 202--><p class="noindent" ></p> <table id="TBL-7" class="tabular" 
+ 
+><colgroup id="TBL-7-1g"><col 
+id="TBL-7-1" /></colgroup><colgroup id="TBL-7-2g"><col 
+id="TBL-7-2" /></colgroup><colgroup id="TBL-7-3g"><col 
+id="TBL-7-3" /><col 
+id="TBL-7-4" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-1-1"  
+class="td11">   <span 
+class="cmbx-10">Group Names </span>   </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-1-2"  
+class="td10">   <span 
+class="cmbx-10">Variable Names </span> </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-1-3"  
+class="td01">    <span 
+class="cmbx-10">Details </span>   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-4"  
+class="td11">                              </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-2-1"  
+class="td11">     slicing_flags        </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-2-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-2-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-2-4"  
+class="td11"> 0                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-3-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-3-2"  
+class="td10">  active_slicing_handle </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-3-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-3-4"  
+class="td11"> Slicing and shift stuff  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-4-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-4-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-4-3"  
+class="td01">   dimensions  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-4-4"  
+class="td11"> 0                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-5-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-5-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-5-3"  
+class="td01">  distribution  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-5-4"  
+class="td11"> CONSTANT             </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-6-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-6-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-6-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-6-4"  
+class="td11"> SCALAR                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-7-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-7-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-7-3"  
+class="td01">    timelevels  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-7-4"  
+class="td11"> 1                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-8-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-7-8-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-8-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-8-4"  
+class="td11"> INT                        </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-9-1"  
+class="td11">                    </td></tr></table>
+<!--l. 219--><p class="noindent" ><span 
+class="cmbx-10">Adds header</span>:
+</p><!--l. 223--><p class="noindent" >Slicing.h
+</p><!--l. 226--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-80005"></a>Schedule</h3>
+<!--l. 232--><p class="noindent" >This section lists all the variables which are assigned storage by thorn EinsteinBase/CoordGauge. Storage can
+either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 235--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-9000"></a>Storage</h4>
+                                                                                       
+                                                                                       
+<!--l. 237--><p class="noindent" > 
+</p><!--l. 239--><p class="noindent" ></p> <table id="TBL-8" class="tabular" 
+ 
+><colgroup id="TBL-8-1g"><col 
+id="TBL-8-1" /><col 
+id="TBL-8-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-8-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-8-1-1"  
+class="td11"> <span 
+class="cmbx-10">Always:    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-1-2"  
+class="td11">    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-8-2-1"  
+class="td11"> slicing_flags  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-2-2"  
+class="td11">    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-8-3-1"  
+class="td11">                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-3-2"  
+class="td11">    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-8-4-1"  
+class="td11">            </td></tr></table>
+<!--l. 247--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-10000"></a>Scheduled Functions</h4>
+<!--l. 250--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_WRAGH</span>
+</p><!--l. 252--><p class="noindent" >      einstein_activateslicing
+</p><!--l. 254--><p class="noindent" >     <span 
+class="cmti-10">initialize slicing, setup priorities for mixed slicings</span>
+</p><!--l. 257--><p class="noindent" > 
+</p><!--l. 259--><p class="noindent" ></p> <table id="TBL-9" class="tabular" 
+ 
+><colgroup id="TBL-9-1g"><col 
+id="TBL-9-1" /><col 
+id="TBL-9-2" /><col 
+id="TBL-9-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-9-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 267--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_WRAGH</span>
+</p><!--l. 269--><p class="noindent" >      einstein_setnextslicing
+</p><!--l. 271--><p class="noindent" >     <span 
+class="cmti-10">identify the slicing for the next iteration</span>
+</p><!--l. 274--><p class="noindent" > 
+</p><!--l. 276--><p class="noindent" ></p> <table id="TBL-10" class="tabular" 
+ 
+><colgroup id="TBL-10-1g"><col 
+id="TBL-10-1" /><col 
+id="TBL-10-2" /><col 
+id="TBL-10-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-10-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-1-3"  
+class="td11"> einstein_activateslicing  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-2-3"  
+class="td11"> c                               </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-3-3"  
+class="td11"> function                     </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 285--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_PRESTEP</span>
+</p><!--l. 287--><p class="noindent" >      einstein_setnextslicing
+</p><!--l. 289--><p class="noindent" >     <span 
+class="cmti-10">identify the slicing for the next iteration</span>
+</p><!--l. 292--><p class="noindent" > 
+</p><!--l. 294--><p class="noindent" ></p> <table id="TBL-11" class="tabular" 
+ 
+><colgroup id="TBL-11-1g"><col 
+id="TBL-11-1" /><col 
+id="TBL-11-2" /><col 
+id="TBL-11-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-11-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-1-3"  
+class="td11"> c           </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-2-3"  
+class="td11"> function  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 302--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_PRESTEP </span>(conditional)
+</p><!--l. 304--><p class="noindent" >      coordgauge
+</p><!--l. 306--><p class="noindent" >     <span 
+class="cmti-10">coordinate gauge group</span>
+</p><!--l. 309--><p class="noindent" > 
+</p><!--l. 311--><p class="noindent" ></p> <table id="TBL-12" class="tabular" 
+ 
+><colgroup id="TBL-12-1g"><col 
+id="TBL-12-1" /><col 
+id="TBL-12-2" /><col 
+id="TBL-12-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-12-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-1-2"  
+class="td11"> Type:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-1-3"  
+class="td11"> group  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-2-1"  
+class="td11">    </td></tr></table>
+<!--l. 318--><p class="noindent" ><span 
+class="cmbx-10">CoordGauge </span>(conditional)
+</p><!--l. 320--><p class="noindent" >      lapseselect
+</p><!--l. 322--><p class="noindent" >     <span 
+class="cmti-10">lapse selection group</span>
+</p><!--l. 325--><p class="noindent" > 
+</p><!--l. 327--><p class="noindent" ></p> <table id="TBL-13" class="tabular" 
+ 
+><colgroup id="TBL-13-1g"><col 
+id="TBL-13-1" /><col 
+id="TBL-13-2" /><col 
+id="TBL-13-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-13-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-1-2"  
+class="td11"> Before:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-1-3"  
+class="td11"> pickcoordgauge  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-2-2"  
+class="td11"> Type:   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-2-3"  
+class="td11"> group              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 335--><p class="noindent" ><span 
+class="cmbx-10">CoordGauge </span>(conditional)
+</p><!--l. 337--><p class="noindent" >      lapseapply
+</p><!--l. 339--><p class="noindent" >     <span 
+class="cmti-10">lapse application group</span>
+</p><!--l. 342--><p class="noindent" > 
+</p><!--l. 344--><p class="noindent" ></p> <table id="TBL-14" class="tabular" 
+ 
+><colgroup id="TBL-14-1g"><col 
+id="TBL-14-1" /><col 
+id="TBL-14-2" /><col 
+id="TBL-14-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-14-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-1-2"  
+class="td11"> After:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-1-3"  
+class="td11"> pickcoordgauge  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-2-2"  
+class="td11"> Type:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-2-3"  
+class="td11"> group              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 352--><p class="noindent" ><span 
+class="cmbx-10">CoordGauge </span>(conditional)
+                                                                                       
+                                                                                       
+</p><!--l. 354--><p class="noindent" >      shiftselect
+</p><!--l. 356--><p class="noindent" >     <span 
+class="cmti-10">shift selection group</span>
+</p><!--l. 359--><p class="noindent" > 
+</p><!--l. 361--><p class="noindent" ></p> <table id="TBL-15" class="tabular" 
+ 
+><colgroup id="TBL-15-1g"><col 
+id="TBL-15-1" /><col 
+id="TBL-15-2" /><col 
+id="TBL-15-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-15-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-1-2"  
+class="td11"> Before:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-1-3"  
+class="td11"> pickcoordgauge  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-2-2"  
+class="td11"> Type:   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-2-3"  
+class="td11"> group              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-3-1"  
+class="td11">    </td></tr></table>
+<!--l. 369--><p class="noindent" ><span 
+class="cmbx-10">CoordGauge </span>(conditional)
+</p><!--l. 371--><p class="noindent" >      shiftapply
+</p><!--l. 373--><p class="noindent" >     <span 
+class="cmti-10">shift application group</span>
+</p><!--l. 376--><p class="noindent" > 
+</p><!--l. 378--><p class="noindent" ></p> <table id="TBL-16" class="tabular" 
+ 
+><colgroup id="TBL-16-1g"><col 
+id="TBL-16-1" /><col 
+id="TBL-16-2" /><col 
+id="TBL-16-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-16-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-1-2"  
+class="td11"> After:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-1-3"  
+class="td11"> pickcoordgauge  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-2-2"  
+class="td11"> Type:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-2-3"  
+class="td11"> group              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-3-1"  
+class="td11">    </td></tr></table>
+ 
+</body></html> 
+
+                                                                                       
+
+
