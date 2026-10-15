@@ -1,0 +1,547 @@
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+\title{PUGHSlab}
+\author{Gabrielle Allen, Tom Goodale, Thomas Radke,\\
+with many comments and suggestions from Erik Schnetter and Jonathan Thornburg}
+\date{October 2001}
+%\date{$ $Date$ $}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+\begin{abstract}
+Thorn PUGHSlab implements the generic hyperslab data extraction API for CCTK arrays.
+\end{abstract}
+
+\section{Introduction}
+
+Many I/O thorns output data from distributed CCTK array variables.
+If -- in a multiprocessor run -- output is done by only one processor, it needs to collect the
+data from the others. This ties the I/O thorn to the driver
+since it has to know about domain-decomposed data layout, interprocessor
+ghostzones, etc.
+
+A clean way of separating the I/O code from the driver is to use
+a thorn which provides a generic interface to get/put the distributed
+data on/from the I/O processor for writing/reading. This interface can also
+provide more features such as downsampling, datatype conversions,
+or hyperslab selections. A hyperslab is defined in this context a subset of a
+global CCTK array, with its own dimension, origin, direction, and extents.\\
+
+Another possible use of hyperslabs is the implementation of certain boundary
+conditions (e.g.\ reflection). By having the boundary condition code calling
+generic hyperslab get/put calls, it can be written without special knowledge
+about driver specifics.\\
+
+This thorn documentation describes the complete generic hyperslab API.
+All routines use CCTK data types in their argument lists and as return codes
+exclusively. This allows actual implementations of this API to be realized as
+CCTK function aliases. Different hyperslab thorns can then implementing the API
+using the same function names, and other thorns using the API can be independent
+of the actual hyperslab thorns which are compiled in.\\
+
+The current version of thorn {\tt PUGHSlab} implements only parts of the CCTK
+hyperslab API.
+Please refer to section \ref{implementation} for implementation details.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{CCTK Hyperslab API Specification}
+\label{specification}
+
+In general, a hyperslab get/put operation is done in a three-level scheme:
+
+\begin{enumerate}
+  \item In a first step, a hyperslab mapping is defined by calling one of the
+    following routines:\\
+    {\tt
+      \hspace*{3ex}Hyperslab\_LocalMappingByIndex()\\
+      \hspace*{3ex}Hyperslab\_LocalMappingByPhys()\\
+      \hspace*{3ex}Hyperslab\_GlobalMappingByIndex()\\
+      \hspace*{3ex}Hyperslab\_GlobalMappingByPhys()\\
+    }
+    There exists two complement sets of routines: one for the definition of
+    local hyperslabs (which apply to a processor's local patch of a distributed
+    grid variable only), and one for global hyperslabs (which spawn the entire
+    grid).
+
+    A mapping can be defined by either physical coordinates or by grid index points.
+
+    All hyperslab mapping routines return an integer handle which refers to an
+    internally allocated data structure describing the defined hyperslab.
+
+  \item With such a mapping, hyperslabs can then be extracted/distributed by
+    one or more calls to
+    {\tt
+      \hspace*{3ex}Hyperslab\_Get()\\
+      \hspace*{3ex}Hyperslab\_GetList()\\
+      \hspace*{3ex}Hyperslab\_Put()\\
+      \hspace*{3ex}Hyperslab\_PutList()\\
+    }
+    There are routines for getting/putting a hyperslab from/to a single grid
+    variable or from/to a list of variables.
+
+  \item Once all hyperslabs are done, the hyperslab mapping should be freed by
+    a call to\\
+    {\tt\hspace*{3ex}Hyperslab\_FreeMapping()}.
+\end{enumerate}
+
+If the {\tt Hyperslab\_Get*()/Hyperslab\_Put*()} get passed a mapping for a
+global hyperslab, a global, synchronuous operation will be performed
+(i.e., it must be called in sync by every processor). All input arguments must be
+consistent between processors.
+
+
+\subsection{Defining a hyperslab mapping}
+
+An $M$-dimensional hyperslab subspace mapped into an $N$-dimensional space
+can be specified either by coordinates on the physical grid or by index
+points on the underlying computational grid.
+
+\begin{verbatim}
+CCTK_INT Hyperslab_GlobalMappingByIndex (
+           CCTK_POINTER_TO_CONST GH,
+           CCTK_INT              vindex,
+           CCTK_INT              hdim,
+           const CCTK_INT       *direction         /* vdim*hdim */,
+           const CCTK_INT       *origin            /* vdim */,
+           const CCTK_INT       *extent            /* hdim */,
+           const CCTK_INT       *downsample        /* hdim */,
+           CCTK_INT              table_handle,
+           CCTK_FPOINTER         conversion_fn,
+           CCTK_INT             *hsize             /* hdim */);
+
+CCTK_INT Hyperslab_GlobalMappingByPhys (
+           CCTK_POINTER_TO_CONST GH,
+           CCTK_INT              vindex,
+           CCTK_INT              hdim,
+           CCTK_STRING           coord_system_name,
+           const CCTK_INT       *direction         /* vdim*hdim */,
+           const CCTK_REAL      *origin            /* vdim */,
+           const CCTK_REAL      *extent            /* hdim */,
+           const CCTK_INT       *downsample        /* hdim */,
+           CCTK_INT              table_handle,
+           CCTK_FPOINTER         conversion_fn,
+           CCTK_INT             *hsize             /* hdim */);
+
+
+CCTK_INT Hyperslab_LocalMappingByIndex (
+           CCTK_POINTER_TO_CONST GH,
+           CCTK_INT              vindex,
+           CCTK_INT              hdim,
+           const CCTK_INT       *direction         /* vdim*hdim */,
+           const CCTK_INT       *origin            /* vdim */,
+           const CCTK_INT       *extent            /* hdim */,
+           const CCTK_INT       *downsample        /* hdim */,
+           CCTK_INT              table_handle,
+           CCTK_FPOINTER         conversion_fn,
+           CCTK_INT             *hsize_local,      /* hdim */
+           CCTK_INT             *hsize_global,     /* hdim */
+           CCTK_INT             *hoffset_global    /* hdim */);
+
+CTK_INT Hyperslab_LocalMappingByPhys (
+           CCTK_POINTER_TO_CONST GH,
+           CCTK_INT              vindex,
+           CCTK_INT              hdim,
+           CCTK_STRING           coord_system_name,
+           const CCTK_INT       *direction         /* vdim*hdim */,
+           const CCTK_REAL      *origin            /* vdim */,
+           const CCTK_REAL      *extent            /* hdim */,
+           const CCTK_INT       *downsample        /* hdim */,
+           CCTK_INT              table_handle,
+           CCTK_FPOINTER         conversion_fn,
+           CCTK_INT             *hsize_local,      /* hdim */
+           CCTK_INT             *hsize_global,     /* hdim */
+           CCTK_INT             *hoffset_global    /* hdim */);
+\end{verbatim}
+
+{\bf Function arguments:}
+\begin{itemize}
+  \item{\tt CCTK\_POINTER\_TO\_CONST GH}\\
+    The reference to the CCTK grid hierarchy.
+
+    In a C implementation, this should be a pointer of type {\tt const cGH *}.
+
+  \item{\tt CCTK\_INT vindex}\\
+    In order to compute a hyperslab mapping, a CCTK grid variable must be given
+    by this argument which will be used as a template in the following
+    hyperslab get/put operation to denote the input arrays' domain
+    decomposition (dimensionality and distribution over processors).
+    The domain decomposition of all input CCTK variables given by the
+    {\tt vindex, vindices} arguments in subsequent calls to
+    {\tt Hyperslab\_GetXXX()/Hyperslab\_PutXXX()} must match the one of the
+    template variable {\tt vindex}.
+
+  \item{\tt CCTK\_INT hdim}\\
+    The dimension of the hyperslab to get/put ($0 < {\tt hdim} <= {\tt vdim}$).
+
+  \item{\tt const CCTK\_INT *direction\\
+    const CCTK\_INT *origin\\
+    const CCTK\_INT *extent\\
+    const CCTK\_INT *downsample\\
+    --------------------------\\
+    const CCTK\_CHAR *coord\_system\_name\\
+    const CCTK\_INT  *direction\\
+    const CCTK\_REAL *origin\\
+    const CCTK\_REAL *extent\\
+    const CCTK\_INT  *downsample}\\
+    Arguments describing the actual mapping of the hyperslab to get/put.
+
+    The hyperslab location is identified by its origin (lower left corner),
+    the direction vectors starting from the origin and spanning the hyperslab
+    in the $N$-dimensional space, and its extents (size of the hyperslab in
+    each direction).
+
+    There are {\tt hdim} direction vectors (one for each hyperslab axis) with
+    {\tt vdim} elements. The direction vectors are given in grid index points and must
+    be linearly independent. The {\tt direction} argument must
+    be passed as an array {\tt direction[vdim\_index + hdim\_index*vdim]}
+    ({\tt vdim} is the fastest changing dimension).
+
+    The origin and extent can be given in either physical coordinates or
+    grid points -- for the first case a coordinate system needs to be given
+    to do the mapping onto the underlying grid.
+    For the second case, integer extents can be given as negative values
+    meaning that the hyperslab mapping should be defined with the maximum
+    possible extents (ie. the size of the underlying grid).
+
+    The downsampling parameter denotes the downsampling factors for the
+    hyperslab to be extracted/distributed. They are given in terms of grid points in
+    each hyperslab direction. The downsampling parameter is optional --
+    if NULL is passed here, no downsampling will be applied.
+
+  \item{\tt CCTK\_INT table\_handle}\\
+    A key/value table can be passed in via its handle to provide additional information
+    to the hyperslab get/put routines about the hyperslab mapping.
+    For example, there could be a tolerance parameter for hyperslabs
+    which are not rectangular to the underlying grid. For grid points which offset
+    from the direction vectors, the tolerance would then specify a
+    (plus/minus) offset for the directions saying which points should
+    still be included in the hyperslab space.
+
+    Another example could be
+    whether to do interpolation between grid points or not.
+
+    Passing a table handle is optional, an invalid (negative) table handle
+    denotes no additional table information.
+
+  \item{\tt CCTK\_FPOINTER  conversion\_fn}\\
+    Reference to a user-defined datatype conversion function.
+
+    Users can request a type conversion between input and output data during
+    a hyperslab get/put operation. A hyperslab API implementation may provide
+    a set of predefined data type conversion routines for this purpose.
+    In addition to this feature, users can also provide their own data type
+    conversion function and pass a reference to it in the {conversion\_fn} argument.
+
+    For a C implementation, such a user-supplied conversion function should
+    be declared according to the following typedef:
+\begin{verbatim}
+typedef CCTK_INT (*t_hslabConversionFn) (CCTK_INT nelems,
+                                         CCTK_INT src_stride,
+                                         CCTK_INT dst_stride,
+                                         CCTK_INT src_type,
+                                         CCTK_INT dst_type,
+                                         CCTK_POINTER_TO_CONST src,
+                                         CCTK_POINTER dst);
+\end{verbatim}
+
+    A data type conversion function gets passed the number of elements to
+    convert ({\tt nelems}), the strides between adjacent elements in the
+    source and destination arrays ({\tt src\_stride, dst\_stride}),
+    the source and destination CCTK datatypes ({\tt src\_type, dst\_type}),
+    a pointer to the data to convert ({\tt src}), and a pointer to
+    the conversion target buffer ({\tt dst}).
+    The routine should return the number of elements converted ({\tt nelems})
+    for success.
+
+    If a user-supplied function is given ({\tt conversion\_fn} is not NULL),
+    subsequent hyperslab get/put calls will use for data type conversions.
+    Otherwise the hyperslab get/put calls should fall
+    back to using an appropriate predefined data conversion function (if any exists).
+
+  \item{\tt CCTK\_INT *hsize\\
+    CCTK\_INT *hsize\_local}\\
+    Reference to a size array with {\tt hdim} elements to be set by the
+    {\tt Hyperslab\_XXXMappingByXXX()} routines.
+
+    The resulting size of the hyperslab to be extracted is set
+    according to the hyperslab extents and downsampling parameters chosen.
+    With this information, one can compute the overall size of the hyperslab,
+    allocate memory for it and pass it as a user-provided hyperslab data buffer
+    into subsequent calls to {\tt Hyperslab\_GetXXX()}.
+
+  \item{\tt CCTK\_INT *hsize\_global}\\
+    Reference to a size array with {\tt hdim} elements to be set by the
+    {\tt Hyperslab\_LocalMappingBy*()} routine.
+
+    This array holds the sizes of the corresponding global hyperslab.
+    It is set according to the local hyperslab extents and downsampling
+    parameters chosen and locates the local hyperslab in the global grid.
+
+    A value of NULL can be passed for {\tt hsize\_global} if no information
+    about the global hyperslab size is needed.
+
+  \item{\tt CCTK\_INT *hoffset\_global}\\
+    Reference to an offset array with {\tt hdim} elements to be set by the
+    {\tt Hyperslab\_LocalMappingBy*()} routine.
+
+    This array holds the offsets of the local hyperslab into the
+    corresponding global hyperslab. It is set according to the local
+    hyperslab extents and downsampling parameters chosen and locates the local
+    hyperslab in the global grid.
+
+    A value of NULL can be passed for {\tt hoffset\_global} if no information
+    about a hyperslab offsets is needed.
+\end{itemize}
+
+{\bf Return codes (according to the Cactus Coding Conventions):}
+\begin{itemize}
+  \item 0 for success
+  \item negative for some error condition (to be defined by an actual
+    implementation of the {\tt Hyperslab\_*MappingBy*()} routines)
+\end{itemize}
+
+
+\subsection{Extracting/distributing a hyperslab}
+
+Each set of hyperslab get/put routines has two functions: one
+which operates on a single hyperslab, and another which gets/puts hyperslabs
+for a list of variables.
+Depending on the actual hyperslab implementation it might be more efficient
+to operate on a list of grid variables using
+{\tt Hyperslab\_GetList()/Hyperslab\_PutList()} rather than doing sequential
+calls to {\tt Hyperslab\_Get()/Hyperslab\_Put()} with individual grid variables.
+
+\begin{verbatim}
+CCTK_INT Hyperslab_Get (CCTK_POINTER_TO_CONST GH,
+                        CCTK_INT       mapping_handle,
+                        CCTK_INT       proc,
+                        const CCTK_INT vindex,
+                        const CCTK_INT timelevel,
+                        const CCTK_INT hdatatype,
+                        void          *hdata);
+
+CCTK_INT Hyperslab_GetList (CCTK_POINTER_TO_CONST GH,
+                            CCTK_INT        mapping_handle,
+                            CCTK_INT        num_arrays,
+                            const CCTK_INT *procs      /* num_arrays */,
+                            const CCTK_INT *vindices   /* num_arrays */,
+                            const CCTK_INT *timelevels /* num_arrays */,
+                            const CCTK_INT *hdatatypes /* num_arrays */,
+                            void *const    *hdata      /* num_arrays */,
+                            CCTK_INT       *retvals    /* num_arrays */);
+
+CCTK_INT Hyperslab_Put (CCTK_POINTER_TO_CONST GH,
+                        CCTK_INT              mapping_handle,
+                        CCTK_INT              proc,
+                        CCTK_INT              vindex,
+                        CCTK_INT              timelevel,
+                        CCTK_INT              hdatatype,
+                        CCTK_POINTER_TO_CONST hdata);
+
+CCTK_INT Hyperslab_PutList (CCTK_POINTER_TO_CONST       GH,
+                            CCTK_INT                    mapping_handle,
+                            CCTK_INT                    num_arrays,
+                            const CCTK_INT             *procs      /* num_arrays */,
+                            const CCTK_INT             *vindices   /* num_arrays */,
+                            const CCTK_INT             *timelevels /* num_arrays */,
+                            const CCTK_INT             *hdatatypes /* num_arrays */,
+                            const CCTK_POINTER_TO_CONST hdata      /* num_arrays */,
+                            CCTK_INT                   *retvals    /* num_arrays */);
+\end{verbatim}
+
+{\bf Function arguments:}
+\begin{itemize}
+  \item{\tt CCTK\_POINTER\_TO\_CONST GH}\\
+    The reference to the CCTK grid hierarchy.
+
+    In a C implementation, this should be a pointer of type {\tt const cGH *}.
+
+  \item{\tt CCTK\_INT mapping\_handle}\\
+    The handle for the hyperslab mapping as returned by a previous call to
+    one of the hyperslab mapping routines.
+
+  \item{\tt CCTK\_INT num\_arrays}\\
+    The total number of input arrays to get/put a hyperslab from/to.
+
+    This must be a positive integer and match the number of array elements
+    in the arguments following.
+
+  \item{\tt CCTK\_INT proc\\
+    const CCTK\_INT *procs}\\
+    The (list of) processor(s) which will receive/provide the hyperslab data.
+
+    For {\tt Hyperslab\_GetXXX()}, there may be either exactly one processor
+    providing the hyperslab data (in this case, its processor ID must be given
+    in {\tt proc}), or all all processors will get the extracted hyperslab data
+    (an invalid (i.e., negative) processor ID should be given as {\tt proc}, or
+    {\tt procs} is passed as a NULL pointer).
+    For {\tt Hyperslab\_PutXXX()}, there may only be one processor providing
+    the hyperslab data to be distributed to all others.
+
+  \item{\tt CCTK\_INT vindex\\
+    const CCTK\_INT *vindices}\\
+    The (list of) CCTK variable(s) to get/put a hyperslab from/to.
+
+    The grid variables are given by their CCTK indices; their domain
+    decomposition must match the template variable as given in a previous
+    hyperslab mapping routine call.
+
+  \item{\tt CCTK\_INT timelevel\\
+    const CCTK\_INT *timelevels}\\
+    The (list of) timelevel(s) for the grid variable(s) to get/put a hyperslab from/to.
+
+    Each element in the {\tt timelevels} array matches its entry in the
+    {\tt vindices} array argument.
+    If {\tt timelevels} is passed as a NULL pointer then all timelevels for
+    the list operation will default to 0 (denoting the current timelevel).
+
+  \item{\tt CCTK\_INT hdatatype\\
+    const CCTK\_INT *hdatatypes}\\
+    The (list of) CCTK data type(s) of the hyperslab data.
+
+    The hyperslab data to be extracted/distributed may be given in a data type
+    which is different to its corresponding grid variable. For this case,
+    the requested hyperslab data type must be specified explicitely.
+    The hyperslab routines will then do the neccessary data type conversions
+    either by using a user-supplied data type conversion function (as specified
+    in the {\tt conversion\_fn} argument to the hyperslab mapping routines),
+    or by choosing a built-in predefined data type conversion function.
+    convert the input array datatypes to some output array datatype.
+
+    A negative value for {\tt hdatatype} or type or passing a NULL pointer for
+    the {\tt hdatatypes} argument indicates that both the grid variable and
+    its corresponding hyperslab have the same CCTK data type so that no type
+    conversion is necessary.
+
+  \item{\tt (const) void *hdata\\
+    (const) void *const *hdata}\\
+    The (list of) user-supplied buffer(s) to store the extracted hyperslabs for
+    each input variable (for a get operation) or to read the hyperslab data
+    from (for a put operation).
+
+    This argument is only evaluated on processors which are part of the
+    hyperslab mapping.
+
+  \item{\tt CCTK\_INT *retvals}\\
+    User-provided array to store the status of each individual get/put
+    operation in a {\tt Hyperslab\_XXXList()} call.
+
+    Each element in the {\tt retvals} array will contain the status of the
+    corresponding hyperslab operation on grid variable {\it i}.
+    If {\tt retvals} is passed as a NULL pointer then no status codes for
+    individual hyperslab operations will be passed back to the caller.
+\end{itemize}
+
+{\bf Return Codes for these routines (according to the Cactus Code conventions:}
+\begin{itemize}
+  \item 0 for success
+  \item negative for some error condition (to be defined by an actual
+    implementation of the
+    {\tt Hyperslab\_GetXXX()/Hyperslab\_PutXXX()} routines)
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Implementation Details}
+\label{implementation}
+
+The current version of thorn {\tt PUGHSlab} implements only parts of the
+CCTK hyperslab API as described in section \ref{specification}:
+\begin{enumerate}
+  \item the definition of local/global hyperslabs based on grid indicices\\
+    Currently, the only additional hyperslab mapping information which can be
+    passed through a key/value table is a {\tt CCKT\_INT} option with the key
+    {\tt with\_ghostzones}. If the value of this key is non-zero {\tt PUGHSlab}
+    will not strip outer boundary ghostzones for periodic boundary conditions
+    as implemented by {\tt PUGH}.
+
+    {\tt PUGHSlab} provides a set of predefined built-in functions
+    for the following classes of data type conversions:
+    \begin{itemize}
+      \item any {\tt CCTK\_INT} data type into any other {\tt CCTK\_INT}
+      \item any {\tt CCTK\_REAL} data type into any other {\tt CCTK\_REAL}
+      \item any {\tt CCTK\_COMPLEX} data type into any other {\tt CCTK\_COMPLEX}
+    \end{itemize}
+
+  \item local/global hyperslab extractions\\
+    Global hyperslab get requests will strip off all processor-boundary
+    ghostzones from the returned hyperslab data.
+
+    Local hyperslabs will always include processor-boundary ghostzones.
+    The {\tt hsize\_local, hoffset\_local} information returned by the
+    hyperslab mapping routines should be used to locate the locate hyperslab
+    within the global grid (e.g.\ during a recombination of several local
+    hyperslabs into a single global one).
+\end{enumerate}
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+hyperslab
+\vspace{2mm}
+
+\vspace{5mm}
+
+\noindent {\bf Adds header}: 
+
+
+
+PUGHSlab.h to Hyperslab.h
+\vspace{2mm}
+
+\noindent {\bf Provides}: 
+
+
+
+Hyperslab\_Get to 
+
+Hyperslab\_GetList to 
+
+Hyperslab\_GlobalMappingByIndex to 
+
+Hyperslab\_LocalMappingByIndex to 
+
+Hyperslab\_FreeMapping to 
+\vspace{2mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn CactusPUGH/PUGHSlab.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}NONE
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

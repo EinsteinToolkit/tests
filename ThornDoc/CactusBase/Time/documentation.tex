@@ -1,0 +1,443 @@
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a 
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+\title{Time}
+\author{Gabrielle Allen}
+\date{$ $Date$ $}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+\begin{abstract}
+Calculates the timestep used for an evolution
+\end{abstract}
+
+\section{Purpose}
+
+This thorn provides routines for calculating
+the timestep for an evolution based on the spatial Cartesian grid spacing and
+a wave speed. 
+
+\section{Description}
+
+Thorn {\tt Time} uses one of four methods to decide on the timestep
+to be used for the simulation. The method is chosen using the
+keyword parameter {\tt time::timestep\_method}. 
+
+\begin{itemize}
+
+\item{} {\tt time::timestep\_method = "given"} 
+
+	The timestep is fixed to the
+	value of the parameter {\tt time::timestep}. 
+
+\item{} {\tt time::timestep\_method = "courant\_static"} 
+
+	This is the default
+	method, which calculates the timestep once at the start of the
+	simulation, based on a simple courant type condition using 
+	the spatial gridsizes and the parameter {\tt time::dtfac}.
+$$
+\Delta t = \mbox{\tt dtfac} * \mbox{min}(\Delta x^i)
+$$
+	Note that it is up to the user to custom {\tt dtfac} to take
+	into account the dimension of the space being used, and the wave speed.
+
+\item{} {\tt time::timestep\_method = "courant\_speed"} 
+
+	This choice implements a 
+	dynamic courant type condition, the timestep being set before each
+	iteration using the spatial dimension of the grid, the spatial grid sizes, the 
+	parameter {\tt courant\_fac} and the grid variable {\tt courant\_wave\_speed}. 
+	The algorithm used is
+$$
+\Delta t = \mbox{\tt courant\_fac} * \mbox{min}(\Delta x^i)/\mbox{\tt courant\_wave\_speed}/\sqrt{\mbox dim}
+$$
+	For this algorithm to be successful, the variable {\tt courant\_wave\_speed}
+	must have been set by some thorn to the maximum propagation speed on the grid {\it before}
+	this thorn sets the timestep, that is {\tt AT POSTSTEP BEFORE Time\_Courant} (or earlier 
+	in the evolution loop). [Note: The name {\tt courant\_wave\_speed} was poorly 
+	chosen here, the required speed is the maximum propagation speed on 
+        the grid which may be larger than the maximum wave speed (for example
+        with a shock wave in hydrodynamics, also it is possible to have
+        propagation without waves as with a pure advection equation).
+
+\item{} {\tt time::timestep\_method = "courant\_time"} 
+
+	This choice is similar to the
+	method {\tt courant\_speed} above, in implementing a dynamic timestep.
+	However the timestep is chosen using
+$$
+\Delta t = \mbox{\tt courant\_fac} * \mbox{\tt courant\_min\_time}/\sqrt{\mbox dim}
+$$
+        where the grid variable {\tt courant\_min\_time} must be set by some thorn to
+	the minimum time for a wave to cross a gridzone {\it before}
+	this thorn sets the timestep, that is {\tt AT POSTSTEP BEFORE Time\_Courant} (or earlier 
+	in the evolution loop). 
+
+\end{itemize}
+
+In all cases, Thorn {\tt Time} sets the Cactus variable {\tt cctk\_delta\_time}
+which is passed as part of the macro {\tt CCTK\_ARGUMENTS} to thorns called 
+by the scheduler.
+
+Note that for hyperbolic problems, the Courant condition gives a minimum 
+requirement for stability, namely that the numerical domain of dependency
+must encompass the physical domain of dependency, or
+$$
+\Delta t \le \mbox{min}(\Delta x^i)/\mbox{wave speed}/\sqrt{\mbox dim}
+$$
+
+\section{Examples}
+
+\noindent
+{\bf Fixed Value Timestep}
+
+{\tt
+\begin{verbatim}
+time::timestep_method = "given"
+time::timestep        = 0.1
+\end{verbatim}
+}
+
+
+\noindent
+{\bf Calculate Static Timestep Based on Grid Spacings}
+
+\noindent
+The following parameters set the timestep to be 0.25
+
+{\tt
+\begin{verbatim}
+grid::dx    = 0.5
+grid::dy    = 1.0
+grid::dz    = 1.0
+time::timestep_method = "courant_static"
+time::dtfac = 0.5
+\end{verbatim}
+}
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{timestep\_outevery}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{courant\_fac} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em The courant timestep condition dt = courant\_fac*max(delta\_space)/speed/sqrt(dim)}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.9 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{For positive timestep} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:0} & \multicolumn{2}{p{\paraWidth}|}{For negative timestep} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{dtfac} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em The standard timestep condition dt = dtfac*max(delta\_space)}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.5 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{For positive timestep} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:0} & \multicolumn{2}{p{\paraWidth}|}{For negative timestep} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{timestep} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Absolute value for timestep}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Could be anything} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{timestep\_outevery} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How often to output courant timestep}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{Zero means no output} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{verbose} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Give selective information about timestep setting}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{timestep\_method} & {\bf Scope:} restricted & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Method for calculating timestep}} \\
+\hline{\bf Range} & &  {\bf Default:} courant\_static \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering given} & \multicolumn{2}{p{\paraWidth}|}{Use given timestep} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering courant\_static} & \multicolumn{2}{p{\paraWidth}|}{Courant condition at BASEGRID (using dtfac)} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering courant\_speed} & \multicolumn{2}{p{\paraWidth}|}{Courant condition at POSTSTEP (using wavespeed and courant\_fac)} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering courant\_time} & \multicolumn{2}{p{\paraWidth}|}{Courant condition at POSTSTEP (using min time and courant\_fac)} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{timestep\_outonly} & {\bf Scope:} restricted & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Don't set a dynamic timestep, just output what it would be}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{cctk\_final\_time} & {\bf Scope:} shared from CACTUS & REAL \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{terminate} & {\bf Scope:} shared from CACTUS & KEYWORD \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+time
+\vspace{2mm}
+\subsection*{Grid Variables}
+\vspace{5mm}\subsubsection{PRIVATE GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+couranttemps &  & compact & 0 \\ 
+ & courant\_dt & description & Variable just for output \\ 
+ &  & dimensions & 0 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+\vspace{5mm}\subsubsection{PUBLIC GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+speedvars &  & compact & 0 \\ 
+ & courant\_wave\_speed & description & Speed to use for Courant condition \\ 
+ & courant\_min\_time & dimensions & 0 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn CactusBase/Time.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Always:}&  ~ \\ 
+ speedvars couranttemps & ~\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_BASEGRID} 
+
+\hspace{5mm} time\_initialise 
+
+\hspace{5mm}{\it initialise time variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & time\_simple \\ 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & time::speedvars \\ 
+~& ~ &time::courant\_dt(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_BASEGRID}   (conditional) 
+
+\hspace{5mm} time\_simple 
+
+\hspace{5mm}{\it set timestep based on courant condition (courant\_static) } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & spatialspacings \\ 
+~ & Language:  & c \\ 
+~ & Options:  & singlemap \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_BASEGRID}   (conditional) 
+
+\hspace{5mm} time\_courant 
+
+\hspace{5mm}{\it set timestep based on courant condition (courant\_speed) } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & spatialspacings \\ 
+~ & Language:  & c \\ 
+~ & Options:  & singlemap \\ 
+~ & Reads:  & time::speedvars \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & time::courant\_dt(everywhere) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTSTEP}   (conditional) 
+
+\hspace{5mm} time\_courant 
+
+\hspace{5mm}{\it reset timestep each iteration } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & spatialspacings \\ 
+~ & Language:  & c \\ 
+~ & Options:  & singlemap \\ 
+~ & Reads:  & time::speedvars \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & time::courant\_dt(everywhere) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_BASEGRID}   (conditional) 
+
+\hspace{5mm} time\_simple 
+
+\hspace{5mm}{\it set timestep based on courant condition (courant\_time) } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & spatialspacings \\ 
+~ & Language:  & c \\ 
+~ & Options:  & singlemap \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTSTEP}   (conditional) 
+
+\hspace{5mm} time\_courant 
+
+\hspace{5mm}{\it reset timestep each iteration } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & spatialspacings \\ 
+~ & Language:  & c \\ 
+~ & Options:  & singlemap \\ 
+~ & Reads:  & time::speedvars \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & time::courant\_dt(everywhere) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_BASEGRID}   (conditional) 
+
+\hspace{5mm} time\_given 
+
+\hspace{5mm}{\it set fixed timestep } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & spatialspacings \\ 
+~ & Language:  & c \\ 
+~ & Options:  & singlemap \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\subsection*{Aliased Functions}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Alias Name:} ~~~~~~~ & {\bf Function Name:} \\ 
+Time\_Courant & TemporalSpacings \\ 
+Time\_Given & TemporalSpacings \\ 
+Time\_Simple & TemporalSpacings \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}
