@@ -11,15 +11,26 @@ from logpage import gh_pages, repo
 import requests
 
 curr_ver = get_version(gh_pages)
-summary=f"{gh_pages}/records/version_{curr_ver}/build__2_1_{curr_ver}.log"
 baseurl = repo.remotes["origin"].url.replace("git@", "https://").replace(".git","")
 
-data = logpage.create_summary(summary)
+readfiles = [f"{gh_pages}/records/version_{curr_ver}/build__2_{n}_{curr_ver}.log" for n in [2,1]]
+
 status = "All Tests Passed"
-if data["Number failed"]!=0:
+number_failed = 0
+data = {}
+for readfile in readffiles:
+  data[readfile] = logpage.create_summary(summary)
+  number_failed = max(number_failed, data["Number failed"])
+
+if number_failed!=0:
     status="Some Tests Failed"
 # Add a table row for each data field
-contents = "\n".join([f"<tr><th>{key}</th><td>{data[key]}</td><tr>" for key in data.keys()])
+summary_contents = ""
+for key in data[next(iter(data)].keys():
+    summary_contents+=f"<tr><th>{key}</th><td>"
+    for readfile in readfiles:
+        summary_content+=f"{data[readfile][key]}</td>"
+    summary_content+="<tr>\n"
 
 html = f'''<!doctype html>
     <html lang="en">
@@ -28,13 +39,13 @@ html = f'''<!doctype html>
             <h3 style="text-align:center"><a href="{baseurl}/tree/gh-pages/records/version_{curr_ver}">Build #{curr_ver}</a></h3>
             <table class="table table-bordered " >
             <caption>Summary</caption>
-            {contents}
+            {summary_contents}
             </table>
             <table>
             <caption>Commits in Last Push</caption>
             {logpage.gen_commits()}
             </table>
-            {logpage.gen_diffs(summary)}
+            {logpage.gen_diffs(readfiles[-1])}
 		</body>
 	</html>
 '''

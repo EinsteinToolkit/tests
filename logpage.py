@@ -39,15 +39,19 @@ repo = Repository(f"{master}/.git")
 baseurl = repo.remotes["origin"].url.replace("git@", "https://").replace(".git","")
 
 records = os.listdir(f"{gh_pages}/records")
-curr = f"{gh_pages}/records/version_{curr_ver}/build__2_1_{curr_ver}.log"
-last = f"{gh_pages}/records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
+curr1 = f"{gh_pages}/records/version_{curr_ver}/build__2_1_{curr_ver}.log"
+curr2 = f"{gh_pages}/records/version_{curr_ver}/build__2_2_{curr_ver}.log"
+last1 = f"{gh_pages}/records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
 
 def main():
-    write_to_csv(curr)
-    summary_to_html(curr, f"{gh_pages}/docs/index.html")
-    test_comparison = test_comp(curr, last)
+    write_to_csv(curr1)
+    summary_to_html([curr2, curr1], f"{gh_pages}/docs/index.html")
+    test_comparison = test_comp(curr1, last1)
     if len(test_comparison["Failed Tests"])!=0 or len(test_comparison["Newly Passing Tests"])!=0 :
         os.system(f"python3 ./mail.py --master {master} --ghpages {gh_pages}") 
+
+def get_version_from_fileame(filename):
+    return int(filename[filename.rfind("_")+1:-4])
 
 def gen_commits():
     '''
@@ -85,24 +89,28 @@ def gen_diffs(readfile):
     '''
 
     # The test_comp function provides tests that failed, were newly added or newly removed
-    test_comparison = test_comp(readfile,last)
+    # TODO: remove this string parsing. DONOT use a global variable.
+    curr_ver = get_version_from_fileame(readfile)
+    curr1=f"{gh_pages}/records/version_{curr_ver}/build__2_1_{curr_ver}.log"
+    curr2=f"{gh_pages}/records/version_{curr_ver}/build__2_2_{curr_ver}.log"
+    last1=f"{gh_pages}/records/version_{curr_ver-1}/build__2_1_{curr_ver-1}.log"
+    last2=f"{gh_pages}/records/version_{curr_ver-1}/build__2_2_{curr_ver-1}.log"
+
+    test_comparison1 = test_comp(curr1, last1)
+    test_comparison2 = test_comp(curr2, last2)
     # Setup the header for the table
     output='''<table class="table table-bordered " >
     <caption style="text-align:center;font-weight: bold;caption-side:top">Failed Tests and Changes</caption>
     <tr><th></th><th>logs(1_process)</th><th>logs(2_processes)</th><th>diffs(1_process)</th><th>diffs(2_processes)</th><th>first failure</th></tr>\n'''
 
     # For each test get the thorn name and the current version
-    for result in test_comparison.keys():
+    for result in test_comparison1.keys():
     # For each test make a header with the description of why that test is being shown(failed, newly added, newly failing)
         style=result.replace(" ", "-")
-        output+=f'''<tr><th colspan="5">'''+result+"</th></tr>\n"
-
-        # If no such test exists add empty row
-        if(len(test_comparison[result])==0):
-            output+="<tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>"
+        output+='<tr><th>'+result+'</th><th colspan="5"></th></tr>\n'
 
         # For each test get the thorn name and the current version
-        for test in test_comparison[result]:
+        for test in test_comparison1[result] + test_comparison2[result]:
             thorn=test.split()[-1]
             thorn=thorn[:len(thorn)-1]
             test_name=test.split()[0]
@@ -119,23 +127,39 @@ def gen_diffs(readfile):
             diffl2=f"{baseurl}/blob/gh-pages/records/version_{ver}/sim_{ver}_2/{thorn}/{test_name}.diffs"
 
             # Check if these files are available if not display not avaible on the table 
-            output+=f" <tr class='{style}'>"
-            if(os.path.isfile(gh_pages + "/"+logl1[logl1.find("records"):])):
-                output+=f"<td>{test}</td><td><a href='{logl1}' target='_blank'>log</a></td>"
+            output+=f" <tr class='{style}'><td>{test}</td>"
+
+            if test in test_comparison1[result]:
+                if(os.path.isfile(gh_pages + "/"+logl1[logl1.find("records"):])):
+                    output+=f"<td><a href='{logl1}' target='_blank'>log</a></td>"
+                else:
+                    output+=f"<td>Not Available</td>"
             else:
-                output+=f"<td>{test}</td><td>Not Available</td>"
-            if(os.path.isfile(gh_pages + "/"+logl2[logl2.find("records"):])):
-                output+=f"<td><a href='{logl2}' target='_blank'>log</a></td>"
+                output+=f"<td></td>"
+
+            if test in test_comparison2[result]:
+                if(os.path.isfile(gh_pages + "/"+logl2[logl2.find("records"):])):
+                    output+=f"<td><a href='{logl2}' target='_blank'>log</a></td>"
+                else:
+                    output+=f"<td>Not Available</td>"
             else:
-                output+=f"<td>Not Available</td>"
-            if(os.path.isfile(gh_pages + "/"+diffl1[diffl1.find("records"):])):
-                output+=f"<td><a href='{diffl1}' target='_blank'>diff</a></td>"
+                output+=f"<td></td>"
+
+            if test in test_comparison1[result]:
+                if(os.path.isfile(gh_pages + "/"+diffl1[diffl1.find("records"):])):
+                    output+=f"<td><a href='{diffl1}' target='_blank'>diff</a></td>"
+                else:
+                    output+=f"<td>Not Available</td>"
             else:
-                output+=f"<td>Not Available</td>"  
-            if(os.path.isfile(gh_pages + "/"+diffl2[diffl2.find("records"):])):
-                output+=f"<td><a href='{diffl2}' target='_blank'>diff</a></td>\n"
+                output+=f"<td></td>"
+
+            if test in test_comparison2[result]:
+                if(os.path.isfile(gh_pages + "/"+diffl2[diffl2.find("records"):])):
+                    output+=f"<td><a href='{diffl2}' target='_blank'>diff</a></td>\n"
+                else:
+                    output+=f"<td>Not Available</td>\n"
             else:
-                output+=f"<td>Not Available</td>\n"
+                output+=f"<td></td>"
 
             # If this test instance was a failed test, find the first time it failed
             if(result == 'Failed Tests'):
@@ -161,16 +185,19 @@ def get_first_failure(test_name):
     first_failure = -1
 
     for i in range(curr_ver, 1, -1):
-        log_to_check=f"{gh_pages}/records/version_{i}/build__2_1_{i}.log"
-        prev_log_to_check=f"{gh_pages}/records/version_{i-1}/build__2_1_{i-1}.log"
-        # Dictionary containing keys: "Failed Tests","Newly Passing Tests","Newly Failing Tests","Newly Added Tests", "Removed Tests"
-        curr_res = test_comp(log_to_check, prev_log_to_check)
-        if (test_name in curr_res["Newly Failing Tests"]):
-            first_failure = i
+        for nproc in [1,2]:
+            log_to_check=f"{gh_pages}/records/version_{i}/build__2_{nproc}_{i}.log"
+            prev_log_to_check=f"{gh_pages}/records/version_{i-1}/build__2_{nproc}_{i-1}.log"
+            # Dictionary containing keys: "Failed Tests","Newly Passing Tests","Newly Failing Tests","Newly Added Tests", "Removed Tests"
+            curr_res = test_comp(log_to_check, prev_log_to_check)
+            if (test_name in curr_res["Newly Failing Tests"]):
+                first_failure = i
+                break
+            # If i = 2 and test is not found under "Newly failing tests", then it must have failed for the first time in report 1
+            elif (i == 2):
+                first_failure = 1
+        if first_failure != -1:
             break
-        # If i = 2 and test is not found under "Newly failing tests", then it must have failed for the first time in report 1
-        elif (i == 2):
-            first_failure = 1
 
     return first_failure
     
@@ -355,40 +382,58 @@ def create_sidebar():
         # The build file will be displayed in new tab
         template +='<a href="build_' + str(i) + '.html" target="results_iframe"> Build #' + str(i) + '</a>'
         # Check whether the build passed or not by calling parser
-        log_to_check=f"{gh_pages}/records/version_{i}/build__2_1_{i}.log"
+        log_to_check1=f"{gh_pages}/records/version_{i}/build__2_1_{i}.log"
         # Get failed tests only from returned tuple
-        curr_res = get_tests(log_to_check)[1]
-        if len(curr_res) != 0:
+        curr_res1 = get_tests(log_to_check1)[1]
+        curr_res2 = None
+        for log_to_check2 in [f"{gh_pages}/records/version_{i}/build__2_2_{i}.log", f"{gh_pages}/records/version_{i}/build__1_2_{i}.log"]:
+            try:
+                curr_res2 = get_tests(log_to_check2)[1]
+                break
+            except FileNotFoundError:
+                pass
+        if curr_res2 == None:
+            raise FileNotFoundError(log_to_check2)
+
+        if (len(curr_res1) != 0 or len(curr_res2) != 0):
             template += '<img src="exclamation.svg" style="display: inline; width: 30px; height: 30px; float: right; margin-right: 14px;">'
         else:
             template += '<img src="check.svg" style="display: inline; width: 30px; height: 30px; float: right; margin-right: 14px;">'
 
     return template
 
-def create_test_results(readfile):
+def create_test_results(readfiles):
     '''
         Creates test results for the given log file,
         which gets displayed to the right of the sidebar
     '''
 
-    data = create_summary(readfile)
+    number_failed = 0
+    data = {}
+    for readfile in readfiles:
+        data[readfile] = create_summary(readfile)
+        number_failed = max(number_failed, data[readfile]["Number failed"])
+    # script is that for the last file
     script, div=plot_test_data(readfile)
 
     # Check Status Using the data from the summary
     status="All Tests Passed"
-    if data["Number failed"]!=0:
+    if number_failed!=0:
         status="Some Tests Failed"
         # Send email if tests failed
         #os.system(f'python3 mail.py')
     dateFormatter = "%a %b %d %H:%M:%S %Z %Y"
-    build_dt = datetime.strptime(data["Time"], dateFormatter)
+    build_dt = datetime.strptime(data[readfiles[-1]]["Time"], dateFormatter)
     build_dt_utc = build_dt.replace(tzinfo=timezone.utc)  # changing to UTC
     build_date = build_dt_utc.strftime(dateFormatter)
 
     summary_contents=""
     for key in ["Total available tests", "Unrunnable tests", "Runnable tests", "Total number of thorns", "Number of tested thorns", "Number of tests passed", "Number passed only to set tolerance", "Number failed"]:
         # Add a table row for each data field
-        summary_contents+=f"<tr><th>{key}</th><td>{data[key]}</td><tr>\n"
+        summary_contents+=f"<tr><th>{key}</th><td>"
+        for readfile in readfiles:
+            summary_contents+=f"{data[readfile][key]}</td>"
+        summary_contents+="<tr>\n"
 
     template= f'''
                 <!doctype html>
@@ -439,11 +484,11 @@ def create_test_results(readfile):
                     <caption style="text-align:center;font-weight: bold;caption-side:top">Commits in Last Push</caption>
                     {gen_commits()}
                     </table>
-                    {gen_diffs(readfile)}
+                    {gen_diffs(readfiles[-1])}
                     <br>
-                    {gen_time(readfile)}
+                    {gen_time(readfiles[-1])}
                     <br>
-                    {gen_unrunnable(readfile)}
+                    {gen_unrunnable(readfiles[-1])}
                     <br>
                     <table style="margin: 0 auto;">
                         <!-- height determined by height of plots inside (600ox) -->
@@ -463,92 +508,91 @@ def create_test_results(readfile):
     return results_file
 
 
-def summary_to_html(readfile,writefile):
+def summary_to_html(readfiles,writefile):
     '''
         This function reads the log file and outputs and html
         page with the summary in a table
     '''
     sidebar_template = create_sidebar()
-    with open(writefile,"w") as fp:
-        curr_build_file = create_test_results(readfile)
-        try:
-            os.remove(f"{gh_pages}/docs/build.html")
-        except FileNotFoundError:
-            pass
-        os.symlink(curr_build_file, f"{gh_pages}/docs/build.html")
-
-        # The formatted string holds the html template and loads in the values for content and status  
-        # This templated gets injected to index.html, holding both the sidebar and test results  
-        template=f'''<!doctype html>
-        <html lang="en">
-        <head>
-            <title>Summary of Tests</title>
-            <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-            <style>
-                    .bk-root .bk {{
-                        margin: 0 auto !important;
+    # The formatted string holds the html template and loads in the values for content and status
+    # This templated gets injected to index.html, holding both the sidebar and test results
+    template=f'''<!doctype html>
+    <html lang="en">
+    <head>
+        <title>Summary of Tests</title>
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+        <style>
+                .bk-root .bk {{
+                    margin: 0 auto !important;
+                }}
+                html, body {{
+                    height: 100%;
+                    -ms-overflow-style: none;  /* Prevent scrollbar in IE and Edge */
+                    scrollbar-width: none;  /* Prevent scrollbar in Firefox */
+                    overflow-x: hidden;
+                    overflow-y: hidden;
+                }}
+                /* Prevent scrollbar in Chrome */
+                .html::-webkit-scrollbar {{
+                    display: none;
+                }}
+                body {{
+                    border-width: 0px;
+                }}
+                .sidebar {{
+                    height: 100%;
+                    width: 175px;
+                    position: fixed;
+                    z-index: 1;
+                    top: 0;
+                    left: 0;
+                    background-color: #212529;
+                    overflow-x: hidden;
+                    padding-top: 20px;
+                }}
+                .sidebar a {{
+                    padding: 6px 8px 6px 16px;
+                    text-decoration: none;
+                    font-size: 16px;
+                    color: #dbdcdd;
+                    display: inline-block;
                     }}
-                    html, body {{
-                        height: 100%;
-                        -ms-overflow-style: none;  /* Prevent scrollbar in IE and Edge */
-                        scrollbar-width: none;  /* Prevent scrollbar in Firefox */
-                        overflow-x: hidden;
-                        overflow-y: hidden;
-                    }}
-                    /* Prevent scrollbar in Chrome */
-                    .html::-webkit-scrollbar {{
-                        display: none;
-                    }}  
-                    body {{
-                        border-width: 0px;
-                    }}  
-                    .sidebar {{
-                        height: 100%; 
-                        width: 175px;
-                        position: fixed;
-                        z-index: 1; 
-                        top: 0; 
-                        left: 0;
-                        background-color: #212529; 
-                        overflow-x: hidden;
-                        padding-top: 20px; 
-                    }}
-                    .sidebar a {{
-                        padding: 6px 8px 6px 16px;
-                        text-decoration: none;
-                        font-size: 16px;
-                        color: #dbdcdd;
-                        display: inline-block;
-                        }}
-                    .sidebar a:hover {{
-                        color: white;
-                    }}
-                    .iframe {{
-                        border: none;
-                        height: 100%; 
-                        width: 100%;
-                        padding-left: 200px; 
-                    }}
-                    /* On screens that are less than 700px wide, make the sidebar into a topbar */
-                    @media screen and (max-width: 500px) {{
-                    .sidebar {{
-                        display: none;
-                    }}
-                    }}
-            </style>
-        </head>
-        <body>
-            <div class="sidebar">
-                {sidebar_template}
-            </div>
-            <iframe class="iframe" src="build.html" name="results_iframe"></iframe>
-            <script src='badge.js'>
-            </script>
-        </body>
+                .sidebar a:hover {{
+                    color: white;
+                }}
+                .iframe {{
+                    border: none;
+                    height: 100%;
+                    width: 100%;
+                    padding-left: 200px;
+                }}
+                /* On screens that are less than 700px wide, make the sidebar into a topbar */
+                @media screen and (max-width: 500px) {{
+                .sidebar {{
+                    display: none;
+                }}
+                }}
+        </style>
+    </head>
+    <body>
+        <div class="sidebar">
+            {sidebar_template}
+        </div>
+        <iframe class="iframe" src="build.html" name="results_iframe"></iframe>
+        <script src='badge.js'>
+        </script>
+    </body>
     </html>
-        '''
-        shutil.copy("badge.js", f"{gh_pages}/docs")
+    '''
+    with open(writefile,"w") as fp:
         fp.write(template)
+    curr_build_file = create_test_results(readfiles)
+    shutil.copy(os.path.dirname(__file__) + "/badge.js", f"{gh_pages}/docs")
+    try:
+        os.remove(f"{gh_pages}/docs/build.html")
+    except FileNotFoundError:
+        pass
+    os.symlink(curr_build_file, f"{gh_pages}/docs/build.html")
 
 def write_to_csv(readfile):
     '''
