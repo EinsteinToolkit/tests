@@ -1,0 +1,904 @@
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a 
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+\title{Simple Plain Text Output with IOASCII}
+\author{Thomas Radke, Gabrielle Allen}
+\date{$ $Date$ $}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+\begin{abstract}
+Thorn {\bf IOASCII} provides I/O methods for 1D, 2D, and 3D output of
+grid arrays and grid functions into files in ASCII format. The precise
+format is designed for visualisation using the clients {\tt
+xgraph}~\cite{cactusbase_ioascii_xgraph} or {\tt
+gnuplot}~\cite{cactusbase_ioascii_gnuplot}.
+\end{abstract}
+
+\section{Purpose}
+Thorn {\bf IOASCII} registers three I/O methods named {\tt
+IOASCII\_1D}, {\tt IOASCII\_2D}, and {\tt IOASCII\_3D} with the I/O
+interface in the flesh.
+
+\begin{itemize}
+  \item {\tt IOASCII\_1D}\\
+    creates one-dimensional output of 1D, 2D and
+    3D grid functions and arrays by slicing through the edge (in the
+    octant case) or center (in all origin centered cases) of the grid in
+    the coordinate directions.  In addition, output is provided
+    along a diagonal of the grid, in this case the diagonal always starts
+    at the first grid point (that is, in Fortran notation {\tt var(1,1,1)})
+    and the line taken uses grid points increasing by 1 in each direction.
+    [NOTE: The diagonal output is not available for staggered variables].\\
+    Output for each direction can be selected individually via parameters.\\
+    Data is written in ASCII format and goes into files with the names:
+   \begin{center}
+    {\tt <variable\_name>\_<slice>\_[<center\_i>][<center\_j>].\{asc|xg\}}
+   \end{center}
+    and for diagonals:
+    \begin{center}{\tt <variable\_name>\_3D\_diagonal.\{asc|xg\}} 
+    \end{center}
+    These files can be processed directly by either xgraph or gnuplot
+    (you can select the style of output via parameter settings).
+
+  \item {\tt IOASCII\_2D}
+    outputs two-dimensional slices of grid functions and arrays planes.
+    Again, slicing is done through the edge (in the octant case) or center
+    (in all origin centered cases).\\
+    Data is written in ASCII format and goes into files named
+\begin{center}
+    {\tt <variable\_name>\_<plane>\_[<center>].\{asc|xg\}}
+\end{center}
+    These files can be visualized by gnuplot using its {\it splot} command.
+
+  \item {\tt IOASCII\_3D}
+    outputs three-dimensional grid functions and arrays as a whole.\\
+    Data is written in ASCII format and goes into files named
+\begin{center}
+    {\tt <variable\_name>\_3D.\{asc|xg\}}
+\end{center}
+    These files can be visualized by gnuplot using its {\it splot} command.
+\end{itemize}
+%
+%
+\section{{\bf IOASCII} Parameters}
+%
+General parameters to control all {\bf IOASCII}'s I/O methods are:
+\begin{itemize}
+  \item {\tt IOASCII::out[123]D\_every} (steerable)\\
+        How often to do periodic {\tt IOASCII} output. If this parameter is set in the
+        parameter file, it will override the setting of the shared
+        {\tt IO::out\_every} parameter. The output frequency can also be set
+        for individual variables using the {\tt out\_every} option in an option string appended to the {\tt IOASCII::out[123]D\_vars} parameter.
+  \item {\tt IOASCII::out[123]D\_vars} (steerable)\\
+        The list of variables to output using an {\bf IOASCII} I/O method.
+        The variables must be given by their fully qualified variable or group
+        name. The special keyword {\it all} requests {\tt IOASCII} output for
+        all variables. Multiple names must be separated by whitespaces.\\
+        An option string can be appended in curly braces to the
+        group/variable name. The only option supported so far is {\tt out\_every}
+        which sets the output frequency for an individual variable (overriding
+        {\tt IOASCII::out[123]D\_every} and {\tt IO::out\_every}).
+  \item {\tt IOASCII::out[123]D\_dir}\\
+        The directory in which to place the {\tt IOASCII} output files.
+        If the directory doesn't exist at startup it will be created.\\
+        If this parameter is set to an empty string {\tt IOASCII} output will go
+        to the standard output directory as specified in {\tt IO::out\_dir}.
+  \item {\tt IOASCII::out\_format} (steerable)\\
+        The output format for floating-point numbers in {\tt IOASCII} output.\\
+        This parameter conforms to the format modifier of the C library routine
+        {\it fprintf(3)}. You can set the format for outputting floating-point
+        numbers (fixed or exponential) as well as their precision (number of
+        digits).
+  \item {\tt IOASCII::out[123]D\_style}\\
+        The output style for {\tt IOASCII} output.\\
+        This parameter chooses between {\tt gnuplot}- and {\tt xgraph}-suitable
+        output style, and -- for {\tt gnuplot} -- determines whether to also
+        plot the physical time in the output data or not.
+\end{itemize}
+%
+Additional parameters to control the {\tt IOASCII\_1D} I/O method are:
+\begin{itemize}
+  \item {\tt IOASCII::out1D\_[xyzd]} (steerable)\\
+        Chooses the directions to output in 1D {\tt IOASCII} format ({\tt d}
+        stands for diagonal direction).
+  \item {\tt IOASCII::out1D\_[xyz]line\_[xyz], IOASCII::out1D\_[xyz]line\_[xyz]i}\\
+        Chooses the slice centers for 1D lines from {\tt IOASCII\_1D}. These
+        can be set either in physical or index coordinates. If they are set
+        these parameters will override the default slice center parameters
+        {\tt IO::out\_[xyz]line[xyz], IO::out\_[xyz]line[xyz]i}.
+        Note that the slice center can only be set for grid functions so far.
+        For {\tt CCTK\_ARRAY} variables the slices will always start in the
+        origin, ie. (0, 0, 0) in C ordering.
+\end{itemize}
+%
+Additional parameters to control the {\tt IOASCII\_2D} I/O method are:
+\begin{itemize}
+  \item {\tt IOASCII::out2D\_[{xy}{xz}{yz}]plane\_[xyz], IOASCII::out2D\_[{xy}{xz}{yz}]plane\_[xyz]i}\\
+        Chooses the slice centers for 2D planes from {\tt IOASCII\_2D}. These
+        can be set either in physical or index coordinates. If they are set
+        these parameters will override the default slice center parameters
+        {\tt IO::out\_[{xy}{xz}{yz}]plane[xyz], IO::out\_[{xy}{xz}{yz}]plane[xyz]i}.
+\end{itemize}
+%
+%
+\section{Comments}
+%
+{\bf Getting Output from {\bf IOBasic}'s I/O Mehtods}\\
+%
+You obtain output by an I/O method by either
+%
+\begin{itemize}
+  \item setting the appropriate I/O parameters
+  \item calling one the routines of the I/O function interface provided by the flesh
+\end{itemize}
+%
+For a description of basic I/O parameters and the I/O function interface to
+invoke I/O methods by application thorns please see the documentation of thorn
+{\bf IOUtil} and the flesh.\\[3ex]
+%
+{\bf Building Cactus configurations with {\bf IOBasic}}\\
+%
+Since {\bf IOASCII} uses parameters from {\bf IOUtil} it also needs this I/O
+helper thorn be compiled into Cactus and activated at runtime in the
+{\tt ActiveThorns} parameter in your parameter file.
+%
+%
+\section{Examples}
+
+In this section we include example output for different parameter combinations.
+Note that all these examples were generated for just a couple of timesteps for an extremely small 3D grid.
+
+\subsection{One-dimensional xgraph}
+
+These options produce data suitable for using with the xgraph
+visualization client in the format\\
+\texttt{x~f(t=fixed,x,y=fixed,z=fixed)}:
+
+\begin{verbatim}
+  IOASCII::out1D_every = 1
+  IOASCII::out1D_vars = "wavetoy::phi"
+  IOASCII::out1D_style = "xgraph"
+\end{verbatim}
+
+\noindent
+{\bf Output File: phi\_x\_[1][1].xg}
+
+\begin{verbatim}
+  "Parameter file wavetoy.par
+  "Created Sun 19 Aug 2001 16:31:43
+  "x-label x
+  "y-label WAVETOY::phi (y = 0.0000000000000, z = 0.0000000000000), (yi = 1, zi = 1)
+
+
+  "Time = 0.0000000000000
+  -0.5000000000000		0.0000000000139
+  0.0000000000000		1.0000000000000
+  0.5000000000000		0.0000000000139
+
+
+  "Time = 0.2500000000000
+  -0.5000000000000		0.0000000000000
+  0.0000000000000		0.4980695458846
+  0.5000000000000		0.0000000000000
+
+
+  "Time = 0.5000000000000
+  -0.5000000000000		0.0019304541362
+  0.0000000000000		-0.7509652270577
+  0.5000000000000		0.0019304541362
+\end{verbatim}
+
+
+\subsection{One-dimensional gnuplot}
+
+These options produce data suitable for using with the gnuplot visualization client in the format\\ {\tt x f(t,x,y=fixed,z=fixed)}:
+
+\begin{verbatim}
+  IOASCII::out1D_every = 1
+  IOASCII::out1D_vars = "wavetoy::phi"
+  IOASCII::out1D_style = "gnuplot f(x)"
+\end{verbatim}
+
+\noindent
+{\bf Output File: phi\_x\_[1][1].asc}
+
+\begin{verbatim}
+  #Parameter file wavetoy.par
+  #Created Sun 19 Aug 2001 16:33:07
+  #x-label x
+  #y-label WAVETOY::phi (y = 0.0000000000000, z = 0.0000000000000), (yi = 1, zi = 1)
+
+  #Time = 0.0000000000000
+  -0.5000000000000		0.0000000000139
+  0.0000000000000		1.0000000000000
+  0.5000000000000		0.0000000000139
+
+  #Time = 0.2500000000000
+  -0.5000000000000		0.0000000000000
+  0.0000000000000		0.4980695458846
+  0.5000000000000		0.0000000000000
+
+  #Time = 0.5000000000000
+  -0.5000000000000		0.0019304541362
+  0.0000000000000		-0.7509652270577
+  0.5000000000000		0.0019304541362
+\end{verbatim}
+
+
+\subsection{One-dimensional gnuplot (including time)}
+
+These options produce data suitable for using with the gnuplot visualization client in the format\\ {\tt t x f(t,x,y=fixed,z=fixed)}:
+
+\begin{verbatim}
+  IOASCII::out1D_every = 1
+  IOASCII::out1D_vars = "wavetoy::phi"
+  IOASCII::out1D_style = "gnuplot f(t,x)"
+\end{verbatim}
+
+\noindent
+{\bf Output file: phi\_x\_[1][1].asc}
+
+\begin{verbatim}
+  #Parameter file wavetoy.par
+  #Created Sun 19 Aug 2001 16:34:48
+  #x-label x
+  #y-label WAVETOY::phi (y = 0.0000000000000, z = 0.0000000000000), (yi = 1, zi = 1)
+
+  #Time = 0.0000000000000
+  0.0000000000000		-0.5000000000000		0.0000000000139
+  0.0000000000000		0.0000000000000		1.0000000000000
+  0.0000000000000		0.5000000000000		0.0000000000139
+
+  #Time = 0.2500000000000
+  0.2500000000000		-0.5000000000000		0.0000000000000
+  0.2500000000000		0.0000000000000		0.4980695458846
+  0.2500000000000		0.5000000000000		0.0000000000000
+
+  #Time = 0.5000000000000
+  0.5000000000000		-0.5000000000000		0.0019304541362
+  0.5000000000000		0.0000000000000		-0.7509652270577
+  0.5000000000000		0.5000000000000		0.0019304541362
+\end{verbatim}
+
+
+\subsection{Two-dimensional gnuplot}
+
+These options produce data suitable for using with the gnuplot visualization client in the format\\ {\tt x y f(t,x,y,z=fixed)}:
+
+\begin{verbatim}
+  IOASCII::out2D_every = 1
+  IOASCII::out2D_vars = "wavetoy::phi"
+  IOASCII::out2D_style = "gnuplot f(x,y)"
+\end{verbatim}
+
+\noindent
+{\bf Output file: phi\_xy\_[1].asc}
+
+\begin{verbatim}
+  #Parameter file wavetoy.par
+  #Created Sun 19 Aug 2001 16:31:43
+  #x-label x
+  #y-label y
+  #z-label WAVETOY::phi (z = 0.0000000000000), (zi = 1)
+
+
+  #Time = 0.0000000000000
+  -0.5000000000000		-0.5000000000000		0.0000000000000
+  0.0000000000000		-0.5000000000000		0.0000000000139
+  0.5000000000000		-0.5000000000000		0.0000000000000
+
+  -0.5000000000000		0.0000000000000		0.0000000000139
+  0.0000000000000		0.0000000000000		1.0000000000000
+  0.5000000000000		0.0000000000000		0.0000000000139
+
+  -0.5000000000000		0.5000000000000		0.0000000000000
+  0.0000000000000		0.5000000000000		0.0000000000139
+  0.5000000000000		0.5000000000000		0.0000000000000
+
+
+
+  #Time = 0.2500000000000
+  -0.5000000000000		-0.5000000000000		0.0000000000000
+  0.0000000000000		-0.5000000000000		0.0000000000000
+  0.5000000000000		-0.5000000000000		0.0000000000000
+
+  -0.5000000000000		0.0000000000000		0.0000000000000
+  0.0000000000000		0.0000000000000		0.4980695458846
+  0.5000000000000		0.0000000000000		0.0000000000000
+
+  -0.5000000000000		0.5000000000000		0.0000000000000
+  0.0000000000000		0.5000000000000		0.0000000000000
+  0.5000000000000		0.5000000000000		0.0000000000000
+
+
+
+  #Time = 0.5000000000000
+  -0.5000000000000		-0.5000000000000		0.0000000008425
+  0.0000000000000		-0.5000000000000		0.0019304541362
+  0.5000000000000		-0.5000000000000		0.0000000008425
+
+  -0.5000000000000		0.0000000000000		0.0019304541362
+  0.0000000000000		0.0000000000000		-0.7509652270577
+  0.5000000000000		0.0000000000000		0.0019304541362
+
+  -0.5000000000000		0.5000000000000		0.0000000008425
+  0.0000000000000		0.5000000000000		0.0019304541362
+  0.5000000000000		0.5000000000000		0.0000000008425
+\end{verbatim}
+
+
+\subsection{Two-dimensional gnuplot (including time)}
+
+These options produce data suitable for using with the gnuplot visualization client in the format\\ {\tt t x y f(t,x,y,z=fixed)}:
+
+\begin{verbatim}
+  IOASCII::out2D_every = 1
+  IOASCII::out2D_vars = "wavetoy::phi"
+  IOASCII::out2D_style = "gnuplot f(t,x,y)"
+\end{verbatim}
+
+
+\noindent
+{\bf Output file: phi\_xy\_[1].asc}
+
+\begin{verbatim}
+  #Parameter file wavetoy.par
+  #Created Sun 19 Aug 2001 16:33:07
+  #x-label x
+  #y-label y
+  #z-label WAVETOY::phi (z = 0.0000000000000), (zi = 1)
+
+
+  #Time = 0.0000000000000
+  0.0000000000000		-0.5000000000000		-0.5000000000000		0.0000000000000
+  0.0000000000000		0.0000000000000		-0.5000000000000		0.0000000000139
+  0.0000000000000		0.5000000000000		-0.5000000000000		0.0000000000000
+
+  0.0000000000000		-0.5000000000000		0.0000000000000		0.0000000000139
+  0.0000000000000		0.0000000000000		0.0000000000000		1.0000000000000
+  0.0000000000000		0.5000000000000		0.0000000000000		0.0000000000139
+
+  0.0000000000000		-0.5000000000000		0.5000000000000		0.0000000000000
+  0.0000000000000		0.0000000000000		0.5000000000000		0.0000000000139
+  0.0000000000000		0.5000000000000		0.5000000000000		0.0000000000000
+
+
+
+  #Time = 0.2500000000000
+  0.2500000000000		-0.5000000000000		-0.5000000000000		0.0000000000000
+  0.2500000000000		0.0000000000000		-0.5000000000000		0.0000000000000
+  0.2500000000000		0.5000000000000		-0.5000000000000		0.0000000000000
+
+  0.2500000000000		-0.5000000000000		0.0000000000000		0.0000000000000
+  0.2500000000000		0.0000000000000		0.0000000000000		0.4980695458846
+  0.2500000000000		0.5000000000000		0.0000000000000		0.0000000000000
+
+  0.2500000000000		-0.5000000000000		0.5000000000000		0.0000000000000
+  0.2500000000000		0.0000000000000		0.5000000000000		0.0000000000000
+  0.2500000000000		0.5000000000000		0.5000000000000		0.0000000000000
+
+
+
+  #Time = 0.5000000000000
+  0.5000000000000		-0.5000000000000		-0.5000000000000		0.0000000008425
+  0.5000000000000		0.0000000000000		-0.5000000000000		0.0019304541362
+  0.5000000000000		0.5000000000000		-0.5000000000000		0.0000000008425
+
+  0.5000000000000		-0.5000000000000		0.0000000000000		0.0019304541362
+  0.5000000000000		0.0000000000000		0.0000000000000		-0.7509652270577
+  0.5000000000000		0.5000000000000		0.0000000000000		0.0019304541362
+
+  0.5000000000000		-0.5000000000000		0.5000000000000		0.0000000008425
+  0.5000000000000		0.0000000000000		0.5000000000000		0.0019304541362
+  0.5000000000000		0.5000000000000		0.5000000000000		0.0000000008425
+\end{verbatim}
+
+\begin{thebibliography}{9}
+
+\bibitem{cactusbase_ioascii_xgraph}
+{\tt http://www.cactuscode.org/VizTools/xgraph.html}, {\tt http://jean-luc.aei.mpg.de/Codes/xgraph/}
+
+\bibitem{cactusbase_ioascii_gnuplot}
+{\tt http://www.cactuscode.org/VizTools/Gnuplot.html}, {\tt http://www.gnuplot.info}
+\end{thebibliography}
+
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{strict\_io\_parameter\_check}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_d} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Do 1D IOASCII output in the diagonal-direction}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_dir} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Output directory for 1D IOASCII files, overrides IO::out\_dir}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .+} & \multicolumn{2}{p{\paraWidth}|}{A valid directory name} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering \^\$} & \multicolumn{2}{p{\paraWidth}|}{An empty string to choose the default from IO::out\_dir} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_every} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How often to do 1D IOASCII output, overrides IO::out\_every}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{Every so many iterations} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:} & \multicolumn{2}{p{\paraWidth}|}{Disable 1D IOASCII output} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1:} & \multicolumn{2}{p{\paraWidth}|}{Default to IO::out\_every} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_style} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Which style for 1D lines IOASCII output}} \\
+\hline{\bf Range} & &  {\bf Default:} xgraph \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering xgraph} & \multicolumn{2}{p{\paraWidth}|}{f over x plots suitable for xgraph} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering gnuplot f(x)} & \multicolumn{2}{p{\paraWidth}|}{f over x plots suitable for gnuplot} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering gnuplot f(t,x)} & \multicolumn{2}{p{\paraWidth}|}{f over t,x plots suitable for gnuplot} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_vars} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Variables to output in 1D IOASCII file format}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .+} & \multicolumn{2}{p{\paraWidth}|}{Space-separated list of fully qualified variable/group names} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering \^\$} & \multicolumn{2}{p{\paraWidth}|}{An empty string to output nothing} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_x} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Do 1D IOASCII output in the x-direction}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_xline\_y} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em y-coord for 1D lines in x-direction}} \\
+\hline{\bf Range} & &  {\bf Default:} -424242 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{A value between [ymin, ymax]} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -424242:} & \multicolumn{2}{p{\paraWidth}|}{Default to IO::out\_xline\_y} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_xline\_yi} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em y-index (from 0) for 1D lines in x-direction}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{An index between [0, ny)} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1:} & \multicolumn{2}{p{\paraWidth}|}{Choose the default from IO::out\_xline\_yi} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_xline\_z} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em z-coord for 1D lines in x-direction}} \\
+\hline{\bf Range} & &  {\bf Default:} -424242 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{A value between [zmin, zmax]} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -424242:} & \multicolumn{2}{p{\paraWidth}|}{Default to IO::out\_xline\_z} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_xline\_zi} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em z-index (from 0) for 1D lines in x-direction}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{An index between [0, nz)} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1:} & \multicolumn{2}{p{\paraWidth}|}{Choose the default from IO::out\_xline\_zi} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_y} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Do 1D IOASCII output in the y-direction}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_yline\_x} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em x-coord for 1D lines in y-direction}} \\
+\hline{\bf Range} & &  {\bf Default:} -424242 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{A value between [xmin, xmax]} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -424242:} & \multicolumn{2}{p{\paraWidth}|}{Default to IO::out\_yline\_x} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_yline\_xi} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em x-index (from 0) for 1D lines in y-direction}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{An index between [0, nx)} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1:} & \multicolumn{2}{p{\paraWidth}|}{Choose the default from IO::out\_yline\_xi} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_yline\_z} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em z-coord for 1D lines in y-direction}} \\
+\hline{\bf Range} & &  {\bf Default:} -424242 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{A value between [zmin, zmax]} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -424242:} & \multicolumn{2}{p{\paraWidth}|}{Default to IO::out\_yline\_z} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_yline\_zi} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em z-index (from 0) for 1D lines in y-direction}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{An index between [0, nz)} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1:} & \multicolumn{2}{p{\paraWidth}|}{Choose the default from IO::out\_yline\_zi} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_z} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Do 1D IOASCII output in the z-direction}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_zline\_x} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em x-coord for 1D lines in z-direction}} \\
+\hline{\bf Range} & &  {\bf Default:} -424242 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{A value between [xmin, xmax]} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -424242:} & \multicolumn{2}{p{\paraWidth}|}{Default to IO::out\_zline\_x} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_zline\_xi} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em x-index (from 0) for 1D lines in z-direction}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{An index between [0, nx)} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1:} & \multicolumn{2}{p{\paraWidth}|}{Choose the default from IO::out\_zline\_xi} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_zline\_y} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em y-coord for 1D lines in z-direction}} \\
+\hline{\bf Range} & &  {\bf Default:} -424242 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{A value between [ymin, ymax]} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -424242:} & \multicolumn{2}{p{\paraWidth}|}{Default to IO::out\_zline\_y} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out1d\_zline\_yi} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em y-index (from 0) for 1D lines in z-direction}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{An index between [0, ny)} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1:} & \multicolumn{2}{p{\paraWidth}|}{Choose the default from IO::out\_zline\_yi} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out2d\_dir} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Output directory for 2D IOASCII files, overrides out\_dir}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .+} & \multicolumn{2}{p{\paraWidth}|}{A valid directory name} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering \^\$} & \multicolumn{2}{p{\paraWidth}|}{An empty string to choose the default from IO::out\_dir} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out2d\_every} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How often to do 2D IOASCII output, overrides IO::out\_every}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{Every so many iterations} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:} & \multicolumn{2}{p{\paraWidth}|}{Disable 2D IOASCII output} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1:} & \multicolumn{2}{p{\paraWidth}|}{Default to IO::out\_every} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out2d\_style} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Which style for 2D slices IOASCII output}} \\
+\hline{\bf Range} & &  {\bf Default:} gnuplot f(x,y) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering gnuplot f(x,y)} & \multicolumn{2}{p{\paraWidth}|}{f over x,y plots suitable for gnuplot} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering gnuplot f(t,x,y)} & \multicolumn{2}{p{\paraWidth}|}{f over t,x,y plots suitable for gnuplot} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out2d\_vars} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Variables to output in 2D IOASCII file format}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .+} & \multicolumn{2}{p{\paraWidth}|}{Space-separated list of fully qualified variable/group names} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering \^\$} & \multicolumn{2}{p{\paraWidth}|}{An empty string to output nothing} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out2d\_xyplane\_z} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em z-coord for 2D planes in xy}} \\
+\hline{\bf Range} & &  {\bf Default:} -424242 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{A value between [zmin, zmax]} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -424242:} & \multicolumn{2}{p{\paraWidth}|}{Default to IO::out\_xyplane\_z} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out2d\_xyplane\_zi} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em z-index (from 0) for 2D planes in xy}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{An index between [0, nz)} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1:} & \multicolumn{2}{p{\paraWidth}|}{Choose the default from IO::out\_xyplane\_zi} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out2d\_xzplane\_y} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em y-coord for 2D planes in xz}} \\
+\hline{\bf Range} & &  {\bf Default:} -424242 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{A value between [ymin, ymax]} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -424242:} & \multicolumn{2}{p{\paraWidth}|}{Default to IO::out\_xzplane\_y} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out2d\_xzplane\_yi} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em y-index (from 0) for 2D planes in xz}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{An index between [0, ny)} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1:} & \multicolumn{2}{p{\paraWidth}|}{Choose the default from IO::out\_xzplane\_yi} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out2d\_yzplane\_x} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em x-coord for 2D planes in yz}} \\
+\hline{\bf Range} & &  {\bf Default:} -424242 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{A value between [xmin, xmax]} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -424242:} & \multicolumn{2}{p{\paraWidth}|}{Default to IO::out\_yzplane\_x} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out2d\_yzplane\_xi} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em x-index (from 0) for 2D planes in yz}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{An index between [0, nx)} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1:} & \multicolumn{2}{p{\paraWidth}|}{Choose the default from IO::out\_yzplane\_xi} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out3d\_dir} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Output directory for 3D IOASCII files, overrides IO::out\_dir}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .+} & \multicolumn{2}{p{\paraWidth}|}{A valid directory name} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering \^\$} & \multicolumn{2}{p{\paraWidth}|}{An empty string to choose the default from IO::out\_dir} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out3d\_every} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How often to do 3D IOASCII output, overrides IO::out\_every}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{Every so many iterations} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:} & \multicolumn{2}{p{\paraWidth}|}{Disable 3D IOASCII output} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1:} & \multicolumn{2}{p{\paraWidth}|}{Default to IO::out\_every} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out3d\_style} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Which style for 3D volume IOASCII output}} \\
+\hline{\bf Range} & &  {\bf Default:} gnuplot f(x,y,z) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering gnuplot f(x,y,z)} & \multicolumn{2}{p{\paraWidth}|}{f over x,y,z plots suitable for gnuplot} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering gnuplot f(t,x,y,z)} & \multicolumn{2}{p{\paraWidth}|}{f over t,x,y,z plots suitable for gnuplot} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out3d\_vars} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Variables to output in 3D IOASCII file format}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .+} & \multicolumn{2}{p{\paraWidth}|}{Space-separated list of fully qualified variable/group names} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering \^\$} & \multicolumn{2}{p{\paraWidth}|}{An empty string to output nothing} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_format} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Which format for IOASCII floating-point number output}} \\
+\hline{\bf Range} & &  {\bf Default:} .13f \\\multicolumn{1}{|p{\maxVarWidth}|}{see [1] below} & \multicolumn{2}{p{\paraWidth}|}{output with given precision in exponential / floating point notation} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent {\bf [1]} \noindent \begin{verbatim}\^({\textbackslash}.[1]?[0-9])?[EGefg]\$\end{verbatim}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{new\_filename\_scheme} & {\bf Scope:} shared from IO & BOOLEAN \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_dir} & {\bf Scope:} shared from IO & STRING \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_downsample\_x} & {\bf Scope:} shared from IO & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_downsample\_y} & {\bf Scope:} shared from IO & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_downsample\_z} & {\bf Scope:} shared from IO & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_every} & {\bf Scope:} shared from IO & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_fileinfo} & {\bf Scope:} shared from IO & KEYWORD \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_xline\_y} & {\bf Scope:} shared from IO & REAL \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_xline\_yi} & {\bf Scope:} shared from IO & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_xline\_z} & {\bf Scope:} shared from IO & REAL \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_xline\_zi} & {\bf Scope:} shared from IO & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_xyplane\_z} & {\bf Scope:} shared from IO & REAL \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_xyplane\_zi} & {\bf Scope:} shared from IO & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_xzplane\_y} & {\bf Scope:} shared from IO & REAL \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_xzplane\_yi} & {\bf Scope:} shared from IO & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_yline\_x} & {\bf Scope:} shared from IO & REAL \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_yline\_xi} & {\bf Scope:} shared from IO & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_yline\_z} & {\bf Scope:} shared from IO & REAL \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_yline\_zi} & {\bf Scope:} shared from IO & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_yzplane\_x} & {\bf Scope:} shared from IO & REAL \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_yzplane\_xi} & {\bf Scope:} shared from IO & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_zline\_x} & {\bf Scope:} shared from IO & REAL \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_zline\_xi} & {\bf Scope:} shared from IO & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_zline\_y} & {\bf Scope:} shared from IO & REAL \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_zline\_yi} & {\bf Scope:} shared from IO & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{strict\_io\_parameter\_check} & {\bf Scope:} shared from IO & BOOLEAN \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{verbose} & {\bf Scope:} shared from IO & KEYWORD \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+ioascii
+\vspace{2mm}
+
+\vspace{5mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn CactusBase/IOASCII.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}NONE
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_STARTUP} 
+
+\hspace{5mm} ioascii\_startup 
+
+\hspace{5mm}{\it startup routine } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ioutil\_startup \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_BASEGRID} 
+
+\hspace{5mm} ioascii\_choose1d 
+
+\hspace{5mm}{\it choose 1d output lines } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & spatialcoordinates \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_BASEGRID} 
+
+\hspace{5mm} ioascii\_choose2d 
+
+\hspace{5mm}{\it choose 2d output planes } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & spatialcoordinates \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

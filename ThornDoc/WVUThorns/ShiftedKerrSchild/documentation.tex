@@ -1,0 +1,470 @@
+% *======================================================================*
+%  Cactus Thorn template for ThornGuide documentation
+%  Author: Ian Kelley
+%  Date: Sun Jun 02, 2002
+%  $Header$
+%
+%  Thorn documentation in the latex file doc/documentation.tex
+%  will be included in ThornGuides built with the Cactus make system.
+%  The scripts employed by the make system automatically include
+%  pages about variables, parameters and scheduling parsed from the
+%  relevant thorn CCL files.
+%
+%  This template contains guidelines which help to assure that your
+%  documentation will be correctly added to ThornGuides. More
+%  information is available in the Cactus UsersGuide.
+%
+%  Guidelines:
+%   - Do not change anything before the line
+%       % START CACTUS THORNGUIDE",
+%     except for filling in the title, author, date, etc. fields.
+%        - Each of these fields should only be on ONE line.
+%        - Author names should be separated with a \\ or a comma.
+%   - You can define your own macros, but they must appear after
+%     the START CACTUS THORNGUIDE line, and must not redefine standard
+%     latex commands.
+%   - To avoid name clashes with other thorns, 'labels', 'citations',
+%     'references', and 'image' names should conform to the following
+%     convention:
+%       ARRANGEMENT_THORN_LABEL
+%     For example, an image wave.eps in the arrangement CactusWave and
+%     thorn WaveToyC should be renamed to CactusWave_WaveToyC_wave.eps
+%   - Graphics should only be included using the graphicx package.
+%     More specifically, with the "\includegraphics" command.  Do
+%     not specify any graphic file extensions in your .tex file. This
+%     will allow us to create a PDF version of the ThornGuide
+%     via pdflatex.
+%   - References should be included with the latex "\bibitem" command.
+%   - Use \begin{abstract}...\end{abstract} instead of \abstract{...}
+%   - Do not use \appendix, instead include any appendices you need as
+%     standard sections.
+%   - For the benefit of our Perl scripts, and for future extensions,
+%     please use simple latex.
+%
+% *======================================================================*
+%
+% Example of including a graphic image:
+%    \begin{figure}[ht]
+% 	\begin{center}
+%    	   \includegraphics[width=6cm]{/home/runner/work/tests/tests/arrangements/WVUThorns/ShiftedKerrSchild/doc/MyArrangement_MyThorn_MyFigure}
+% 	\end{center}
+% 	\caption{Illustration of this and that}
+% 	\label{MyArrangement_MyThorn_MyLabel}
+%    \end{figure}
+%
+% Example of using a label:
+%   \label{MyArrangement_MyThorn_MyLabel}
+%
+% Example of a citation:
+%    \cite{MyArrangement_MyThorn_Author99}
+%
+% Example of including a reference
+%   \bibitem{MyArrangement_MyThorn_Author99}
+%   {J. Author, {\em The Title of the Book, Journal, or periodical}, 1 (1999),
+%   1--16. {\tt http://www.nowhere.com/}}
+%
+% *======================================================================*
+
+% If you are using CVS use this line to give version information
+% $Header$
+
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+% The author of the documentation
+\author{Zacharia E. Etienne \textless zachetie *at* gmail *dot* com\textgreater\\ Roland Haas \textless rhaas@illinois.edu\textgreater}
+% The title of the document (not necessarily the name of the Thorn)
+\title{ShiftedKerrSchild}
+
+% the date your document was last changed, if your document is in CVS,
+% please use:
+%    \date{$ $Date$ $}
+\date{November 04 2019}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+% Add all definitions used in this documentation here
+%   \def\mydef etc
+\newcommand{\GiR}{{\texttt{GiRaFFE}}}
+\newcommand{\beq}{\begin{equation}}
+\newcommand{\eeq}{\end{equation}}
+\newcommand{\beqn}{\begin{eqnarray}}
+\newcommand{\eeqn}{\end{eqnarray}}
+
+% Add an abstract for this thorn's documentation
+\begin{abstract}
+To set up Kerr-Schild initial data, with a shifted radial coordinate.
+\end{abstract}
+
+% The following sections are suggestive only.
+% Remove them or add your own.
+
+\section{Introduction}
+
+A complete description of a black hole spacetime in Kerr-Schild
+spherical polar coordinates that includes an explicit analytic form of
+the extrinsic curvature for arbitrary spin parameters does
+not exist in the literature, so we first include it here for
+completeness. Then we present our strategy for transforming spacetime
+quantities into shifted Kerr-Schild Cartesian coordinates.
+
+\section{Physical System}%
+\label{sec:WVUThorns_ShiftedKeyrrSchild_PhysicalSystem}
+In unshifted spherical polar coordinates, where $\rho=r^2+a^2 \cos^2(\theta)$,
+$M$ is the black hole mass, and $a$ is the black hole spin parameter,
+the Kerr-Schild lapse, shift, and 3-metric are given by
+\beqn
+\alpha   &=& \frac{1}{\sqrt{ 1 + \frac{2 M r}{\rho^2} }} \\
+\beta^r  &=& \alpha^2\frac{2 M r}{\rho^2} \\
+\beta^\theta &=& \beta^\phi = \gamma_{r\theta}=\gamma_{\theta\phi}= 0 \\
+\gamma_{rr}    &=& 1 + \frac{2 M r}{\rho^2}\\
+\gamma_{r\phi}   &=&-a \gamma_{rr} \sin^2(\theta)\\
+\gamma_{\theta\theta}  &=& \rho^2\\
+\gamma_{\phi\phi}  &=& \left( r^2 + a^2 + \frac{2 M r}{\rho^2} a^2 \sin^2(\theta) \right) \sin^2(\theta).
+\eeqn
+
+Next, we define a few useful quantities,
+\beqn
+A&=&\left(a^2 \cos (2 \theta )+a^2+2 r^2\right) \\
+B&=&A+4Mr \\
+D&=&\sqrt{\frac{2 M r}{a^2 \cos ^2(\theta)+r^2}+1}.
+\eeqn
+Then the extrinsic curvature 
+$K_{ij}=(\nabla_i \beta_j +\nabla_j \beta_i)/(2\alpha)$ 
+(see, \textit{e.g.}, Eq. 13 in Ref.~\cite{WVUThorns_ShiftedKerrSchild_Cook2000}) with $\partial_t
+\gamma_{ij}=0$, may be written in spherical polar coordinates as
+\beqn
+K_{rr}&=&\frac{D (A+2 M r)}{A^2 B}\left[ 4 M \left(a^2 \cos (2 \theta )+a^2-2 r^2\right)\right] \\
+K_{r\theta}&=&\frac{D}{AB}\left[ 8 a^2 M r \sin (\theta ) \cos (\theta )\right] \\
+K_{r\phi}&=&\frac{D}{A^2}\left[ -2 a M \sin ^2(\theta ) \left(a^2 \cos (2 \theta )+a^2-2 r^2\right)\right] \\
+K_{\theta\theta}&=&\frac{D}{B}\left[ 4 M r^2 \right]\\
+K_{\theta\phi}&=&\frac{D}{AB}\left[ -8 a^3 M r \sin ^3(\theta ) \cos (\theta )\right] \\
+K_{\phi\phi}&=&\frac{D}{A^2 B}\left[ 2 M r \sin ^2(\theta )
+  \left(a^4 (r-M) \cos (4 \theta )+a^4 (M+3 r)+\right.\right. \\
+&& \left.\left.\quad\quad\quad\quad\quad\quad\quad 4 a^2 r^2 (2 r-M)+4 a^2 r \cos (2 \theta ) \left(a^2+r (M+2 r)\right)+8 r^5\right)\right].
+\eeqn
+
+All \GiR{} curved-spacetime code validation tests adopt shifted
+Kerr-Schild Cartesian coordinates $(x',y',z')$, which map
+$(0,0,0)$ to the finite radius $r=r_0>0$ in standard (unshifted)
+Kerr-Schild spherical polar coordinates. So, in many ways, this is similar
+to a trumpet spacetime. Though this radial shift acts to shrink the
+black hole's coordinate size, it also renders the very
+strongly-curved spacetime fields at $r<r_0$ to vanish deep inside the horizon,
+which can contribute to numerical stability when evolving
+hydrodynamic, MHD, and FFE fields inside the horizon.
+
+The shifted radial coordinate $r'$ relates to the standard spherical
+polar radial coordinate $r$ via $r=r'+r_0$, where $r_0>0$ is the
+(constant) radial shift. 
+
+As an example, to compute $K_{x'y'}$ at some arbitrary point
+$(x',y',z')$, we first convert the coordinate $(x',y',z')$ into shifted
+spherical-polar coordinates via
+$(r'=\sqrt{x'^2+y'^2+z'^2},\theta',\phi')=(r',\theta,\phi)$, as a purely
+radial shift like this preserves the original angles. Next, we
+evaluate the components of the Kerr-Schild extrinsic curvature
+$K_{ij}$ (provided above) in standard spherical polar coordinates at
+$(r=r'+r_0,\theta,\phi)$. Defining $x^i_{\rm sph,sh}$ as the $i$th
+shifted spherical polar coordinate and $x^i_{\rm sph}$ as the $i$th
+(unshifted) spherical polar coordinate, $K_{x'y'}$ is computed via the
+standard coordinate transformations:
+\beq
+K_{x'y'} = \frac{dx^k_{\rm sph,sh}}{dx'} \frac{dx^l_{\rm sph,sh}}{dy'} 
+\frac{dx^i_{\rm sph}}{dx^k_{\rm sph,sh}} \frac{dx^i_{\rm sph}}{dx^l_{\rm sph,sh}} K_{ij}. 
+\eeq
+However, we have $dx^i_{\rm sph} = dx^i_{\rm sph,sh}$, since the radial shift $r_0$
+is a constant and the angles are unaffected by the radial shift. This
+implies that $dx^k_{\rm sph,sh}/dx' = dx^k_{\rm sph}/dx'$ and 
+$dx^i_{\rm sph}/dx^k_{\rm sph,sh}=\delta^i_k$.
+
+So after computing {\it any spacetime quantity} at a
+point $(r=r'+r_0,\theta,\phi)$, we need only apply the standard
+spherical-to-Cartesian coordinate transformation to evaluate that
+quantity in shifted Cartesian coordinates.
+
+% \section{Numerical Implementation}
+\section{Using This Thorn}
+
+\code{ShiftedKerrSchild} defines the following parameters for the constants
+defined in section~\ref{sec:WVUThorns_ShiftedKeyrrSchild_PhysicalSystem}:
+\begin{center}
+\begin{tabular}{l|l}
+parameter name & constant \\
+\hline
+\code{KerrSchild\_radial\_shift} & $r_0$, \\
+\code{BH\_mass} & $M$, \\
+\code{BH\_spin} & $a$.
+\end{tabular}
+\end{center}
+
+\subsection{Obtaining This Thorn}
+This thorn is part of the Einstein Toolkit and included in the \code{WVUThorn}s
+arrangement.
+
+\subsection{Interaction With Other Thorns}
+This thorn sets up initial data for use by thorn \code{ADMBase} based on
+\code{ADMBase}'s parameters \code{initial\_data}, \code{initial\_lapse} and
+\code{initial\_shift}.
+
+\subsection{Examples}
+For a complete example, please see the \GiR{} test
+\texttt{GiRaFFE\_tests\_MagnetoWald.par}.
+\begin{verbatim}
+# Shifted KerrSchild
+ActiveThorns = "ShiftedKerrSchild"
+ShiftedKerrSchild::BH_mass = 1.0
+ShiftedKerrSchild::BH_spin = 0.9
+ShiftedKerrSchild::KerrSchild_radial_shift = 0.4359
+
+ADMBase::initial_data  = "ShiftedKerrSchild"
+ADMBase::initial_lapse = "ShiftedKerrSchild"
+ADMBase::initial_shift = "ShiftedKerrSchild"
+\end{verbatim}
+
+\subsection{Support and Feedback}
+Please contact the author or the Einstein Toolkit mailing list
+\url{users@einsteintoolkit.org}.
+
+\begin{thebibliography}{9}
+\bibitem{WVUThorns_ShiftedKerrSchild_Cook2000}
+ {G.~B. Cook, {\em Living Rev. Relativity}, 3(1):5 (2000).}
+\end{thebibliography}
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{kerrschild\_radial\_shift}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bh\_mass} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em The mass of the black hole. Let's keep this at 1!}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:*} & \multicolumn{2}{p{\paraWidth}|}{Positive} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bh\_spin} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em The z-axis *dimensionless* spin of the black hole}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1.0:1.0} & \multicolumn{2}{p{\paraWidth}|}{Anything between -1 and +1} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{kerrschild\_radial\_shift} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Radial shift for Kerr Schild initial data. Actual shift = KerrSchild\_radial\_shift*BH\_mass}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:*} & \multicolumn{2}{p{\paraWidth}|}{Positive} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{initial\_data} & {\bf Scope:} shared from ADMBASE & KEYWORD \\\hline
+\multicolumn{3}{|l|}{\bf Extends ranges:}\\ 
+\hline\multicolumn{1}{|p{\maxVarWidth}|}{\centering ShiftedKerrSchild} & \multicolumn{2}{p{\paraWidth}|}{Initial data from ShiftedKerrSchild solution} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{initial\_lapse} & {\bf Scope:} shared from ADMBASE & KEYWORD \\\hline
+\multicolumn{3}{|l|}{\bf Extends ranges:}\\ 
+\hline\multicolumn{1}{|p{\maxVarWidth}|}{\centering ShiftedKerrSchild} & \multicolumn{2}{p{\paraWidth}|}{Initial lapse from ShiftedKerrSchild solution} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{initial\_shift} & {\bf Scope:} shared from ADMBASE & KEYWORD \\\hline
+\multicolumn{3}{|l|}{\bf Extends ranges:}\\ 
+\hline\multicolumn{1}{|p{\maxVarWidth}|}{\centering ShiftedKerrSchild} & \multicolumn{2}{p{\paraWidth}|}{Initial shift from ShiftedKerrSchild solution} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{metric\_type} & {\bf Scope:} shared from ADMBASE & KEYWORD \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+shiftedkerrschild
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+admbase
+
+boundary
+
+grid
+\vspace{2mm}
+\subsection*{Grid Variables}
+\vspace{5mm}\subsubsection{PUBLIC GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+shiftedkerrschild\_3metric\_shift &  & compact & 0 \\ 
+ & SKSgrr & description & Shifted Kerr-Schild 3 metric and shift \\ 
+ & SKSgrth & dimensions & 3 \\ 
+ & SKSgrph & distribution & DEFAULT \\ 
+ & SKSgthth & group type & GF \\ 
+ & SKSgthph & tags & prolongation="none" \\ 
+ & SKSgphph & timelevels & 1 \\ 
+ & SKSbetar & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn WVUThorns/ShiftedKerrSchild.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Always:}&  ~ \\ 
+ ShiftedKerrSchild\_3metric\_shift[1] & ~\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PARAMCHECK}   (conditional) 
+
+\hspace{5mm} shiftedkerrschild\_paramcheck 
+
+\hspace{5mm}{\it check parameters for consitency and unsupported values } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_INITIAL}   (conditional) 
+
+\hspace{5mm} shiftedkerrschild\_initial 
+
+\hspace{5mm}{\it schedule shiftedkerrschild initial data group } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & admbase\_initialgauge \\ 
+~ & Before:  & hydrobase\_initial \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf ShiftedKerrSchild\_Initial}   (conditional) 
+
+\hspace{5mm} shiftedks\_id 
+
+\hspace{5mm}{\it set up shifted kerr-schild initial data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PRESTEP}   (conditional) 
+
+\hspace{5mm} shiftedks\_id 
+
+\hspace{5mm}{\it set up shifted kerr-schild initial data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_ANALYSIS}   (conditional) 
+
+\hspace{5mm} shiftedks\_id 
+
+\hspace{5mm}{\it set up shifted kerr-schild initial data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}
