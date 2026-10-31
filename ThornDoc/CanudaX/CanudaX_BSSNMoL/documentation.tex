@@ -1,0 +1,1156 @@
+% *======================================================================*
+%  Cactus Thorn template for ThornGuide documentation
+%  Author: Ian Kelley
+%  Date: Sun Jun 02, 2002
+%  $Header$
+%
+%  Thorn documentation in the latex file doc/documentation.tex
+%  will be included in ThornGuides built with the Cactus make system.
+%  The scripts employed by the make system automatically include
+%  pages about variables, parameters and scheduling parsed from the
+%  relevant thorn CCL files.
+%
+%  This template contains guidelines which help to assure that your
+%  documentation will be correctly added to ThornGuides. More
+%  information is available in the Cactus UsersGuide.
+%
+%  Guidelines:
+%   - Do not change anything before the line
+%       % START CACTUS THORNGUIDE",
+%     except for filling in the title, author, date, etc. fields.
+%        - Each of these fields should only be on ONE line.
+%        - Author names should be separated with a \\ or a comma.
+%   - You can define your own macros, but they must appear after
+%     the START CACTUS THORNGUIDE line, and must not redefine standard
+%     latex commands.
+%   - To avoid name clashes with other thorns, 'labels', 'citations',
+%     'references', and 'image' names should conform to the following
+%     convention:
+%       ARRANGEMENT_THORN_LABEL
+%     For example, an image wave.eps in the arrangement CactusWave and
+%     thorn WaveToyC should be renamed to CactusWave_WaveToyC_wave.eps
+%   - Graphics should only be included using the graphicx package.
+%     More specifically, with the "\includegraphics" command.  Do
+%     not specify any graphic file extensions in your .tex file. This
+%     will allow us to create a PDF version of the ThornGuide
+%     via pdflatex.
+%   - References should be included with the latex "\bibitem" command.
+%   - Use \begin{abstract}...\end{abstract} instead of \abstract{...}
+%   - Do not use \appendix, instead include any appendices you need as
+%     standard sections.
+%   - For the benefit of our Perl scripts, and for future extensions,
+%     please use simple latex.
+%
+% *======================================================================*
+%
+% Example of including a graphic image:
+%    \begin{figure}[ht]
+% 	\begin{center}
+%    	   \includegraphics[width=6cm]{/home/runner/work/tests/tests/arrangements/CanudaX/CanudaX_BSSNMoL/doc/MyArrangement_MyThorn_MyFigure}
+% 	\end{center}
+% 	\caption{Illustration of this and that}
+% 	\label{MyArrangement_MyThorn_MyLabel}
+%    \end{figure}
+%
+% Example of using a label:
+%   \label{MyArrangement_MyThorn_MyLabel}
+%
+% Example of a citation:
+%    \cite{MyArrangement_MyThorn_Author99}
+%
+% Example of including a reference
+%   \bibitem{MyArrangement_MyThorn_Author99}
+%   {J. Author, {\em The Title of the Book, Journal, or periodical}, 1 (1999),
+%   1--16. {\tt http://www.nowhere.com/}}
+%
+% *======================================================================*
+
+% If you are using CVS use this line to give version information
+% $Header$
+
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+% The author of the documentation
+\author{Cheng-Hsin Cheng}
+
+% The title of the document (not necessarily the name of the Thorn)
+\title{\texttt{CanudaX\_BSSNMoL}: An Einstein Toolkit thorn for evolving Einstein's equations in the BSSN formalism}
+
+% the date your document was last changed, if your document is in CVS,
+% please use:
+%    \date{$ $Date$ $}
+% when using git instead record the commit ID:
+%    \date{\gitrevision{<path-to-your-.git-directory>}}
+\date{April 15, 2026}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+% Add all definitions used in this documentation here
+%   \def\mydef etc
+
+% Add an abstract for this thorn's documentation
+\begin{abstract}
+\texttt{CanudaX\_BSSNMoL} is the \texttt{CarpetX}-compatible version of \texttt{LeanBSSNMoL},
+which solves Einstein's equations in the BSSN formalism.
+\texttt{CanudaX\_BSSNMoL} uses finite-difference stencils which are accurate up to 8th order, compared with only 6th order in \texttt{LeanBSSNMoL}.
+It relies on the \texttt{ODESolvers} thorn for the time integration.
+\end{abstract}
+
+\section{\texttt{CanudaX\_BSSNMoL}}
+
+The \texttt{Lean} code was first introduced in~\cite{Sperhake:2006cy}, to evolve vacuum spacetimes with the BSSN formalism.
+%
+It has since been modified into \texttt{LeanBSSNMoL} to run with the \texttt{MoL} thorn for the time integration and generalized to include matter terms through the \texttt{TmunuBase}
+thorn. 
+\texttt{LeanBSSNMoL} was made publicly available through the \texttt{Canuda} numerical relativity library~\cite{Canuda}, and has since been distributed also as a part of the Einstein Toolkit.
+
+\texttt{CanudaX\_BSSNMoL} is the \texttt{CarpetX}-compatible version of \texttt{LeanBSSNMoL} which further introduces several new physics and computational capabilities:
+\begin{itemize}
+  \item Slicing conditions: geodesic, harmonic, shock-avoiding~\cite{Baumgarte:2022ecu}, and slow-start lapse~\cite{Etienne:2024ncu}
+  \item Local AMR regridding criterion using the conformal factor~\cite{Radia:2021smk}, useful for dynamically refining around and tracking black holes
+  \item 8th order centered and lopsided finite difference stencils for spatial derivatives, along with 9th order accurate Kreiss-Oliger dissipation stencils
+\end{itemize}
+
+The bulk of the code is written in C++ and should be simple to follow -- emphasis has been given to readability. The main part of the code, where the right-hand side of the evolution equations is computed, can be found in the file \texttt{calc\_bssn\_rhs.cxx}.
+%
+For the conformal factor the code uses the ``W'' version, i.e.\ $W=\gamma^{-1/6}$, and it employs the usual ``1+log'' and ``Gamma-driver'' gauge conditions by default.
+
+
+\section{Obtaining this thorn}
+
+\texttt{CanudaX\_BSSNMoL} is included with the Einstein Toolkit and can also be obtained through the \texttt{Canuda} numerical relativity library~\cite{Canuda}.
+
+
+\begin{thebibliography}{9}
+
+%\cite{Sperhake:2006cy}
+\bibitem{Sperhake:2006cy}
+U.~Sperhake,
+``Binary black-hole evolutions of excision and puncture data,''
+Phys. Rev. D \textbf{76} (2007), 104015
+doi:10.1103/PhysRevD.76.104015
+[arXiv:gr-qc/0606079 [gr-qc]].
+
+\bibitem{Canuda}
+H.~Witek, M.~Zilhao, G.~Bozzola, C.-H.~Cheng, A.~Dima, M.~Elley, G.~Ficarra, T.~Ikeda, R.~Luna, C.~Richards, N.~Sanchis-Gual, H.~Okada~da~Silva.
+``Canuda: a public numerical relativity library to probe fundamental physics,''
+Zenodo (2023)
+doi: 10.5281/zenodo.3565474
+
+\bibitem{Baumgarte:2022ecu}
+T.~W.~Baumgarte and D.~Hilditch,
+``Shock-avoiding slicing conditions: Tests and calibrations,''
+Phys. Rev. D \textbf{106}, no.4, 044014 (2022)
+doi:10.1103/PhysRevD.106.044014
+[arXiv:2207.06376 [gr-qc]].
+
+\bibitem{Etienne:2024ncu}
+Z.~B.~Etienne,
+``Improved moving-puncture techniques for compact binary simulations,''
+Phys. Rev. D \textbf{110}, no.6, 064045 (2024)
+doi:10.1103/PhysRevD.110.064045
+[arXiv:2404.01137 [gr-qc]].
+
+\bibitem{Radia:2021smk}
+M.~Radia, U.~Sperhake, A.~Drew, K.~Clough, P.~Figueras, E.~A.~Lim, J.~L.~Ripley, J.~C.~Aurrekoetxea, T.~Fran{\c{c}}a and T.~Helfer,
+``Lessons for adaptive mesh refinement in numerical relativity,''
+Class. Quant. Grav. \textbf{39}, no.13, 135006 (2022)
+doi:10.1088/1361-6382/ac6fa9
+[arXiv:2112.10567 [gr-qc]].
+
+\end{thebibliography}
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{impose\_conf\_fac\_floor\_at\_initial}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{add\_ko\_dissipation} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Add Kreiss-Oliger dissipation?}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{beta\_alp} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Exponent for lapse in front of Gamma\^i in shift condition}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Anything possible, default is zero} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{beta\_gamma} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Prefactor to the Gamma\^i term in shift condition}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.75 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Anything possible} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{boundary\_conditions} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Outer boundary conditions for BSSN variables}} \\
+\hline{\bf Range} & &  {\bf Default:} radiative \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering radiative} & \multicolumn{2}{p{\paraWidth}|}{Use radiative boundary conditions from NewRadX} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering none} & \multicolumn{2}{p{\paraWidth}|}{Do not impose boundary conditions here, but let CarpetX set it} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{calculate\_constraints} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Calculate the BSSN constraints?}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{calculate\_constraints\_every} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Calculate the BSSN constraints every N iterations}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{0 or a negative value means never compute them} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{chi\_gamma} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Coefficient to Yo-term in the {\textbackslash}tilde\{Gamma\} equation. See gr-qc/0209066}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.666666666666667 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{2/3 is a good value; the sign must be the same as betak,k} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{conf\_fac\_floor} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Minimal value of conformal factor}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0d-04 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Any value possible} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{derivs\_order} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Accuracy of spatial finite difference stencils in RHS calculation}} \\
+\hline{\bf Range} & &  {\bf Default:} 4 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 4} & \multicolumn{2}{p{\paraWidth}|}{4th order accurate stencils} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 6} & \multicolumn{2}{p{\paraWidth}|}{6th order accurate stencils} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 8} & \multicolumn{2}{p{\paraWidth}|}{8th order accurate stencils} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{diss\_eps} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Strength coefficient for Kreiss-Oliger dissipation}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.15 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:*} & \multicolumn{2}{p{\paraWidth}|}{0 to turn off dissipation, most commonly use 0.15} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{diss\_order} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Accuracy of Kreiss-Oliger dissipation stencils; should be 1 highehr than derivs\_order}} \\
+\hline{\bf Range} & &  {\bf Default:} 5 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 5} & \multicolumn{2}{p{\paraWidth}|}{5th order accurate stencils} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 7} & \multicolumn{2}{p{\paraWidth}|}{7th order accurate stencils} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 9} & \multicolumn{2}{p{\paraWidth}|}{9th order accurate stencils} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{eta\_beta} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Damping parameter in live shift}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{non-negative} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{eta\_transition} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Use an r-dependent damping parameter eta?}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{eta\_transition\_eps} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Minimal value of radius squared for eta\_transition}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0d-06 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Any value possible} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{eta\_transition\_r} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Transition radius for r-dependent eta}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{non-negative} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{impose\_conf\_fac\_floor\_at\_initial} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Use floor value on initial data?}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{kappa\_alpha} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Coefficient in slicing condition - default is 2 for 1+log}} \\
+\hline{\bf Range} & &  {\bf Default:} 2.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Any value possible} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{make\_aa\_tracefree} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Remove trace of {\textbackslash}tilde\{A\}\_\{ij\} after each timestep?}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{n\_aij} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em n power of outgoing boundary r\^n fall off rate for conformal tracefree extrinsic curvature}} \\
+\hline{\bf Range} & &  {\bf Default:} 2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:2} & \multicolumn{2}{p{\paraWidth}|}{2 is reasonable} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{n\_alpha} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em n power of outgoing boundary r\^n fall off rate for lapse}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:2} & \multicolumn{2}{p{\paraWidth}|}{1 is my guess} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{n\_beta} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em n power of outgoing boundary r\^n fall off rate for shift}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:2} & \multicolumn{2}{p{\paraWidth}|}{1 is my guess} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{n\_conf\_fac} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em n power of outgoing boundary r\^n fall off rate for conformal factor}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:2} & \multicolumn{2}{p{\paraWidth}|}{1 is reasonable} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{n\_gammat} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em n power of outgoing boundary r\^n fall off rate for conformal connection}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:2} & \multicolumn{2}{p{\paraWidth}|}{Maybe 1?} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{n\_hij} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em n power of outgoing boundary r\^n fall off rate for conformal metric}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:2} & \multicolumn{2}{p{\paraWidth}|}{1 is reasonable} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{n\_trk} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em n power of outgoing boundary r\^n fall off rate for trace of extrinsic curvature}} \\
+\hline{\bf Range} & &  {\bf Default:} 2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:2} & \multicolumn{2}{p{\paraWidth}|}{2 is reasonable} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{precollapsed\_lapse} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initialize lapse as alp*psi\^\{-2\} ?}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{refinement\_criterion} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How to compute regrid error for AMR?}} \\
+\hline{\bf Range} & &  {\bf Default:} fixed \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering fixed} & \multicolumn{2}{p{\paraWidth}|}{Distance to origin} \\\multicolumn{1}{|p{\maxVarWidth}|}{see [1] below} & \multicolumn{2}{p{\paraWidth}|}{Conformal factor minus 1} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering conf\_fac\_laplacian} & \multicolumn{2}{p{\paraWidth}|}{Laplacian of conformal factor} \\\multicolumn{1}{|p{\maxVarWidth}|}{see [1] below} & \multicolumn{2}{p{\paraWidth}|}{Sum absolute values of each term in Hamiltonian constraint} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent {\bf [1]} \noindent \begin{verbatim}conf\_fac\_minus\_one\end{verbatim}\noindent {\bf [1]} \noindent \begin{verbatim}ham\_constraint\_absolute\end{verbatim}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rescale\_shift\_initial} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Initialize shift as psi\^\{-2\} beta ?}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{reset\_dethh} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Reset determinant of conformal metric?}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{slicing\_condition} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Lapse slicing condition}} \\
+\hline{\bf Range} & &  {\bf Default:} 1+log \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering geodesic} & \multicolumn{2}{p{\paraWidth}|}{geodesic slicing} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering harmonic} & \multicolumn{2}{p{\paraWidth}|}{harmonic slicing} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1+log} & \multicolumn{2}{p{\paraWidth}|}{1+log slicing} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering shock-avoiding} & \multicolumn{2}{p{\paraWidth}|}{shock-avoiding slicing from arXiv:2207.06376 [gr-qc]} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering SSL} & \multicolumn{2}{p{\paraWidth}|}{slow-start lapse from arXiv:2404.01137 [gr-qc]} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{ssl\_amp} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Amplitude of slow-start lapse Gaussian}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.6 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Anything positive; 0.6 was used in arXiv:2404.01137 [gr-qc]} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{ssl\_sigma} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Width of slow-start lapse Gaussian}} \\
+\hline{\bf Range} & &  {\bf Default:} 20.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Anything positive; 20 was used in arXiv:2404.01137 [gr-qc]} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{use\_advection\_stencils} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Use lopsided stencils for advection derivatives?}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{use\_local\_error\_estimate} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Compute local regrid error to refine/derefine cells?}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{zeta\_alpha} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Prefactor to the advection term in slicing condition}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering *:*} & \multicolumn{2}{p{\paraWidth}|}{Anything possible} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{zeta\_beta} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Prefactor to the advection term in shift condition}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{non-negative} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{stress\_energy\_state} & {\bf Scope:} restricted & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Add matter contributions from TmunuBaseX to RHS and constraints?}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{z\_is\_radial} & {\bf Scope:} restricted & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Use with multipatch?}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+canudax\_bssnmol
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+admbasex
+
+carpetxregrid
+
+tmunubasex
+\vspace{2mm}
+\subsection*{Grid Variables}
+\vspace{5mm}\subsubsection{PUBLIC GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+alpha &  & centering & centering=\{0 0 0\} \\ 
+ & alpha & compact & 0 \\ 
+ &  & description & Lapse function \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & parities=\{+1 +1 +1\} rhs="alpha\_rhs" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+alpha\_rhs &  & centering & centering=\{0 0 0\} \\ 
+ & alpha\_rhs & compact & 0 \\ 
+ &  & description & Time derivative of lapse function \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & parities=\{+1 +1 +1\} checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+beta &  & centering & centering=\{0 0 0\} \\ 
+ & betx & compact & 0 \\ 
+ & bety & description & Shift vector beta\^i \\ 
+ & betz & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & parities=\{-1 +1 +1  +1 -1 +1  +1 +1 -1\}  rhs="beta\_rhs" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+beta\_rhs &  & centering & centering=\{0 0 0\} \\ 
+ & betx\_rhs & compact & 0 \\ 
+ & bety\_rhs & description & Time derivative of shift vector \\ 
+ & betz\_rhs & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & parities=\{-1 +1 +1  +1 -1 +1  +1 +1 -1\} checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+conf\_fac &  & centering & centering=\{0 0 0\} \\ 
+ & conf\_fac & compact & 0 \\ 
+ &  & description & Conformal factor W=det(gamma\_\{ij\})\^\{-1/6\} \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & parities=\{+1 +1 +1\} rhs="conf\_fac\_rhs" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+conf\_fac\_rhs &  & centering & centering=\{0 0 0\} \\ 
+ & conf\_fac\_rhs & compact & 0 \\ 
+ &  & description & Time derivative of conformal factor \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & parities=\{+1 +1 +1\} checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~ \\ 
+\hline 
+hmetric &  & centering & centering=\{0 0 0\} \\ 
+ & hxx & compact & 0 \\ 
+ & hxy & description & Conformal metric {\textbackslash}tilde\{gamma\}\_\{ij\} \\ 
+ & hxz & dimensions & 3 \\ 
+ & hyy & distribution & DEFAULT \\ 
+ & hyz & group type & GF \\ 
+ & hzz & tags & parities=\{+1 +1 +1   -1 -1 +1   -1 +1 -1   +1 +1 +1   +1 -1 -1   +1 +1 +1\}  rhs="hmetric\_rhs" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+hmetric\_rhs &  & centering & centering=\{0 0 0\} \\ 
+ & hxx\_rhs & compact & 0 \\ 
+ & hxy\_rhs & description & Time derivative of conformal metric \\ 
+ & hxz\_rhs & dimensions & 3 \\ 
+ & hyy\_rhs & distribution & DEFAULT \\ 
+ & hyz\_rhs & group type & GF \\ 
+ & hzz\_rhs & tags & parities=\{+1 +1 +1   -1 -1 +1   -1 +1 -1   +1 +1 +1   +1 -1 -1   +1 +1 +1\}  checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+hcurv &  & centering & centering=\{0 0 0\} \\ 
+ & axx & compact & 0 \\ 
+ & axy & description & Conformal tracefree part of extrinsic curvature {\textbackslash}tilde\{A\}\_\{ij\} \\ 
+ & axz & dimensions & 3 \\ 
+ & ayy & distribution & DEFAULT \\ 
+ & ayz & group type & GF \\ 
+ & azz & tags & parities=\{+1 +1 +1   -1 -1 +1   -1 +1 -1   +1 +1 +1   +1 -1 -1   +1 +1 +1\}  rhs="hcurv\_rhs" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+hcurv\_rhs &  & centering & centering=\{0 0 0\} \\ 
+ & axx\_rhs & compact & 0 \\ 
+ & axy\_rhs & description & Time derivative of conformal tracefree extrinsic curvature \\ 
+ & axz\_rhs & dimensions & 3 \\ 
+ & ayy\_rhs & distribution & DEFAULT \\ 
+ & ayz\_rhs & group type & GF \\ 
+ & azz\_rhs & tags & parities=\{+1 +1 +1   -1 -1 +1   -1 +1 -1   +1 +1 +1   +1 -1 -1   +1 +1 +1\}  checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+trk &  & centering & centering=\{0 0 0\} \\ 
+ & tracek & compact & 0 \\ 
+ &  & description & Trace of extrinsic curvature \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & parities=\{+1 +1 +1\}  rhs="trk\_rhs" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+trk\_rhs &  & centering & centering=\{0 0 0\} \\ 
+ & tracek\_rhs & compact & 0 \\ 
+ &  & description & Time derivative of Trace of extrinsic curvature \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & parities=\{+1 +1 +1\}  checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~ \\ 
+\hline 
+gammat &  & centering & centering=\{0 0 0\} \\ 
+ & gammatx & compact & 0 \\ 
+ & gammaty & description & Conformal connection function {\textbackslash}tilde\{Gamma\}\^i \\ 
+ & gammatz & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & parities=\{-1 +1 +1  +1 -1 +1  +1 +1 -1\}  rhs="gammat\_rhs" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+gammat\_rhs &  & centering & centering=\{0 0 0\} \\ 
+ & gammatx\_rhs & compact & 0 \\ 
+ & gammaty\_rhs & description & Time derivative of conformal connection function \\ 
+ & gammatz\_rhs & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & parities=\{-1 +1 +1  +1 -1 +1  +1 +1 -1\}  checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+ham &  & centering & centering=\{0 0 0\} \\ 
+ & hc & compact & 0 \\ 
+ &  & description & Hamiltonian constraint \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+mom &  & centering & centering=\{0 0 0\} \\ 
+ & mcx & compact & 0 \\ 
+ & mcy & description & Momentum constraints \\ 
+ & mcz & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & parities=\{-1 +1 +1  +1 -1 +1  +1 +1 -1\} checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+
+\noindent {\bf Adds header}: 
+
+
+
+evolve\_utils.hxx
+
+fd\_stencils.hxx
+\vspace{2mm}
+
+\noindent {\bf Uses header}: 
+
+loop.hxx
+
+loop\_device.hxx
+
+newradx.hxx
+\vspace{2mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn CanudaX/CanudaX\_BSSNMoL.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Always:}& {\bf Conditional:} \\ 
+ ADMBaseX::metric &  ADMBaseX::lapse\\ 
+ beta &  ham\\ 
+ conf\_fac\_rhs &  mom\\ 
+ hmetric\_rhs & ~\\ 
+ hcurv\_rhs & ~\\ 
+ trk\_rhs & ~\\ 
+ gammat\_rhs & ~\\ 
+ alpha\_rhs & ~\\ 
+ beta\_rhs & ~\\ 
+ ADMBaseX::shift & ~\\ 
+ ADMBaseX::curv & ~\\ 
+ conf\_fac & ~\\ 
+ hmetric & ~\\ 
+ hcurv & ~\\ 
+ trk & ~\\ 
+ gammat & ~\\ 
+ alpha & ~\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_INITIAL}   (conditional) 
+
+\hspace{5mm} canudax\_bssnmol\_initialgroup 
+
+\hspace{5mm}{\it canudax\_bssnmol: initial bin } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & tmunubasex\_settmunuvars \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf ODESolvers\_PostStep}   (conditional) 
+
+\hspace{5mm} canudax\_bssnmol\_poststepgroup 
+
+\hspace{5mm}{\it canudax\_bssnmol: post-step operations } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & admbasex\_setadmvars \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CanudaX\_BSSNMoL\_RHSGroup}   (conditional) 
+
+\hspace{5mm} canudax\_bssnmol\_apply\_boundary\_conditions 
+
+\hspace{5mm}{\it apply radiative boundary conditions  } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & canudax\_bssnmol\_calc\_bssn\_rhs \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & alpha(interior) \\ 
+~& ~ &beta(interior)\\ 
+~& ~ &conf\_fac(interior)\\ 
+~& ~ &hmetric(interior)\\ 
+~& ~ &trk(interior)\\ 
+~& ~ &hcurv(interior)\\ 
+~& ~ &gammat(interior)\\ 
+~& ~ &alpha\_rhs(interior)\\ 
+~& ~ &beta\_rhs(interior)\\ 
+~& ~ &conf\_fac\_rhs(interior)\\ 
+~& ~ &trk\_rhs(interior)\\ 
+~& ~ &hmetric\_rhs(interior)\\ 
+~& ~ &hcurv\_rhs(interior)\\ 
+~& ~ &gammat\_rhs(interior)\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & alpha\_rhs(interior) \\ 
+~& ~ &beta\_rhs(interior)\\ 
+~& ~ &conf\_fac\_rhs(interior)\\ 
+~& ~ &trk\_rhs(interior)\\ 
+~& ~ &hmetric\_rhs(interior)\\ 
+~& ~ &hcurv\_rhs(interior)\\ 
+~& ~ &gammat\_rhs(interior)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CanudaX\_BSSNMoL\_PostStepGroup}   (conditional) 
+
+\hspace{5mm} canudax\_bssnmol\_sync 
+
+\hspace{5mm}{\it sync state vector } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Sync:  & alpha \\ 
+~& ~ &beta\\ 
+~& ~ &conf\_fac\\ 
+~& ~ &hmetric\\ 
+~& ~ &trk\\ 
+~& ~ &hcurv\\ 
+~& ~ &gammat\\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CanudaX\_BSSNMoL\_PostStepGroup}   (conditional) 
+
+\hspace{5mm} canudax\_bssnmol\_impose\_conf\_fac\_floor 
+
+\hspace{5mm}{\it make sure conformal factor does not drop below specified value } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & canudax\_bssnmol\_sync \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & conf\_fac(interior) \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & conf\_fac(interior) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CanudaX\_BSSNMoL\_PostStepGroup}   (conditional) 
+
+\hspace{5mm} canudax\_bssnmol\_reset\_detmetric 
+
+\hspace{5mm}{\it reset dethh = 1 } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & canudax\_bssnmol\_impose\_conf\_fac\_floor \\ 
+~ & Before:  & canudax\_bssnmol\_sync \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & hmetric(interior) \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & hmetric(interior) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CanudaX\_BSSNMoL\_PostStepGroup}   (conditional) 
+
+\hspace{5mm} canudax\_bssnmol\_remove\_tra 
+
+\hspace{5mm}{\it remove trace of a } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & canudax\_bssnmol\_reset\_detmetric \\ 
+~ & Before:  & canudax\_bssnmol\_sync \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & hcurv(interior) \\ 
+~& ~ &hmetric(interior)\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & hcurv(interior) \\ 
+~& ~ &hmetric(interior)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CanudaX\_BSSNMoL\_PostStepGroup}   (conditional) 
+
+\hspace{5mm} canudax\_bssnmol\_bssn2adm 
+
+\hspace{5mm}{\it convert variables back to the adm ones } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & canudax\_bssnmol\_sync \\ 
+~ & Before:  & admbasex\_setadmvars \\ 
+~ & Language:  & c \\ 
+~ & Options:  & local \\ 
+~ & Reads:  & alpha(everywhere) \\ 
+~& ~ &beta(everywhere)\\ 
+~& ~ &conf\_fac(everywhere)\\ 
+~& ~ &hmetric(everywhere)\\ 
+~& ~ &trk(everywhere)\\ 
+~& ~ &hcurv(everywhere)\\ 
+~& ~ &gammat(everywhere)\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & admbasex::metric(everywhere) \\ 
+~& ~ &admbasex::curv(everywhere)\\ 
+~& ~ &admbasex::lapse(everywhere)\\ 
+~& ~ &admbasex::shift(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_ANALYSIS}   (conditional) 
+
+\hspace{5mm} canudax\_bssnmol\_bssn\_constraints 
+
+\hspace{5mm}{\it compute constraints } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & alpha(everywhere) \\ 
+~& ~ &beta(everywhere)\\ 
+~& ~ &conf\_fac(everywhere)\\ 
+~& ~ &hmetric(everywhere)\\ 
+~& ~ &trk(everywhere)\\ 
+~& ~ &hcurv(everywhere)\\ 
+~& ~ &gammat(everywhere)\\ 
+~& ~ &tmunubasex::ettt(interior)\\ 
+~& ~ &tmunubasex::etti(interior)\\ 
+~& ~ &tmunubasex::etij(interior)\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & ham(interior) \\ 
+~& ~ &mom(interior)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf ODESolvers\_RHS}   (conditional) 
+
+\hspace{5mm} canudax\_bssnmol\_rhsgroup 
+
+\hspace{5mm}{\it canudax\_bssnmol: calculate bssn rhs } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PARAMCHECK}   (conditional) 
+
+\hspace{5mm} canudax\_bssnmol\_paramcheck 
+
+\hspace{5mm}{\it check canudax\_bssnmol parameters for consistency } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CanudaX\_BSSNMoL\_InitialGroup}   (conditional) 
+
+\hspace{5mm} canudax\_bssnmol\_adm2bssn 
+
+\hspace{5mm}{\it convert initial data into bssn variables } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & local \\ 
+~ & Reads:  & admbasex::metric(everywhere) \\ 
+~& ~ &admbasex::curv(everywhere)\\ 
+~& ~ &admbasex::lapse(everywhere)\\ 
+~& ~ &admbasex::shift(everywhere)\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & alpha(everywhere) \\ 
+~& ~ &beta(everywhere)\\ 
+~& ~ &conf\_fac(everywhere)\\ 
+~& ~ &hmetric(everywhere)\\ 
+~& ~ &hcurv(everywhere)\\ 
+~& ~ &trk(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CanudaX\_BSSNMoL\_InitialGroup}   (conditional) 
+
+\hspace{5mm} canudax\_bssnmol\_gammat 
+
+\hspace{5mm}{\it set gammat initial data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & canudax\_bssnmol\_adm2bssn \\ 
+~ & Language:  & c \\ 
+~ & Options:  & local \\ 
+~ & Reads:  & hmetric(everywhere) \\ 
+~ & Sync:  & gammat \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & gammat(interior) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CanudaX\_BSSNMoL\_InitialGroup}   (conditional) 
+
+\hspace{5mm} canudax\_bssnmol\_estimate\_error 
+
+\hspace{5mm}{\it estimate error for regridding } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & canudax\_bssnmol\_sync \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & conf\_fac(everywhere) \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & carpetxregrid::regrid\_error(interior) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf ODESolvers\_EstimateError}   (conditional) 
+
+\hspace{5mm} canudax\_bssnmol\_estimate\_error 
+
+\hspace{5mm}{\it estimate error for regridding } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & conf\_fac(everywhere) \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & carpetxregrid::regrid\_error(interior) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CanudaX\_BSSNMoL\_RHSGroup}   (conditional) 
+
+\hspace{5mm} canudax\_bssnmol\_calc\_bssn\_rhs 
+
+\hspace{5mm}{\it mol rhs calculation } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Reads:  & alpha(everywhere) \\ 
+~& ~ &beta(everywhere)\\ 
+~& ~ &conf\_fac(everywhere)\\ 
+~& ~ &hmetric(everywhere)\\ 
+~& ~ &trk(everywhere)\\ 
+~& ~ &hcurv(everywhere)\\ 
+~& ~ &gammat(everywhere)\\ 
+~& ~ &tmunubasex::ettt(interior)\\ 
+~& ~ &tmunubasex::etti(interior)\\ 
+~& ~ &tmunubasex::etij(interior)\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & alpha\_rhs(interior) \\ 
+~& ~ &beta\_rhs(interior)\\ 
+~& ~ &conf\_fac\_rhs(interior)\\ 
+~& ~ &trk\_rhs(interior)\\ 
+~& ~ &hmetric\_rhs(interior)\\ 
+~& ~ &hcurv\_rhs(interior)\\ 
+~& ~ &gammat\_rhs(interior)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CanudaX\_BSSNMoL\_RHSGroup}   (conditional) 
+
+\hspace{5mm} canudax\_bssnmol\_add\_dissipation 
+
+\hspace{5mm}{\it add ko dissipation } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & canudax\_bssnmol\_calc\_bssn\_rhs \\ 
+~ & Before:  & canudax\_bssnmol\_apply\_boundary\_conditions \\ 
+~ & Language:  & c \\ 
+~ & Reads:  & alpha(everywhere) \\ 
+~& ~ &beta(everywhere)\\ 
+~& ~ &conf\_fac(everywhere)\\ 
+~& ~ &hmetric(everywhere)\\ 
+~& ~ &trk(everywhere)\\ 
+~& ~ &hcurv(everywhere)\\ 
+~& ~ &gammat(everywhere)\\ 
+~& ~ &alpha\_rhs(interior)\\ 
+~& ~ &beta\_rhs(interior)\\ 
+~& ~ &conf\_fac\_rhs(interior)\\ 
+~& ~ &trk\_rhs(interior)\\ 
+~& ~ &hmetric\_rhs(interior)\\ 
+~& ~ &hcurv\_rhs(interior)\\ 
+~& ~ &gammat\_rhs(interior)\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & alpha\_rhs(interior) \\ 
+~& ~ &beta\_rhs(interior)\\ 
+~& ~ &conf\_fac\_rhs(interior)\\ 
+~& ~ &trk\_rhs(interior)\\ 
+~& ~ &hmetric\_rhs(interior)\\ 
+~& ~ &hcurv\_rhs(interior)\\ 
+~& ~ &gammat\_rhs(interior)\\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

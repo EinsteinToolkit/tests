@@ -1,0 +1,335 @@
+% *======================================================================*
+%  Cactus Thorn template for ThornGuide documentation
+%  Author: Ian Kelley
+%  Date: Sun Jun 02, 2002
+%
+%  Thorn documentation in the latex file doc/documentation.tex 
+%  will be included in ThornGuides built with the Cactus make system.
+%  The scripts employed by the make system automatically include 
+%  pages about variables, parameters and scheduling parsed from the 
+%  relevent thorn CCL files.
+%  
+%  This template contains guidelines which help to assure that your     
+%  documentation will be correctly added to ThornGuides. More 
+%  information is available in the Cactus UsersGuide.
+%                                                    
+%  Guidelines:
+%   - Do not change anything before the line
+%       % START CACTUS THORNGUIDE",
+%     except for filling in the title, author, date etc. fields.
+%        - Each of these fields should only be on ONE line.
+%        - Author names should be sparated with a \\ or a comma
+%   - You can define your own macros are OK, but they must appear after
+%     the START CACTUS THORNGUIDE line, and do not redefine standard 
+%     latex commands.
+%   - To avoid name clashes with other thorns, 'labels', 'citations', 
+%     'references', and 'image' names should conform to the following 
+%     convention:          
+%       ARRANGEMENT_THORN_LABEL
+%     For example, an image wave.eps in the arrangement CactusWave and 
+%     thorn WaveToyC should be renamed to CactusWave_WaveToyC_wave.eps
+%   - Graphics should only be included using the graphix package. 
+%     More specifically, with the "includegraphics" command. Do
+%     not specify any graphic file extensions in your .tex file. This 
+%     will allow us (later) to create a PDF version of the ThornGuide
+%     via pdflatex. |
+%   - References should be included with the latex "bibitem" command. 
+%   - use \begin{abstract}...\end{abstract} instead of \abstract{...}
+%   - For the benefit of our Perl scripts, and for future extensions, 
+%     please use simple latex.     
+%
+% *======================================================================* 
+% 
+% Example of including a graphic image:
+%    \begin{figure}[ht]
+%       \begin{center}
+%          \includegraphics[width=6cm]{/home/runner/work/tests/tests/arrangements/EinsteinEOS/EOS_Hybrid/doc/MyArrangement_MyThorn_MyFigure}
+%       \end{center}
+%       \caption{Illustration of this and that}
+%       \label{MyArrangement_MyThorn_MyLabel}
+%    \end{figure}
+%
+% Example of using a label:
+%   \label{MyArrangement_MyThorn_MyLabel}
+%
+% Example of a citation:
+%    \cite{MyArrangement_MyThorn_Author99}
+%
+% Example of including a reference
+%   \bibitem{MyArrangement_MyThorn_Author99}
+%   {J. Author, {\em The Title of the Book, Journal, or periodical}, 1 (1999), 
+%   1--16. {\tt http://www.nowhere.com/}}
+%
+% *======================================================================* 
+
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a 
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+% The author of the documentation
+\author{Harry Dimmelmeier, Ian Hawke, Christian Ott} 
+
+% The title of the document (not necessarily the name of the Thorn)
+\title{EOS\_Hybrid}
+
+% the date your document was last changed, if your document is in CVS, 
+% please use:
+\date{$ $Date$ $}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+% Add all definitions used in this documentation here 
+%   \def\mydef etc
+
+% Add an abstract for this thorn's documentation
+\begin{abstract}
+  EOS\_Hybrid. The equation of state used for ``simple'' core
+  collapse simulations.
+\end{abstract}
+
+% The following sections are suggestive only.
+% Remove them or add your own.
+
+\section{The equations}
+\label{sec:eqn}
+
+This equation provides the hybrid polytropic / ideal gas equation of
+state used by Dimmelmeier et al.~\cite{Dimm05} for supernova collapse. A thorn
+wanting to use this needs to use the CactusEOS interface found in
+EOS\_Base.
+
+The equations are
+\begin{eqnarray}
+  \label{eq:eosformulas}
+  P & = & P_{\text{poly}} + P_{\text{th}} \\
+  \frac{\partial P}{\partial \rho} & = & \frac{\partial
+  P_{\text{poly}}}{\partial \rho} + \frac{\partial
+  P_{\text{th}_1}}{\partial \rho} + \frac{\partial
+  P_{\text{th}_2}}{\partial \rho}  \\
+  \frac{\partial P}{\partial \epsilon} & = & (\gamma_{\text{th}} - 1)
+  \rho,
+\end{eqnarray}
+where
+\begin{eqnarray}
+  \label{eq:eostemps}
+  P_{\text{poly}} & = & K \rho^{\gamma} \\
+  P_{\text{th}} & = & -K \frac{\gamma_{\text{th}} - 1}{\gamma - 1}
+  \rho^{\gamma} + (\gamma_{\text{th}} - 1) \rho \epsilon -
+  (\gamma_{\text{th}} - 1) \frac{\gamma - \gamma_1}{\gamma_2 - 1} K
+  \rho_{\text{nuc}}^{\gamma_1 - 1} \rho \\
+  \frac{\partial P_{\text{poly}}}{\partial \rho} & = & \gamma K
+  \rho^{\gamma - 1} \\ 
+  \frac{\partial P_{\text{th}_1}}{\partial \rho} & = & - \gamma K
+  \frac{\gamma_{\text{th}} - 1}{\gamma - 1} \rho^{\gamma -1} \\
+  \frac{\partial P_{\text{th}_2}}{\partial \rho} & = & (\gamma - 1)
+  \epsilon - (\gamma_{\text{th}} - 1) \frac{\gamma -
+  \gamma_1}{(\gamma_1 - 1)(\gamma_2 - 1)} K \rho_{\text{nuc}}
+  (\gamma_1 - 1).
+\end{eqnarray}
+These expressions do not include the conversions between cgs and
+Cactus units that are necessary inside the code.
+
+For more details, a recent paper to start with would
+be~\cite{Dimm05}. 
+
+% \section{Introduction}
+
+% \section{Physical System}
+
+% \section{Numerical Implementation}
+
+% \section{Using This Thorn}
+
+% \subsection{Obtaining This Thorn}
+
+% \subsection{Basic Usage}
+
+% \subsection{Special Behaviour}
+
+% \subsection{Interaction With Other Thorns}
+
+% \subsection{Support and Feedback}
+
+% \section{History}
+
+% \subsection{Thorn Source Code}
+
+% \subsection{Thorn Documentation}
+
+% \subsection{Acknowledgements}
+
+
+\begin{thebibliography}{9}
+
+\bibitem{Dimm05} 
+H. Dimmelmeier, J. Novak, A. Font, J.~M. Ibanez, E. Mueller 
+\newblock 
+Combining spectral and shock-capturing methods: A new numerical approach 
+for 3D relativistic core collapse simulations
+\newblock Phys. Rev. D71 064023 (2005)
+
+\end{thebibliography}
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{eos\_gamma\_supernuclear}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{eos\_gamma\_supernuclear} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Gamma\_2 for EOS}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.66666666666666 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{eos\_gamma\_th} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Gamma\_th for EOS}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.5 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rho\_nuc} & {\bf Scope:} restricted & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Nuclear matter density}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.e-10 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{eos\_gamma} & {\bf Scope:} shared from EOS\_2D\_POLYTROPE & REAL \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{eos\_k} & {\bf Scope:} shared from EOS\_2D\_POLYTROPE & REAL \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{gamma\_ini} & {\bf Scope:} shared from EOS\_2D\_POLYTROPE & REAL \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+eos\_hybrid
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+hydrobase
+
+eos\_2d\_polytrope
+\vspace{2mm}
+\subsection*{Grid Variables}
+\vspace{5mm}\subsubsection{PRIVATE GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+pressure\_contributions &  & compact & 0 \\ 
+ & pressure\_poly & description & Polytropic and thermal contributions to the pressure \\ 
+ & pressure\_th & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & Prolongation="None" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn EinsteinEOS/EOS\_Hybrid.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}NONE
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_STARTUP} 
+
+\hspace{5mm} eos\_hybrid\_startup 
+
+\hspace{5mm}{\it setup the eos used by dimmelmeier et al. in core collapse } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & eos\_polytrope\_startup \\ 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_ANALYSIS} 
+
+\hspace{5mm} check\_poly\_contrib 
+
+\hspace{5mm}{\it output the polytropic and thermal contributions } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Storage:  & pressure\_contributions \\ 
+~ & Triggers:  & pressure\_contributions \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

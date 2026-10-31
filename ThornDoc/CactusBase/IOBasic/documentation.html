@@ -1,0 +1,1265 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>IOBasic</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">IOBasic</h2>
+ <div class="author" ><span 
+class="cmr-12">Gabrielle Allen</span>
+<br /> <span 
+class="cmr-12">Thomas Radke</span></div>
+<br />
+<div class="date" >\( \)<span 
+class="cmr-12">Date</span>\( \)</div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 20--><p class="noindent" ><span 
+class="cmr-9">Thorn </span><span 
+class="cmbx-9">IOBasic </span><span 
+class="cmr-9">provides I/O methods for outputting scalar values in ASCII format into files and for</span>
+     <span 
+class="cmr-9">printing them as runtime information to screen.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Purpose</h3>
+<!--l. 26--><p class="noindent" >Thorn <span 
+class="cmbx-10">IOBasic </span>registers 2 I/O methods with the I/O interface in the flesh which both output the same
+following information: </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 30--><p class="noindent" >for CCTK_SCALAR variables, the value of the scalar versus time
+     </p></li>
+     <li class="itemize">
+                                                                                       
+                                                                                       
+     <!--l. 31--><p class="noindent" >for  CCTK_GF  and  CCTK_ARRAY  variables,  the  values  of  global  reduction  operations  (eg.
+     minimum, maximum, L1, and L2 norm) versus time</p></li></ul>
+<!--l. 35--><p class="noindent" >The I/O methods differ in the destination the output is written to: </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 37--><p class="noindent" ><span 
+class="cmtt-10">Scalar</span><br 
+class="newline" />This method outputs the information into ASCII files named <span 
+class="cmtt-10">&#x0022;&#x003C;scalar</span><span 
+class="cmtt-10">_name&#x003E;.</span><span 
+class="cmsy-10">{</span><span 
+class="cmtt-10">asc|xg</span><span 
+class="cmsy-10">}</span><span 
+class="cmtt-10">&#x0022; </span>(for
+     CCTK_SCALAR  variables)  and  <span 
+class="cmtt-10">&#x0022;&#x003C;var</span><span 
+class="cmtt-10">_name&#x003E;</span><span 
+class="cmtt-10">_&#x003C;reduction&#x003E;.</span><span 
+class="cmsy-10">{</span><span 
+class="cmtt-10">asc|xg</span><span 
+class="cmsy-10">}</span><span 
+class="cmtt-10">&#x0022; </span>(for  CCTK_GF  and
+     CCTK_ARRAY variables where <span 
+class="cmtt-10">reduction </span>would stand for the type of reduction value that is
+     output).<br 
+class="newline" />The output data can be plotted by using either <span 
+class="cmti-10">xgraph </span>(for <span 
+class="cmtt-10">&#x0022;*.xg&#x0022; </span>files) or <span 
+class="cmti-10">gnuplot </span>(for <span 
+class="cmtt-10">&#x0022;*.asc&#x0022;</span>
+     files). The output style can be selected via parameter settings.
+     </p></li>
+     <li class="itemize">
+     <!--l. 43--><p class="noindent" ><span 
+class="cmtt-10">Info</span><br 
+class="newline" />This method prints the data as runtime information to <span 
+class="cmti-10">stdout</span>.<br 
+class="newline" />The output occurs as a table with columns containing the current iteration number, the physical
+     time at this iteration, and more columns for scalar/reduction values of each variable to be output.<br 
+class="newline" /></p></li></ul>
+<!--l. 51--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a><span 
+class="cmbx-10">IOBasic </span>Parameters</h3>
+<!--l. 53--><p class="noindent" >Parameters to control the <span 
+class="cmtt-10">Scalar </span>I/O method are: </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 55--><p class="noindent" ><span 
+class="cmtt-10">IOBasic::outScalar</span><span 
+class="cmtt-10">_criterion </span>(steerable)<br 
+class="newline" />The criterion that decides when to <span 
+class="cmtt-10">Scalar </span>output. If this parameter is set in the parameter file, it
+     will override the setting of the shared <span 
+class="cmtt-10">IO::out</span><span 
+class="cmtt-10">_criterion </span>parameter.
+     </p></li>
+     <li class="itemize">
+     <!--l. 59--><p class="noindent" ><span 
+class="cmtt-10">IOBasic::outScalar</span><span 
+class="cmtt-10">_every </span>(steerable)<br 
+class="newline" />How often, in terms of iterations, to do <span 
+class="cmtt-10">Scalar </span>output. If this parameter is set in the parameter
+     file, it will override the setting of the shared <span 
+class="cmtt-10">IO::out</span><span 
+class="cmtt-10">_every </span>parameter.
+     </p></li>
+     <li class="itemize">
+     <!--l. 64--><p class="noindent" ><span 
+class="cmtt-10">IOBasic::outScalar</span><span 
+class="cmtt-10">_dt </span>(steerable)<br 
+class="newline" />How often, in terms of simulation time, to do <span 
+class="cmtt-10">Scalar </span>output. If this parameter is set in the parameter
+     file, it will override the setting of the shared <span 
+class="cmtt-10">IO::out</span><span 
+class="cmtt-10">_dt </span>parameter.
+                                                                                       
+                                                                                       
+     </p></li>
+     <li class="itemize">
+     <!--l. 69--><p class="noindent" ><span 
+class="cmtt-10">IOBasic::out</span><span 
+class="cmtt-10">_dir</span><br 
+class="newline" />The directory in which to place the <span 
+class="cmtt-10">Scalar </span>ASCII output files. If the directory doesn’t exist at
+     startup it will be created.<br 
+class="newline" />If this paraeter is set to an empty string <span 
+class="cmtt-10">Scalar </span>output will go to the standard output directory as
+     specified in <span 
+class="cmtt-10">IO::out</span><span 
+class="cmtt-10">_dir</span>.
+     </p></li>
+     <li class="itemize">
+     <!--l. 74--><p class="noindent" ><span 
+class="cmtt-10">IOBasic::outScalar</span><span 
+class="cmtt-10">_style</span><br 
+class="newline" />How to start comments in the <span 
+class="cmtt-10">Scalar </span>ASCII output files.<br 
+class="newline" />Possible choices for this keywork parameter are <span 
+class="cmti-10">xgraph </span>and <span 
+class="cmti-10">gnuplot</span>.
+     </p></li>
+     <li class="itemize">
+     <!--l. 78--><p class="noindent" ><span 
+class="cmtt-10">IOBasic::out</span><span 
+class="cmtt-10">_format </span>(steerable)<br 
+class="newline" />The output format for floating-point numbers in <span 
+class="cmtt-10">Scalar </span>output.<br 
+class="newline" />This parameter conforms to the format modifier of the C library routine <span 
+class="cmti-10">fprintf(3)</span>. You can set
+     the format for outputting floating-point numbers (fixed or exponential) as well as their precision
+     (number of digits).
+     </p></li>
+     <li class="itemize">
+     <!--l. 84--><p class="noindent" ><span 
+class="cmtt-10">IOBasic::outScalar</span><span 
+class="cmtt-10">_vars </span>(steerable)<br 
+class="newline" />The list of variables to output into individual ASCII files.<br 
+class="newline" />The variables must be given by their fully qualified variable or group name. The special keyword
+     <span 
+class="cmti-10">all </span>requests <span 
+class="cmtt-10">Scalar </span>output for all variables. Multiple variables must be separated by spaces. For
+     CCTK_GF and CCTK_ARRAY variables, an option string can be appended in curly braces to the
+     name of the variable. The only option supported so far is an individual list of reductions for that
+     variable which would take precedence over the default reduction operations to perform.
+     </p></li>
+     <li class="itemize">
+     <!--l. 96--><p class="noindent" ><span 
+class="cmtt-10">IOBasic::outScalar</span><span 
+class="cmtt-10">_reductions </span>(steerable)<br 
+class="newline" />The list of global reduction operations to perform on CCTK_GF and CCTK_ARRAY variables for
+     <span 
+class="cmtt-10">Scalar </span>output. This setting can be overridden for individual variables using an option string.<br 
+class="newline" />Multiple reduction names must be separated by spaces.</p></li></ul>
+<!--l. 105--><p class="noindent" >Parameters to control the <span 
+class="cmtt-10">Info </span>I/O method are: </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 107--><p class="noindent" ><span 
+class="cmtt-10">IOBasic::outInfo</span><span 
+class="cmtt-10">_criterion </span>(steerable)<br 
+class="newline" />The criterion that decides when to <span 
+class="cmtt-10">Info </span>output. If this parameter is set in the parameter file, it
+     will override the setting of the shared <span 
+class="cmtt-10">IO::out</span><span 
+class="cmtt-10">_criterion </span>parameter.
+     </p></li>
+     <li class="itemize">
+     <!--l. 111--><p class="noindent" ><span 
+class="cmtt-10">IOBasic::outInfo</span><span 
+class="cmtt-10">_every </span>(steerable)<br 
+class="newline" />How often, in terms of iterations, to do <span 
+class="cmtt-10">Info </span>output. If this parameter is set in the parameter file,
+     it will override the setting of the shared <span 
+class="cmtt-10">IO::out</span><span 
+class="cmtt-10">_every </span>parameter.
+                                                                                       
+                                                                                       
+     </p></li>
+     <li class="itemize">
+     <!--l. 116--><p class="noindent" ><span 
+class="cmtt-10">IOBasic::outInfo</span><span 
+class="cmtt-10">_dt </span>(steerable)<br 
+class="newline" />How often, in terms of simulation time, to do <span 
+class="cmtt-10">Info </span>output. If this parameter is set in the parameter
+     file, it will override the setting of the shared <span 
+class="cmtt-10">IO::out</span><span 
+class="cmtt-10">_dt </span>parameter.
+     </p></li>
+     <li class="itemize">
+     <!--l. 121--><p class="noindent" ><span 
+class="cmtt-10">IOBasic::outInfo</span><span 
+class="cmtt-10">_vars </span>(steerable)<br 
+class="newline" />The list of variables to output to screen.<br 
+class="newline" />The variables must be given by their fully qualified variable or group name. The special keyword
+     <span 
+class="cmti-10">all </span>requests <span 
+class="cmtt-10">Info </span>output for all variables. Multiple variables must be separated by spaces.<br 
+class="newline" />For CCTK_GF and CCTK_ARRAY variables, an option string can be appended in curly braces
+     to the name of the variable. The only option supported so far is an individual list of reductions for
+     that variable which would take precedence over the default reduction operations to perform.
+     </p></li>
+     <li class="itemize">
+     <!--l. 132--><p class="noindent" ><span 
+class="cmtt-10">IOBasic::outInfo</span><span 
+class="cmtt-10">_reductions </span>(steerable)<br 
+class="newline" />The default list of global reduction operations to perform on CCTK_GF and CCTK_ARRAY
+     variables. This setting can be overridden for individual variables using an option string.<br 
+class="newline" />Multiple reduction names must be separated by spaces.</p></li></ul>
+<!--l. 138--><p class="noindent" >All of the above parameters marked as steerable can be changed at runtime.
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-30003"></a>Examples</h3>
+<!--l. 143--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">3.1   </span> <a 
+ id="x1-40003.1"></a>Example for <span 
+class="cmtt-10">Info </span>Output</h4>
+<!--l. 145--><p class="noindent" >The following parameter settings request info output for variables <span 
+class="cmtt-10">grid::r, wavetoy::phi </span>(both are CCTK
+grid functions) and <span 
+class="cmtt-10">mythorn::complex </span>(a complex CCTK scalar) at every other iteration.
+</p><!--l. 150--><p class="noindent" >The minimum and maximum of <span 
+class="cmtt-10">grid::r </span>is printed according to the list of default reductions for info output
+(parameter <span 
+class="cmtt-10">IOBasic::outInfo</span><span 
+class="cmtt-10">_reductions</span>). This list is overridden for <span 
+class="cmtt-10">wavetoy::phi </span>where only the L2 norm
+is output as specified in the option string for this variable. You can also add other reduction operators within the
+\(\{\}\) braces.
+</p><!--l. 157--><p class="noindent" >For the scalar variable <span 
+class="cmtt-10">mythorn::complex </span>both the real and imaginary part are printed.
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-1">
+  IOBasic::outInfo_every      = 2
+  IOBasic::outInfo_vars       = &#x0022;grid::r
+                                 wavetoy::phi{reductions = ’norm2’}
+                                 mythorn::complex&#x0022;
+  IOBasic::outInfo_reductions = &#x0022;minimum maximum&#x0022;
+</pre>
+<!--l. 165--><p class="nopar" > The resulting screen output would look like this:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-2">
+---------------------------------------------------------------------------------------------
+  it  |          | GRID::r                     | WAVETOY::phi | MYTHORN::complex            |
+      |    t     | minimum      | maximum      | norm2        | real part    | imag part    |
+---------------------------------------------------------------------------------------------
+    0 |    0.000 |   0.02986294 |   0.86602540 |   0.04217014 |   6.90359593 |   0.00000000 |
+    2 |    0.034 |   0.02986294 |   0.86602540 |   0.00934749 |   6.90359593 |   0.00000000 |
+    4 |    0.069 |   0.02986294 |   0.86602540 |   0.02989811 |   6.90359593 |   0.00000000 |
+    6 |    0.103 |   0.02986294 |   0.86602540 |   0.05899959 |   6.90359593 |   0.00000000 |
+    8 |    0.138 |   0.02986294 |   0.86602540 |   0.07351147 |   6.90359593 |   0.00000000 |
+   10 |    0.172 |   0.02986294 |   0.86602540 |   0.07781795 |   6.90359593 |   0.00000000 |
+</pre>
+<!--l. 178--><p class="nopar" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">3.2   </span> <a 
+ id="x1-50003.2"></a>Example for <span 
+class="cmtt-10">Scalar </span>Output</h4>
+<!--l. 182--><p class="noindent" >The following parameter settings request scalar output for all grid function variables in the group
+<span 
+class="cmtt-10">grid::coordinates </span>and for the scalar variable <span 
+class="cmtt-10">grid::coarse</span><span 
+class="cmtt-10">_dx</span>.<br 
+class="newline" />Output occurs every 10th iteration. <span 
+class="cmtt-10">gnuplot </span>output style is selected for the ASCII files which are placed into a
+subdirectory <span 
+class="cmtt-10">scalar</span><span 
+class="cmtt-10">_output</span>. The minimum and maximum of <span 
+class="cmtt-10">grid::r </span>is printed according to the list of default
+reductions for scalar output (parameter <span 
+class="cmtt-10">IOBasic::outScalar</span><span 
+class="cmtt-10">_reductions</span>). This list is overridden for
+<span 
+class="cmtt-10">wavetoy::phi </span>where only the L1 norm is output as specified in the option string for this variable. You can also
+add other reduction operators within the \(\{\}\) braces.
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-3">
+  IOBasic::outScalar_every      = 10
+  IOBasic::outScalar_vars       = &#x0022;grid::coordinates grid::coarse_dx wavetoy::phi{reductions = ’norm1’}&#x0022;
+  IOBasic::outScalar_reductions = &#x0022;minimum maximum&#x0022;
+  IOBasic::outScalar_style      = &#x0022;gnuplot&#x0022;
+  IOBasic::out_dir              = &#x0022;scalar_output&#x0022;
+</pre>
+<!--l. 200--><p class="nopar" > This would create the following ASCII files:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-4">
+  ~/Cactus/par&#x003E; ls scalar_output
+  coarse_dx.asc  r_minimum.asc  x_minimum.asc  y_minimum.asc  z_minimum.asc
+  r_maximum.asc  x_maximum.asc  y_maximum.asc  z_maximum.asc  phi_norm1.asc
+</pre>
+<!--l. 206--><p class="nopar" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-60004"></a>Comments</h3>
+<!--l. 211--><p class="noindent" ><span 
+class="cmbx-10">Possible Reduction Operations</span><br 
+class="newline" />In order to get output of reduction values for <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_GF </span>and <span 
+class="cmtt-10">CCTK</span><span 
+class="cmtt-10">_ARRAY </span>variables you need to activate a thorn
+which provides reduction operators (eg. thorn <span 
+class="cmtt-10">PUGHReduce </span>in the <span 
+class="cmtt-10">CactusPUGH </span>arrangement). For a list of
+possible reduction operations please refer to the documention of this reduction thorn.<br 
+class="newline" /> <span 
+class="cmbx-10">Getting Output from IOBasic’s I/O Mehtods</span><br 
+class="newline" />You obtain output by an I/O method by either </p>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 224--><p class="noindent" >setting the appropriate I/O parameters
+     </p></li>
+     <li class="itemize">
+     <!--l. 225--><p class="noindent" >calling one of the routines of the I/O function interface provided by the flesh</p></li></ul>
+<!--l. 229--><p class="noindent" >For a description of basic I/O parameters and the I/O function interface to invoke I/O methods by application
+thorns please see the documentation of thorn <span 
+class="cmtt-10">IOUtil </span>and the flesh.<br 
+class="newline" /> <span 
+class="cmbx-10">Building Cactus configurations with IOBasic</span><br 
+class="newline" />Since <span 
+class="cmbx-10">IOBasic </span>uses parameters from <span 
+class="cmtt-10">IOUtil </span>it also needs this I/O helper thorn be compiled into Cactus and
+activated at runtime in the <span 
+class="cmtt-10">ActiveThorns </span>parameter in your parameter file.
+</p><!--l. 245--><p class="noindent" >
+</p>
+                                                                                       
+                                                                                       
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-70005"></a>Parameters</h3>
+<!--l. 264--><p class="noindent" ></p> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /></colgroup><colgroup id="TBL-2-2g"><col 
+id="TBL-2-2" /><col 
+id="TBL-2-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:normal; text-align:left;" id="TBL-2-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">out_dir</div>                      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-1-3"  
+class="td01">                                        STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-2-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Output directory for IOBasic’s scalar files, overrides IO::out</span><span 
+class="cmti-10">_dir</span></div>                               
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-1"  
+class="td11">        <span 
+class="cmbx-10">Range           </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-3-3"  
+class="td01">                                  <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-4-"><td  style="white-space:normal; text-align:left;" id="TBL-2-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.+</div>                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-2-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">A valid directory name</div>                                                                     
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-5-"><td  style="white-space:normal; text-align:left;" id="TBL-2-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><img 
+src="documentation0x.png" alt="ˆ
+$  "  class="circ"  /></div>                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-2-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">An empty string to choose the default from IO::out_dir</div>                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-6-1"  
+class="td11">                      </td></tr></table>
+<!--l. 271--><p class="noindent" ></p> <table id="TBL-3" class="tabular" 
+ 
+><colgroup id="TBL-3-1g"><col 
+id="TBL-3-1" /></colgroup><colgroup id="TBL-3-2g"><col 
+id="TBL-3-2" /><col 
+id="TBL-3-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-1-"><td  style="white-space:normal; text-align:left;" id="TBL-3-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">out_format</div>                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-1-3"  
+class="td01">                                        STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-3-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Which format for Scalar floating-point number output</span></div>                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-3-1"  
+class="td11">        <span 
+class="cmbx-10">Range           </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-3-3"  
+class="td01">                                    <span 
+class="cmbx-10">Default: </span>.13f  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-4-"><td  style="white-space:normal; text-align:left;" id="TBL-3-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">see [1] below</div>                </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-3-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">output with given precision in exponential / floating point notation</div>           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-5-1"  
+class="td11">                      </td></tr></table>
+<!--l. 278--><p class="noindent" ><span 
+class="cmbx-10">[1]</span>
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-5">
+\^({\textbackslash}.[1]?[0-9])?[EGefg]\$
+</pre>
+<!--l. 278--><p class="nopar" ></p> <table id="TBL-4" class="tabular" 
+ 
+><colgroup id="TBL-4-1g"><col 
+id="TBL-4-1" /></colgroup><colgroup id="TBL-4-2g"><col 
+id="TBL-4-2" /><col 
+id="TBL-4-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-1-"><td  style="white-space:normal; text-align:left;" id="TBL-4-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">outinfo_criterion</div>          </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-1-3"  
+class="td01">                                     KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-4-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Criterion to select Info output intervals</span></div>                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-3-1"  
+class="td11">        <span 
+class="cmbx-10">Range           </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-3-3"  
+class="td01">                                <span 
+class="cmbx-10">Default: </span>iteration  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-4-"><td  style="white-space:normal; text-align:left;" id="TBL-4-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">never</div>                         </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Never output</div>                                                                                  
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-5-"><td  style="white-space:normal; text-align:left;" id="TBL-4-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">iteration</div>                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Output every so many iterations</div>                                                         
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-6-"><td  style="white-space:normal; text-align:left;" id="TBL-4-6-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">time</div>                          </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-4-6-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Output every that much coordinate time</div>                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-7-1"  
+class="td11">                      </td></tr></table>
+<!--l. 285--><p class="noindent" ></p> <table id="TBL-5" class="tabular" 
+ 
+><colgroup id="TBL-5-1g"><col 
+id="TBL-5-1" /></colgroup><colgroup id="TBL-5-2g"><col 
+id="TBL-5-2" /><col 
+id="TBL-5-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-1-"><td  style="white-space:normal; text-align:left;" id="TBL-5-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">outinfo_dt</div>                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-1-3"  
+class="td01">                                          REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-5-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">How often to do Info output</span></div>                                                                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-3-1"  
+class="td11">        <span 
+class="cmbx-10">Range           </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-5-3-3"  
+class="td01">                                      <span 
+class="cmbx-10">Default: </span>-2  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-4-"><td  style="white-space:normal; text-align:left;" id="TBL-5-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">(0:*</div>                           </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-5-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">In intervals of that much coordinate time</div>                                             
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-5-"><td  style="white-space:normal; text-align:left;" id="TBL-5-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-5-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">As often as possible</div>                                                                          
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-6-"><td  style="white-space:normal; text-align:left;" id="TBL-5-6-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1</div>                              </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-5-6-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Disable output</div>                                                                                
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-7-"><td  style="white-space:normal; text-align:left;" id="TBL-5-7-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-2</div>                              </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-5-7-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Default to IO::out_dt</div>                                                                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-5-8-1"  
+class="td11">                      </td></tr></table>
+<!--l. 292--><p class="noindent" ></p> <table id="TBL-6" class="tabular" 
+ 
+><colgroup id="TBL-6-1g"><col 
+id="TBL-6-1" /></colgroup><colgroup id="TBL-6-2g"><col 
+id="TBL-6-2" /><col 
+id="TBL-6-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-1-"><td  style="white-space:normal; text-align:left;" id="TBL-6-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">outinfo_every</div>              </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-1-3"  
+class="td01">                                            INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-6-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">How often to do Info output</span></div>                                                                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-3-1"  
+class="td11">        <span 
+class="cmbx-10">Range           </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-6-3-3"  
+class="td01">                                      <span 
+class="cmbx-10">Default: </span>-1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-4-"><td  style="white-space:normal; text-align:left;" id="TBL-6-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1:*</div>                            </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-6-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Every so many iterations</div>                                                                   
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-5-"><td  style="white-space:normal; text-align:left;" id="TBL-6-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:</div>                              </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-6-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Disable Info output</div>                                                                          
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-6-"><td  style="white-space:normal; text-align:left;" id="TBL-6-6-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1:</div>                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-6-6-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Default to IO::out_every</div>                                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-7-1"  
+class="td11">                      </td></tr></table>
+<!--l. 299--><p class="noindent" ></p> <table id="TBL-7" class="tabular" 
+ 
+><colgroup id="TBL-7-1g"><col 
+id="TBL-7-1" /></colgroup><colgroup id="TBL-7-2g"><col 
+id="TBL-7-2" /><col 
+id="TBL-7-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-1-"><td  style="white-space:normal; text-align:left;" id="TBL-7-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">outinfo_reductions</div>       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-1-3"  
+class="td01">                                        STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-7-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">List of reductions to output as Info to screen</span></div>                                                       
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-3-1"  
+class="td11">        <span 
+class="cmbx-10">Range           </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-7-3-3"  
+class="td01">                      <span 
+class="cmbx-10">Default: </span>minimum maximum  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-4-"><td  style="white-space:normal; text-align:left;" id="TBL-7-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.+</div>                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-7-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Space-separated list of reduction operators</div>                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-5-1"  
+class="td11">                      </td></tr></table>
+<!--l. 306--><p class="noindent" ></p> <table id="TBL-8" class="tabular" 
+ 
+><colgroup id="TBL-8-1g"><col 
+id="TBL-8-1" /></colgroup><colgroup id="TBL-8-2g"><col 
+id="TBL-8-2" /><col 
+id="TBL-8-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-1-"><td  style="white-space:normal; text-align:left;" id="TBL-8-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">outinfo_vars</div>               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-1-3"  
+class="td01">                                        STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-8-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Variables to output as Info to screen</span></div>                                                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-3-1"  
+class="td11">        <span 
+class="cmbx-10">Range           </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-8-3-3"  
+class="td01">                                  <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-4-"><td  style="white-space:normal; text-align:left;" id="TBL-8-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.+</div>                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-8-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Space-separated list of fully qualified variable/group names</div>                      
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-5-"><td  style="white-space:normal; text-align:left;" id="TBL-8-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><img 
+src="documentation1x.png" alt="ˆ$  "  class="circ"  /></div>                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-8-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">An empty string to output nothing</div>                                                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-6-1"  
+class="td11">                      </td></tr></table>
+<!--l. 313--><p class="noindent" ></p> <table id="TBL-9" class="tabular" 
+ 
+><colgroup id="TBL-9-1g"><col 
+id="TBL-9-1" /></colgroup><colgroup id="TBL-9-2g"><col 
+id="TBL-9-2" /><col 
+id="TBL-9-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-1-"><td  style="white-space:normal; text-align:left;" id="TBL-9-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">outscalar_criterion</div>       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-1-3"  
+class="td01">                                     KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-9-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Criterion to select Scalar output intervals</span></div>                                                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-3-1"  
+class="td11">        <span 
+class="cmbx-10">Range           </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-9-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-9-3-3"  
+class="td01">                                <span 
+class="cmbx-10">Default: </span>iteration  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-4-"><td  style="white-space:normal; text-align:left;" id="TBL-9-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">never</div>                         </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-9-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Never output</div>                                                                                  
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-5-"><td  style="white-space:normal; text-align:left;" id="TBL-9-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">iteration</div>                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-9-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Output every so many iterations</div>                                                         
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-6-"><td  style="white-space:normal; text-align:left;" id="TBL-9-6-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">time</div>                          </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-9-6-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Output every that much coordinate time</div>                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-9-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-9-7-1"  
+class="td11">                      </td></tr></table>
+<!--l. 320--><p class="noindent" ></p> <table id="TBL-10" class="tabular" 
+ 
+><colgroup id="TBL-10-1g"><col 
+id="TBL-10-1" /></colgroup><colgroup id="TBL-10-2g"><col 
+id="TBL-10-2" /><col 
+id="TBL-10-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-1-"><td  style="white-space:normal; text-align:left;" id="TBL-10-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">outscalar_dt</div>               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-1-3"  
+class="td01">                                          REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-10-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">How often to do Scalar output</span></div>                                                                         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-3-1"  
+class="td11">        <span 
+class="cmbx-10">Range           </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-10-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-10-3-3"  
+class="td01">                                      <span 
+class="cmbx-10">Default: </span>-2  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-4-"><td  style="white-space:normal; text-align:left;" id="TBL-10-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">(0:*</div>                           </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-10-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">In intervals of that much coordinate time</div>                                             
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-5-"><td  style="white-space:normal; text-align:left;" id="TBL-10-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                     </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-10-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">As often as possible</div>                                                                          
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-6-"><td  style="white-space:normal; text-align:left;" id="TBL-10-6-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1</div>                              </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-10-6-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Disable output</div>                                                                                
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-7-"><td  style="white-space:normal; text-align:left;" id="TBL-10-7-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-2</div>                              </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-10-7-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Default to IO::out_dt</div>                                                                        
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-10-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-10-8-1"  
+class="td11">                      </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 327--><p class="noindent" ></p> <table id="TBL-11" class="tabular" 
+ 
+><colgroup id="TBL-11-1g"><col 
+id="TBL-11-1" /></colgroup><colgroup id="TBL-11-2g"><col 
+id="TBL-11-2" /><col 
+id="TBL-11-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-1-"><td  style="white-space:normal; text-align:left;" id="TBL-11-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">outscalar_every</div>           </td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-1-3"  
+class="td01">                                            INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-11-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">How often to do Scalar output</span></div>                                                                         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-3-1"  
+class="td11">        <span 
+class="cmbx-10">Range           </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-11-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-11-3-3"  
+class="td01">                                      <span 
+class="cmbx-10">Default: </span>-1  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-4-"><td  style="white-space:normal; text-align:left;" id="TBL-11-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1:*</div>                            </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-11-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Every so many iterations</div>                                                                   
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-5-"><td  style="white-space:normal; text-align:left;" id="TBL-11-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">0:</div>                              </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-11-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Disable Scalar output</div>                                                                       
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-6-"><td  style="white-space:normal; text-align:left;" id="TBL-11-6-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">-1:</div>                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-11-6-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Default to IO::out_every</div>                                                                   
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-11-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-11-7-1"  
+class="td11">                      </td></tr></table>
+<!--l. 334--><p class="noindent" ></p> <table id="TBL-12" class="tabular" 
+ 
+><colgroup id="TBL-12-1g"><col 
+id="TBL-12-1" /></colgroup><colgroup id="TBL-12-2g"><col 
+id="TBL-12-2" /><col 
+id="TBL-12-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-1-"><td  style="white-space:normal; text-align:left;" id="TBL-12-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">outscalar_reductions</div>    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-1-3"  
+class="td01">                                        STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-12-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">List of reductions to output into files</span></div>                                                                 
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-3-1"  
+class="td11">        <span 
+class="cmbx-10">Range           </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-12-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-12-3-3"  
+class="td01">           <span 
+class="cmbx-10">Default: </span>minimum maximum norm1 norm2  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-4-"><td  style="white-space:normal; text-align:left;" id="TBL-12-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.+</div>                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-12-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Space-separated list of reduction operators</div>                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-12-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-12-5-1"  
+class="td11">                      </td></tr></table>
+<!--l. 341--><p class="noindent" ></p> <table id="TBL-13" class="tabular" 
+ 
+><colgroup id="TBL-13-1g"><col 
+id="TBL-13-1" /></colgroup><colgroup id="TBL-13-2g"><col 
+id="TBL-13-2" /><col 
+id="TBL-13-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-1-"><td  style="white-space:normal; text-align:left;" id="TBL-13-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">outscalar_style</div>            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-1-3"  
+class="td01">                                     KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-13-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Which style for Scalar output</span></div>                                                                          
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-3-1"  
+class="td11">        <span 
+class="cmbx-10">Range           </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-13-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-13-3-3"  
+class="td01">                                 <span 
+class="cmbx-10">Default: </span>xgraph  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-4-"><td  style="white-space:normal; text-align:left;" id="TBL-13-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">gnuplot</div>                      </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-13-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1D output readable by gnuplot</div>                                                           
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-5-"><td  style="white-space:normal; text-align:left;" id="TBL-13-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">xgraph</div>                       </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-13-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">1D output readable by xgraph</div>                                                            
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-13-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-13-6-1"  
+class="td11">                      </td></tr></table>
+<!--l. 348--><p class="noindent" ></p> <table id="TBL-14" class="tabular" 
+ 
+><colgroup id="TBL-14-1g"><col 
+id="TBL-14-1" /></colgroup><colgroup id="TBL-14-2g"><col 
+id="TBL-14-2" /><col 
+id="TBL-14-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-1-"><td  style="white-space:normal; text-align:left;" id="TBL-14-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">outscalar_vars</div>             </td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-1-3"  
+class="td01">                                        STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-14-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Variables to output into files</span></div>                                                                           
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-3-1"  
+class="td11">        <span 
+class="cmbx-10">Range           </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-14-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-14-3-3"  
+class="td01">                                  <span 
+class="cmbx-10">Default: </span>(none)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-4-"><td  style="white-space:normal; text-align:left;" id="TBL-14-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">.+</div>                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-14-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">Space-separated list of fully qualified variable/group names</div>                      
+</td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-5-"><td  style="white-space:normal; text-align:left;" id="TBL-14-5-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><img 
+src="documentation2x.png" alt="ˆ$  "  class="circ"  /></div>                             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-14-5-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;">An empty string to output nothing</div>                                                      
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-14-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-14-6-1"  
+class="td11">                      </td></tr></table>
+<!--l. 355--><p class="noindent" ></p> <table id="TBL-15" class="tabular" 
+ 
+><colgroup id="TBL-15-1g"><col 
+id="TBL-15-1" /></colgroup><colgroup id="TBL-15-2g"><col 
+id="TBL-15-2" /><col 
+id="TBL-15-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-1-"><td  style="white-space:normal; text-align:left;" id="TBL-15-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">io_out_dir</div>                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-15-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from IO</td><td  style="white-space:nowrap; text-align:right;" id="TBL-15-1-3"  
+class="td01">STRING  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-15-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-15-2-1"  
+class="td11">                      </td></tr></table>
+<!--l. 360--><p class="noindent" ></p> <table id="TBL-16" class="tabular" 
+ 
+><colgroup id="TBL-16-1g"><col 
+id="TBL-16-1" /></colgroup><colgroup id="TBL-16-2g"><col 
+id="TBL-16-2" /><col 
+id="TBL-16-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-1-"><td  style="white-space:normal; text-align:left;" id="TBL-16-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">new_filename_scheme</div>   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-16-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from IO</td><td  style="white-space:nowrap; text-align:right;" id="TBL-16-1-3"  
+class="td01">BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-16-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-16-2-1"  
+class="td11">                      </td></tr></table>
+<!--l. 365--><p class="noindent" ></p> <table id="TBL-17" class="tabular" 
+ 
+><colgroup id="TBL-17-1g"><col 
+id="TBL-17-1" /></colgroup><colgroup id="TBL-17-2g"><col 
+id="TBL-17-2" /><col 
+id="TBL-17-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-1-"><td  style="white-space:normal; text-align:left;" id="TBL-17-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">out_criterion</div>              </td><td  style="white-space:nowrap; text-align:left;" id="TBL-17-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from IO</td><td  style="white-space:nowrap; text-align:right;" id="TBL-17-1-3"  
+class="td01">KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-17-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-17-2-1"  
+class="td11">                      </td></tr></table>
+<!--l. 370--><p class="noindent" ></p> <table id="TBL-18" class="tabular" 
+ 
+><colgroup id="TBL-18-1g"><col 
+id="TBL-18-1" /></colgroup><colgroup id="TBL-18-2g"><col 
+id="TBL-18-2" /><col 
+id="TBL-18-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-1-"><td  style="white-space:normal; text-align:left;" id="TBL-18-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">out_dt</div>                       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-18-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from IO</td><td  style="white-space:nowrap; text-align:right;" id="TBL-18-1-3"  
+class="td01">REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-18-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-18-2-1"  
+class="td11">                      </td></tr></table>
+<!--l. 375--><p class="noindent" ></p> <table id="TBL-19" class="tabular" 
+ 
+><colgroup id="TBL-19-1g"><col 
+id="TBL-19-1" /></colgroup><colgroup id="TBL-19-2g"><col 
+id="TBL-19-2" /><col 
+id="TBL-19-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-1-"><td  style="white-space:normal; text-align:left;" id="TBL-19-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">out_every</div>                   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-19-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from IO</td><td  style="white-space:nowrap; text-align:right;" id="TBL-19-1-3"  
+class="td01">INT  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-19-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-19-2-1"  
+class="td11">                      </td></tr></table>
+<!--l. 380--><p class="noindent" ></p> <table id="TBL-20" class="tabular" 
+ 
+><colgroup id="TBL-20-1g"><col 
+id="TBL-20-1" /></colgroup><colgroup id="TBL-20-2g"><col 
+id="TBL-20-2" /><col 
+id="TBL-20-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-1-"><td  style="white-space:normal; text-align:left;" id="TBL-20-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">out_fileinfo</div>                 </td><td  style="white-space:nowrap; text-align:left;" id="TBL-20-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from IO</td><td  style="white-space:nowrap; text-align:right;" id="TBL-20-1-3"  
+class="td01">KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-20-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-20-2-1"  
+class="td11">                      </td></tr></table>
+<!--l. 385--><p class="noindent" ></p> <table id="TBL-21" class="tabular" 
+ 
+><colgroup id="TBL-21-1g"><col 
+id="TBL-21-1" /></colgroup><colgroup id="TBL-21-2g"><col 
+id="TBL-21-2" /><col 
+id="TBL-21-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-1-"><td  style="white-space:normal; text-align:left;" id="TBL-21-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">strict_io_parameter_check</div> </td><td  style="white-space:nowrap; text-align:left;" id="TBL-21-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from IO</td><td  style="white-space:nowrap; text-align:right;" id="TBL-21-1-3"  
+class="td01">BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-21-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-21-2-1"  
+class="td11">                      </td></tr></table>
+<!--l. 390--><p class="noindent" ></p> <table id="TBL-22" class="tabular" 
+ 
+><colgroup id="TBL-22-1g"><col 
+id="TBL-22-1" /></colgroup><colgroup id="TBL-22-2g"><col 
+id="TBL-22-2" /><col 
+id="TBL-22-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-1-"><td  style="white-space:normal; text-align:left;" id="TBL-22-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">verbose</div>                      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-22-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>shared from IO</td><td  style="white-space:nowrap; text-align:right;" id="TBL-22-1-3"  
+class="td01">KEYWORD  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-22-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-22-2-1"  
+class="td11">                      </td></tr></table>
+<!--l. 397--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">6   </span> <a 
+ id="x1-80006"></a>Interfaces</h3>
+                                                                                       
+                                                                                       
+<!--l. 402--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-9000"></a>General</h4>
+<!--l. 404--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 406--><p class="noindent" >iobasic
+</p><!--l. 409--><p class="noindent" ><span 
+class="cmbx-10">Inherits</span>:
+</p><!--l. 411--><p class="noindent" >io
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-10000"></a>Grid Variables</h4>
+<!--l. 414--><p class="noindent" >
+</p>
+<h5 class="subsubsectionHead"><span class="titlemark">6.0.1   </span> <a 
+ id="x1-110006.0.1"></a>PRIVATE GROUPS</h5>
+<!--l. 418--><p class="noindent" ></p> <table id="TBL-23" class="tabular" 
+ 
+><colgroup id="TBL-23-1g"><col 
+id="TBL-23-1" /></colgroup><colgroup id="TBL-23-2g"><col 
+id="TBL-23-2" /></colgroup><colgroup id="TBL-23-3g"><col 
+id="TBL-23-3" /><col 
+id="TBL-23-4" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-1-1"  
+class="td11">     <span 
+class="cmbx-10">Group Names </span>      </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-1-2"  
+class="td10">    <span 
+class="cmbx-10">Variable Names </span>   </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-1-3"  
+class="td01">    <span 
+class="cmbx-10">Details </span>   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-1-4"  
+class="td11">                   </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-2-1"  
+class="td11">  next_info_output_time   </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-2-2"  
+class="td10">  next_info_output_time </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-2-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-2-4"  
+class="td11"> 0                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-3-1"  
+class="td11">                       </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-3-2"  
+class="td10">                      </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-3-3"  
+class="td01">   dimensions  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-3-4"  
+class="td11"> 0                 </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-4-1"  
+class="td11"> </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-4-2"  
+class="td10"> </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-4-3"  
+class="td01"> distribution </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-4-4"  
+class="td11"> CONSTANT </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-5-1"  
+class="td11">                       </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-5-2"  
+class="td10">                      </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-5-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-5-4"  
+class="td11"> SCALAR      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-6-1"  
+class="td11">                       </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-6-2"  
+class="td10">                      </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-6-3"  
+class="td01">    timelevels  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-6-4"  
+class="td11"> 1                 </td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-7-1"  
+class="td11">
+                       </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-7-2"  
+class="td10">                      </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-7-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-7-4"  
+class="td11"> REAL          </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-8-1"  
+class="td11"> next_scalar_output_time  </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-8-2"  
+class="td10"> next_scalar_output_time</td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-8-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-8-4"  
+class="td11"> 0                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-9-1"  
+class="td11">                       </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-9-2"  
+class="td10">                      </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-9-3"  
+class="td01">   dimensions  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-9-4"  
+class="td11"> 0                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-10-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-10-1"  
+class="td11">                       </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-10-2"  
+class="td10">                      </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-10-3"  
+class="td01">  distribution  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-10-4"  
+class="td11"> CONSTANT  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-11-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-11-1"  
+class="td11">                       </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-11-2"  
+class="td10">                      </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-11-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-11-4"  
+class="td11"> SCALAR      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-12-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-12-1"  
+class="td11">                       </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-12-2"  
+class="td10">                      </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-12-3"  
+class="td01">    timelevels  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-12-4"  
+class="td11"> 1                 </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-13-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-13-1"  
+class="td11">                       </td><td  style="white-space:nowrap; text-align:center;" id="TBL-23-13-2"  
+class="td10">                      </td><td  style="white-space:nowrap; text-align:right;" id="TBL-23-13-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-23-13-4"  
+class="td11"> REAL          </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-23-14-"><td  style="white-space:nowrap; text-align:center;" id="TBL-23-14-1"  
+class="td11">                       </td></tr></table>
+<!--l. 441--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">7   </span> <a 
+ id="x1-120007"></a>Schedule</h3>
+<!--l. 447--><p class="noindent" >This section lists all the variables which are assigned storage by thorn CactusBase/IOBasic. Storage can
+either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 450--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-13000"></a>Storage</h4>
+<!--l. 452--><p class="noindent" > 
+</p><!--l. 454--><p class="noindent" ></p> <table id="TBL-24" class="tabular" 
+ 
+><colgroup id="TBL-24-1g"><col 
+id="TBL-24-1" /><col 
+id="TBL-24-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-24-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-24-1-1"  
+class="td11"> <span 
+class="cmbx-10">Always:                                              </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-1-2"  
+class="td11">    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-24-2-1"  
+class="td11"> next_info_output_time next_scalar_output_time  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-2-2"  
+class="td11">    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-24-3-1"  
+class="td11">                                                                  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-24-3-2"  
+class="td11">    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-24-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-24-4-1"  
+class="td11">                                           </td></tr></table>
+                                                                                       
+                                                                                       
+<!--l. 462--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-14000"></a>Scheduled Functions</h4>
+<!--l. 465--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_STARTUP</span>
+</p><!--l. 467--><p class="noindent" >      iobasic_startup
+</p><!--l. 469--><p class="noindent" >     <span 
+class="cmti-10">startup routine</span>
+</p><!--l. 472--><p class="noindent" > 
+</p><!--l. 474--><p class="noindent" ></p> <table id="TBL-25" class="tabular" 
+ 
+><colgroup id="TBL-25-1g"><col 
+id="TBL-25-1" /><col 
+id="TBL-25-2" /><col 
+id="TBL-25-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-25-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-1-3"  
+class="td11"> ioutil_startup  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-2-3"  
+class="td11"> c                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-25-3-3"  
+class="td11"> function         </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-25-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-25-4-1"  
+class="td11">    </td></tr></table>
+<!--l. 483--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_INITIAL</span>
+</p><!--l. 485--><p class="noindent" >      iobasic_init
+</p><!--l. 487--><p class="noindent" >     <span 
+class="cmti-10">initialisation routine</span>
+</p><!--l. 490--><p class="noindent" > 
+</p><!--l. 492--><p class="noindent" ></p> <table id="TBL-26" class="tabular" 
+ 
+><colgroup id="TBL-26-1g"><col 
+id="TBL-26-1" /><col 
+id="TBL-26-2" /><col 
+id="TBL-26-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-26-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-1-3"  
+class="td11"> c                                                             </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-2-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-2-3"  
+class="td11"> function                                                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-3-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-3-3"  
+class="td11"> iobasic::next_info_output_time(everywhere)    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-4-2"  
+class="td11">                </td><td  style="white-space:nowrap; text-align:left;" id="TBL-26-4-3"  
+class="td11"> iobasic::next_scalar_output_time(everywhere)  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-26-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-26-5-1"  
+class="td11">    </td></tr></table>
+ 
+</body></html> 
+
+                                                                                       
+
+

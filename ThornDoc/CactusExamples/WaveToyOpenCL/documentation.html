@@ -1,0 +1,500 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<!--http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd-->  
+<html xmlns="http://www.w3.org/1999/xhtml"  
+> 
+<head> <title>WaveToyOpenCL</title> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="originator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<!-- mathjax,charset=utf-8,html,xhtml --> 
+<meta name="src" content="documentation.tex" /> 
+<link rel="stylesheet" type="text/css" href="documentation.css" /> 
+<script>window.MathJax = { tex: { tags: "ams", }, }; </script> 
+ <script type="text/javascript" async="async" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"></script>  
+</head><body 
+>
+<div class="maketitle">
+                                                                                       
+                                                                                       
+                                                                                       
+                                                                                       
+
+<h2 class="titleHead">WaveToyOpenCL</h2>
+ <div class="author" ><span 
+class="cmr-12">Erik Schnetter </span><span 
+class="cmmi-12">&#x003C;</span><span 
+class="cmr-12">eschnetter@perimeterinstitute.ca</span><span 
+class="cmmi-12">&#x003E;</span></div>
+<br />
+<div class="date" ><span 
+class="cmr-12">May 15, 2012</span></div>
+</div>
+<div 
+class="abstract" 
+>
+<h3 class="abstracttitle">
+<span 
+class="cmbx-9">Abstract</span>
+</h3>
+     <!--l. 102--><p class="noindent" ><span 
+class="cmr-9">This  thorn  implements  WaveToy,  solving  the  scalar  wave  equation  (in  a  Euclidean,  i.e.</span><span 
+class="cmr-9"> trivial</span>
+     <span 
+class="cmr-9">geometry). The thorn is implemented in OpenCL, with some wrapper code in C++.</span>
+</p>
+</div>
+<h3 class="sectionHead"><span class="titlemark">1   </span> <a 
+ id="x1-10001"></a>Introduction</h3>
+<!--l. 112--><p class="noindent" >This thorn <span 
+class="cmtt-10">WavetoyOpenCL </span>solves the scalar wave equation, the same equation solved in thorn <span 
+class="cmtt-10">WaveToy </span>and its
+companions written in other languages. Its major purpose is to serve as high-level example of using OpenCL in
+Cactus. It is purposefully written to be simple and easy to understand; for example, there are no parameters to
+choose different types of initial or boundary conditions.
+</p><!--l. 120--><p class="noindent" >
+                                                                                       
+                                                                                       
+</p>
+<h3 class="sectionHead"><span class="titlemark">2   </span> <a 
+ id="x1-20002"></a>Thorn Structure</h3>
+<!--l. 122--><p class="noindent" >We assume the reader is familiar with the structure of a Cactus thorn written e.g. in C or C++. An OpenCL
+thorn is slightly more complex because it (1) has to describe when and what data are moved between host and
+device, and (2) Cactus does not (yet?) support calling OpenCL code directly; some boilerplate code is
+necessary.
+</p><!--l. 128--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.1   </span> <a 
+ id="x1-30002.1"></a>Schedule Declarations</h4>
+<!--l. 130--><p class="noindent" >Thorn <span 
+class="cmtt-10">WaveToyOpenCL </span>relies on thorn <span 
+class="cmtt-10">Accelerator </span>to handle data movement between host and device. This
+does not need to be managed explicitly; instead, the file <span 
+class="cmtt-10">schedule.ccl </span>describes which routines are executed
+where (host or device), and which variables or groups are read or written.
+</p><!--l. 136--><p class="noindent" >The location where a scheduled routine is ultimately executed needs to be described in a <span 
+class="cmtt-10">Device=</span>
+schedule tag. The set of variables that are read and/or written needs to be declared in <span 
+class="cmtt-10">READS </span>and
+<span 
+class="cmtt-10">WRITES </span>schedule statements. For example, this is the schedule item for the evolution routine of thorn
+<span 
+class="cmtt-10">WaveToyOpenCL</span>:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-1">
+SCHEDULE WaveToyOpenCL_Evol AT evol
+{
+  LANG:   C
+  TAGS:   Device=1
+  WRITES: WaveToyOpenCL::Scalar
+} &#x0022;Evolve scalar wave&#x0022;
+</pre>
+<!--l. 150--><p class="nopar" >
+</p><!--l. 152--><p class="noindent" >This indicates that this routine executes on the device, i.e. its kernel is implemented in OpenCL. Note that, in
+OpenCL, both CPU and GPU count as <span 
+class="cmti-10">devices </span>(thus every routine written in OpenCL counts as executing on a
+device, even if the device happens to be the CPU).
+</p><!--l. 158--><p class="noindent" >This also indicates that this routine writes (i.e. defines) the grid function group <span 
+class="cmtt-10">Scalar</span>, without looking at (the
+current timelevel of) this group.
+</p><!--l. 162--><p class="noindent" >
+</p>
+<h4 class="subsectionHead"><span class="titlemark">2.2   </span> <a 
+ id="x1-40002.2"></a>Schedule Routines</h4>
+<!--l. 164--><p class="noindent" >Executing OpenCL code requires some boilerplate: One needs to choose an OpenCL platform and device, needs
+to compile the code (from a C string), needs to pass in arguments, and finally needs to execute the actual kernel
+code. Thorn <span 
+class="cmtt-10">OpenCLRunTime </span>provides a simple helper routine for these tasks that can be used e.g. as
+follows:
+                                                                                       
+                                                                                       
+</p>
+<pre class="verbatim" id="verbatim-2">
+  char const *const groups[] = {
+    &#x0022;WaveToyOpenCL::Scalar&#x0022;,
+    NULL};
+
+  int const imin[] = {cctk_nghostzones[0],
+                      cctk_nghostzones[1],
+                      cctk_nghostzones[2]};
+  int const imax[] = {cctk_lsh[0] - cctk_nghostzones[0],
+                      cctk_lsh[1] - cctk_nghostzones[1],
+                      cctk_lsh[2] - cctk_nghostzones[2]};
+
+  static struct OpenCLKernel *kernel = NULL;
+  char const *const sources[] = {&#x0022;&#x0022;, OpenCL_source_WaveToyOpenCL_evol, NULL};
+  OpenCLRunTime_CallKernel(cctkGH, CCTK_THORNSTRING, &#x0022;evol&#x0022;,
+                           sources, groups, NULL, NULL, NULL, -1,
+                           imin, imax, &#x0026;kernel);
+</pre>
+<!--l. 187--><p class="nopar" >
+</p><!--l. 189--><p class="noindent" >The function <span 
+class="cmtt-10">OpenCLRunTime</span><span 
+class="cmtt-10">_CallKernel </span>performs the following steps:
+     </p><ol  class="enumerate1" >
+<li 
+  class="enumerate" id="x1-4002x1">
+     <!--l. 192--><p class="noindent" >Choose a platform and device, compile the kernel code, and memoise (remember) the kernel for the
+     next call
+     </p></li>
+<li 
+  class="enumerate" id="x1-4004x2">
+     <!--l. 194--><p class="noindent" >Pass a set of grid functions to the kernel routine
+     </p></li>
+<li 
+  class="enumerate" id="x1-4006x3">
+     <!--l. 195--><p class="noindent" >Parallelise  the  kernel  over  a  certain  set  of  grid  points  (this  is  similar  e.g. to  an  OpenMP
+     parallelisation, except that OpenCL devices may offer much more parallelism)
+     </p></li>
+<li 
+  class="enumerate" id="x1-4008x4">
+     <!--l. 198--><p class="noindent" >Call the kernel</p></li></ol>
+                                                                                       
+                                                                                       
+<!--l. 200--><p class="noindent" >Consequently, one needs to define the set of grid functions to be passed to the OpenCL kernel (<span 
+class="cmtt-10">groups</span>, a C
+array terminated by NULL), needs to define the iteration bounds (<span 
+class="cmtt-10">imin </span>and <span 
+class="cmtt-10">imax</span>), and needs to provide the
+actual source code (<span 
+class="cmtt-10">sources</span>, a C array terminated by NULL).
+</p><!--l. 206--><p class="noindent" >Note that the first element of <span 
+class="cmtt-10">sources </span>contains declarations (it is empty here), while the second element
+contains the actual kernel code (see thorn <span 
+class="cmtt-10">OpenCLRunTime</span>). See thorn OpenCL how the string
+<span 
+class="cmtt-10">OpenCL</span><span 
+class="cmtt-10">_source</span><span 
+class="cmtt-10">_WaveToyOpenCL</span><span 
+class="cmtt-10">_evol </span>is generated from <span 
+class="cmtt-10">.cl </span>files).
+</p><!--l. 212--><p class="noindent" >The actual kernel is contained in the file <span 
+class="cmtt-10">evol.cl</span>, and should be readable with some C knowledge. <span 
+class="cmtt-10">LC</span><span 
+class="cmtt-10">_LOOP3 </span>is a
+macro that parallelises a loop, similar to the macros provided by thorn <span 
+class="cmtt-10">LoopControl</span>.
+</p><!--l. 228--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">3   </span> <a 
+ id="x1-50003"></a>Parameters</h3>
+<!--l. 247--><p class="noindent" ></p> <table id="TBL-2" class="tabular" 
+ 
+><colgroup id="TBL-2-1g"><col 
+id="TBL-2-1" /></colgroup><colgroup id="TBL-2-2g"><col 
+id="TBL-2-2" /><col 
+id="TBL-2-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-1-"><td  style="white-space:normal; text-align:left;" id="TBL-2-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">verbose</div>       </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-1-3"  
+class="td01">                                           BOOLEAN  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-2-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Output progress information</span></div>                                                                    
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-3-1"  
+class="td11">            </td><td  style="white-space:nowrap; text-align:left;" id="TBL-2-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-2-3-3"  
+class="td01">                                          <span 
+class="cmbx-10">Default: </span>no  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-2-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-2-4-1"  
+class="td11">            </td></tr></table>
+<!--l. 254--><p class="noindent" ></p> <table id="TBL-3" class="tabular" 
+ 
+><colgroup id="TBL-3-1g"><col 
+id="TBL-3-1" /></colgroup><colgroup id="TBL-3-2g"><col 
+id="TBL-3-2" /><col 
+id="TBL-3-3" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-1-"><td  style="white-space:normal; text-align:left;" id="TBL-3-1-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">wavelength</div>  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-1-2"  
+class="td10"> <span 
+class="cmbx-10">Scope: </span>private</td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-1-3"  
+class="td01">                                                    REAL  </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-2-"><td colspan="3" style="white-space:normal; text-align:left;" id="TBL-3-2-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;"><span 
+class="cmbx-10">Description: </span><span 
+class="cmti-10">Wavelength of initial data</span></div>                                                                              
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-3-1"  
+class="td11">   <span 
+class="cmbx-10">Range    </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-3-3-2"  
+class="td10">              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-3-3-3"  
+class="td01">                                              <span 
+class="cmbx-10">Default: </span>1.0  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-4-"><td  style="white-space:normal; text-align:left;" id="TBL-3-4-1"  
+class="td11"> <div class="multicolumn"  style="white-space:normal; text-align:left;">*:*</div>             </td><td colspan="2" style="white-space:normal; text-align:left;" id="TBL-3-4-2"  
+class="td10"> <div class="multicolumn"  style="white-space:normal; text-align:left;"></div>                                                                         
+</td></tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-3-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-3-5-1"  
+class="td11">            </td></tr></table>
+<!--l. 263--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">4   </span> <a 
+ id="x1-60004"></a>Interfaces</h3>
+<!--l. 268--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-7000"></a>General</h4>
+<!--l. 270--><p class="noindent" ><span 
+class="cmbx-10">Implements</span>:
+</p><!--l. 272--><p class="noindent" >wavetoyopencl
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-8000"></a>Grid Variables</h4>
+<!--l. 275--><p class="noindent" >
+</p>
+                                                                                       
+                                                                                       
+<h5 class="subsubsectionHead"><span class="titlemark">4.0.1   </span> <a 
+ id="x1-90004.0.1"></a>PRIVATE GROUPS</h5>
+<!--l. 279--><p class="noindent" ></p> <table id="TBL-4" class="tabular" 
+ 
+><colgroup id="TBL-4-1g"><col 
+id="TBL-4-1" /></colgroup><colgroup id="TBL-4-2g"><col 
+id="TBL-4-2" /></colgroup><colgroup id="TBL-4-3g"><col 
+id="TBL-4-3" /><col 
+id="TBL-4-4" /></colgroup><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-1-1"  
+class="td11">   <span 
+class="cmbx-10">Group Names </span>   </td><td  style="white-space:nowrap; text-align:center;" id="TBL-4-1-2"  
+class="td10">   <span 
+class="cmbx-10">Variable Names </span> </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-1-3"  
+class="td01">    <span 
+class="cmbx-10">Details </span>   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-1-4"  
+class="td11">                </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-2-1"  
+class="td11">       scalar            </td><td  style="white-space:nowrap; text-align:center;" id="TBL-4-2-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-2-3"  
+class="td01">     compact  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-2-4"  
+class="td11"> 0              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-3-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-4-3-2"  
+class="td10">          u              </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-3-3"  
+class="td01">   description  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-3-4"  
+class="td11"> Scalar        </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-4-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-4-4-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-4-3"  
+class="td01">   dimensions  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-4-4"  
+class="td11"> 3              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-5-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-4-5-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-5-3"  
+class="td01">  distribution  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-5-4"  
+class="td11"> DEFAULT  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-6-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-4-6-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-6-3"  
+class="td01">   group type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-6-4"  
+class="td11"> GF            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-7-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-4-7-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-7-3"  
+class="td01">    timelevels  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-7-4"  
+class="td11"> 3              </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-8-1"  
+class="td11">                    </td><td  style="white-space:nowrap; text-align:center;" id="TBL-4-8-2"  
+class="td10">                    </td><td  style="white-space:nowrap; text-align:right;" id="TBL-4-8-3"  
+class="td01"> variable type  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-4-8-4"  
+class="td11"> REAL        </td>
+</tr><tr 
+class="hline"><td><hr /></td><td><hr /></td><td><hr /></td><td><hr /></td></tr><tr  
+ style="vertical-align:baseline;" id="TBL-4-9-"><td  style="white-space:nowrap; text-align:center;" id="TBL-4-9-1"  
+class="td11">                    </td></tr></table>
+<!--l. 296--><p class="noindent" ><span 
+class="cmbx-10">Uses header</span>:
+</p><!--l. 298--><p class="noindent" >OpenCLRunTime.h
+</p><!--l. 301--><p class="noindent" >
+</p>
+<h3 class="sectionHead"><span class="titlemark">5   </span> <a 
+ id="x1-100005"></a>Schedule</h3>
+<!--l. 307--><p class="noindent" >This section lists all the variables which are assigned storage by thorn CactusExamples/WaveToyOpenCL.
+Storage can either last for the duration of the run (<span 
+class="cmbx-10">Always </span>means that if this thorn is activated storage will
+be assigned, <span 
+class="cmbx-10">Conditional </span>means that if this thorn is activated storage will be assigned for the
+duration of the run if some condition is met), or can be turned on for the duration of a schedule
+function.
+</p><!--l. 310--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-11000"></a>Storage</h4>
+<!--l. 312--><p class="noindent" > 
+</p><!--l. 314--><p class="noindent" ></p> <table id="TBL-5" class="tabular" 
+ 
+><colgroup id="TBL-5-1g"><col 
+id="TBL-5-1" /><col 
+id="TBL-5-2" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-5-1-"><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-1"  
+class="td11"> <span 
+class="cmbx-10">Always:  </span></td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-1-2"  
+class="td11">    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-2-"><td  style="white-space:nowrap; text-align:left;" id="TBL-5-2-1"  
+class="td11"> Scalar[3]   </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-2-2"  
+class="td11">    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-3-"><td  style="white-space:nowrap; text-align:left;" id="TBL-5-3-1"  
+class="td11">               </td><td  style="white-space:nowrap; text-align:left;" id="TBL-5-3-2"  
+class="td11">    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-5-4-"><td  style="white-space:nowrap; text-align:left;" id="TBL-5-4-1"  
+class="td11">          </td></tr></table>
+<!--l. 322--><p class="noindent" >
+</p>
+<h4 class="likesubsectionHead"><a 
+ id="x1-12000"></a>Scheduled Functions</h4>
+<!--l. 325--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_INITIAL</span>
+</p><!--l. 327--><p class="noindent" >      wavetoyopencl_init
+</p><!--l. 329--><p class="noindent" >     <span 
+class="cmti-10">initialise scalar wave</span>
+</p><!--l. 332--><p class="noindent" > 
+</p><!--l. 334--><p class="noindent" ></p> <table id="TBL-6" class="tabular" 
+ 
+><colgroup id="TBL-6-1g"><col 
+id="TBL-6-1" /><col 
+id="TBL-6-2" /><col 
+id="TBL-6-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-6-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-1-3"  
+class="td11"> c                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-2-2"  
+class="td11"> Tags:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-2-3"  
+class="td11"> device=1                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-3-3"  
+class="td11"> function                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-4-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-6-4-3"  
+class="td11"> wavetoyopencl::scalar  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-6-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-6-5-1"  
+class="td11">    </td></tr></table>
+<!--l. 344--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_EVOL</span>
+</p><!--l. 346--><p class="noindent" >      wavetoyopencl_evol
+</p><!--l. 348--><p class="noindent" >     <span 
+class="cmti-10">evolve scalar wave</span>
+</p><!--l. 351--><p class="noindent" > 
+                                                                                       
+                                                                                       
+</p><!--l. 353--><p class="noindent" ></p> <table id="TBL-7" class="tabular" 
+ 
+><colgroup id="TBL-7-1g"><col 
+id="TBL-7-1" /><col 
+id="TBL-7-2" /><col 
+id="TBL-7-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-7-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-1-3"  
+class="td11"> c                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-2-2"  
+class="td11"> Tags:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-2-3"  
+class="td11"> device=1                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-3-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-3-3"  
+class="td11"> function                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-4-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-7-4-3"  
+class="td11"> wavetoyopencl::scalar  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-7-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-7-5-1"  
+class="td11">    </td></tr></table>
+<!--l. 363--><p class="noindent" ><span 
+class="cmbx-10">CCTK</span><span 
+class="cmbx-10">_EVOL</span>
+</p><!--l. 365--><p class="noindent" >      wavetoyopencl_boundary
+</p><!--l. 367--><p class="noindent" >     <span 
+class="cmti-10">boundary conditions for scalar wave</span>
+</p><!--l. 370--><p class="noindent" > 
+</p><!--l. 372--><p class="noindent" ></p> <table id="TBL-8" class="tabular" 
+ 
+><colgroup id="TBL-8-1g"><col 
+id="TBL-8-1" /><col 
+id="TBL-8-2" /><col 
+id="TBL-8-3" /></colgroup><tr  
+ style="vertical-align:baseline;" id="TBL-8-1-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-1-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-1-2"  
+class="td11"> After:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-1-3"  
+class="td11"> wavetoyopencl_evol    </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-2-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-2-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-2-2"  
+class="td11"> Language:  </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-2-3"  
+class="td11"> c                            </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-3-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-3-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-3-2"  
+class="td11"> Reads:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-3-3"  
+class="td11"> wavetoyopencl::scalar  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-4-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-4-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-4-2"  
+class="td11"> Sync:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-4-3"  
+class="td11"> scalar                      </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-5-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-5-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-5-2"  
+class="td11"> Tags:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-5-3"  
+class="td11"> device=1                  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-6-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-6-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-6-2"  
+class="td11"> Type:        </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-6-3"  
+class="td11"> function                   </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-7-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-7-1"  
+class="td11">    </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-7-2"  
+class="td11"> Writes:      </td><td  style="white-space:nowrap; text-align:left;" id="TBL-8-7-3"  
+class="td11"> wavetoyopencl::scalar  </td>
+</tr><tr  
+ style="vertical-align:baseline;" id="TBL-8-8-"><td  style="white-space:nowrap; text-align:center;" id="TBL-8-8-1"  
+class="td11">    </td></tr></table>
+ 
+</body></html> 
+
+                                                                                       
+
+
