@@ -1,0 +1,186 @@
+% Thorn documentation template
+\documentclass{article}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+\title{SampleIO}
+\author{Thomas Radke}
+\date{$ $Date$ $}
+\maketitle
+
+\abstract{
+Thorn {\bf SampleIO} serves as an example for creating your own I/O thorns.
+Its code is clearly structured and well documented, and implements a very
+simple and light-weight but fully functioning Cactus I/O method.\\
+Together with the documentation about I/O methods in the {\it Cactus Users'
+Guide} and the chapter about thorn {\bf IOUtil} in the {\it Cactus Thorn Guide}
+you should be able to use this code and modify/extend it according to your
+needs.
+}
+
+\section{Purpose}
+Thorn {\bf SampleIO} registers the I/O method {\tt SampleIO} with the Cactus
+flesh I/O interface. This method prints the data values of
+three-dimensional, distributed Cactus grid functions/arrays at a chosen
+location to screen.
+
+The implemented I/O method makes use of the Cactus Hyperslabbing API to obtain
+the data values to print.
+
+\section{{\bf SampleIO} Parameters}
+Parameters to control the {\tt SampleIO} I/O method are:
+
+\begin{itemize}
+  \item{\tt SampleIO::out\_vars}\\
+    This parameter denotes the variables to output as a space-separated list
+    of full variable and/or group names.
+  \item{\tt SampleIO::point\_x, SampleIO::point\_y, SampleIO::point\_z}\\
+    The location of the data point to output for all variables is given in
+    index coordinates (starting from 0) on a three-dimensional computational
+    grid.
+  \item{\tt SampleIO::out\_every}\\
+    This parameter sets the frequency for periodic output.
+    A positive value means to output every so many iterations. A negative value
+    chooses the value of the general {\tt IO::out\_every} integer parameter to
+    be taken.  A value of zero disables {\tt SampleIO} periodic output.\\
+    The value for {\tt out\_every} is used for all variables by default.
+    This can be overwritten for individual variables by appending an option
+    string to the variable name, like in
+    \center{\tt SampleIO::out\_vars = "MyThorn::MyVar[out\_every=2]"}.
+\end{itemize}
+
+All parameters are steerable, ie. they can be changed at runtime.\\
+The code in thorn {\bf SampleIO} includes the logic to check whether a parameter
+has been changed since the last output, and how to re-evaluate the I/O
+parameters.
+
+\section{Notes}
+Like any other I/O thorn should do, {\bf SampleIO} inherits general I/O
+parameters from thorn {\bf IOUtil}. Therefore this I/O helper thorn must be
+included in the {\tt ThornList} of a Cactus configuration in order to compile
+thorn {\bf SampleIO}, and also activated at runtime in the {\tt ActiveThorns}
+parameter in your parameter file.
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{strict\_io\_parameter\_check}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_every} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How often to do SampleIO output, overrides IO::out\_every}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{Every so many iterations} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:} & \multicolumn{2}{p{\paraWidth}|}{Disable SampleIO output} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1:} & \multicolumn{2}{p{\paraWidth}|}{Choose the default from IO::out\_every} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_vars} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Variables to output by SampleIO}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .+} & \multicolumn{2}{p{\paraWidth}|}{Space-separated list of fully qualified variable/group names} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering \^\$} & \multicolumn{2}{p{\paraWidth}|}{An empty string to output nothing} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{point\_x} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em x-index (starting from 0) locating the array element to output}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{An index between [0, nx)} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{point\_y} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em y-index (starting from 0) locating the array element to output}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{An index between [0, ny)} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{point\_z} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em z-index (starting from 0) locating the array element to output}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{An index between [0, nz)} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{io\_out\_every} & {\bf Scope:} shared from IO & INT \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{strict\_io\_parameter\_check} & {\bf Scope:} shared from IO & BOOLEAN \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{verbose} & {\bf Scope:} shared from IO & KEYWORD \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+sampleio
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+io
+\vspace{2mm}
+
+\vspace{5mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn CactusExamples/SampleIO.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}NONE
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_STARTUP} 
+
+\hspace{5mm} sampleio\_startup 
+
+\hspace{5mm}{\it startup routine } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & ioutil\_startup \\ 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

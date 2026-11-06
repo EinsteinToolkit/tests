@@ -1,0 +1,234 @@
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn Carpet/CarpetProlongateTest.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Always:}&  ~ \\ 
+ scalar[3] scaled[3] difference[3] & ~\\ 
+ interp\_difference & ~\\ 
+ errornorm interp\_errornorm & ~\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_INITIAL} 
+
+\hspace{5mm} carpetprolongatetest\_init 
+
+\hspace{5mm}{\it set up initial data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Sync:  & scalar \\ 
+~& ~ &scaled\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & u(interior) \\ 
+~& ~ &uscaled(interior)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_EVOL} 
+
+\hspace{5mm} carpetprolongatetest\_init 
+
+\hspace{5mm}{\it set up initial data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Reads:  & grid::x \\ 
+~& ~ &grid::y\\ 
+~& ~ &grid::z\\ 
+~ & Sync:  & scalar \\ 
+~& ~ &scaled\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & u(interior) \\ 
+~& ~ &uscaled(interior)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_PostStep} 
+
+\hspace{5mm} carpetprolongatetest\_diff 
+
+\hspace{5mm}{\it test data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Reads:  & grid::x \\ 
+~& ~ &grid::y\\ 
+~& ~ &grid::z\\ 
+~& ~ &u\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & u0(everywhere) \\ 
+~& ~ &du(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_INITIAL} 
+
+\hspace{5mm} carpetprolongatetest\_interpinit 
+
+\hspace{5mm}{\it set up interpolation } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Options:  & global-late \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & interp\_x(everywhere) \\ 
+~& ~ &interp\_y(everywhere)\\ 
+~& ~ &interp\_z(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_PostStep} 
+
+\hspace{5mm} carpetprolongatetest\_interp 
+
+\hspace{5mm}{\it interpolate } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Options:  & global-late \\ 
+~ & Reads:  & interp\_x \\ 
+~& ~ &interp\_y\\ 
+~& ~ &interp\_z\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & interp\_u(everywhere) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_PostStep} 
+
+\hspace{5mm} carpetprolongatetest\_interpdiff 
+
+\hspace{5mm}{\it test interpolated data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & carpetprolongatetest\_interp \\ 
+~ & Language:  & fortran \\ 
+~ & Options:  & global-late \\ 
+~ & Reads:  & interp\_x \\ 
+~& ~ &interp\_y\\ 
+~& ~ &interp\_z\\ 
+~& ~ &interp\_u\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & interp\_u0(everywhere) \\ 
+~& ~ &interp\_du(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_PostStep} 
+
+\hspace{5mm} carpetprolongatetest\_norminit 
+
+\hspace{5mm}{\it calculate error norm } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & carpetprolongatetest\_diff \\ 
+~& ~ &carpetprolongatetest\_interpdiff\\ 
+~ & Language:  & fortran \\ 
+~ & Options:  & global-late \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & errornorm(everywhere) \\ 
+~& ~ &interp\_errornorm(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_PostStep} 
+
+\hspace{5mm} carpetprolongatetest\_normcalc 
+
+\hspace{5mm}{\it calculate error norm } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & carpetprolongatetest\_norminit \\ 
+~ & Language:  & fortran \\ 
+~ & Options:  & global-late \\ 
+~& ~ &loop-local\\ 
+~ & Reads:  & errornorm \\ 
+~& ~ &interp\_errornorm\\ 
+~& ~ &du\\ 
+~& ~ &interp\_du\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & errornorm(everywhere) \\ 
+~& ~ &interp\_errornorm(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_PostStep} 
+
+\hspace{5mm} carpetprolongatetest\_normreduce 
+
+\hspace{5mm}{\it calculate error norm } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & carpetprolongatetest\_normcalc \\ 
+~ & Language:  & fortran \\ 
+~ & Options:  & global-late \\ 
+~ & Reads:  & errornorm \\ 
+~& ~ &interp\_errornorm\\ 
+~ & Type:  & function \\ 
+~ & Writes:  & errornorm(everywhere) \\ 
+~& ~ &interp\_errornorm(everywhere)\\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 

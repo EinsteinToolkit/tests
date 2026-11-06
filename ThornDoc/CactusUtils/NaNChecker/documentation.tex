@@ -1,0 +1,585 @@
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a 
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+\title{NaNChecker}
+\author{Thomas Radke}
+\date{$ $Date$ $}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+\begin{abstract}
+Thorn NaNChecker reports NaN values found in CCTK grid variables.
+\end{abstract}
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+\section{Purpose}
+
+The NaNChecker thorn can be used to analyze Cactus grid variables (that is grid
+functions, arrays or scalars) of real or complex data type for NaN
+(Not-a-Number) and (on availability of {\tt finite(3)}) infinite
+values. Grid variables can be periodically checked, or a call can 
+be inserted into a thorn to check at a specific point.
+
+This thorn is a utility thorn, designed to be used for debugging and
+testing code for uninitialised variables, or for variables which 
+become corrupted during a simulation, for example following a division
+by zero or illegal memory usage.
+
+On many architectures, uninitialised variables will be given the value
+zero, and simulations using such variables will seemingly run perfectly 
+well. However, not only is it dubious programming practise to assume such
+behaviour, but also moving to a new machine may well cause pathalogical 
+problems (for example, with Alpha processors used in Compaq or Cray machines).
+It is thus recommended to test codes periodically with the NaNChecker, 
+and to fix any problems as soon as they are seen.
+
+\section{Periodic Testing}
+
+Periodic testing of variables can easily be achieved by adding NaNChecker
+to the {\tt ActiveThorns} parameter, and setting the parameters 
+
+\noindent
+{\tt NaNChecker::check\_every, NaNChecker::check\_after,} and {\tt NaNChecker::check\_vars} 
+
+\noindent
+to the required
+values. (For most testing purposes these can be set to {\tt 1, 0,} and {"all"} 
+respectively).
+
+The NaNChecker then registers a routine at {\bf CCTK\_ANALYSIS} which checks
+at every {\tt NanChecker::check\_every} iteration -- starting at iteration
+number {\tt NaNChecker::check\_after} -- all the variables listed in
+{\tt NaNChecker::check\_vars} for NaN or infinite values (depending on {\tt
+NaNChecker::check\_for}) and --- if such a value is found --- performs an
+action as specified in {\tt NaNChecker::action\_if\_found}.\\
+
+Currently these actions can be to
+\begin{itemize}
+ \item{\tt just\_warn} (the default) 
+
+   just print a level 1 warning message telling you where NaNs/Infs were found
+   and how many (for grid array variables).\\
+   If the keyword parameter {\tt verbose} is set to {\tt "all"} then for each
+   grid array it will also print the grid indices (in Fortran notation)
+   and the physical coordinates for all NaN/Inf elements found.
+   You can limit the number of
+   such warnings by setting the {\tt NanChecker::report\_max} parameter.
+
+ \item{\tt terminate} 
+
+also set the CCTK termination flag so that Cactus will stop the evolution
+   loop and gracefully terminate at the next time possible (giving you the
+   choice of outputting the data from the last evolution timestep),
+
+ \item{\tt abort} 
+
+print the warning message(s) and immediately terminate Cactus after checking
+all variables from {\tt NaNChecker::check\_vars} by a call to {\tt CCTK\_Abort()}
+\end{itemize}
+
+By default, the current timelevel of the variables given in
+{\tt NaNChecker::check\_vars} will be checked. This can be overwritten by
+an optional string {\tt [timelevel=<timelevel>]} appended to the
+variable/group name. For example, to apply the NaNChecker to timelevel 0
+of the variable grid::x, timelevel 1 of {\tt grid::y} and timelevel 2 of 
+{\tt grid::z} you would use the parameter
+
+\noindent
+{\tt NaNChecker::check\_vars = "grid::x grid::y[timelevel=1] grid::z[timelevel=2]"}
+
+%
+\section{Tracking and Visualizing NaNs Positions}
+%
+The NaNChecker thorn can also mark the positions (in grid index points)
+of all the NaNs found for a given list of CCTK grid functions in a mask array
+and save this array to an HDF5 file.
+
+The mask array is declared as a grid function {\tt NaNChecker::NaNmask} with
+data type INTEGER. Each bit $i$ in an integer element is used to flag a NaN
+value found in grid function $i$ at the corresponding grid position
+(the counting for $i$ starts at 0 and is incremented for each grid function
+as it appears in {\tt NaNChecker::check\_vars}).
+Thus the NaN locations of up to 32 individual grid functions can be coded
+in the NaNmask array.
+
+In order to activate the NaNmask output you need to set the parameter
+{\tt NaNChecker::out\_NaNmask} to {\tt "yes"} (which is already the default)
+and have the IOHDF5 thorn activated.
+
+The NaN locations can be visualized with OpenDX. An example DX network
+{\tt VisualizeNaNs.net} and a sample NaNmask HDF5 output file {\tt NaNmask.h5}
+are available via anonymous CVS from the NumRel CVS server:
+\begin{verbatim}
+  # this is for (t)csh; use export CVSROOT for bash
+  setenv CVSROOT :pserver:cvs_anon@cvs.aei.mpg.de:/numrelcvs
+
+  # CVS pserver password is 'anon'
+  cvs login
+  cvs checkout AEIPhysics/Visualization/OpenDX/Networks/Miscellaneous
+\end{verbatim}
+
+%
+\section{NaNChecker API}
+%
+Thorn NaNChecker also provides a function API which can be used by other code
+to invoke the NaNChecker routines to test for NaN/Inf values or to set NaN
+values for a list of variables:
+
+\vskip .2cm
+\noindent{\bf C API}
+
+\begin{verbatim}
+  int NaNChecker_CheckVarsForNaN (const cGH *cctkGH,
+                                  int report_max,
+                                  const char *vars,
+                                  const char *check_for,
+                                  const char *action_if_found);
+
+  int NaNChecker_SetVarsToNaN (const cGH *cctkGH,
+                               const char *vars);
+\end{verbatim}
+
+\vskip.2cm
+\noindent
+{\bf Fortran API}
+
+\begin{verbatim}
+  call NaNChecker_CheckVarsForNaN (ierror, cctkGH, report_max,
+                                   vars, check_for, action_if_found)
+
+                                   integer ierror
+                                   CCTK_POINTER cctkGH
+                                   integer report_max
+                                   character*(*) vars
+                                   character*(*) check_for
+                                   character*(*) action_if_found
+
+  call NaNChecker_SetVarsToNaN (ierror, cctkGH, vars)
+
+                                integer ierror
+                                CCTK_POINTER cctkGH
+                                character*(*) vars
+\end{verbatim}
+
+The {\tt report\_max, check\_vars, check\_for} and {\tt action\_if\_found}
+arguments have the same semantics as their parameter counterparts.\\
+If {\tt action\_if\_found} is given as a NULL pointer (C API) or as an empty
+string (Fortran API) the routine will be quiet and just return the number of
+NaN values found.\\
+
+The C function {\tt NaNChecker\_CheckVarsForNaN()} returns the total number of
+NaN/Inf values found, {\tt NaNChecker\_SetToNaN()} returns the total number of
+variables set to NaN; this return value is stored in the {\tt ierror} argument
+for the corresponding fortran wrapper routines.
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{ignore\_restricted\_points}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{action\_if\_found} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em What to do if a NaN was found}} \\
+\hline{\bf Range} & &  {\bf Default:} just warn \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering just warn} & \multicolumn{2}{p{\paraWidth}|}{Just print a level 1 warning} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering terminate} & \multicolumn{2}{p{\paraWidth}|}{Warn and terminate Cactus gracefully as soon as possible} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering abort} & \multicolumn{2}{p{\paraWidth}|}{Warn and abort Cactus immediately} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{check\_after} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Start checking for NaNs after so many iterations}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Any valid iteration number} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{check\_every} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How often to check for NaNs}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering } & \multicolumn{2}{p{\paraWidth}|}{Never (default)} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 1:*} & \multicolumn{2}{p{\paraWidth}|}{Every so many iterations} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{check\_for} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Check for NaNs and/or infinite numbers (only evaluated if finite(3) is available)}} \\
+\hline{\bf Range} & &  {\bf Default:} both \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering NaN} & \multicolumn{2}{p{\paraWidth}|}{Check only for NaNs} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering Inf} & \multicolumn{2}{p{\paraWidth}|}{Check only for infinite numbers} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering both} & \multicolumn{2}{p{\paraWidth}|}{Check for both NaNs and infinite numbers} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{check\_vars} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Groups and/or variables to check for NaNs}} \\
+\hline{\bf Range} & &  {\bf Default:} (none) \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*} & \multicolumn{2}{p{\paraWidth}|}{List of full group and/or variable names, or 'all' for everything} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{ignore\_restricted\_points} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em do not check grid points whose values will be restricted away}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{out\_nanmask} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Dump the NaN grid function mask into an HDF5 file}} \\
+\hline & & {\bf Default:} yes \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{report\_max} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How many NaNs to report for a single variable}} \\
+\hline{\bf Range} & &  {\bf Default:} -1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering -1} & \multicolumn{2}{p{\paraWidth}|}{Report all (default)} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Do not report more than report\_max number of NaNs} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{restriction\_mask} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em grid function to use to decide which points are restricted away, points where the mask is zero are ignored}} \\
+\hline{\bf Range} & &  {\bf Default:} CarpetReduce::weight \\\multicolumn{1}{|p{\maxVarWidth}|}{see [1] below} & \multicolumn{2}{p{\paraWidth}|}{Carpet's reduction mask} \\\multicolumn{1}{|p{\maxVarWidth}|}{see [1] below} & \multicolumn{2}{p{\paraWidth}|}{takes prolongation stencil into account} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering .*[:][:].*} & \multicolumn{2}{p{\paraWidth}|}{any grid function with points masked out set to zero} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent {\bf [1]} \noindent \begin{verbatim}CarpetReduce[:][:]weight\end{verbatim}\noindent {\bf [1]} \noindent \begin{verbatim}CarpetEvolutionMask[:][:]evolution\_mask\end{verbatim}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{setup\_test} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em set up grid function with NaNs}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{verbose} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How much information to give}} \\
+\hline{\bf Range} & &  {\bf Default:} standard \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering all} & \multicolumn{2}{p{\paraWidth}|}{All information} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering standard} & \multicolumn{2}{p{\paraWidth}|}{Standard information} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+nanchecker
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+reduce
+\vspace{2mm}
+\subsection*{Grid Variables}
+\vspace{5mm}\subsubsection{PRIVATE GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+nanmask & NaNmask & compact & 0 \\ 
+ &  & description & Grid function mask for NaN locations \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & Prolongation="None" checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & INT \\ 
+\hline 
+nansfound & NaNsFound & compact & 0 \\ 
+ &  & description & Scalar variable counting the number of NaNs found \\ 
+ &  & dimensions & 0 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & tags & checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & INT \\ 
+\hline 
+testgf & TestGF & compact & 0 \\ 
+ &  & description & Grid function to hold NaNs for testsuite \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & Prolongation="None" checkpoint="no" \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}
+
+\noindent {\bf Adds header}: 
+
+
+
+NaNCheck.h to NaNChecker.h
+\vspace{2mm}
+
+\noindent {\bf Provides}: 
+
+
+
+CheckVarsForNaN to 
+
+SetVarsToNaN to 
+\vspace{2mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn CactusUtils/NaNChecker.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Always:}& {\bf Conditional:} \\ 
+ NaNmask NaNsFound &  TestGF\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_BASEGRID} 
+
+\hspace{5mm} nanchecker\_resetcounter 
+
+\hspace{5mm}{\it reset the nanchecker::nansfound counter } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & nanchecker::nansfound(everywhere) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PRESTEP} 
+
+\hspace{5mm} nanchecker\_resetcounter 
+
+\hspace{5mm}{\it reset the nanchecker::nansfound counter } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & nanchecker::nansfound(everywhere) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf NaNChecker\_NaNCheck} 
+
+\hspace{5mm} nanchecker\_nancheck\_prepare 
+
+\hspace{5mm}{\it prepare data structures to check for nans } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & level \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & nanchecker::nanmask(everywhere) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTSTEP} 
+
+\hspace{5mm} nanchecker\_nancheck 
+
+\hspace{5mm}{\it check for nans and count them in nanchecker::nansfound } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf NaNChecker\_NaNCheck} 
+
+\hspace{5mm} nanchecker\_nancheck\_check 
+
+\hspace{5mm}{\it check for nans } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & nanchecker\_nancheck\_prepare \\ 
+~ & Language:  & c \\ 
+~ & Options:  & local \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf NaNChecker\_NaNCheck} 
+
+\hspace{5mm} nanchecker\_nancheck\_finish 
+
+\hspace{5mm}{\it count nans in nanchecker::nansfound } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & nanchecker\_nancheck\_check \\ 
+~ & Language:  & c \\ 
+~ & Options:  & level \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & nanchecker::nansfound(everywhere) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POSTSTEP} 
+
+\hspace{5mm} nanchecker\_takeaction 
+
+\hspace{5mm}{\it output nanchecker::nanmask and take action according to nanchecker::action\_if\_found } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & zzz\_nanchecker\_nancheck \\ 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~& ~ &loop-level\\ 
+~ & Reads:  & nanchecker::nansfound(everywhere) \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POST\_RECOVER\_VARIABLES} 
+
+\hspace{5mm} nanchecker\_nancheck 
+
+\hspace{5mm}{\it check for nans and count them in nanchecker::nansfound } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_POST\_RECOVER\_VARIABLES} 
+
+\hspace{5mm} nanchecker\_takeaction 
+
+\hspace{5mm}{\it output nanchecker::nanmask and take action according to nanchecker::action\_if\_found } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & zzz\_nanchecker\_nancheck \\ 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~& ~ &loop-level\\ 
+~ & Reads:  & nanchecker::nansfound(everywhere) \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_INITIAL}   (conditional) 
+
+\hspace{5mm} nanchecker\_setuptest 
+
+\hspace{5mm}{\it set test grid function to nan } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\subsection*{Aliased Functions}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Alias Name:} ~~~~~~~ & {\bf Function Name:} \\ 
+NaNChecker\_NaNCheck & zzz\_NaNChecker\_NaNCheck \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

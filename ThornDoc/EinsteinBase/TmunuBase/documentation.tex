@@ -1,0 +1,379 @@
+%  Thorn documentation in the latex file doc/documentation.tex
+%  will be included in ThornGuides built with the Cactus make system.
+%  The scripts employed by the make system automatically include
+%  pages about variables, parameters and scheduling parsed from the
+%  relevant thorn CCL files.
+
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+\author{Erik Schnetter \textless schnetter@cct.lsu.edu\textgreater}
+
+\title{TmunuBase}
+
+\date{2008-04-07}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+\begin{abstract}
+  Provide grid functions for the stress-energy tensor $T_{\mu\nu}$,
+  and schedule when these grid functions are calculated.  This allows
+  different thorns to cooperate without explicitly depending on each
+  other.  Thorn TmunuBase is for the stress-energy
+  tensor what thorn ADMBase is for the metric tensor.
+\end{abstract}
+
+\section{Introduction}
+
+Thorn \texttt{TmunuBase} provides core infrastructure for thorns
+implementing some kind of energy or matter in general relativity, for
+example general relativistic hydrodynamics formulations.  It provides
+the basic variables, i.e., the stress-energy tensor $T_{\mu\nu}$, in
+addition to a set of parameters to regulate their use.  These
+variables are used to communicate between (possibly multiple) thorns
+contributing to the stress-energy content of the spacetime, and thorns
+needing to evaluate the stress-energy tensor such as spacetime
+evolution methods.  It also provides schedule groups to manage when
+$T_{\mu\nu}$ is calculated and when it is ready for access.
+
+\section{Using TmunuBase}
+
+\subsection{Variables}
+
+TmunuBase weakly assumes (but does not require) that the spacetime is
+described in terms of a $3+1$ decomposition.  The variables provided
+by \texttt{TmunuBase} are:
+\begin{itemize}
+\item The ``scalar'' part of $T_{\mu\nu}$, its time-time component:
+  \texttt{eTtt}
+\item The ``vector'' part of $T_{\mu\nu}$, its time-space components:
+  \texttt{eTtx}, \texttt{eTty}, \texttt{eTtz}
+\item The ``tensor'' part of $T_{\mu\nu}$, its space-space components:
+  \texttt{eTxx}, \texttt{eTxy}, \texttt{eTxz}, \texttt{eTyy},
+  \texttt{eTyz}, \texttt{eTzz}
+\end{itemize}
+These components have the prefix \texttt{e} to avoid naming conflicts
+with existing variables.  Many thorns dealing with matter already use
+variable names such as \texttt{Ttt}.
+
+These variables have up to three time levels.
+
+\subsection{Parameters}
+
+By default, the TmunuBase variables have no storage, and TmunuBase is
+inactive.  This makes it possible to add a matter interface to
+existing vacuum spacetime methods without changing their behaviour.
+
+Several parameters choose how TmunuBase behaves at run time:
+\begin{itemize}
+\item The parameter \texttt{stress\_energy\_storage} activates storage
+  for $T_{\mu\nu}$ and enables the schedule groups which calculate it.
+\item The parameter \texttt{stress\_energy\_at\_RHS} moves calculating
+  the $T_{\mu\nu}$ from the \texttt{evol} bin into the
+  \texttt{MoL\_PostStep} group.  This increases the order of accuracy
+  of the spacetime--matter coupling, but is only possible when thorn
+  MoL is used.\footnote{This was one of the main reason why thorn MoL
+    was instroduced.}  Generally, this parameter should be set when
+  MoL is used.
+\item The parameter \texttt{timelevels} chooses the number of time
+  levels for $T_{\mu\nu}$.  The default is a single time level, which
+  is sufficient for unigrid simulation.  Mesh refinement simulation
+  may require several time levels if mesh refinement boundaries
+  require correct values.
+\item The parameter \texttt{prolongation\_type} defines the
+  prolongation operator for mesh refinement boundaries.  The default
+  is Lagrange interpolation.
+\end{itemize}
+
+The grid scalar \texttt{stress\_energy\_state} describes whether the
+$T_{\mu\nu}$ variables have storage.
+
+\section{Programming with TmunuBase}
+
+\subsection{Contributing to $T_{\mu\nu}$}
+
+There may be multiple thorns contributing to $T_{\mu\nu}$.  Therefore,
+thorn TmunuBase initialises $T_{\mu\nu}$ to zero, and each thorn has
+to add to the existing values in $T_{\mu\nu}$.  The corresponding
+routine should be scheduled in the bin \texttt{AddToTmunu}.
+\emph{Note:} Do not schedule anything in the schedule bin
+\texttt{SetTmunu}.
+
+\subsection{Reading from $T_{\mu\nu}$}
+
+Since the values of $T_{\mu\nu}$ change at each time step, or -- if a
+thorn like \texttt{MoL} is used -- at each substep, $T_{\mu\nu}$ needs
+to be recalculated frequently.  This happens either in the schedule
+bin \texttt{evol} or in the schedule group \texttt{MoL\_PostStep}.
+$T_{\mu\nu}$ may only be accessed after it has been calculated, e.g.\
+\texttt{IN MoL\_PostStep AFTER SetTmunu}.  $T_{\mu\nu}$ can be freely
+accessed at other times, e.g.\ in \texttt{MoL\_CalcRHS} or at
+\texttt{poststep} or \texttt{analyisis}.
+
+\subsection{Acknowledgements}
+
+We thank I. Hawke for designing and implementing thorn MoL, without
+which a generic high-order coupling between spacetime and
+hydrodynamics methods would not be possible.
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{support\_old\_calctmunu\_mechanism}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{prolongation\_type} & {\bf Scope:} private & STRING \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em The kind of boundary prolongation for the stress-energy tensor}} \\
+\hline{\bf Range} & &  {\bf Default:} Lagrange \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering \^Lagrange\$} & \multicolumn{2}{p{\paraWidth}|}{standard prolongation (requires several time levels)} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering \^none\$} & \multicolumn{2}{p{\paraWidth}|}{no prolongation (use this if you do not have enough time levels active)} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering } & \multicolumn{2}{p{\paraWidth}|}{any other supported prolongation type} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{stress\_energy\_storage} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Should the stress-energy tensor have storage?}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{timelevels} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Number of time levels}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:3} & \multicolumn{2}{p{\paraWidth}|}{} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{stress\_energy\_at\_rhs} & {\bf Scope:} restricted & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Should the stress-energy tensor be calculated for the RHS evaluation?}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{support\_old\_calctmunu\_mechanism} & {\bf Scope:} restricted & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Should the old CalcTmunu.inc mechanism be supported? This is deprecated.}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+tmunubase
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+admbase
+
+staticconformal
+\vspace{2mm}
+\subsection*{Grid Variables}
+\vspace{5mm}\subsubsection{PUBLIC GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+stress\_energy\_state & stress\_energy\_state & compact & 0 \\ 
+ &  & description & State of storage for stress-energy tensor \\ 
+ &  & dimensions & 0 \\ 
+ &  & distribution & CONSTANT \\ 
+ &  & group type & SCALAR \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & INT \\ 
+\hline 
+stress\_energy\_scalar &  & compact & 0 \\ 
+ & eTtt & description & Stress-energy tensor \\ 
+& ~ & description &  3-scalar part T\_00 \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="Scalar" ProlongationParameter="TmunuBase::prolongation\_type" \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+stress\_energy\_vector &  & compact & 0 \\ 
+ & eTtx & description & Stress-energy tensor \\ 
+& ~ & description &  3-vector part T\_0i \\ 
+ & eTty & dimensions & 3 \\ 
+ & eTtz & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & tags & tensortypealias="D" ProlongationParameter="TmunuBase::prolongation\_type" \\ 
+ &  & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+stress\_energy\_tensor &  & compact & 0 \\ 
+ & eTxx & description & Stress-energy tensor \\ 
+& ~ & description &  3-tensor part T\_ij \\ 
+ & eTxy & dimensions & 3 \\ 
+ & eTxz & distribution & DEFAULT \\ 
+ & eTyy & group type & GF \\ 
+ & eTyz & tags & tensortypealias="DD\_sym" ProlongationParameter="TmunuBase::prolongation\_type" \\ 
+ & eTzz & timelevels & 3 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn EinsteinBase/TmunuBase.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+
+{\bf Always:}& {\bf Conditional:} \\ 
+ stress\_energy\_state &  stress\_energy\_scalar[timelevels]\\ 
+~ &  stress\_energy\_vector[timelevels]\\ 
+~ &  stress\_energy\_tensor[timelevels]\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_WRAGH} 
+
+\hspace{5mm} tmunubase\_setstressenergystate 
+
+\hspace{5mm}{\it set the stress\_energy\_state variable } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Before:  & mol\_register \\ 
+~ & Language:  & fortran \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & tmunubase::stress\_energy\_state(everywhere) \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PARAMCHECK} 
+
+\hspace{5mm} tmunubase\_paramcheck 
+
+\hspace{5mm}{\it check that no deprecated parameters are used. } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf MoL\_PostStep}   (conditional) 
+
+\hspace{5mm} settmunu 
+
+\hspace{5mm}{\it group for calculating the stress-energy tensor } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & admbase\_setadmvars \\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf SetTmunu}   (conditional) 
+
+\hspace{5mm} tmunubase\_zerotmunu 
+
+\hspace{5mm}{\it initialise the stress-energy tensor to zero } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+~ & Writes:  & tmunubase::stress\_energy\_scalar(everywhere) \\ 
+~& ~ &tmunubase::stress\_energy\_vector(everywhere)\\ 
+~& ~ &tmunubase::stress\_energy\_tensor(everywhere)\\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf SetTmunu}   (conditional) 
+
+\hspace{5mm} addtotmunu 
+
+\hspace{5mm}{\it add to the stress-energy tensor here } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & After:  & tmunubase\_settmunu \\ 
+~& ~ &tmunubase\_zerotmunu\\ 
+~ & Type:  & group \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}

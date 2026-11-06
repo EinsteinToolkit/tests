@@ -1,0 +1,553 @@
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a 
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../../doc/latex/cactus}
+
+\newlength{\tableWidth} \newlength{\maxVarWidth} \newlength{\paraWidth} \newlength{\descWidth} \begin{document}
+
+\title{IDBrillData}
+\author{Carsten Gundlach, Gabrielle Allen}
+\date{$ $Date$ $}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+\begin{abstract}
+This thorn creates time symmetric initial data for Brill
+wave spacetimes.  It can create both axisymmetric data (in a 3D
+cartesian grid), as well as data with an angular dependency.
+\end{abstract}
+
+\section{Purpose}
+
+The purpose of this thorn is to create (time symmetric) initial data
+for a Brill wave spacetime.  It does so by starting from a
+three--metric of the form originally considered by Brill
+\begin{equation}
+ds^2 = \Psi^4 \left[ e^{2q} \left( d\rho^2 + dz^2 \right)
++ \rho^2 d\phi^2 \right] =\Psi^4 \hat{ds}^{2},
+\label{eqn:brillmetric}
+\end{equation}
+where $q$ is a free function subject to certain regularity and
+fall-off conditions, $\rho=\sqrt{x^2+y^2}$ and $\Psi$ is a conformal
+factor to be solved for.
+
+Thorn {\tt IDBrillData} provides three choices for the $q$ function: 
+an exponential form, ({\tt IDBrillData::q\_function = "exp"})
+\begin{equation}
+q = a \; \frac{\rho^{2+b}}{r^2} e^{-\left( \frac{z}{\sigma_z} \right)^2}
+e^{-(\rho - \rho_0)^2} \left[ 1 + d \frac{\rho^m}{1 + e \rho^m}
+\cos^2 \left( n \phi + \phi_0 \right) \right]
+\end{equation}
+a generalized form of the $q$ function first written down by Eppley
+({\tt IDBrillData::q\_function = "eppley"}) 
+\begin{equation}
+q = a \left( \frac{\rho}{\sigma_\rho} \right)^b \frac{1}{1 + \left[
+\left( r^2 - r_0^2 \right) / \sigma_r^2 \right]^{c/2}}\left[ 1 + d \frac{\rho^m}{1 + e \rho^m}
+\cos^2 \left( n \phi + \phi_0 \right) \right]
+\end{equation}
+and the (default) Gundlach $q$ function which includes the Holz form
+({\tt IDBrillData::q\_function = "gundlach"})
+\begin{equation} 
+q = a \left( \frac{\rho}{\sigma_\rho} \right)^b e^{-\left[
+\left( r^2 - r_0^2 \right) / \sigma_r^2 \right]^{c/2}} \left[ 1 + d \frac{\rho^m}{1 + e \rho^m}
+\cos^2 \left( n \phi + \phi_0 \right) \right]
+\end{equation}
+
+Substituting the metric into the Hamiltonian constraint gives an
+elliptic equation for the conformal factor $\Psi$ which is then
+numerically solved for a given function $q$:
+\begin{equation}
+\hat{\nabla} \Psi - \frac{\Psi}{8} \hat{R} = 0
+\end{equation}
+where the conformal Ricci scalar is found to be
+\begin{eqnarray}
+\hat{R} = -2 \left(e^{-2q} (\partial^2_z q + \partial^2_\rho q) + 
+\frac{1}{\rho^2} (3 (\partial_\phi q)^2 + 2 \partial_\phi q)\right)
+\end{eqnarray}
+Assuming the initial data to be time symmetric means that the momentum
+constraints are trivially satisfied.
+
+In the case of axisymmetry (that is $d=0$ in the above expressions for
+$q$), the Hamiltonian constraint can be written as an elliptic
+equation for $\Psi$ with just the flat space Laplacian,
+\begin{equation}
+\nabla_{flat} \Psi + \frac{\Psi}{4} (\partial_z^2 q + \partial_\rho^2 q) = 0
+\end{equation}
+If the initial data is chosen to be {\tt
+ADMBase::initial\_data = "brilldata2D"} then this elliptic equation
+is solved rather than the equation above.
+
+
+\section{Generating Initial Data with IDBrillData}
+
+Brill initial data is activated by choosing the {\tt CactusEinstein/ADMBase}
+parameter {\tt initial\_data} to be {\tt brilldata}, or for the case of
+axisymmetry {\tt brilldata2D} can also be used.
+
+The parameter {\tt IDBrillData::q\_function} chooses the form of the
+$q$ function to be used, defaulting to the Gundlach expression.
+
+Additional {\tt IDBrillData} parameters for each form of $q$ fix the 
+remaining freedom:
+
+\begin{itemize}
+
+\item Exponential $q$: {\tt IDBrillData::q\_function = "exp"}
+
+$(a, b,\sigma_z,\rho_0)=$ ({\tt exp\_a, exp\_b, exp\_sigmaz,exp\_rho0})
+
+\item Eppley $q$: {\tt IDBrillData::q\_function = "eppley"}
+
+$(a, b,\sigma_\rho, r_0,\sigma_r,c)=$ ({\tt eppley\_a, eppley\_b, eppley\_sigmarho, eppley\_r0, eppley\_sigmar, eppley\_c})
+
+\item Gundlach $q$: {\tt IDBrillData::q\_function = "gundlach"}
+
+$(a, b,\sigma_\rho, r_0,\sigma_r,c)=$ ({\tt gundlach\_a, gundlach\_b, gundlach\_sigmarho, gundlach\_r0, gundlach\_sigmar, gundlach\_c})
+
+\item Non-axisymmetric part for each choice of $q$
+
+$(d, m, e, n, \phi0)=$ ({\tt brill3d\_d, brill3d\_m, brill3d\_e, brill3d\_n, brill3d\_phi0})
+
+\end{itemize}
+
+Note that the default $q$ expression is
+$$
+q = {\tt gundlach\_a} \quad \rho^2 e^{-r^2} 
+$$
+
+{\tt IDBrillData} can use the elliptic solvers (type LinMetric)
+provided by {\tt CactusEinstein/EllSOR},\\ {\tt AEIThorns/BAM\_Elliptic},
+or {\tt CactusElliptic/EllPETSc} to solve the equation resulting from 
+the Hamiltonian constraint. 
+In all cases the parameter {\tt thresh} sets the threshold for the elliptic
+solve. The choice of elliptic solver is made 
+through the parameter {\tt brill\_solver}:
+
+\begin{itemize}
+  
+\item {\tt sor}: Understands the Robin boundary condition, additional 
+parameters control the maximum number of iterations ({\tt sor\_maxit}).
+  
+\item {\tt bam}: {\tt BAM\_Elliptic} does not properly implement the
+elliptic infrastructure of {\tt EllBase}, and the {\tt BAM\_Elliptic}
+parameter to use the Robin boundary condition must be set independently
+of \\{\tt IDBrillWave::brill\_bound}.
+
+\end{itemize}
+
+\section{Notes}
+
+Thorn {\tt IDBrillData} understands both the ``{\tt physical}'' and ``{\tt
+static conformal}'' {\tt metric\_type}. In the case of a conformal
+metric being chosen, the conformal factor is set to $\Psi$. Currently
+the derivatives of the conformal factor are not calculated, so that
+only {\tt staticconformal::conformal\_storage = "factor"} is
+supported.
+
+\section{References}
+
+\subsection{Specification of Brill Waves}
+
+\begin{enumerate}
+
+\item Dieter Brill, {\bf Ann. Phys.}, 7, 466, 1959.
+
+\item Ken Eppley, {\bf Sources of Gravitational Radiation}, edited by L. Smarr (Cambridge University Press, 
+Cambridge, England, 1979), p. 275.
+
+\end{enumerate}
+
+\subsection{Numerical Evolutions of Brill Waves}
+
+\begin{enumerate}
+
+\item {\it Gravitational Collapse of Gravitational Waves in 3D Numerical Relativity}, 
+ Miguel Alcubierre, Gabrielle Allen, Bernd Bruegmann, Gerd Lanfermann, Edward Seidel, Wai-Mo Suen, Malcolm Tobias,
+{\bf Phys. Rev. D61}, 041501, 2000.
+
+\end{enumerate}
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+
+
+\section{Parameters} 
+
+
+\parskip = 0pt
+
+\setlength{\tableWidth}{160mm}
+
+\setlength{\paraWidth}{\tableWidth}
+\setlength{\descWidth}{\tableWidth}
+\settowidth{\maxVarWidth}{conformal\_storage}
+
+\addtolength{\paraWidth}{-\maxVarWidth}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+\addtolength{\paraWidth}{-\columnsep}
+
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\addtolength{\descWidth}{-\columnsep}
+\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{bound} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Which boundary condition to use}} \\
+\hline{\bf Range} & &  {\bf Default:} robin \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering const} & \multicolumn{2}{p{\paraWidth}|}{constant boundary: set const\_v0} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering robin} & \multicolumn{2}{p{\paraWidth}|}{Robin boundary: set robin\_falloff, robin\_inf} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{brill3d\_d} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em 3D Brill wave:  d rho\^m cos\^2(n (phi + phi0))}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{Anything} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{brill3d\_e} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em 3D Brill wave:  d rho\^m cos\^2(n (phi + phi0))}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{Anything} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{brill3d\_m} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em 3D Brill wave:  d rho\^m cos\^2(n (phi + phi0))}} \\
+\hline{\bf Range} & &  {\bf Default:} 2.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{Anything} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{brill3d\_n} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em 3D Brill wave:  d rho\^m cos\^2(n (phi + phi0))}} \\
+\hline{\bf Range} & &  {\bf Default:} 2.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{Anything} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{brill3d\_phi0} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em 3D Brill wave:  d rho\^m cos\^2(n (phi + phi0))}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{Anything} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{const\_v0} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Value of constant BC}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{anything goes} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{eppley\_a} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Eppley Brill wave: Amplitude}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{Anything} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{eppley\_b} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Eppley Brill wave: used in exponent in rho: rho\^b}} \\
+\hline{\bf Range} & &  {\bf Default:} 2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{Anything} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{eppley\_c} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Eppley Brill wave: (r\^2 - r0\^2)\^(c/2)}} \\
+\hline{\bf Range} & &  {\bf Default:} 2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{Anything} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{eppley\_r0} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Eppley Brill wave: radius of torus in r}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Positive} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{eppley\_sigmar} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Eppley Brill wave: sigma in r}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{Anything} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{eppley\_sigmarho} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Eppley Brill wave: sigma in rho}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{Anything} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{exp\_a} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Exp Brill wave: Amplitude}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{Anything} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{exp\_b} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Exp Brill wave: used in exponent in rho: rho\^(2+b)}} \\
+\hline{\bf Range} & &  {\bf Default:} 2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{Anything} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{exp\_rho0} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Exp Brill wave: radius of torus in rho}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Positive} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{exp\_sigmaz} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Exp Brill wave: sigma in z}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering (0:*} & \multicolumn{2}{p{\paraWidth}|}{Positive} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{gundlach\_a} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Gundlach Brill wave: Amplitude}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{Anything} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{gundlach\_b} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Gundlach Brill wave: used in exponent in rho: rho\^b}} \\
+\hline{\bf Range} & &  {\bf Default:} 2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{Anything} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{gundlach\_c} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Gundlach Brill wave: (r\^2 - r0\^2)\^(c/2)}} \\
+\hline{\bf Range} & &  {\bf Default:} 2 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{Anything} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{gundlach\_r0} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Gundlach Brill wave: radius of torus in r}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Positive} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{gundlach\_sigmar} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Gundlach Brill wave: sigma in r}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{Anything} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{gundlach\_sigmarho} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Gundlach Brill wave: sigma in rho}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{Anything} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{output\_coeffs} & {\bf Scope:} private & BOOLEAN \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em output coefficients for elliptic solve}} \\
+\hline & & {\bf Default:} no \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{q\_function} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Form of function q [0,1,2]}} \\
+\hline{\bf Range} & &  {\bf Default:} gundlach \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering exp} & \multicolumn{2}{p{\paraWidth}|}{contains e\^\{-z\^2\} factor} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering eppley} & \multicolumn{2}{p{\paraWidth}|}{contains 1/(1+r\^2) factor} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering gundlach} & \multicolumn{2}{p{\paraWidth}|}{contains e\^\{-r\^2\} factor} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{rhofudge} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em delta rho for axis fudge}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.00001 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:} & \multicolumn{2}{p{\paraWidth}|}{Positive please} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{robin\_falloff} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Fall-off of Robin BC}} \\
+\hline{\bf Range} & &  {\bf Default:} 1 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:} & \multicolumn{2}{p{\paraWidth}|}{any positive integer value} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{robin\_inf} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Value at infinity of Robin BC}} \\
+\hline{\bf Range} & &  {\bf Default:} 1.0 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering :} & \multicolumn{2}{p{\paraWidth}|}{anything goes} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{solver} & {\bf Scope:} private & KEYWORD \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Which elliptic solver to use}} \\
+\hline{\bf Range} & &  {\bf Default:} sor \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering sor} & \multicolumn{2}{p{\paraWidth}|}{Use SOR solver} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering petsc} & \multicolumn{2}{p{\paraWidth}|}{Use PETSc solver} \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering bam} & \multicolumn{2}{p{\paraWidth}|}{Use bam solver} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{sor\_maxit} & {\bf Scope:} private & INT \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em Maximum number of iterations}} \\
+\hline{\bf Range} & &  {\bf Default:} 10000 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0:*} & \multicolumn{2}{p{\paraWidth}|}{Positive} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{thresh} & {\bf Scope:} private & REAL \\\hline
+\multicolumn{3}{|p{\descWidth}|}{{\bf Description:}   {\em How far (absolute norm) to go}} \\
+\hline{\bf Range} & &  {\bf Default:} 0.00001 \\\multicolumn{1}{|p{\maxVarWidth}|}{\centering 0.0:} & \multicolumn{2}{p{\paraWidth}|}{Positive number please} \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\noindent \begin{tabular*}{\tableWidth}{|c|l@{\extracolsep{\fill}}r|}
+\hline
+\multicolumn{1}{|p{\maxVarWidth}}{conformal\_storage} & {\bf Scope:} shared from STATICCONFORMAL & KEYWORD \\\hline
+\end{tabular*}
+
+\vspace{0.5cm}\parskip = 10pt 
+
+\section{Interfaces} 
+
+
+\parskip = 0pt
+
+\vspace{3mm} \subsection*{General}
+
+\noindent {\bf Implements}: 
+
+idbrilldata
+\vspace{2mm}
+
+\noindent {\bf Inherits}: 
+
+grid
+
+admbase
+
+staticconformal
+
+ellbase
+\vspace{2mm}
+\subsection*{Grid Variables}
+\vspace{5mm}\subsubsection{PRIVATE GROUPS}
+
+\vspace{5mm}
+
+\begin{tabular*}{150mm}{|c|c@{\extracolsep{\fill}}|rl|} \hline 
+~ {\bf Group Names} ~ & ~ {\bf Variable Names} ~  &{\bf Details} ~ & ~\\ 
+\hline 
+brillelliptic &  & compact & 0 \\ 
+ & brillMlinear & description & Coefficients for linear elliptic equation \\ 
+ & brillNsource & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+brillconf &  & compact & 0 \\ 
+ & brillpsi & description & Conformal factor for Brill data \\ 
+ &  & dimensions & 3 \\ 
+ &  & distribution & DEFAULT \\ 
+ &  & group type & GF \\ 
+ &  & timelevels & 1 \\ 
+ &  & variable type & REAL \\ 
+\hline 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+
+\section{Schedule} 
+
+
+\parskip = 0pt
+
+
+\noindent This section lists all the variables which are assigned storage by thorn EinsteinInitialData/IDBrillData.  Storage can either last for the duration of the run ({\bf Always} means that if this thorn is activated storage will be assigned, {\bf Conditional} means that if this thorn is activated storage will be assigned for the duration of the run if some condition is met), or can be turned on for the duration of a schedule function.
+
+
+\subsection*{Storage}
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{ll} 
+~& {\bf Conditional:} \\ 
+~ &  brillconf\\ 
+~ &  brillelliptic\\ 
+~ & ~\\ 
+\end{tabular*} 
+
+
+\subsection*{Scheduled Functions}
+\vspace{5mm}
+
+\noindent {\bf CCTK\_PARAMCHECK}   (conditional) 
+
+\hspace{5mm} idbrilldata\_paramchecker 
+
+\hspace{5mm}{\it check that the metric\_type is recognised } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf CCTK\_WRAGH}   (conditional) 
+
+\hspace{5mm} brilldata\_initsymbound 
+
+\hspace{5mm}{\it set up symmetries for brillpsi } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & c \\ 
+~ & Options:  & global \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+\vspace{5mm}
+
+\noindent {\bf ADMBase\_InitialData}   (conditional) 
+
+\hspace{5mm} brilldata 
+
+\hspace{5mm}{\it construct brill wave initial data } 
+
+
+\hspace{5mm}
+
+ \begin{tabular*}{160mm}{cll} 
+~ & Language:  & fortran \\ 
+~ & Type:  & function \\ 
+\end{tabular*} 
+
+
+
+\vspace{5mm}\parskip = 10pt 
+\end{document}
